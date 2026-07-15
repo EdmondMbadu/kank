@@ -1907,6 +1907,17 @@ exports.reconcilePendingMobileMoneyPayments = functions.pubsub
 /**
  * Callable: record a summary entry for a bulk or custom messaging action.
  */
+function sanitizeBulkRecipientEntries(entries) {
+  if (!Array.isArray(entries)) return [];
+  return entries.slice(0, 500).map((entry) => ({
+    name: String((entry && entry.name) || "").trim().slice(0, 160),
+    locationName: String((entry && entry.locationName) || "Sans localisation")
+        .trim()
+        .slice(0, 120) || "Sans localisation",
+    status: entry && entry.status === "failed" ? "failed" : "sent",
+  })).filter((entry) => entry.name);
+}
+
 exports.recordBulkMessageLog = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
@@ -1921,6 +1932,7 @@ exports.recordBulkMessageLog = functions.https.onCall(async (data, context) => {
     succeeded,
     failed,
     locationTotals = {},
+    recipientEntries = [],
     template = "",
     messagePreview = "",
     conditionSummary = "",
@@ -1959,6 +1971,7 @@ exports.recordBulkMessageLog = functions.https.onCall(async (data, context) => {
     succeeded,
     failed,
     locationTotals: sanitizedTotals,
+    recipientEntries: sanitizeBulkRecipientEntries(recipientEntries),
     template,
     messagePreview,
     conditionSummary: conditionSummary || null,
@@ -2058,6 +2071,8 @@ exports.scheduleBulkMessage = functions.https.onCall(async (data, context) => {
     batch.set(ref, {
       phoneNumber: recipient.phoneNumber || null,
       message: recipient.message || "",
+      name: String(recipient.name || "").trim() || null,
+      locationName: String(recipient.locationName || "").trim() || null,
     });
     ops += 1;
     if (ops === 450) {
@@ -2221,20 +2236,31 @@ exports.processScheduledBulkMessages = functions.pubsub
           const recipientsSnap = await ref.collection("recipients").get();
           let succeeded = 0;
           let failed = 0;
+          const recipientEntries = [];
 
           for (const recipient of recipientsSnap.docs) {
-            const {phoneNumber, message} = recipient.data() || {};
+            const {phoneNumber, message, name, locationName} =
+              recipient.data() || {};
             const to = makeValidE164(phoneNumber);
             if (!to || !message) {
               failed += 1;
+              if (name) {
+                recipientEntries.push({name, locationName, status: "failed"});
+              }
               continue;
             }
             try {
               await sms.send({to: [to], message});
               succeeded += 1;
+              if (name) {
+                recipientEntries.push({name, locationName, status: "sent"});
+              }
             } catch (err) {
               console.error("Scheduled SMS send failed:", err);
               failed += 1;
+              if (name) {
+                recipientEntries.push({name, locationName, status: "failed"});
+              }
             }
           }
 
@@ -2252,6 +2278,7 @@ exports.processScheduledBulkMessages = functions.pubsub
             succeeded,
             failed,
             locationTotals: data.locationTotals || {},
+            recipientEntries: sanitizeBulkRecipientEntries(recipientEntries),
             template: data.template || "",
             messagePreview: data.messagePreview || "",
             conditionSummary: data.conditionSummary || null,
@@ -3153,6 +3180,7 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
         let succeeded = 0;
         let failed = 0;
         const failures = [];
+        const recipientEntries = [];
 
         for (const client of recipients) {
           const message = personalizeBirthdayMessage(client, settings.template);
@@ -3162,8 +3190,18 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
               message,
             });
             succeeded += 1;
+            recipientEntries.push({
+              name: clientFullName(client) || "Client",
+              locationName: client.locationName || "Sans localisation",
+              status: "sent",
+            });
           } catch (error) {
             failed += 1;
+            recipientEntries.push({
+              name: clientFullName(client) || "Client",
+              locationName: client.locationName || "Sans localisation",
+              status: "failed",
+            });
             failures.push({
               clientId: client.docId || null,
               clientName: clientFullName(client),
@@ -3196,6 +3234,7 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
             succeeded,
             failed,
             locationTotals: aggregateClientLocations(recipients),
+            recipientEntries,
             template: settings.template,
             messagePreview: recipients[0] ?
               personalizeBirthdayMessage(recipients[0], settings.template) :

@@ -202,7 +202,7 @@
 
     <div class="relative mx-auto mt-4 max-w-3xl">
       <div
-        class="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_20px_45px_-22px_rgba(15,23,42,0.35)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
+        class="rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-[0_16px_36px_-24px_rgba(15,23,42,0.35)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
       >
         <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -217,11 +217,38 @@
           </div>
         </div>
 
-        <div class="mt-4">
+        <div
+          *ngIf="auth.isAdmin"
+          class="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/70 p-3 dark:border-sky-900/50 dark:bg-sky-950/20"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-300">
+                Modèle du message
+              </p>
+              <p class="mt-1 max-h-20 overflow-y-auto whitespace-pre-line text-xs leading-5 text-slate-700 dark:text-slate-200">
+                {{ birthdayAutomationTemplate }}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="shrink-0 rounded-full bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
+              [disabled]="birthdayAutomationSettingsSaving"
+              (click)="openBirthdayAutomationTemplateEditor()"
+            >
+              Modifier
+            </button>
+          </div>
+          <p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+            {{ "{fullName}" }} sera remplacé par le nom de chaque client.
+          </p>
+        </div>
+
+        <div class="mt-3">
           <div
-            class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+            class="rounded-xl border border-slate-200/70 bg-white/70 p-2 dark:border-slate-700 dark:bg-slate-900/60"
           >
-            <div class="mt-2 flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 (click)="setBirthdayFilter('all')"
@@ -272,10 +299,10 @@
 
           <div
             *ngIf="auth.isAdmin"
-            class="mt-4 rounded-2xl border border-sky-200/80 bg-sky-50/70 p-4 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20"
+            class="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/60 p-3 dark:border-sky-900/50 dark:bg-sky-950/20"
           >
-            <div class="flex flex-col gap-4">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex flex-col gap-2.5">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-300">
@@ -291,11 +318,8 @@
                       {{ birthdayAutomationStatusLabel }}
                     </span>
                   </div>
-                  <h3 class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Envoi automatique à {{ birthdayAutomationSendTime }} Kinshasa
-                  </h3>
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    {{ birthdayAutomationStatusHint }}
+                  <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    Chaque jour à {{ birthdayAutomationSendTime }} · heure de Kinshasa
                   </p>
                 </div>
 
@@ -321,9 +345,9 @@
                 </div>
               </div>
 
-              <div class="grid gap-3 lg:grid-cols-[160px_1fr_1fr]">
+              <div class="grid gap-2 lg:grid-cols-[140px_1fr_1fr]">
                 <label
-                  class="rounded-2xl border border-sky-100 bg-white/80 p-3 shadow-sm dark:border-sky-900/50 dark:bg-slate-900/70"
+                  class="rounded-xl border border-sky-100 bg-white/80 p-2.5 dark:border-sky-900/50 dark:bg-slate-900/70"
                 >
                   <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
                     Heure d'envoi
@@ -333,21 +357,21 @@
                     [value]="birthdayAutomationSendTime"
                     (change)="onBirthdayAutomationSendTimeChange($event)"
                     [disabled]="birthdayAutomationSettingsSaving"
-                    class="mt-2 block h-9 w-full rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    class="mt-1 block h-8 w-full rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   />
                 </label>
 
                 <div
-                  class="rounded-2xl border border-sky-100 bg-white/80 p-3 shadow-sm dark:border-sky-900/50 dark:bg-slate-900/70"
+                  class="rounded-xl border border-sky-100 bg-white/80 p-2.5 dark:border-sky-900/50 dark:bg-slate-900/70"
                 >
                   <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
                     Dette
                   </p>
-                  <div class="mt-2 grid grid-cols-3 gap-1.5">
+                  <div class="mt-1 grid grid-cols-3 gap-1">
                     <button
                       *ngFor="let mode of birthdayAutomationDebtModes"
                       type="button"
-                      class="min-h-9 rounded-full px-2 py-1.5 text-center text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                      class="min-h-8 rounded-full px-2 py-1 text-center text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
                       [disabled]="birthdayAutomationSettingsSaving"
                       [ngClass]="birthdayAutomationModeButtonClasses(birthdayAutomationDebtMode === mode)"
                       (click)="setBirthdayAutomationDebtMode(mode)"
@@ -358,16 +382,16 @@
                 </div>
 
                 <div
-                  class="rounded-2xl border border-sky-100 bg-white/80 p-3 shadow-sm dark:border-sky-900/50 dark:bg-slate-900/70"
+                  class="rounded-xl border border-sky-100 bg-white/80 p-2.5 dark:border-sky-900/50 dark:bg-slate-900/70"
                 >
                   <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
                     Statut client
                   </p>
-                  <div class="mt-2 grid grid-cols-3 gap-1.5">
+                  <div class="mt-1 grid grid-cols-3 gap-1">
                     <button
                       *ngFor="let mode of birthdayAutomationStatusModes"
                       type="button"
-                      class="min-h-9 rounded-full px-2 py-1.5 text-center text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                      class="min-h-8 rounded-full px-2 py-1 text-center text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
                       [disabled]="birthdayAutomationSettingsSaving"
                       [ngClass]="birthdayAutomationModeButtonClasses(birthdayAutomationStatusMode === mode)"
                       (click)="setBirthdayAutomationStatusMode(mode)"
@@ -378,38 +402,6 @@
                 </div>
               </div>
 
-              <div
-                class="rounded-2xl border border-sky-100 bg-white/80 p-3 shadow-sm dark:border-sky-900/50 dark:bg-slate-900/70"
-              >
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
-                      Message automatique
-                    </p>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Utilisez {{ "{fullName}" }} pour insérer le nom du client.
-                    </p>
-                  </div>
-                  <div class="flex shrink-0 flex-wrap gap-2">
-                    <button
-                      type="button"
-                      class="rounded-full border border-sky-200 bg-white px-4 py-2 text-xs font-semibold text-sky-700 shadow-sm transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sky-900 dark:bg-slate-900 dark:text-sky-200 dark:hover:bg-slate-800"
-                      [disabled]="birthdayAutomationSettingsSaving"
-                      (click)="openBirthdayAutomationTemplateViewer()"
-                    >
-                      Voir message
-                    </button>
-                    <button
-                      type="button"
-                      class="rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      [disabled]="birthdayAutomationSettingsSaving"
-                      (click)="openBirthdayAutomationTemplateEditor()"
-                    >
-                      Modifier
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
             <p
               *ngIf="birthdayAutomationSettingsLoading"
@@ -432,7 +424,7 @@
           </div>
 
           <div
-            class="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-3 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-900/10"
+            class="mt-3 rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-3 dark:border-emerald-800/60 dark:bg-emerald-900/10"
           >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p
@@ -464,10 +456,10 @@
               {{ selectedBirthdayEmptyMessage }}
             </div>
 
-            <div class="mt-3 space-y-3" *ngIf="selectedBirthdayGroups.length">
+            <div class="mt-2 space-y-1.5" *ngIf="selectedBirthdayGroups.length">
               <article
                 *ngFor="let group of selectedBirthdayGroups; trackBy: trackTomorrowBirthdayGroup"
-                class="rounded-xl border border-emerald-200 bg-white/85 p-3 dark:border-emerald-800/60 dark:bg-slate-900/50"
+                class="rounded-lg border border-emerald-200 bg-white/85 p-2.5 dark:border-emerald-800/60 dark:bg-slate-900/50"
               >
                 <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                   <div>
@@ -498,11 +490,11 @@
                   </div>
                 </div>
 
-                <div class="mt-2 flex flex-wrap gap-1.5">
+                <div class="mt-1.5 flex flex-wrap gap-1">
                   <button
                     type="button"
                     *ngFor="let client of group.clients"
-                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-left text-[11px] text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-200"
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-left text-[11px] text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-200"
                     (click)="openClientModal(client)"
                   >
                     {{ client.firstName }} {{ client.lastName }}
@@ -529,170 +521,121 @@
 
           <div
             *ngIf="auth.isAdmin"
-            class="mt-4 rounded-2xl border border-indigo-200/80 bg-indigo-50/60 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/20"
+            class="mt-3 rounded-xl border border-indigo-200/80 bg-indigo-50/50 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/20"
           >
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700 dark:text-indigo-300">
-                  Messages envoyés
+                  Historique des envois
                 </p>
-                <h3 class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Historique anniversaires
-                </h3>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Affiche uniquement les jours où au moins un message anniversaire a été envoyé.
+                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Clients contactés, regroupés par jour.
                 </p>
               </div>
 
-              <div class="w-full sm:w-48">
-                <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
-                  Mois
+              <div class="w-full sm:w-44">
+                <label class="sr-only" for="birthday-history-month">Mois</label>
                   <input
+                    id="birthday-history-month"
                     type="month"
                     [value]="birthdayHistoryMonth"
                     (change)="onBirthdayHistoryMonthChange($event)"
-                    class="mt-1 block h-9 w-full rounded-full border border-indigo-200 bg-white px-3 text-xs font-semibold normal-case tracking-normal text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-900 dark:text-slate-100"
+                    class="block h-8 w-full rounded-full border border-indigo-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-900 dark:text-slate-100"
                   />
-                </label>
               </div>
             </div>
 
-            <div class="mt-4 grid gap-3 sm:grid-cols-3">
-              <div class="rounded-2xl bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm dark:bg-slate-900/60 dark:text-slate-200">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Mois sélectionné
-                </p>
-                <p class="mt-1 text-base font-semibold text-slate-900 dark:text-white">
-                  {{ birthdayHistoryMonthLabel }}
-                </p>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {{ birthdayHistoryMonthSummary.runs | number : "1.0-0" }}
-                  envoi(s) avec activité
-                </p>
-              </div>
-              <div class="rounded-2xl bg-white/80 px-4 py-3 text-sm text-emerald-700 shadow-sm dark:bg-slate-900/60 dark:text-emerald-300">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-500">
-                  Messages envoyés
-                </p>
-                <p class="mt-1 text-2xl font-semibold">
-                  {{ birthdayHistoryMonthSummary.succeeded | number : "1.0-0" }}
-                </p>
-                <p class="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80">
-                  sur {{ birthdayHistoryMonthSummary.total | number : "1.0-0" }}
-                  destinataire(s)
-                </p>
-              </div>
-              <div class="rounded-2xl bg-white/80 px-4 py-3 text-sm text-rose-700 shadow-sm dark:bg-slate-900/60 dark:text-rose-300">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-rose-500">
-                  Échecs
-                </p>
-                <p class="mt-1 text-2xl font-semibold">
-                  {{ birthdayHistoryMonthSummary.failed | number : "1.0-0" }}
-                </p>
-              </div>
+            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-white/75 px-3 py-2 text-xs dark:bg-slate-900/60">
+              <span class="font-semibold text-slate-900 dark:text-slate-100">
+                {{ birthdayHistoryMonthLabel }}
+              </span>
+              <span class="text-slate-500 dark:text-slate-400">
+                {{ birthdayHistoryDaySummaries.length }} jour(s)
+              </span>
+              <span class="font-semibold text-emerald-700 dark:text-emerald-300">
+                {{ birthdayHistoryMonthSummary.succeeded | number : "1.0-0" }} envoyé(s)
+              </span>
+              <span
+                *ngIf="birthdayHistoryMonthSummary.failed"
+                class="font-semibold text-rose-600 dark:text-rose-300"
+              >
+                {{ birthdayHistoryMonthSummary.failed | number : "1.0-0" }} échec(s)
+              </span>
             </div>
 
             <p
               *ngIf="birthdayHistoryLoading"
-              class="mt-4 rounded-xl border border-dashed border-indigo-200 bg-white/70 px-3 py-2 text-xs text-indigo-700 dark:border-indigo-900 dark:bg-slate-900/40 dark:text-indigo-300"
+              class="mt-2 rounded-lg border border-dashed border-indigo-200 bg-white/70 px-3 py-2 text-xs text-indigo-700 dark:border-indigo-900 dark:bg-slate-900/40 dark:text-indigo-300"
             >
               Chargement de l’historique…
             </p>
             <p
               *ngIf="birthdayHistoryWarning"
-              class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+              class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
             >
               {{ birthdayHistoryWarning }}
             </p>
             <p
               *ngIf="birthdayHistoryError"
-              class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200"
+              class="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200"
             >
               {{ birthdayHistoryError }}
             </p>
 
             <div
               *ngIf="!birthdayHistoryLoading && !birthdayHistoryError && !birthdayHistoryLogs.length"
-              class="mt-4 rounded-xl border border-dashed border-indigo-200 bg-white/70 px-3 py-3 text-xs text-indigo-700 dark:border-indigo-900 dark:bg-slate-900/40 dark:text-indigo-300"
+              class="mt-2 rounded-lg border border-dashed border-indigo-200 bg-white/70 px-3 py-2 text-xs text-indigo-700 dark:border-indigo-900 dark:bg-slate-900/40 dark:text-indigo-300"
             >
               Aucun message anniversaire envoyé pendant ce mois.
             </div>
 
-            <div
-              *ngIf="birthdayHistoryMessageSummaries.length"
-              class="mt-4 rounded-2xl border border-indigo-100 bg-white/85 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-slate-900/60"
-            >
-              <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-500">
-                Messages utilisés ce mois
-              </p>
-              <div class="mt-3 space-y-3">
-                <article
-                  *ngFor="let message of birthdayHistoryMessageSummaries"
-                  class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300"
-                >
-                  <div class="mb-2 flex flex-wrap items-center gap-2">
-                    <span class="rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">
-                      {{ message.succeeded | number : "1.0-0" }} envoyé(s)
-                    </span>
-                    <span class="rounded-full bg-indigo-100 px-2.5 py-1 font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200">
-                      {{ message.count | number : "1.0-0" }} utilisation(s)
-                    </span>
-                  </div>
-                  <p class="whitespace-pre-line">{{ message.text }}</p>
-                </article>
-              </div>
-            </div>
-
-            <div class="mt-4 space-y-3" *ngIf="birthdayHistoryLogs.length">
+            <div class="mt-2 space-y-2" *ngIf="birthdayHistoryDaySummaries.length">
               <article
-                *ngFor="let log of birthdayHistoryLogs; trackBy: trackBirthdayHistoryLog"
-                class="rounded-2xl border border-indigo-100 bg-white/85 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-slate-900/60"
+                *ngFor="let day of birthdayHistoryDaySummaries"
+                class="rounded-xl border border-indigo-100 bg-white/85 p-3 dark:border-indigo-900/50 dark:bg-slate-900/60"
               >
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-500">
-                      {{ log.typeLabel }}
-                    </p>
-                    <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {{ log.sentAtDate | date : "EEEE d MMMM HH:mm:ss" }} · {{ log.sentBy || "—" }}
-                    </p>
-                  </div>
-                  <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                    {{ log.succeeded | number : "1.0-0" }}/{{ log.total | number : "1.0-0" }}
-                    envoyé(s)
-                    <span *ngIf="log.failed" class="text-rose-600 dark:text-rose-300">
-                      · {{ log.failed }} échec(s)
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-sm font-semibold capitalize text-slate-900 dark:text-slate-100">
+                    {{ day.date | date : "EEEE d MMMM" }}
+                  </p>
+                  <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    {{ day.succeeded }}/{{ day.total }} envoyé(s)
+                    <span *ngIf="day.failed" class="text-rose-600 dark:text-rose-300">
+                      · {{ day.failed }} échec(s)
                     </span>
-                  </div>
+                  </p>
                 </div>
 
                 <div
-                  *ngIf="log.locationEntries.length"
-                  class="mt-3 flex flex-wrap gap-1.5"
+                  *ngIf="day.recipients.length"
+                  class="mt-2 flex flex-wrap gap-1.5"
                 >
                   <span
-                    *ngFor="let entry of log.locationEntries"
-                    class="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-200"
+                    *ngFor="let recipient of day.recipients"
+                    class="rounded-full border bg-white px-2.5 py-1 text-[11px] dark:bg-slate-900"
+                    [class.border-rose-200]="recipient.status === 'failed'"
+                    [class.text-rose-700]="recipient.status === 'failed'"
+                    [class.border-slate-200]="recipient.status !== 'failed'"
+                    [class.text-slate-700]="recipient.status !== 'failed'"
                   >
-                    {{ entry.name }} · {{ entry.count }}
+                    <span class="font-semibold">{{ recipient.name }}</span>
+                    <span class="text-slate-400"> · {{ recipient.locationName }}</span>
+                    <span *ngIf="recipient.status === 'failed'"> · échec</span>
                   </span>
                 </div>
 
                 <p
-                  *ngIf="log.messagePreview"
-                  class="mt-3 whitespace-pre-line rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300"
+                  *ngIf="!day.recipients.length"
+                  class="mt-2 text-[11px] text-slate-500 dark:text-slate-400"
                 >
-                  <span class="mb-1 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Message envoyé
-                  </span>
-                  {{ log.messagePreview }}
+                  Noms indisponibles pour cet ancien envoi.
                 </p>
 
                 <p
-                  *ngIf="log.conditionSummary"
-                  class="mt-2 text-[11px] text-slate-500 dark:text-slate-400"
+                  *ngIf="day.hasInferredRecipients"
+                  class="mt-1 text-[10px] text-slate-400"
                 >
-                  {{ log.conditionSummary }}
+                  Ancien historique reconstitué à partir de la date d’anniversaire et du site.
                 </p>
               </article>
             </div>

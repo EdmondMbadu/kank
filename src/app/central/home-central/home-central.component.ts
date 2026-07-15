@@ -64,6 +64,13 @@ type BirthdayTomorrowGroup = {
   excludedNoPhone: number;
 };
 
+type BulkMessageRecipientEntry = {
+  name: string;
+  locationName?: string | null;
+  status?: 'sent' | 'failed';
+  inferred?: boolean;
+};
+
 type TrophyMissingGroup = {
   key: string;
   locationName: string;
@@ -79,6 +86,7 @@ type BulkMessageLogDocument = {
   succeeded: number;
   failed: number;
   locationTotals?: Record<string, number>;
+  recipientEntries?: BulkMessageRecipientEntry[];
   template?: string;
   messagePreview?: string;
   conditionSummary?: string;
@@ -90,13 +98,18 @@ type BulkMessageLog = BulkMessageLogDocument & {
   id: string;
   sentAtDate: Date;
   locationEntries: { name: string; count: number }[];
+  resolvedRecipientEntries: BulkMessageRecipientEntry[];
   typeLabel: string;
 };
 
-type BirthdayHistoryMessageSummary = {
-  text: string;
-  count: number;
+type BirthdayHistoryDaySummary = {
+  dateKey: string;
+  date: Date;
+  total: number;
   succeeded: number;
+  failed: number;
+  recipients: BulkMessageRecipientEntry[];
+  hasInferredRecipients: boolean;
 };
 
 type ScheduledBulkStatus =
@@ -3019,6 +3032,18 @@ Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli eb
       .replace(/\s+/g, ' ');
   }
 
+  private buildRecipientLogEntries(
+    recipients: Client[],
+    failures: BulkFailure[] = []
+  ): BulkMessageRecipientEntry[] {
+    const failedClients = new Set(failures.map((failure) => failure.client));
+    return recipients.map((client) => ({
+      name: this.clientFullName(client) || 'Client',
+      locationName: client.locationName?.trim() || 'Sans localisation',
+      status: failedClients.has(client) ? 'failed' : 'sent',
+    }));
+  }
+
   private personalizeBirthdayMessage(client: Client, template: string): string {
     const fullName = this.clientFullName(client) || 'client';
     return template
@@ -3075,6 +3100,7 @@ Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli eb
         recipients,
         (client) => client.locationName
       ),
+      recipientEntries: this.buildRecipientLogEntries(recipients, failures),
       template,
       messagePreview: this.personalizeBirthdayMessage(recipients[0], template),
       conditionSummary: this.selectedBirthdayConditionSummary,
@@ -3411,6 +3437,10 @@ Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli eb
           group.recipients,
           (client) => client.locationName
         ),
+        recipientEntries: this.buildRecipientLogEntries(
+          group.recipients,
+          failures
+        ),
         template,
         messagePreview: this.personalizeBirthdayTomorrowMessage(
           group.recipients[0],
@@ -3437,6 +3467,8 @@ Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli eb
       const recipients = group.recipients.map((client) => ({
         phoneNumber: client.phoneNumber!,
         message: this.personalizeBirthdayTomorrowMessage(client, template),
+        name: this.clientFullName(client) || 'Client',
+        locationName: client.locationName?.trim() || 'Sans localisation',
       }));
 
       await this.createScheduledBulkMessage({
@@ -5126,26 +5158,155 @@ Merci pona confiance na FONDATION GERVAIS.`;
     );
   }
 
-  get birthdayHistoryMessageSummaries(): BirthdayHistoryMessageSummary[] {
-    const byMessage = new Map<string, BirthdayHistoryMessageSummary>();
+  get birthdayHistoryDaySummaries(): BirthdayHistoryDaySummary[] {
+    const byDay = new Map<
+      string,
+      BirthdayHistoryDaySummary & { recipientMap: Map<string, BulkMessageRecipientEntry> }
+    >();
+
     this.birthdayHistoryLogs.forEach((log) => {
-      const text =
-        (log.template || log.messagePreview || '').trim() ||
-        'Message non enregistré';
-      const current =
-        byMessage.get(text) ||
+      const dateKey = this.formatDateKeyForTimeZone(
+        log.sentAtDate,
+        'Africa/Kinshasa'
+      );
+      const summary =
+        byDay.get(dateKey) ||
         ({
-          text,
-          count: 0,
+          dateKey,
+          date: this.dateFromDateKey(dateKey),
+          total: 0,
           succeeded: 0,
-        } as BirthdayHistoryMessageSummary);
-      current.count += 1;
-      current.succeeded += Number(log.succeeded) || 0;
-      byMessage.set(text, current);
+          failed: 0,
+          recipients: [],
+          hasInferredRecipients: false,
+          recipientMap: new Map<string, BulkMessageRecipientEntry>(),
+        } as BirthdayHistoryDaySummary & {
+          recipientMap: Map<string, BulkMessageRecipientEntry>;
+        });
+
+      summary.total += Number(log.total) || 0;
+      summary.succeeded += Number(log.succeeded) || 0;
+      summary.failed += Number(log.failed) || 0;
+
+      this.resolveBirthdayHistoryRecipients(log).forEach((recipient) => {
+        const key = `${recipient.name.toLocaleLowerCase()}|${
+          recipient.locationName?.toLocaleLowerCase() || ''
+        }`;
+        const current = summary.recipientMap.get(key);
+        if (!current || recipient.status === 'failed') {
+          summary.recipientMap.set(key, recipient);
+        }
+        summary.hasInferredRecipients ||= recipient.inferred === true;
+      });
+
+      byDay.set(dateKey, summary);
     });
-    return Array.from(byMessage.values()).sort(
-      (a, b) => b.succeeded - a.succeeded || b.count - a.count
+
+    return Array.from(byDay.values())
+      .map(({ recipientMap, ...summary }) => ({
+        ...summary,
+        recipients: Array.from(recipientMap.values()).sort(
+          (a, b) =>
+            (a.locationName || '').localeCompare(b.locationName || '') ||
+            a.name.localeCompare(b.name)
+        ),
+      }))
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+  }
+
+  private resolveBirthdayHistoryRecipients(
+    log: BulkMessageLog
+  ): BulkMessageRecipientEntry[] {
+    if (log.resolvedRecipientEntries.length) {
+      return log.resolvedRecipientEntries;
+    }
+
+    const target = this.birthdayTargetForHistoryLog(log);
+    if (!target || !this.allClients?.length) return [];
+
+    const candidates = this.allClients
+      .filter(
+        (client) =>
+          this.hasBirthdayOnTarget(client, target) && this.hasDialablePhone(client)
+      )
+      .sort((a, b) => this.clientFullName(a).localeCompare(this.clientFullName(b)));
+    const inferred: BulkMessageRecipientEntry[] = [];
+
+    if (log.locationEntries.length) {
+      log.locationEntries.forEach((location) => {
+        candidates
+          .filter(
+            (client) =>
+              (client.locationName || 'Sans localisation').trim() === location.name
+          )
+          .slice(0, location.count)
+          .forEach((client) =>
+            inferred.push({
+              name: this.clientFullName(client) || 'Client',
+              locationName: location.name,
+              inferred: true,
+            })
+          );
+      });
+    } else {
+      candidates.slice(0, Number(log.total) || 0).forEach((client) =>
+        inferred.push({
+          name: this.clientFullName(client) || 'Client',
+          locationName: client.locationName || 'Sans localisation',
+          inferred: true,
+        })
+      );
+    }
+
+    return inferred;
+  }
+
+  private birthdayTargetForHistoryLog(
+    log: BulkMessageLog
+  ): { month: number; day: number } | null {
+    const savedDate = log.conditionSummary?.match(
+      /Anniversaire:\s*(\d{4})-(\d{2})-(\d{2})/i
     );
+    if (savedDate) {
+      return { month: Number(savedDate[2]), day: Number(savedDate[3]) };
+    }
+
+    const savedFrenchDate = log.conditionSummary?.match(
+      /Anniversaire:\s*(\d{1,2})\s+([a-zà-ÿ]+)/i
+    );
+    if (savedFrenchDate) {
+      const monthName = savedFrenchDate[2]
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase();
+      const month = [
+        'janvier',
+        'fevrier',
+        'mars',
+        'avril',
+        'mai',
+        'juin',
+        'juillet',
+        'aout',
+        'septembre',
+        'octobre',
+        'novembre',
+        'decembre',
+      ].indexOf(monthName);
+      if (month >= 0) {
+        return { month: month + 1, day: Number(savedFrenchDate[1]) };
+      }
+    }
+
+    const sentDateKey = this.formatDateKeyForTimeZone(
+      log.sentAtDate,
+      'Africa/Kinshasa'
+    );
+    const targetDate = this.dateFromDateKey(sentDateKey);
+    if (log.type === 'birthday_tomorrow') {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+    return this.createTargetFromDate(targetDate);
   }
 
   onBirthdayHistoryMonthChange(event: Event): void {
@@ -5816,7 +5977,12 @@ Merci pona confiance na FONDATION GERVAIS.`;
   private async createScheduledBulkMessage(payload: {
     type: BulkLogContext;
     scheduledForLocal: string;
-    recipients: { phoneNumber: string; message: string }[];
+    recipients: {
+      phoneNumber: string;
+      message: string;
+      name?: string;
+      locationName?: string;
+    }[];
     template: string;
     messagePreview?: string;
     locationTotals: Record<string, number>;
@@ -5860,6 +6026,16 @@ Merci pona confiance na FONDATION GERVAIS.`;
       id,
       sentAtDate,
       locationEntries: this.buildLocationEntries(safe.locationTotals),
+      resolvedRecipientEntries: Array.isArray(safe.recipientEntries)
+        ? safe.recipientEntries
+            .map((entry) => ({
+              name: String(entry?.name || '').trim(),
+              locationName:
+                String(entry?.locationName || '').trim() || 'Sans localisation',
+              status: entry?.status === 'failed' ? 'failed' as const : 'sent' as const,
+            }))
+            .filter((entry) => Boolean(entry.name))
+        : [],
       typeLabel: this.getLogTypeLabel(safe.type),
     };
   }
@@ -5929,6 +6105,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
       succeeded: number;
       failed: number;
       locationTotals: Record<string, number>;
+      recipientEntries?: BulkMessageRecipientEntry[];
       template: string;
       messagePreview?: string;
       conditionSummary?: string;
@@ -5948,6 +6125,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
           succeeded: payload.succeeded,
           failed: payload.failed,
           locationTotals: payload.locationTotals,
+          recipientEntries: payload.recipientEntries ?? [],
           template: payload.template,
           messagePreview: payload.messagePreview ?? null,
           conditionSummary: payload.conditionSummary ?? null,
