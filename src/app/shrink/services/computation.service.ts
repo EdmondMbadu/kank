@@ -502,7 +502,7 @@ export class ComputationService {
   //   return rounded;
   // }
   roundNumber(num: any) {
-    return Math.ceil(num);
+    return Math.floor(num);
   }
 
   filterClientsWithoutDebtFollowedByEmployee(
