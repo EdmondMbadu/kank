@@ -26,6 +26,7 @@ type CentralLendingBorrower = {
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { selectWinnerTeamMembers } from '../winner-team-members';
 
 @Component({
   selector: 'app-tracking-month-central',
@@ -1653,13 +1654,9 @@ export class TrackingMonthCentralComponent {
         (emp) => (emp.status ?? '').toLowerCase() === 'travaille'
       );
 
-      const manager = this.pickManager(working) ?? working[0];
-      const partner = this.pickPartner(working, manager);
-
-      const namesWorking = [
-        this.formatEmployeeName(manager),
-        this.formatEmployeeName(partner),
-      ].filter(Boolean);
+      const namesWorking = selectWinnerTeamMembers(working)
+        .map((employee) => this.formatEmployeeName(employee))
+        .filter(Boolean);
 
       const lines: string[] = [];
 
@@ -1674,24 +1671,6 @@ export class TrackingMonthCentralComponent {
       console.error('Failed to fetch employees for winning team', err);
       return [];
     }
-  }
-
-  private pickManager(employees: Employee[]): Employee | undefined {
-    return employees.find((emp) =>
-      (emp.role || '').toLowerCase().includes('manager')
-    );
-  }
-
-  private pickPartner(
-    employees: Employee[],
-    manager?: Employee
-  ): Employee | undefined {
-    return employees.find((emp) => {
-      if (manager?.uid && emp.uid) {
-        return emp.uid !== manager.uid;
-      }
-      return emp !== manager;
-    });
   }
 
   private formatEmployeeName(employee?: Employee | null): string {

@@ -9,6 +9,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { selectWinnerTeamMembers } from '../winner-team-members';
 
 type AuditPaymentPerformanceMode = 'day' | 'week' | 'month';
 type AuditPaymentPerformanceTone = 'red' | 'yellow' | 'orange' | 'green';
@@ -849,13 +850,9 @@ export class TodayCentralComponent {
         (emp) => (emp.status ?? '').toLowerCase() === 'travaille'
       );
 
-      const manager = this.pickManager(working) ?? working[0];
-      const partner = this.pickPartner(working, manager);
-
-      const namesWorking = [
-        this.formatEmployeeName(manager),
-        this.formatEmployeeName(partner),
-      ].filter(Boolean);
+      const namesWorking = selectWinnerTeamMembers(working)
+        .map((employee) => this.formatEmployeeName(employee))
+        .filter(Boolean);
 
       const lines: string[] = [];
 
@@ -870,22 +867,6 @@ export class TodayCentralComponent {
       console.error('Failed to fetch employees for winning team', err);
       return [];
     }
-  }
-  private pickManager(employees: Employee[]): Employee | undefined {
-    return employees.find((emp) =>
-      (emp.role || '').toLowerCase().includes('manager')
-    );
-  }
-  private pickPartner(
-    employees: Employee[],
-    manager?: Employee
-  ): Employee | undefined {
-    return employees.find((emp) => {
-      if (manager?.uid && emp.uid) {
-        return emp.uid !== manager.uid;
-      }
-      return emp !== manager;
-    });
   }
   private formatEmployeeName(employee?: Employee | null): string {
     if (!employee) {
