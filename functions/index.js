@@ -36,7 +36,9 @@ exports.recoverClientPhotoUpload = functions.https.onCall(async (data, context) 
 
   const path = String((data && data.path) || "").trim();
   const allowedPath =
-    path.startsWith("clients-home/") || path.startsWith("clients-avatar/");
+    path.startsWith("clients-home/") ||
+    path.startsWith("clients-avatar/") ||
+    path.startsWith(`attendance_proofs/${context.auth.uid}/`);
 
   if (!allowedPath || path.length > 1024 || path.endsWith("/")) {
     throw new functions.https.HttpsError(
@@ -117,7 +119,13 @@ exports.uploadClientPhotoChunkFallback = functions
       const chunkIndex = Number(payload.chunkIndex);
       const totalChunks = Number(payload.totalChunks);
       const allowedPath =
-        path.startsWith("clients-home/") || path.startsWith("clients-avatar/");
+        path.startsWith("clients-home/") ||
+        path.startsWith("clients-avatar/") ||
+        path.startsWith(`attendance_proofs/${context.auth.uid}/`);
+      const allowedContentType =
+        contentType.startsWith("image/") ||
+        (path.startsWith(`attendance_proofs/${context.auth.uid}/`) &&
+          contentType.startsWith("video/"));
 
       if (!allowedPath || path.length > 1024 || path.endsWith("/")) {
         throw new functions.https.HttpsError(
@@ -125,7 +133,10 @@ exports.uploadClientPhotoChunkFallback = functions
             "A valid client photo path is required.",
         );
       }
-      if (!/^image\/[a-z0-9.+-]+$/i.test(contentType)) {
+      if (
+        !allowedContentType ||
+        !/^(image|video)\/[a-z0-9.+-]+$/i.test(contentType)
+      ) {
         throw new functions.https.HttpsError(
             "invalid-argument",
             "A valid image content type is required.",

@@ -26,7 +26,9 @@ import {
   MonthlyPaymentSnapshot,
 } from '../models/management';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { Router } from '@angular/router';
+import { recoverOrRetryClientPhotoUpload } from '../utils/client-photo-recovery.util';
 import firebase from 'firebase/compat/app'; // ① NEW
 import 'firebase/compat/firestore'; // ②
 
@@ -2796,17 +2798,36 @@ export class DataService {
     userId: string,
     dateISO: string,
     uploaderId: string,
-    dateLabel: string
+    dateLabel: string,
+    functions?: AngularFireFunctions
   ): Promise<AttendanceAttachment> {
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
     const path = `attendance_proofs/${userId}/${employeeId}/${dateISO}/${Date.now()}.${ext}`;
+    let url = '';
 
-    await this.storage.upload(path, file, {
-      contentType: file.type || undefined,
-      customMetadata: { userId, employeeId, dateISO, dateLabel, uploaderId },
-    });
+    try {
+      const uploadTask = await this.storage.upload(path, file, {
+        contentType: file.type || undefined,
+        customMetadata: { userId, employeeId, dateISO, dateLabel, uploaderId },
+      });
+      url = await uploadTask.ref.getDownloadURL();
+    } catch (error) {
+      if (!functions) {
+        throw error;
+      }
 
-    const url = await firstValueFrom(this.storage.ref(path).getDownloadURL());
+      const recovered = await recoverOrRetryClientPhotoUpload(
+        functions,
+        this.storage,
+        error,
+        path,
+        file
+      );
+      if (!recovered) {
+        throw error;
+      }
+      url = recovered.downloadURL;
+    }
 
     return {
       url,

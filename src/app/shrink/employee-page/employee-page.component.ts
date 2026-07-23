@@ -6777,7 +6777,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           this.auth.currentUser.uid,
           dateISO,
           this.auth.currentUser?.uid || 'unknown',
-          label
+          label,
+          this.fns
         );
 
         // persist takenAt + source with the attachment document
@@ -6841,6 +6842,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       console.error(e);
       alert("Une erreur s'est produite lors de l'attendance, Réessayez");
     } finally {
+      employee._uploading = false;
       this.savingAttendance = false;
     }
   }
