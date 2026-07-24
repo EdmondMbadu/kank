@@ -117,6 +117,7 @@ export class PendingClient {
   clientId?: string;
   clientProfilePicture?: string;
   pendingId?: string;
+  creditScore?: string;
   dateOfRequest?: string;
   requestDate?: string;
   requestedAt?: string;

@@ -2759,6 +2759,9 @@ Merci pona confiance na FONDATION GERVAIS`;
                 clientPhoneNumber: phoneNumber,
                 clientId: context.params.clientId,
                 clientProfilePicture: afterData.profilePicture.downloadURL || "",
+                creditScore: afterData.creditScore || "50",
+                dateOfRequest: afterData.dateOfRequest || "",
+                requestDate: afterData.requestDate || "",
               }),
             });
 

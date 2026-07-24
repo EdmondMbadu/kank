@@ -4,10 +4,15 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Client } from 'src/app/models/client';
-import { Audit } from 'src/app/models/management';
+import { Audit, PendingClient } from 'src/app/models/management';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
+import {
+  AuditVerificationTiming,
+  auditVerificationSortValue,
+  getAuditVerificationTiming,
+} from 'src/app/utils/audit-verification.util';
 
 interface QuizQuestion {
   question: string;
@@ -30,8 +35,8 @@ export class QuestionsComponent implements OnInit, OnDestroy {
   audits: Audit[] = [];
   url: string = '';
   auditInfo: any;
-  auditPlaceholderImage = 'assets/audit-placeholder.png';
-  clientPlaceholderImage = 'assets/client-placeholder.png';
+  auditPlaceholderImage = 'assets/img/audit.png';
+  clientPlaceholderImage = 'assets/img/user.png';
 
   // STATE for editing
   editAuditId: string | null = null; // which auditor is being edited
@@ -306,91 +311,170 @@ export class QuestionsComponent implements OnInit, OnDestroy {
     this.clientSubs = [];
   }
 
-  pendingClientDaysPassed(pc: any): number | null {
-    const start = this.pendingClientStartDate(pc);
-    if (!start) return null;
-
-    const today = new Date();
-    const todayStart = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    const startDay = new Date(
-      start.getFullYear(),
-      start.getMonth(),
-      start.getDate()
-    );
-    const msPerDay = 24 * 60 * 60 * 1000;
-    const diff = Math.floor(
-      (todayStart.getTime() - startDay.getTime()) / msPerDay
-    );
-    return diff < 0 ? null : diff;
+  pendingClientsForAudit(audit: Audit): PendingClient[] {
+    return [...(audit.pendingClients || [])].sort((left, right) => {
+      const leftValue = auditVerificationSortValue(
+        this.pendingClientTiming(left)
+      );
+      const rightValue = auditVerificationSortValue(
+        this.pendingClientTiming(right)
+      );
+      return leftValue - rightValue;
+    });
   }
 
-  pendingClientWaitLabel(pc: any): string {
-    const days = this.pendingClientDaysPassed(pc);
-    if (days === null) return 'Date demande manquante';
-    if (days <= 0) return "Demandé aujourd'hui";
-    return days === 1
-      ? '1 jour depuis demande'
-      : `${days} jours depuis demande`;
+  pendingClientUrgentCount(audit: Audit): number {
+    return (audit.pendingClients || []).filter((client) => {
+      const status = this.pendingClientTiming(client).status;
+      return status === 'overdue' || status === 'today';
+    }).length;
   }
 
-  pendingClientUrgencyTitle(pc: any): string {
-    const days = this.pendingClientDaysPassed(pc);
-    if (days === null) {
-      return "Date de demande introuvable. Vérifiez le dossier client avant de prioriser.";
+  pendingClientTierLabel(pc: PendingClient): string {
+    const score = this.pendingClientCreditScore(pc);
+    if (score === null) return 'Score inconnu';
+    if (score >= 70) return '🏆 Meilleur client';
+    if (score >= 50) return `Score ${score} · 3 jours ouvrables`;
+    return `Score ${score} · Semaine prochaine`;
+  }
+
+  pendingClientTierClasses(pc: PendingClient): string {
+    const score = this.pendingClientCreditScore(pc);
+    if (score === null) {
+      return 'border-slate-200 bg-slate-50 text-slate-600';
     }
-    if (days >= 2) {
-      return `${days} jours sans vérification. Plus l'attente avance, plus le client risque d'être frustré.`;
+    if (score >= 70) {
+      return 'border-amber-200 bg-amber-50 text-amber-800';
     }
-    if (days === 1) {
-      return "1 jour est déjà passé. À traiter avant que l'attente devienne frustrante.";
+    if (score >= 50) {
+      return 'border-blue-200 bg-blue-50 text-blue-700';
     }
-    return "Nouveau dossier à vérifier aujourd'hui.";
+    return 'border-orange-200 bg-orange-50 text-orange-700';
   }
 
-  isPendingClientDelayed(pc: any): boolean {
-    const days = this.pendingClientDaysPassed(pc);
-    return days !== null && days >= 2;
+  pendingClientUrgencyLabel(pc: PendingClient): string {
+    const timing = this.pendingClientTiming(pc);
+
+    switch (timing.status) {
+      case 'overdue':
+        return 'En retard';
+      case 'today':
+        return "À vérifier aujourd'hui";
+      case 'next':
+        return timing.isCalendarTomorrow
+          ? 'À vérifier demain'
+          : `À vérifier ${this.formatAuditWeekday(timing.deadline!)}`;
+      case 'future':
+        return `À vérifier avant ${this.formatAuditShortDate(
+          timing.deadline!
+        )}`;
+      default:
+        return 'Date manquante';
+    }
   }
 
-  isPendingClientOneDay(pc: any): boolean {
-    return this.pendingClientDaysPassed(pc) === 1;
+  pendingClientUrgencyClasses(pc: PendingClient): string {
+    switch (this.pendingClientTiming(pc).status) {
+      case 'overdue':
+        return 'border-red-300 bg-red-700 text-white';
+      case 'today':
+        return 'border-red-200 bg-red-50 text-red-700';
+      case 'next':
+        return 'border-amber-200 bg-amber-50 text-amber-800';
+      case 'future':
+        return 'border-slate-200 bg-slate-50 text-slate-600';
+      default:
+        return 'border-slate-200 bg-white text-slate-500';
+    }
   }
 
-  isPendingClientNewToday(pc: any): boolean {
-    return this.pendingClientDaysPassed(pc) === 0;
+  pendingClientUrgencyTitle(pc: PendingClient): string {
+    const timing = this.pendingClientTiming(pc);
+    if (!timing.deadline) {
+      return 'Date de remise introuvable. Vérifiez le dossier client.';
+    }
+    return `Vérification attendue au plus tard le ${this.formatAuditLongDate(
+      timing.deadline
+    )}.`;
   }
 
-  isPendingClientDateMissing(pc: any): boolean {
-    return this.pendingClientDaysPassed(pc) === null;
+  pendingClientRequestedDateLabel(pc: PendingClient): string {
+    const requestedDate = this.pendingClientRequestedDate(pc);
+    return requestedDate
+      ? this.formatAuditLongDate(requestedDate)
+      : 'Non trouvée';
   }
 
-  private pendingClientStartDate(pc: any): Date | null {
-    const matchedClient =
-      (pc?.__matchedClient as Client | undefined) ||
-      this.clientFromPendingIndex(pc);
+  pendingClientMoneyDateLabel(pc: PendingClient): string {
+    const moneyDate = this.pendingClientMoneyDate(pc);
+    return moneyDate ? this.formatAuditLongDate(moneyDate) : 'Non trouvée';
+  }
+
+  private pendingClientTiming(pc: PendingClient): AuditVerificationTiming {
+    return getAuditVerificationTiming(this.pendingClientMoneyDate(pc));
+  }
+
+  private pendingClientCreditScore(pc: PendingClient): number | null {
+    const matchedClient = this.pendingClientMatchedRecord(pc);
+    const score = Number(pc.creditScore ?? matchedClient?.creditScore);
+    return Number.isFinite(score) ? score : null;
+  }
+
+  private pendingClientRequestedDate(pc: PendingClient): Date | null {
+    const matchedClient = this.pendingClientMatchedRecord(pc);
     const candidates = [
-      pc?.dateOfRequest,
+      pc.dateOfRequest,
       matchedClient?.dateOfRequest,
-      pc?.requestedAt,
-      pc?.requestCreatedAt,
-      pc?.assignedAt,
-      pc?.createdAt,
-      pc?.pendingAt,
+      pc.requestedAt,
+      pc.requestCreatedAt,
+      pc.assignedAt,
+      pc.createdAt,
       matchedClient?.dateJoined,
-      pc?.requestDate,
-      matchedClient?.requestDate,
     ];
+    return this.firstPendingDate(candidates);
+  }
 
+  private pendingClientMoneyDate(pc: PendingClient): Date | null {
+    const matchedClient = this.pendingClientMatchedRecord(pc);
+    return this.firstPendingDate([pc.requestDate, matchedClient?.requestDate]);
+  }
+
+  private pendingClientMatchedRecord(pc: PendingClient): Client | undefined {
+    return (
+      ((pc as any)?.__matchedClient as Client | undefined) ||
+      this.clientFromPendingIndex(pc)
+    );
+  }
+
+  private firstPendingDate(candidates: any[]): Date | null {
     for (const candidate of candidates) {
       const parsed = this.parsePendingDate(candidate);
       if (parsed) return parsed;
     }
-
     return null;
+  }
+
+  private formatAuditLongDate(value: Date): string {
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(value);
+  }
+
+  private formatAuditShortDate(value: Date): string {
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    }).format(value);
+  }
+
+  private formatAuditWeekday(value: Date): string {
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+    }).format(value);
   }
 
   private pendingClientIndexedMatch(pc: any): number {
