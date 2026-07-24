@@ -566,6 +566,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   showInvestigationPerformanceExplanation = false;
   private investigationMonthlyPerformanceRequestId = 0;
   private weeklyTargetSub?: Subscription;
+  private weeklyDeductionTargetSub?: Subscription;
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
   performanceActiveRange: PerformanceRangeKey = '3M';
@@ -638,11 +639,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.weeklyTargetSub = this.auth.weeklyPaymentTarget$.subscribe(() => {
       this.updateWeeklyPaymentTotals();
     });
+    this.weeklyDeductionTargetSub =
+      this.auth.weeklyDeductionTarget$.subscribe(() => {
+        if (this.employee?.uid) {
+          this.ensurePaymentDraftForCurrentMonth();
+        }
+      });
   }
   ngOnDestroy(): void {
     this.employeesSub?.unsubscribe();
     this.individualReviewsSub?.unsubscribe();
     this.weeklyTargetSub?.unsubscribe();
+    this.weeklyDeductionTargetSub?.unsubscribe();
     this.auditScopedSub?.unsubscribe();
     this.auditLegacySub?.unsubscribe();
     this.allUsersSub?.unsubscribe();
@@ -2947,7 +2955,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
     this.weekObjectiveAmount = this.compute.computeWeeklyObjectiveDeductionUsd(
       totalFc,
-      this.resolveWeeklyTargetFcForDate(this.formatDateKey(startDate))
+      this.resolveWeeklyDeductionTargetFcForDate(
+        this.formatDateKey(startDate)
+      )
     );
   }
 
@@ -3420,6 +3430,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  private resolveWeeklyDeductionTargetFcForDate(dateKey: string): number {
+    const { start } = this.getWeekBounds(dateKey);
+    return this.auth.resolveWeeklyDeductionTargetForDate(
+      this.formatDateKey(start),
+      this.auth.currentUser
+    );
+  }
+
   private weekKeysForDate(dateKey: string): string[] {
     const { start, end } = this.getWeekBounds(dateKey);
     const keys: string[] = [];
@@ -3599,13 +3617,17 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       const weeklyTargetFc = this.resolveWeeklyTargetFcForDate(
         this.formatDateKey(start)
       );
+      const weeklyDeductionTargetFc =
+        this.resolveWeeklyDeductionTargetFcForDate(
+          this.formatDateKey(start)
+        );
       const totalFc = this.computeWeeklyPaymentTotalForLocation(
         this.formatDateKey(start)
       );
-      if (totalFc >= weeklyTargetFc) continue;
+      if (totalFc >= weeklyDeductionTargetFc) continue;
       const amount = this.compute.computeWeeklyObjectiveDeductionUsd(
         totalFc,
-        weeklyTargetFc
+        weeklyDeductionTargetFc
       );
       if (amount <= 0) continue;
 
@@ -3615,6 +3637,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         amount,
         weeklyTotalFc: totalFc,
         weeklyTargetFc,
+        weeklyDeductionTargetFc,
       });
     }
 
@@ -3661,18 +3684,29 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const dateKey = this.formatDateKey(startDate);
     const computedWeeklyTotalFc = this.computeWeeklyPaymentTotalForLocation(dateKey);
     const computedWeeklyTargetFc = this.resolveWeeklyTargetFcForDate(dateKey);
+    const computedWeeklyDeductionTargetFc =
+      this.resolveWeeklyDeductionTargetFcForDate(dateKey);
     const weeklyTotalFc = Number.isFinite(Number(d.weeklyTotalFc))
       ? Number(d.weeklyTotalFc)
       : computedWeeklyTotalFc;
     const weeklyTargetFc = Number.isFinite(Number(d.weeklyTargetFc)) && Number(d.weeklyTargetFc) > 0
       ? Number(d.weeklyTargetFc)
       : computedWeeklyTargetFc;
+    const weeklyDeductionTargetFc =
+      Number.isFinite(Number(d.weeklyDeductionTargetFc)) &&
+      Number(d.weeklyDeductionTargetFc) > 0
+        ? Number(d.weeklyDeductionTargetFc)
+        : Number.isFinite(Number(d.weeklyTargetFc)) &&
+          Number(d.weeklyTargetFc) > 0
+        ? Number(d.weeklyTargetFc)
+        : computedWeeklyDeductionTargetFc;
     return {
       start: d.start,
       end: this.formatIsoDate(endDate),
       amount: Number(d.amount) || 0,
       weeklyTotalFc,
       weeklyTargetFc,
+      weeklyDeductionTargetFc,
     };
   }
 
@@ -6016,6 +6050,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         amount: Number(d.amount) || 0,
         weeklyTotalFc: Number(d.weeklyTotalFc) || 0,
         weeklyTargetFc: Number(d.weeklyTargetFc) || 0,
+        weeklyDeductionTargetFc:
+          Number(d.weeklyDeductionTargetFc) || Number(d.weeklyTargetFc) || 0,
       }));
     this.employee.totalPayments = this.computeTotalPayment().toString();
   }
@@ -6043,6 +6079,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             amount: Number(d.amount) || 0,
             weeklyTotalFc: Number(d.weeklyTotalFc) || 0,
             weeklyTargetFc: Number(d.weeklyTargetFc) || 0,
+            weeklyDeductionTargetFc:
+              Number(d.weeklyDeductionTargetFc) ||
+              Number(d.weeklyTargetFc) ||
+              0,
           })),
           manualWithdrawal: Math.max(
             Number(this.paymentManualWithdrawal) || 0,

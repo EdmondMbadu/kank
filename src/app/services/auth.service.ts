@@ -22,7 +22,12 @@ import { ComputationService } from '../shrink/services/computation.service';
 import { Employee } from '../models/employee';
 import { Card } from '../models/card';
 import { Audit, Management } from '../models/management';
+import { WeeklyDeductionTargetVersion } from '../models/weekly-deduction-target';
 import { WeeklyPaymentTargetPeriod } from '../models/weekly-payment-target';
+import {
+  normalizeWeeklyDeductionTargetVersions,
+  resolveWeeklyDeductionTargetForDate as resolveWeeklyDeductionTargetForDateUtil,
+} from '../utils/weekly-deduction-target.util';
 import {
   normalizeWeeklyPaymentTargetPeriods,
   resolveWeeklyPaymentTargetForDate as resolveWeeklyPaymentTargetForDateUtil,
@@ -118,6 +123,19 @@ export class AuthService {
   >(this.weeklyPaymentTargetPeriodsState);
   weeklyPaymentTargetPeriods$ =
     this.weeklyPaymentTargetPeriodsSubject.asObservable();
+  private weeklyDeductionTargetVersionsState: WeeklyDeductionTargetVersion[] =
+    [];
+  private weeklyDeductionTargetVersionsSubject = new BehaviorSubject<
+    WeeklyDeductionTargetVersion[]
+  >(this.weeklyDeductionTargetVersionsState);
+  weeklyDeductionTargetVersions$ =
+    this.weeklyDeductionTargetVersionsSubject.asObservable();
+  private weeklyDeductionTargetState = this.defaultWeeklyPaymentTargetFc;
+  private weeklyDeductionTargetSubject = new BehaviorSubject<number>(
+    this.weeklyDeductionTargetState
+  );
+  weeklyDeductionTarget$ =
+    this.weeklyDeductionTargetSubject.asObservable();
   private weeklyPaymentProjectionState: WeeklyPaymentProjection = {
     ...this.defaultWeeklyPaymentProjection,
   };
@@ -1595,6 +1613,14 @@ export class AuthService {
     return this.weeklyPaymentTargetPeriodsState;
   }
 
+  public get weeklyDeductionTargetVersions(): WeeklyDeductionTargetVersion[] {
+    return this.weeklyDeductionTargetVersionsState;
+  }
+
+  public get weeklyDeductionTargetFc(): number {
+    return this.weeklyDeductionTargetState;
+  }
+
   public get teamWeeklyBonusThresholdFc(): number {
     return this.teamWeeklyBonusConfigState.thresholdFc;
   }
@@ -1614,6 +1640,12 @@ export class AuthService {
     value: any
   ): WeeklyPaymentTargetPeriod[] {
     return normalizeWeeklyPaymentTargetPeriods(value);
+  }
+
+  private normalizeWeeklyDeductionTargetVersions(
+    value: any
+  ): WeeklyDeductionTargetVersion[] {
+    return normalizeWeeklyDeductionTargetVersions(value);
   }
 
   private normalizeTeamWeeklyBonusThreshold(value: any): number {
@@ -1679,6 +1711,17 @@ export class AuthService {
       defaultTargetFc: this.defaultWeeklyPaymentTargetFc,
     });
     this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+    this.syncCurrentWeeklyDeductionTargetState();
+  }
+
+  private syncCurrentWeeklyDeductionTargetState(): void {
+    this.weeklyDeductionTargetState =
+      resolveWeeklyDeductionTargetForDateUtil({
+        dateInput: new Date(),
+        versions: this.weeklyDeductionTargetVersionsState,
+        fallbackTargetFc: this.weeklyPaymentTargetState,
+      });
+    this.weeklyDeductionTargetSubject.next(this.weeklyDeductionTargetState);
   }
 
   public resolveWeeklyPaymentTargetForDate(
@@ -1692,6 +1735,21 @@ export class AuthService {
       globalPeriods: this.weeklyPaymentTargetPeriodsState,
       globalFallbackTargetFc: this.weeklyPaymentTargetBaseState,
       defaultTargetFc: this.defaultWeeklyPaymentTargetFc,
+    });
+  }
+
+  public resolveWeeklyDeductionTargetForDate(
+    dateInput: string | Date | null | undefined,
+    user?: Partial<User> | null
+  ): number {
+    const visibleTargetFc = this.resolveWeeklyPaymentTargetForDate(
+      dateInput,
+      user
+    );
+    return resolveWeeklyDeductionTargetForDateUtil({
+      dateInput,
+      versions: this.weeklyDeductionTargetVersionsState,
+      fallbackTargetFc: visibleTargetFc,
     });
   }
 
@@ -1802,6 +1860,10 @@ export class AuthService {
           this.weeklyPaymentTargetPeriodsSubject.next(
             this.weeklyPaymentTargetPeriodsState
           );
+          this.weeklyDeductionTargetVersionsState = [];
+          this.weeklyDeductionTargetVersionsSubject.next(
+            this.weeklyDeductionTargetVersionsState
+          );
           this.syncCurrentGlobalWeeklyPaymentTargetState();
           this.teamWeeklyBonusConfigState = {
             ...this.defaultTeamWeeklyBonusConfig,
@@ -1845,6 +1907,13 @@ export class AuthService {
           );
         this.weeklyPaymentTargetPeriodsSubject.next(
           this.weeklyPaymentTargetPeriodsState
+        );
+        this.weeklyDeductionTargetVersionsState =
+          this.normalizeWeeklyDeductionTargetVersions(
+            data.weeklyDeductionTargetVersions
+          );
+        this.weeklyDeductionTargetVersionsSubject.next(
+          this.weeklyDeductionTargetVersionsState
         );
         this.syncCurrentGlobalWeeklyPaymentTargetState();
         this.teamWeeklyBonusConfigState = {
@@ -1954,6 +2023,29 @@ export class AuthService {
           this.weeklyPaymentTargetPeriodsState
         );
         this.syncCurrentGlobalWeeklyPaymentTargetState();
+      });
+  }
+
+  updateWeeklyDeductionTargetVersionsGlobal(
+    versions: WeeklyDeductionTargetVersion[]
+  ): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const normalizedVersions =
+      this.normalizeWeeklyDeductionTargetVersions(versions);
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef
+      .set(
+        { weeklyDeductionTargetVersions: normalizedVersions },
+        { merge: true }
+      )
+      .then(() => {
+        this.weeklyDeductionTargetVersionsState = normalizedVersions;
+        this.weeklyDeductionTargetVersionsSubject.next(
+          this.weeklyDeductionTargetVersionsState
+        );
+        this.syncCurrentWeeklyDeductionTargetState();
       });
   }
 

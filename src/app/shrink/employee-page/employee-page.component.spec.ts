@@ -12,6 +12,7 @@ describe('EmployeePageComponent', () => {
       },
       weeklyPaymentTargetFc: 600000,
       weeklyPaymentTarget$: of(600000),
+      weeklyDeductionTarget$: of(600000),
       ...authOverrides,
     };
 
@@ -26,6 +27,10 @@ describe('EmployeePageComponent', () => {
           globalFallbackTargetFc: auth.weeklyPaymentTargetFc,
           defaultTargetFc: 600000,
         }));
+    auth.resolveWeeklyDeductionTargetForDate =
+      auth.resolveWeeklyDeductionTargetForDate ||
+      ((dateKey: string, user: any) =>
+        auth.resolveWeeklyPaymentTargetForDate(dateKey, user));
 
     const time = {
       yearsList: [2026],
@@ -131,7 +136,13 @@ describe('EmployeePageComponent', () => {
     );
 
     expect(deductions).toEqual([
-      { start: '2026-03-02', end: '2026-03-08', amount: 5 },
+      jasmine.objectContaining({
+        start: '2026-03-02',
+        end: '2026-03-08',
+        amount: 5,
+        weeklyTargetFc: 600000,
+        weeklyDeductionTargetFc: 600000,
+      }),
     ]);
   });
 
@@ -188,6 +199,15 @@ describe('EmployeePageComponent', () => {
           globalFallbackTargetFc: auth.weeklyPaymentTargetFc,
           defaultTargetFc: 600000,
         }),
+      resolveWeeklyDeductionTargetForDate: (dateKey: string, user: any) =>
+        resolveWeeklyPaymentTargetForDate({
+          dateInput: dateKey,
+          userPeriods: user?.weeklyPaymentTargetPeriods,
+          userFallbackTargetFc: user?.weeklyPaymentTargetFc,
+          globalPeriods: auth.weeklyPaymentTargetPeriods,
+          globalFallbackTargetFc: auth.weeklyPaymentTargetFc,
+          defaultTargetFc: 600000,
+        }),
     } as any;
 
     const time = {
@@ -227,6 +247,41 @@ describe('EmployeePageComponent', () => {
 
     expect(deductions).toEqual([]);
     expect(compute.computeWeeklyObjectiveDeductionUsd).not.toHaveBeenCalled();
+  });
+
+  it('stores both targets and calculates payroll from the internal threshold', () => {
+    const component = createComponent({
+      currentUser: {
+        dailyReimbursement: {
+          '3-2-2026': 700000,
+        },
+        weeklyPaymentTargetFc: 1200000,
+      },
+      weeklyPaymentTargetFc: 1200000,
+      resolveWeeklyDeductionTargetForDate: () => 900000,
+    });
+    const deductionSpy = spyOn(
+      component.compute,
+      'computeWeeklyObjectiveDeductionUsd'
+    ).and.returnValue(2);
+
+    const deductions = (component as any).computeWeeklyShortfallDeductions(
+      3,
+      2026
+    );
+    const week = deductions.find(
+      (item: any) => item.end === '2026-03-08'
+    );
+
+    expect(week).toEqual(
+      jasmine.objectContaining({
+        weeklyTotalFc: 700000,
+        weeklyTargetFc: 1200000,
+        weeklyDeductionTargetFc: 900000,
+        amount: 2,
+      })
+    );
+    expect(deductionSpy).toHaveBeenCalledWith(700000, 900000);
   });
 
   it('computes the foundation balance from completed months and employee-of-the-month trophies', () => {

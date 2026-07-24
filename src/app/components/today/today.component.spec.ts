@@ -18,6 +18,7 @@ describe('TodayComponent', () => {
       weeklyPaymentTargetFc: 900000,
       weeklyPaymentTargetPeriods: [],
       weeklyPaymentTarget$: of(900000),
+      weeklyDeductionTarget$: of(900000),
       weeklyPaymentProjection$: of({
         projectedTargetFc: null,
         effectiveDateIso: '',
@@ -50,6 +51,11 @@ describe('TodayComponent', () => {
             defaultTargetFc: 600000,
           })
         );
+
+    auth.resolveWeeklyDeductionTargetForDate =
+      auth.resolveWeeklyDeductionTargetForDate ||
+      ((dateKey: string, user: any) =>
+        auth.resolveWeeklyPaymentTargetForDate(dateKey, user));
 
     const time = {
       todaysDateMonthDayYear: () => '4-1-2026',
@@ -233,6 +239,35 @@ describe('TodayComponent', () => {
     expect(component.weeklyShortfalls.length).toBeGreaterThan(0);
     expect(component.weeklyShortfalls[0].label).toContain('30 Mars - 5 Avril 2026');
     expect(component.weeklyShortfalls[0].targetFc).toBe(600000);
+    expect(component.weeklyShortfalls[0].deductionTargetFc).toBe(600000);
+  });
+
+  it('shows the visible target while calculating the deduction from the payroll threshold', () => {
+    const computeDeduction = jasmine
+      .createSpy('computeWeeklyObjectiveDeductionUsd')
+      .and.returnValue(2);
+    const { component } = createComponent({
+      currentUser: {
+        uid: 'user-1',
+        dailyReimbursement: {
+          '4-6-2026': 700000,
+        },
+        weeklyPaymentTargetPeriods: [],
+      },
+      weeklyPaymentTargetFc: 1200000,
+      resolveWeeklyDeductionTargetForDate: () => 900000,
+    });
+    component.compute.computeWeeklyObjectiveDeductionUsd = computeDeduction;
+    component.selectedShortfallMonth = '2026-04';
+
+    (component as any).computeMonthlyWeeklyShortfalls();
+
+    const row = component.weeklyShortfalls.find(
+      (item) => item.label.includes('6-12 Avril 2026')
+    );
+    expect(row?.targetFc).toBe(1200000);
+    expect(row?.deductionTargetFc).toBe(900000);
+    expect(computeDeduction).toHaveBeenCalledWith(700000, 900000);
   });
 
   it('includes entree du jour in admin editable daily cards', () => {

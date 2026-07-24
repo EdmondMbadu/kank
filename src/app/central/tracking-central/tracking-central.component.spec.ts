@@ -8,6 +8,8 @@ describe('TrackingCentralComponent', () => {
       weeklyPaymentTargetPeriods: [],
       weeklyPaymentTarget$: { subscribe: () => {} },
       weeklyPaymentTargetPeriods$: { subscribe: () => {} },
+      weeklyDeductionTarget$: { subscribe: () => {} },
+      weeklyDeductionTargetVersions$: { subscribe: () => {} },
       teamWeeklyBonusConfig$: { subscribe: () => {} },
       profitabilityConfig$: { subscribe: () => {} },
       weeklyPaymentProjection$: { subscribe: () => {} },
@@ -17,6 +19,9 @@ describe('TrackingCentralComponent', () => {
         .and.returnValue(Promise.resolve()),
       updateWeeklyPaymentTargetGlobal: jasmine
         .createSpy('updateWeeklyPaymentTargetGlobal')
+        .and.returnValue(Promise.resolve()),
+      updateWeeklyDeductionTargetVersionsGlobal: jasmine
+        .createSpy('updateWeeklyDeductionTargetVersionsGlobal')
         .and.returnValue(Promise.resolve()),
       clearWeeklyPaymentTargetOverridesForUsers: jasmine
         .createSpy('clearWeeklyPaymentTargetOverridesForUsers')
@@ -167,6 +172,7 @@ describe('TrackingCentralComponent', () => {
   it('previews one uniform payroll deduction per missing tranche down to zero', () => {
     const { component } = createComponent();
     component.weeklyPaymentTargetFc = 1200000;
+    component.weeklyDeductionTargetFc = 900000;
     component.weeklyObjectiveDeductionConfig = {
       bandFc: 100000,
       penaltyPerBandUsd: 1,
@@ -176,21 +182,60 @@ describe('TrackingCentralComponent', () => {
 
     expect(rows[0]).toEqual(
       jasmine.objectContaining({
-        label: '1 200 000 FC ou plus',
+        label: '900 000 FC ou plus',
         deductionUsd: 0,
       })
     );
     expect(rows[1]).toEqual(
       jasmine.objectContaining({
-        label: '1 100 000 - 1 199 999 FC',
+        label: '800 000 - 899 999 FC',
         deductionUsd: 1,
       })
     );
     expect(rows[rows.length - 1]).toEqual(
       jasmine.objectContaining({
         label: '0 - 99 999 FC',
-        deductionUsd: 12,
+        deductionUsd: 9,
       })
+    );
+  });
+
+  it('saves a monday-effective payroll threshold without changing the visible target', async () => {
+    const updateSpy = jasmine
+      .createSpy('updateWeeklyDeductionTargetVersionsGlobal')
+      .and.returnValue(Promise.resolve());
+    const { component } = createComponent({
+      updateWeeklyDeductionTargetVersionsGlobal: updateSpy,
+    });
+    component.weeklyPaymentTargetFc = 1200000;
+    component.weeklyDeductionTargetVersions = [];
+    component.weeklyDeductionTargetAmountInput = '900000';
+    component.weeklyDeductionTargetEffectiveDateInput = '2026-07-20';
+
+    component.saveWeeklyDeductionTargetVersionGlobal();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(updateSpy).toHaveBeenCalledWith([
+      { effectiveDateIso: '2026-07-20', targetFc: 900000 },
+    ]);
+    expect(component.weeklyPaymentTargetFc).toBe(1200000);
+    expect(component.weeklyDeductionTargetSaved).toBeTrue();
+  });
+
+  it('rejects a payroll threshold effective date that is not monday', () => {
+    const { component, auth } = createComponent();
+    spyOn(window, 'alert');
+    component.weeklyDeductionTargetAmountInput = '900000';
+    component.weeklyDeductionTargetEffectiveDateInput = '2026-07-23';
+
+    component.saveWeeklyDeductionTargetVersionGlobal();
+
+    expect(
+      auth.updateWeeklyDeductionTargetVersionsGlobal
+    ).not.toHaveBeenCalled();
+    expect(window.alert).toHaveBeenCalledWith(
+      'La date effective doit être un lundi.'
     );
   });
 });

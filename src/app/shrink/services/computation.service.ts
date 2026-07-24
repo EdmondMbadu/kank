@@ -1915,6 +1915,7 @@ export class ComputationService {
         amount: number;
         weeklyTotalFc?: number;
         weeklyTargetFc?: number;
+        weeklyDeductionTargetFc?: number;
       }>;
       manualWithdrawal?: number;
       manualWithdrawalReason?: string;
@@ -2038,6 +2039,7 @@ export class ComputationService {
             amount: number;
             weeklyTotalFc?: number;
             weeklyTargetFc?: number;
+            weeklyDeductionTargetFc?: number;
           }>)
         : Array.isArray(employee.paymentObjectiveWeekDeductions)
         ? employee.paymentObjectiveWeekDeductions
@@ -2114,6 +2116,7 @@ export class ComputationService {
             amount: Math.max(Number(w.amount) || 0, 0),
             weeklyTotalFc: Number(w.weeklyTotalFc),
             weeklyTargetFc: Number(w.weeklyTargetFc),
+            weeklyDeductionTargetFc: Number(w.weeklyDeductionTargetFc),
           }))
           .filter((w) => w.range);
 

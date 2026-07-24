@@ -9,7 +9,13 @@ import {
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { coerceToNumber } from 'src/app/utils/number-utils';
+import {
+  WeeklyDeductionTargetVersion,
+} from 'src/app/models/weekly-deduction-target';
 import { WeeklyPaymentTargetPeriod } from 'src/app/models/weekly-payment-target';
+import {
+  normalizeWeeklyDeductionTargetVersions,
+} from 'src/app/utils/weekly-deduction-target.util';
 import {
   hasOverlappingWeeklyPaymentTargetPeriods,
   normalizeWeeklyPaymentTargetPeriods,
@@ -52,6 +58,12 @@ export class TrackingCentralComponent {
   weeklyPaymentTargetPeriodAmountInput = '';
   weeklyPaymentTargetPeriodsSaving = false;
   weeklyPaymentTargetPeriodsSaved = false;
+  weeklyDeductionTargetFc = 600000;
+  weeklyDeductionTargetVersions: WeeklyDeductionTargetVersion[] = [];
+  weeklyDeductionTargetAmountInput = '';
+  weeklyDeductionTargetEffectiveDateInput = '';
+  weeklyDeductionTargetSaving = false;
+  weeklyDeductionTargetSaved = false;
   teamWeeklyBonusThresholdFc = 1500000;
   teamWeeklyBonusThresholdInput = '';
   teamWeeklyBonusThresholdSaving = false;
@@ -99,6 +111,12 @@ export class TrackingCentralComponent {
     });
     this.auth.weeklyPaymentTargetPeriods$.subscribe((periods) => {
       this.weeklyPaymentTargetPeriods = periods;
+    });
+    this.auth.weeklyDeductionTarget$.subscribe((value) => {
+      this.weeklyDeductionTargetFc = value;
+    });
+    this.auth.weeklyDeductionTargetVersions$.subscribe((versions) => {
+      this.weeklyDeductionTargetVersions = versions;
     });
     this.auth.teamWeeklyBonusConfig$.subscribe((config) => {
       this.teamWeeklyBonusThresholdFc = config.thresholdFc;
@@ -383,17 +401,113 @@ export class TrackingCentralComponent {
     return `${fmt(start)} - ${fmt(end)}`;
   }
 
+  saveWeeklyDeductionTargetVersionGlobal(): void {
+    if (!this.auth.isAdmin || this.weeklyDeductionTargetSaving) return;
+
+    const targetFc = Number(this.weeklyDeductionTargetAmountInput);
+    const effectiveDate = parseWeeklyPaymentTargetDate(
+      this.weeklyDeductionTargetEffectiveDateInput
+    );
+    if (!Number.isFinite(targetFc) || targetFc <= 0) {
+      alert('Entrez un minimum de retenue valide.');
+      return;
+    }
+    if (!effectiveDate) {
+      alert('Choisissez une date effective valide.');
+      return;
+    }
+    if (effectiveDate.getDay() !== 1) {
+      alert('La date effective doit être un lundi.');
+      return;
+    }
+
+    const effectiveDateIso = this.weeklyDeductionTargetEffectiveDateInput;
+    const nextVersions = normalizeWeeklyDeductionTargetVersions([
+      ...this.weeklyDeductionTargetVersions.filter(
+        (version) => version.effectiveDateIso !== effectiveDateIso
+      ),
+      { effectiveDateIso, targetFc },
+    ]);
+
+    this.weeklyDeductionTargetSaving = true;
+    this.weeklyDeductionTargetSaved = false;
+    this.auth
+      .updateWeeklyDeductionTargetVersionsGlobal(nextVersions)
+      .then(() => {
+        this.weeklyDeductionTargetSaved = true;
+        this.weeklyDeductionTargetAmountInput = '';
+        this.weeklyDeductionTargetEffectiveDateInput = '';
+      })
+      .catch((err) => {
+        console.error('Failed to update weekly deduction target:', err);
+        alert("Impossible d'enregistrer le minimum de retenue.");
+      })
+      .finally(() => {
+        this.weeklyDeductionTargetSaving = false;
+      });
+  }
+
+  removeWeeklyDeductionTargetVersionGlobal(
+    effectiveDateIso: string
+  ): void {
+    if (!this.auth.isAdmin || this.weeklyDeductionTargetSaving) return;
+    if (
+      !window.confirm(
+        'Supprimer cette entrée peut recalculer les semaines non finalisées. Continuer ?'
+      )
+    ) {
+      return;
+    }
+    const nextVersions = this.weeklyDeductionTargetVersions.filter(
+      (version) => version.effectiveDateIso !== effectiveDateIso
+    );
+
+    this.weeklyDeductionTargetSaving = true;
+    this.weeklyDeductionTargetSaved = false;
+    this.auth
+      .updateWeeklyDeductionTargetVersionsGlobal(nextVersions)
+      .then(() => {
+        this.weeklyDeductionTargetSaved = true;
+      })
+      .catch((err) => {
+        console.error('Failed to remove weekly deduction target:', err);
+        alert("Impossible de supprimer ce minimum de retenue.");
+      })
+      .finally(() => {
+        this.weeklyDeductionTargetSaving = false;
+      });
+  }
+
+  get weeklyDeductionTargetVersionsNewestFirst(): WeeklyDeductionTargetVersion[] {
+    return [...this.weeklyDeductionTargetVersions].reverse();
+  }
+
+  formatWeeklyDeductionTargetEffectiveDate(
+    version: WeeklyDeductionTargetVersion
+  ): string {
+    const date = parseWeeklyPaymentTargetDate(version.effectiveDateIso);
+    if (!date) return version.effectiveDateIso;
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
   get nextGlobalWeeklyMinimumPreviewLabel(): string {
     if (!this.weeklyPaymentTargetInput) {
-      return 'Saisissez un montant pour remplacer le minimum global, les périodes spécifiques et les objectifs par site.';
+      return 'Saisissez un montant pour remplacer le minimum visible global, les périodes visibles spécifiques et les objectifs visibles par site. Le minimum de retenue restera inchangé.';
     }
     const value = Number(this.weeklyPaymentTargetInput);
     if (!Number.isFinite(value) || value <= 0) {
       return 'Montant global invalide.';
     }
-    return `Enregistrer remplacera le minimum par ${this.formatFc(
+    return `Enregistrer remplacera le minimum visible par ${this.formatFc(
       value
-    )} FC et remettra les exceptions à zéro.`;
+    )} FC et remettra les exceptions visibles à zéro. Le minimum de retenue restera à ${this.formatFc(
+      this.weeklyDeductionTargetFc
+    )} FC.`;
   }
 
   get projectedWeeklyPaymentStatusLabel(): string {
@@ -402,9 +516,9 @@ export class TrackingCentralComponent {
 
   get weeklyDeductionPreviewRows(): WeeklyDeductionPreviewRow[] {
     const targetFc =
-      Number.isFinite(Number(this.weeklyPaymentTargetFc)) &&
-      Number(this.weeklyPaymentTargetFc) > 0
-        ? Number(this.weeklyPaymentTargetFc)
+      Number.isFinite(Number(this.weeklyDeductionTargetFc)) &&
+      Number(this.weeklyDeductionTargetFc) > 0
+        ? Number(this.weeklyDeductionTargetFc)
         : 600000;
     const rows: WeeklyDeductionPreviewRow[] = [
       {

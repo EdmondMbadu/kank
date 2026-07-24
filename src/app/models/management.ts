@@ -1,4 +1,5 @@
 import { Client } from './client';
+import { WeeklyDeductionTargetVersion } from './weekly-deduction-target';
 import { WeeklyPaymentTargetPeriod } from './weekly-payment-target';
 
 export class Management {
@@ -22,6 +23,7 @@ export class Management {
   notPaidNoPaymentMonthsThreshold?: number;
   weeklyPaymentTargetFc?: number;
   weeklyPaymentTargetPeriods?: WeeklyPaymentTargetPeriod[];
+  weeklyDeductionTargetVersions?: WeeklyDeductionTargetVersion[];
   teamWeeklyBonusThresholdFc?: number;
   profitabilityThresholdUsd?: number;
   projectedWeeklyPaymentTargetFc?: number;

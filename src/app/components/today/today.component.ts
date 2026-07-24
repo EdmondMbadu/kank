@@ -32,6 +32,7 @@ interface WeeklyShortfall {
   end: Date;
   label: string;
   targetFc: number;
+  deductionTargetFc: number;
   totalFc: number;
   totalUsd: number;
   deductionUsd: number;
@@ -116,6 +117,9 @@ export class TodayComponent {
     this.updateWeekPickerTotals();
     this.auth.weeklyPaymentTarget$.subscribe(() => {
       this.syncWeeklyTargetFc();
+    });
+    this.auth.weeklyDeductionTarget$.subscribe(() => {
+      this.computeMonthlyWeeklyShortfalls();
     });
     this.auth.weeklyPaymentProjection$.subscribe(
       (projection: WeeklyPaymentProjection) => {
@@ -605,6 +609,14 @@ export class TodayComponent {
     );
   }
 
+  private resolveWeeklyDeductionTargetFcForDate(dateKey: string): number {
+    const { start } = this.getWeekBounds(dateKey);
+    return this.auth.resolveWeeklyDeductionTargetForDate(
+      this.formatDateKey(start),
+      this.auth.currentUser
+    );
+  }
+
   updateWeekPickerTotals() {
     const baseIsoDate = this.weekPickerStartDate || this.requestDate;
     const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
@@ -746,17 +758,22 @@ export class TodayComponent {
         this.formatDateKey(start),
         this.auth.currentUser
       );
+      const weeklyDeductionTargetFc =
+        this.auth.resolveWeeklyDeductionTargetForDate(
+          this.formatDateKey(start),
+          this.auth.currentUser
+        );
       const totalFc = this.computeWeeklyPaymentTotal(
         this.formatDateKey(start)
       );
-      if (totalFc >= weeklyTargetFc) continue;
+      if (totalFc >= weeklyDeductionTargetFc) continue;
 
       const totalUsd = Number(
         this.compute.convertCongoleseFrancToUsDollars(totalFc.toString())
       );
       const deductionUsd = this.compute.computeWeeklyObjectiveDeductionUsd(
         totalFc,
-        weeklyTargetFc
+        weeklyDeductionTargetFc
       );
       const isComplete = today > end;
 
@@ -765,6 +782,7 @@ export class TodayComponent {
         end,
         label: this.formatWeekShortLabel(start, end),
         targetFc: weeklyTargetFc,
+        deductionTargetFc: weeklyDeductionTargetFc,
         totalFc,
         totalUsd: Number.isNaN(totalUsd) ? 0 : totalUsd,
         deductionUsd,
@@ -816,6 +834,8 @@ export class TodayComponent {
     const dateKey = this.time.convertDateToMonthDayYear(isoDate);
     const { start, end } = this.getWeekBounds(dateKey);
     const targetFc = this.resolveWeeklyTargetFcForDate(dateKey);
+    const deductionTargetFc =
+      this.resolveWeeklyDeductionTargetFcForDate(dateKey);
     const totalFc = this.computeWeeklyPaymentTotal(dateKey);
     const totalUsd = Number(
       this.compute.convertCongoleseFrancToUsDollars(totalFc.toString())
@@ -833,11 +853,12 @@ export class TodayComponent {
       end,
       label: this.formatWeekShortLabel(start, end),
       targetFc,
+      deductionTargetFc,
       totalFc,
       totalUsd: Number.isNaN(totalUsd) ? 0 : totalUsd,
       deductionUsd: this.compute.computeWeeklyObjectiveDeductionUsd(
         totalFc,
-        targetFc
+        deductionTargetFc
       ),
       isComplete: today > end,
     };
@@ -846,7 +867,11 @@ export class TodayComponent {
   get selectedShortfallMissingFc(): number {
     const row = this.selectedWeeklyShortfall;
     if (!row) return 0;
-    return Math.max(0, Number(row.targetFc || 0) - Number(row.totalFc || 0));
+    return Math.max(
+      0,
+      Number(row.deductionTargetFc || row.targetFc || 0) -
+        Number(row.totalFc || 0)
+    );
   }
 
   get selectedShortfallBandCount(): number {
@@ -856,7 +881,9 @@ export class TodayComponent {
 
   get selectedShortfallDeductionBands(): WeeklyShortfallDeductionBand[] {
     const row = this.selectedWeeklyShortfall;
-    const targetFc = Number(row?.targetFc || this.weeklyTargetFc || 0);
+    const targetFc = Number(
+      row?.deductionTargetFc || row?.targetFc || this.weeklyTargetFc || 0
+    );
     const totalFc = Math.max(0, Number(row?.totalFc || 0));
     const bandFc = Number(this.weeklyObjectiveDeductionConfig.bandFc) || 100000;
     const bands: WeeklyShortfallDeductionBand[] = [];

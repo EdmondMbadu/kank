@@ -154,7 +154,10 @@ export interface WeeklyObjectiveDeduction {
   end: string; // YYYY-MM-DD
   amount: number; // dollars
   weeklyTotalFc?: number;
+  /** Public objective displayed to the team. Legacy records store the only target here. */
   weeklyTargetFc?: number;
+  /** Internal threshold actually used to calculate the payroll deduction. */
+  weeklyDeductionTargetFc?: number;
 }
 
 export interface FoundationWithdrawalRequest {

@@ -851,6 +851,7 @@
                   Objectif: {{ w.targetFc | number : "1.0-0" }} FC
                 </div>
                 <button
+                  *ngIf="auth.isAdmin; else employeeWeeklyDeductionAmount"
                   type="button"
                   (click)="openWeeklyShortfallDeductionModal(w)"
                   class="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[10px] font-extrabold text-rose-800 dark:border-rose-500/60 dark:bg-rose-950 dark:text-rose-100 sm:w-auto"
@@ -861,6 +862,17 @@
                   >
                   Retenue: $ {{ w.deductionUsd | number : "1.0-0" }} / employé
                 </button>
+                <ng-template #employeeWeeklyDeductionAmount>
+                  <span
+                    class="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[10px] font-extrabold text-rose-800 dark:border-rose-500/60 dark:bg-rose-950 dark:text-rose-100 sm:w-auto"
+                  >
+                    <span
+                      class="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-600 text-[9px] font-black text-white dark:bg-rose-500"
+                      >-</span
+                    >
+                    Retenue: $ {{ w.deductionUsd | number : "1.0-0" }} / employé
+                  </span>
+                </ng-template>
               </div>
             </div>
           </div>
@@ -1785,11 +1797,17 @@
           </div>
         </div>
 
-        <div class="mt-4 grid gap-2 text-xs sm:grid-cols-3">
+        <div class="mt-4 grid gap-2 text-xs sm:grid-cols-4">
           <div class="rounded-lg bg-white p-3 dark:bg-slate-900/60">
-            <p class="font-bold uppercase tracking-wide text-slate-400">Objectif</p>
+            <p class="font-bold uppercase tracking-wide text-slate-400">Objectif visible</p>
             <p class="mt-1 font-extrabold text-slate-800 dark:text-slate-100">
               {{ week.targetFc | number : "1.0-0" }} FC
+            </p>
+          </div>
+          <div class="rounded-lg bg-white p-3 dark:bg-slate-900/60">
+            <p class="font-bold uppercase tracking-wide text-slate-400">Seuil paie</p>
+            <p class="mt-1 font-extrabold text-slate-800 dark:text-slate-100">
+              {{ week.deductionTargetFc | number : "1.0-0" }} FC
             </p>
           </div>
           <div class="rounded-lg bg-white p-3 dark:bg-slate-900/60">

@@ -3520,6 +3520,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
         amount: Number(item.amount) || 0,
         weeklyTotalFc: Number(item.weeklyTotalFc) || 0,
         weeklyTargetFc: Number(item.weeklyTargetFc) || 0,
+        weeklyDeductionTargetFc:
+          Number(item.weeklyDeductionTargetFc) ||
+          Number(item.weeklyTargetFc) ||
+          0,
       })),
       deductionDetails: row.deductionDetails.map((item) => ({ ...item })),
       weekObjectiveStartDate: this.time.getTodaysDateYearMonthDay(),
@@ -3576,11 +3580,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
     const dateKey = this.formatDateKey(start);
     const weeklyTotalFc = this.computeWeeklyPaymentTotalForPayroll(owner, dateKey);
-    const weeklyTargetFc = this.resolvePayrollWeeklyTargetFc(owner, dateKey);
+    const weeklyDeductionTargetFc =
+      this.resolvePayrollWeeklyDeductionTargetFc(owner, dateKey);
     draft.weekObjectiveAmount =
       this.compute.computeWeeklyObjectiveDeductionUsd(
         weeklyTotalFc,
-        weeklyTargetFc
+        weeklyDeductionTargetFc
       );
   }
 
@@ -3595,6 +3600,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
         amount: Number(item.amount) || 0,
         weeklyTotalFc: Number(item.weeklyTotalFc) || 0,
         weeklyTargetFc: Number(item.weeklyTargetFc) || 0,
+        weeklyDeductionTargetFc:
+          Number(item.weeklyDeductionTargetFc) ||
+          Number(item.weeklyTargetFc) ||
+          0,
       }))
       .filter((item) => item.start && item.end && item.amount > 0)
       .sort((a, b) => a.start.localeCompare(b.start));
@@ -4003,12 +4012,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
       const startKey = this.formatDateKey(start);
       const weeklyTargetFc = this.resolvePayrollWeeklyTargetFc(owner, startKey);
+      const weeklyDeductionTargetFc =
+        this.resolvePayrollWeeklyDeductionTargetFc(owner, startKey);
       const totalFc = this.computeWeeklyPaymentTotalForPayroll(owner, startKey);
-      if (totalFc >= weeklyTargetFc) continue;
+      if (totalFc >= weeklyDeductionTargetFc) continue;
 
       const amount = this.compute.computeWeeklyObjectiveDeductionUsd(
         totalFc,
-        weeklyTargetFc
+        weeklyDeductionTargetFc
       );
       if (amount <= 0) continue;
 
@@ -4018,6 +4029,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         amount,
         weeklyTotalFc: totalFc,
         weeklyTargetFc,
+        weeklyDeductionTargetFc,
       });
     }
 
@@ -4065,6 +4077,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
       owner && dateKey ? this.computeWeeklyPaymentTotalForPayroll(owner, dateKey) : 0;
     const computedWeeklyTargetFc =
       owner && dateKey ? this.resolvePayrollWeeklyTargetFc(owner, dateKey) : 0;
+    const computedWeeklyDeductionTargetFc =
+      owner && dateKey
+        ? this.resolvePayrollWeeklyDeductionTargetFc(owner, dateKey)
+        : 0;
     const weeklyTotalFc = Number.isFinite(Number(deduction?.weeklyTotalFc))
       ? Number(deduction?.weeklyTotalFc)
       : computedWeeklyTotalFc;
@@ -4073,6 +4089,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
       Number(deduction?.weeklyTargetFc) > 0
         ? Number(deduction?.weeklyTargetFc)
         : computedWeeklyTargetFc;
+    const weeklyDeductionTargetFc =
+      Number.isFinite(Number(deduction?.weeklyDeductionTargetFc)) &&
+      Number(deduction?.weeklyDeductionTargetFc) > 0
+        ? Number(deduction?.weeklyDeductionTargetFc)
+        : Number.isFinite(Number(deduction?.weeklyTargetFc)) &&
+          Number(deduction?.weeklyTargetFc) > 0
+        ? Number(deduction?.weeklyTargetFc)
+        : computedWeeklyDeductionTargetFc;
 
     return {
       start,
@@ -4080,6 +4104,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       amount: this.numberFrom(deduction?.amount),
       weeklyTotalFc,
       weeklyTargetFc,
+      weeklyDeductionTargetFc,
     };
   }
 
@@ -4113,6 +4138,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private resolvePayrollWeeklyTargetFc(owner: User, dateKey: string): number {
     const { start } = this.getWeekBounds(dateKey);
     return this.auth.resolveWeeklyPaymentTargetForDate(
+      this.formatDateKey(start),
+      owner
+    );
+  }
+
+  private resolvePayrollWeeklyDeductionTargetFc(
+    owner: User,
+    dateKey: string
+  ): number {
+    const { start } = this.getWeekBounds(dateKey);
+    return this.auth.resolveWeeklyDeductionTargetForDate(
       this.formatDateKey(start),
       owner
     );
