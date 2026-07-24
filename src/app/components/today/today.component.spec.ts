@@ -309,6 +309,49 @@ describe('TodayComponent', () => {
     expect(component.pendingInvestmentValue).toBe('200000');
   });
 
+  it('requires a personal code before showing weekly shortfall details', () => {
+    const { component } = createComponent({
+      isAdmin: false,
+      currentUser: {
+        uid: 'user-1',
+        email: 'employee@example.com',
+        firstName: 'Employee',
+        teamCode: '2468',
+        dailyReimbursement: {},
+        weeklyPaymentTargetPeriods: [],
+      },
+    });
+
+    component.openWeeklyShortfallDeductionModal();
+
+    expect(component.showCodeModal).toBeTrue();
+    expect(component.showWeeklyShortfallDeductionModal).toBeFalse();
+    expect(component.selectedWeeklyShortfall).toBeNull();
+  });
+
+  it('opens pending weekly shortfall details after the correct code', () => {
+    const { component } = createComponent({
+      isAdmin: false,
+      currentUser: {
+        uid: 'user-1',
+        email: 'employee@example.com',
+        firstName: 'Employee',
+        teamCode: '2468',
+        dailyReimbursement: {},
+        weeklyPaymentTargetPeriods: [],
+      },
+    });
+
+    component.openWeeklyShortfallDeductionModal();
+    component.payCodeInput.setValue('2468');
+    component.unlockPayment();
+
+    expect(component.isPayUnlocked).toBeTrue();
+    expect(component.showCodeModal).toBeFalse();
+    expect(component.showWeeklyShortfallDeductionModal).toBeTrue();
+    expect(component.selectedWeeklyShortfall).not.toBeNull();
+  });
+
   it('hides the projected weekly target when projection visibility is off', () => {
     const { component } = createComponent({
       weeklyPaymentProjection$: of({

@@ -657,10 +657,27 @@
             Objectif minimum
           </span>
           <span class="text-base font-bold text-slate-900 dark:text-slate-100">
-            {{ weeklyTargetFc | number : "1.0-0" }} FC
+            <ng-container
+              *ngIf="isPayUnlocked || auth.isAdmin; else weeklyTargetHidden"
+            >
+              {{ weeklyTargetFc | number : "1.0-0" }} FC
+            </ng-container>
+            <ng-template #weeklyTargetHidden>
+              •••
+              <button
+                type="button"
+                (click)="openCodeModal()"
+                class="ml-1 rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100"
+                aria-label="Déverrouiller l’objectif minimum"
+              >
+                🔒
+              </button>
+            </ng-template>
           </span>
           <span
-            *ngIf="hasProjectedWeeklyTarget"
+            *ngIf="
+              hasProjectedWeeklyTarget && (isPayUnlocked || auth.isAdmin)
+            "
             class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-[12px] font-bold text-emerald-900 shadow-sm dark:border-emerald-400/40 dark:bg-emerald-500/25 dark:text-emerald-100"
             [title]="'Effectif dès le ' + projectedWeeklyTargetEffectiveDateLabel"
           >
@@ -782,7 +799,12 @@
           <span
             class="inline-flex w-fit items-center rounded-full bg-amber-900 px-2.5 py-1 text-[10px] font-semibold text-amber-50"
           >
-            {{ weeklyObjectiveDeductionHeaderLabel }}
+            <ng-container
+              *ngIf="isPayUnlocked || auth.isAdmin; else deductionHeaderHidden"
+            >
+              {{ weeklyObjectiveDeductionHeaderLabel }}
+            </ng-container>
+            <ng-template #deductionHeaderHidden>🔒 Détails protégés</ng-template>
           </span>
         </div>
         <div
@@ -817,6 +839,12 @@
           Deduction appliquee uniquement apres fin de semaine.
         </div>
 
+        <ng-container
+          *ngIf="
+            isPayUnlocked || auth.isAdmin;
+            else weeklyShortfallsLocked
+          "
+        >
         <div
           class="mt-2 space-y-2"
           *ngIf="weeklyShortfalls.length > 0; else noWeeklyShortfalls"
@@ -881,6 +909,18 @@
           <div class="mt-2 text-[11px] text-slate-500">
             Aucune semaine en dessous du minimum.
           </div>
+        </ng-template>
+        </ng-container>
+
+        <ng-template #weeklyShortfallsLocked>
+          <button
+            type="button"
+            (click)="openWeeklyShortfallDeductionModal()"
+            class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white/80 px-4 py-3 text-xs font-extrabold text-amber-950 transition hover:bg-amber-100"
+          >
+            <span aria-hidden="true">🔒</span>
+            Entrez votre code pour voir les détails de cette localisation
+          </button>
         </ng-template>
       </div>
     </div>
@@ -1728,7 +1768,9 @@
 </section>
 
 <div
-  *ngIf="showWeeklyShortfallDeductionModal"
+  *ngIf="
+    showWeeklyShortfallDeductionModal && (isPayUnlocked || auth.isAdmin)
+  "
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
 >
     <div
@@ -2225,7 +2267,8 @@
 >
   <div class="w-80 rounded-lg bg-white dark:bg-gray-800 p-6 shadow-lg">
     <p class="mb-4 text-gray-900 dark:text-gray-100">
-      Entrez votre <strong>code personnel</strong> pour accedder a cette page :
+      Entrez votre <strong>code personnel</strong> pour accéder à ces
+      informations :
     </p>
 
     <input

@@ -213,6 +213,8 @@ export class TodayComponent {
   selectedShortfallMonth = '';
   selectedWeeklyShortfall: WeeklyShortfall | null = null;
   showWeeklyShortfallDeductionModal = false;
+  private weeklyShortfallModalPending = false;
+  private pendingWeeklyShortfall?: WeeklyShortfall;
   weeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig = {
     bandFc: 100000,
     penaltyPerBandUsd: 1,
@@ -350,16 +352,28 @@ export class TodayComponent {
   }
   closeCodeModal() {
     this.showCodeModal = false;
+    this.weeklyShortfallModalPending = false;
+    this.pendingWeeklyShortfall = undefined;
   }
 
   unlockPayment() {
     const entered = this.payCodeInput.value?.trim() || '';
     if (this.codesStored.includes(entered)) {
+      const shouldOpenWeeklyShortfallModal =
+        this.weeklyShortfallModalPending;
+      const pendingWeeklyShortfall = this.pendingWeeklyShortfall;
+
       this.isPayUnlocked = true;
       this.isSavingUnlocked = true;
       this.isPercentageUnlocked = true; // also unlock percentage display
-      this.closeCodeModal();
+      this.showCodeModal = false;
       this.payErrMsg = '';
+      this.weeklyShortfallModalPending = false;
+      this.pendingWeeklyShortfall = undefined;
+
+      if (shouldOpenWeeklyShortfallModal) {
+        this.openWeeklyShortfallDeductionModal(pendingWeeklyShortfall);
+      }
     } else {
       this.payErrMsg = 'Code incorrect – réessayez !';
       this.payCodeInput.setValue('');
@@ -811,6 +825,15 @@ export class TodayComponent {
   }
 
   openWeeklyShortfallDeductionModal(shortfall?: WeeklyShortfall): void {
+    if (!this.auth.isAdmin && !this.isPayUnlocked) {
+      this.weeklyShortfallModalPending = true;
+      this.pendingWeeklyShortfall = shortfall;
+      this.openCodeModal();
+      return;
+    }
+
+    this.weeklyShortfallModalPending = false;
+    this.pendingWeeklyShortfall = undefined;
     this.selectedWeeklyShortfall =
       shortfall ||
       this.buildWeeklyShortfallForModalDate(
