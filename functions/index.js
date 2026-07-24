@@ -2318,6 +2318,30 @@ function formatDate(dateInput) {
   return `${day}/${month}/${year}`;
 }
 
+function isNextCalendarDay(startDateRaw, endDateRaw) {
+  const startParts = String(startDateRaw || "")
+      .split("-")
+      .slice(0, 3)
+      .map(Number);
+  const endParts = String(endDateRaw || "")
+      .split("-")
+      .slice(0, 3)
+      .map(Number);
+
+  if (
+    startParts.length !== 3 ||
+    endParts.length !== 3 ||
+    startParts.some((part) => !Number.isFinite(part)) ||
+    endParts.some((part) => !Number.isFinite(part))
+  ) {
+    return false;
+  }
+
+  const startUtc = Date.UTC(startParts[2], startParts[0] - 1, startParts[1]);
+  const endUtc = Date.UTC(endParts[2], endParts[0] - 1, endParts[1]);
+  return endUtc - startUtc === 24 * 60 * 60 * 1000;
+}
+
 /**
  * Cloud Function to send SMS when a client's loan is activated.
  */
@@ -2744,7 +2768,17 @@ Merci pona confiance na FONDATION GERVAIS`;
           console.log(`Invalid phone number for auditor: ${chosenAudit.phoneNumber}`);
         } else {
         // Construct the auditor SMS
-          const auditorMessage = `${chosenAudit.name},
+          const isBestClient = Number(afterData.creditScore || 0) >= 70;
+          const bestClientTiming = isNextCalendarDay(
+              afterData.dateOfRequest,
+              requestDateRaw,
+          ) ?
+            "lobi" :
+            `le ${requestDate}`;
+          const auditorMessage = isBestClient ?
+            `${chosenAudit.name},
+MEILLEUR CLIENT: asengeli kozwa mbongo ${bestClientTiming}. Benga ${fullName} ya ${clientLocation} na ${phoneNumber}; verifier ba infos. FONDATION GERVAIS` :
+            `${chosenAudit.name},
 Oponami pona ko verifier ba information ya client ${fullName} ya location ${clientLocation}. Numero na ye ezali ${phoneNumber}. Benga ye pe verifier ba information na ye. Merci pona mosala malamu na FONDATION GERVAIS`;
 
           try {
