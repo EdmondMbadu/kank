@@ -2,3 +2,258 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.money-availability-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 26px;
+  padding: 1.15rem;
+  box-shadow:
+    0 24px 60px -42px rgba(15, 23, 42, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.money-availability-card::after {
+  position: absolute;
+  z-index: -1;
+  right: -2.5rem;
+  bottom: -3.5rem;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.55);
+  content: '';
+}
+
+.money-availability-card-best {
+  border-color: #fcd34d;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(251, 191, 36, 0.28), transparent 30%),
+    linear-gradient(135deg, #fffbeb 0%, #fff7d6 54%, #ffffff 100%);
+}
+
+.money-availability-card-standard {
+  border-color: #a7f3d0;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(59, 130, 246, 0.18), transparent 28%),
+    linear-gradient(135deg, #eff6ff 0%, #ecfdf5 58%, #ffffff 100%);
+}
+
+.money-availability-card-building {
+  border-color: #fed7aa;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(249, 115, 22, 0.18), transparent 28%),
+    linear-gradient(135deg, #fff7ed 0%, #fffaf5 58%, #ffffff 100%);
+}
+
+.money-availability-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.money-availability-heading h3 {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.money-availability-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.money-availability-score {
+  display: flex;
+  width: 3.4rem;
+  height: 3.4rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #2563eb, #047857);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  box-shadow: 0 16px 28px -20px rgba(30, 64, 175, 0.9);
+}
+
+.money-availability-card-building .money-availability-score {
+  background: linear-gradient(145deg, #f97316, #c2410c);
+}
+
+.money-availability-trophy {
+  background: linear-gradient(145deg, #fbbf24, #d97706);
+  font-size: 1.55rem;
+  box-shadow: 0 16px 28px -20px rgba(180, 83, 9, 0.95);
+}
+
+.money-availability-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.money-availability-tier,
+.money-availability-system {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.money-availability-tier {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.money-availability-card-best .money-availability-tier {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.money-availability-card-building .money-availability-tier {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.money-availability-system {
+  flex: 0 0 auto;
+  border: 1px solid rgba(5, 150, 105, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  color: #047857;
+}
+
+.money-availability-title {
+  margin-top: 0.55rem;
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.money-availability-copy {
+  margin-top: 0.35rem;
+  max-width: 44rem;
+  color: #475569;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.money-availability-date-panel {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0.9rem;
+  box-shadow: 0 14px 35px -30px rgba(15, 23, 42, 0.55);
+}
+
+.money-availability-eyebrow,
+.money-availability-picker > span {
+  display: block;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.money-availability-date {
+  display: block;
+  margin-top: 0.3rem;
+  color: #047857;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  text-transform: capitalize;
+}
+
+.money-availability-card-best .money-availability-date {
+  color: #b45309;
+}
+
+.money-availability-card-building .money-availability-date {
+  color: #c2410c;
+}
+
+.money-availability-picker {
+  display: block;
+}
+
+.money-availability-picker .register-input,
+.money-availability-picker .cycle-input {
+  margin-top: 0.42rem;
+  background: #fff;
+  padding-block: 0.72rem;
+}
+
+@media (min-width: 700px) {
+  .money-availability-card {
+    padding: 1.35rem;
+  }
+
+  .money-availability-date-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.7fr);
+    align-items: end;
+  }
+}
+
+@media (max-width: 640px) {
+  .money-availability-card {
+    border-radius: 22px;
+    padding: 0.95rem;
+  }
+
+  .money-availability-heading {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .money-availability-heading h3 {
+    font-size: 0.82rem;
+  }
+
+  .money-availability-system {
+    padding: 0.26rem 0.52rem;
+    font-size: 0.59rem;
+  }
+
+  .money-availability-intro {
+    gap: 0.7rem;
+  }
+
+  .money-availability-score {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 16px;
+  }
+
+  .money-availability-title {
+    font-size: 1rem;
+  }
+
+  .money-availability-copy {
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  .money-availability-date-panel {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+}

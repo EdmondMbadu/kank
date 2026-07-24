@@ -67,6 +67,13 @@ describe('RegisterClientComponent', () => {
     component.profession = 'Commercante';
     component.bussinessCapital = '100000';
     component.homeAddress = 'Kimbanseke';
+    component.homeAvenue = 'Lumumba';
+    component.homeQuartier = 'Salongo';
+    component.homeCommune = 'Kimbanseke';
+    component.homeNumber = '12';
+    component.homePictureAvatar = {
+      downloadURL: 'https://example.com/home.jpg',
+    };
     component.businessAddress = 'Matete';
     component.timeInBusiness = '4';
     component.dailyIncome = '20000';
@@ -78,7 +85,7 @@ describe('RegisterClientComponent', () => {
     component.memberShipFee = '10000';
     component.savings = '20000';
     component.loanAmount = loanAmount;
-    component.requestDate = '2026-03-25';
+    component.requestDate = component.moneyAvailability.earliestDateIso;
     component.codeVerificationStatus = 'correct';
     component.url = 'https://example.com/avatar.jpg';
   }
@@ -166,15 +173,50 @@ describe('RegisterClientComponent', () => {
     expect(normalizedText()).toContain('Vérification');
     expect(normalizedText()).toContain('Soumettre');
 
-    const disabledFeeInputs = Array.from(
-      fixture.nativeElement.querySelectorAll('input.register-input-disabled')
-    ) as HTMLInputElement[];
+    const disabledFeeInputs = (
+      Array.from(
+        fixture.nativeElement.querySelectorAll('input.register-input-disabled')
+      ) as HTMLInputElement[]
+    ).filter((input) => input.value.startsWith('FC'));
 
     expect(disabledFeeInputs.length).toBe(2);
     expect(disabledFeeInputs[0].disabled).toBeTrue();
     expect(disabledFeeInputs[0].value.replace(/\s+/g, '')).toBe('FC5000');
     expect(disabledFeeInputs[1].disabled).toBeTrue();
     expect(disabledFeeInputs[1].value.replace(/\s+/g, '')).toBe('FC10000');
+  });
+
+  it('starts every new client at score 50 with an automatic three-open-day date', () => {
+    const dateInput = query<HTMLInputElement>('#requestDate');
+
+    expect(component.registrationCreditScore).toBe(50);
+    expect(component.moneyAvailability.score).toBe(50);
+    expect(component.moneyAvailability.tier).toBe('standard');
+    expect(component.requestDate).toBe(component.moneyAvailability.earliestDateIso);
+    expect(dateInput.min).toBe(component.moneyAvailability.earliestDateIso);
+    expect(normalizedText()).toContain(
+      "Date de remise de l'argent au client"
+    );
+    expect(normalizedText()).toContain('Score de crédit 50');
+    expect(normalizedText()).toContain('3 jours ouvrables');
+    expect(normalizedText()).toContain('Choisir une date plus tardive');
+  });
+
+  it('corrects an earlier money date and preserves a later one', () => {
+    const earliest = component.moneyAvailability.earliestDateIso;
+    const laterDate = new Date(component.moneyAvailability.earliestDate);
+    laterDate.setDate(laterDate.getDate() + 4);
+    const laterIso = [
+      laterDate.getFullYear(),
+      `${laterDate.getMonth() + 1}`.padStart(2, '0'),
+      `${laterDate.getDate()}`.padStart(2, '0'),
+    ].join('-');
+
+    component.onRequestDateChange('2000-01-01');
+    expect(component.requestDate).toBe(earliest);
+
+    component.onRequestDateChange(laterIso);
+    expect(component.requestDate).toBe(laterIso);
   });
 
   it('shows and hides the custom savings field from the UI selection', () => {
@@ -260,5 +302,19 @@ describe('RegisterClientComponent', () => {
     expect(alertSpy).not.toHaveBeenCalled();
     expect(proceedSpy).toHaveBeenCalled();
     expect(component.loanAmount).toBe('50000');
+  });
+
+  it('defensively blocks an earlier money date during submission', () => {
+    populateValidSubmissionFields('50 000');
+    component.requestDate = '2000-01-01';
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.addNewClient();
+
+    expect(proceedSpy).not.toHaveBeenCalled();
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain(
+      'La date de remise ne peut pas être antérieure'
+    );
   });
 });

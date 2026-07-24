@@ -639,15 +639,61 @@
               />
             </label>
 
-            <label class="space-y-2 sm:col-span-2">
-              <span class="register-label">Date de remise de l'argent au client</span>
-              <input
-                [(ngModel)]="requestDate"
-                type="date"
-                id="requestDate"
-                class="register-input"
-              />
-            </label>
+            <section
+              class="money-availability-card money-availability-card-standard sm:col-span-2"
+              aria-labelledby="moneyDateSectionTitle"
+              aria-live="polite"
+            >
+              <div class="money-availability-heading">
+                <h3 id="moneyDateSectionTitle">
+                  Date de remise de l'argent au client
+                </h3>
+                <span class="money-availability-system">Automatique</span>
+              </div>
+
+              <div class="money-availability-intro">
+                <div class="money-availability-score" aria-hidden="true">
+                  {{ registrationCreditScore }}
+                </div>
+
+                <div class="min-w-0">
+                  <div class="money-availability-badges">
+                    <span class="money-availability-tier">
+                      Score de crédit {{ registrationCreditScore }}
+                    </span>
+                  </div>
+                  <h4 class="money-availability-title">3 jours ouvrables</h4>
+                  <p id="requestDateRule" class="money-availability-copy">
+                    Nouveau client — score initial 50. Améliorez ce score pour
+                    accéder au service dès le prochain jour ouvrable.
+                  </p>
+                </div>
+              </div>
+
+              <div class="money-availability-date-panel">
+                <div>
+                  <span class="money-availability-eyebrow">
+                    Date disponible
+                  </span>
+                  <strong class="money-availability-date">
+                    {{ earliestMoneyDateLabel }}
+                  </strong>
+                </div>
+
+                <label class="money-availability-picker">
+                  <span>Choisir une date plus tardive</span>
+                  <input
+                    [(ngModel)]="requestDate"
+                    (input)="onRequestDateInput($any($event.target))"
+                    [min]="moneyAvailability.earliestDateIso"
+                    type="date"
+                    id="requestDate"
+                    class="register-input"
+                    aria-describedby="requestDateRule"
+                  />
+                </label>
+              </div>
+            </section>
           </div>
         </div>
 

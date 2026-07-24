@@ -12,6 +12,13 @@ import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { recoverOrRetryClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
+import {
+  enforceEarliestMoneyDeliveryDate,
+  formatMoneyAvailabilityDate,
+  getMoneyAvailability,
+  isMoneyDeliveryDateAllowed,
+  MoneyAvailability,
+} from 'src/app/utils/money-availability.util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 import { __generator } from 'tslib';
 @Component({
@@ -33,7 +40,9 @@ export class NewCycleRegisterComponent implements OnInit {
   savings: string = '';
   loanAmount: string = '';
   middleName: string = '';
-  requestDate: string = '';
+  moneyAvailability: MoneyAvailability = getMoneyAvailability(50);
+  requestDate: string = this.moneyAvailability.earliestDateIso;
+  private moneyAvailabilityInitialized = false;
   maxLoanAmount: number = 0;
   lastPaymentDate: Date | null = null;
   nextEligibleCreditDate: Date | null = null;
@@ -131,6 +140,7 @@ export class NewCycleRegisterComponent implements OnInit {
       // ✅ NEW: six-month grace reset for score ≤ 0
       this.maybeResetCreditScoreFromDormancy();
       this.syncCreditEligibilityState();
+      this.syncMoneyAvailability();
       // get credit score to find maxLoanAmount
       if (this.client && this.client.creditScore !== undefined) {
         this.maxLoanAmount = this.compute.getMaxLendAmount(
@@ -201,6 +211,7 @@ export class NewCycleRegisterComponent implements OnInit {
   }
 
   registerClientNewDebtCycle() {
+    this.syncMoneyAvailability(false);
     const normalizedLoanAmount = coerceToNumber(this.loanAmount);
     let inputValid = this.data.numbersValid(
       normalizedLoanAmount?.toString() ?? this.loanAmount,
@@ -208,9 +219,7 @@ export class NewCycleRegisterComponent implements OnInit {
       this.applicationFee,
       this.memberShipFee
     );
-    let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
-      this.requestDate
-    );
+    const checkDate = this.isRequestDateAllowed();
     // Just before you compute missingFields, add:
     this.tryAutoAdd();
 
@@ -294,11 +303,9 @@ export class NewCycleRegisterComponent implements OnInit {
       );
       return;
     } else if (!checkDate) {
-      alert(`Assurez-vous que la date de Donner L'argent au client\n
-        - Est Dans L'intervalle D'Une Semaine\n
-        - N'est Pas Aujourdhui ou au Passé\n
-        - N'est Pas Demain mais au Moins Un lendemain ou dans 2+ jour\n
-        `);
+      alert(
+        `La date de remise ne peut pas être antérieure au ${this.earliestMoneyDateLabel}.`
+      );
       return;
     } else if (
       Number(this.applicationFee) < 5000 &&
@@ -415,6 +422,72 @@ export class NewCycleRegisterComponent implements OnInit {
     const raw = Number(this.auth.currentUser?.savingsRequiredPercent);
     return Number.isFinite(raw) && raw > 0 ? raw : 30;
   }
+
+  get earliestMoneyDateLabel(): string {
+    return formatMoneyAvailabilityDate(this.moneyAvailability.earliestDate);
+  }
+
+  get moneyAvailabilityTitle(): string {
+    if (this.moneyAvailability.tier === 'best') {
+      return 'Meilleur client';
+    }
+
+    if (this.moneyAvailability.tier === 'standard') {
+      return '3 jours ouvrables';
+    }
+
+    return 'Même jour, semaine prochaine';
+  }
+
+  get moneyAvailabilityMessage(): string {
+    if (this.moneyAvailability.tier === 'best') {
+      return "L'argent est disponible dès le prochain jour ouvrable.";
+    }
+
+    if (this.moneyAvailability.tier === 'standard') {
+      return 'Améliorez le score pour accéder au service dès le prochain jour ouvrable.';
+    }
+
+    return 'Ce délai correspond au score de crédit actuel.';
+  }
+
+  onRequestDateChange(value: string): void {
+    this.requestDate = enforceEarliestMoneyDeliveryDate(
+      value,
+      this.moneyAvailability.earliestDateIso
+    );
+  }
+
+  onRequestDateInput(input: HTMLInputElement): void {
+    this.onRequestDateChange(input.value);
+    input.value = this.requestDate;
+  }
+
+  isRequestDateAllowed(): boolean {
+    return isMoneyDeliveryDateAllowed(
+      this.requestDate,
+      this.moneyAvailability.earliestDateIso
+    );
+  }
+
+  private syncMoneyAvailability(correctSelection = true): void {
+    const score = Number(this.client?.creditScore);
+    this.moneyAvailability = getMoneyAvailability(
+      Number.isFinite(score) ? score : 50
+    );
+
+    if (
+      correctSelection &&
+      (!this.moneyAvailabilityInitialized ||
+        !this.requestDate ||
+        !this.isRequestDateAllowed())
+    ) {
+      this.requestDate = this.moneyAvailability.earliestDateIso;
+    }
+
+    this.moneyAvailabilityInitialized = true;
+  }
+
   resetFields() {
     this.applicationFee = '';
     this.memberShipFee = '';

@@ -2,6 +2,7 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 import { Client } from 'src/app/models/client';
@@ -81,6 +82,13 @@ describe('NewCycleRegisterComponent', () => {
     component.client.profession = 'Vendeuse';
     component.client.businessCapital = '50000';
     component.client.homeAddress = 'Kimayala';
+    component.client.homeAvenue = 'Kasa-Vubu';
+    component.client.homeQuartier = 'Salongo';
+    component.client.homeCommune = 'Kimbanseke';
+    component.client.homeNumber = '8';
+    component.client.homePicture = {
+      downloadURL: 'https://example.com/home.jpg',
+    };
     component.client.businessAddress = 'Marche';
     component.client.birthDate = '1990-05-10';
     component.age = 35;
@@ -91,7 +99,7 @@ describe('NewCycleRegisterComponent', () => {
     component.client.savings = '20000';
     component.savings = '15000';
     component.loanAmount = loanAmount;
-    component.requestDate = '2026-03-25';
+    component.requestDate = component.moneyAvailability.earliestDateIso;
     component.references = ['Maman Jeanne - 0812345678'];
     component.codeVerificationStatus = 'correct';
     component.maxLoanAmount = 350000;
@@ -169,6 +177,10 @@ describe('NewCycleRegisterComponent', () => {
           },
         },
         {
+          provide: AngularFireStorage,
+          useValue: {},
+        },
+        {
           provide: Router,
           useValue: {
             navigate: jasmine.createSpy('navigate'),
@@ -191,13 +203,48 @@ describe('NewCycleRegisterComponent', () => {
     expect(normalizedText()).toContain('Vérification');
     expect(normalizedText()).toContain('350,000 FC');
 
-    const disabledFeeInputs = Array.from(
-      fixture.nativeElement.querySelectorAll('input.cycle-input-disabled')
-    ) as HTMLInputElement[];
+    const disabledFeeInputs = (
+      Array.from(
+        fixture.nativeElement.querySelectorAll('input.cycle-input-disabled')
+      ) as HTMLInputElement[]
+    ).filter((input) => input.value.startsWith('FC'));
 
     expect(disabledFeeInputs.length).toBe(2);
     expect(disabledFeeInputs[0].value.replace(/\s+/g, '')).toBe('FC5000');
     expect(disabledFeeInputs[1].value.replace(/\s+/g, '')).toBe('FC0');
+  });
+
+  it('shows best-client next-open-day service and selects the date automatically', () => {
+    const dateInput = query<HTMLInputElement>('#requestDate');
+
+    expect(component.moneyAvailability.score).toBe(72);
+    expect(component.moneyAvailability.tier).toBe('best');
+    expect(component.moneyAvailability.bestClientLevel).toBe('Silver');
+    expect(component.requestDate).toBe(component.moneyAvailability.earliestDateIso);
+    expect(dateInput.min).toBe(component.moneyAvailability.earliestDateIso);
+    expect(normalizedText()).toContain(
+      "Date de remise de l'argent au client"
+    );
+    expect(normalizedText()).toContain('Meilleur client');
+    expect(normalizedText()).toContain('prochain jour ouvrable');
+    expect(normalizedText()).toContain('🏆');
+  });
+
+  it('corrects an earlier money date and preserves a later one', () => {
+    const earliest = component.moneyAvailability.earliestDateIso;
+    const laterDate = new Date(component.moneyAvailability.earliestDate);
+    laterDate.setDate(laterDate.getDate() + 4);
+    const laterIso = [
+      laterDate.getFullYear(),
+      `${laterDate.getMonth() + 1}`.padStart(2, '0'),
+      `${laterDate.getDate()}`.padStart(2, '0'),
+    ].join('-');
+
+    component.onRequestDateChange('2000-01-01');
+    expect(component.requestDate).toBe(earliest);
+
+    component.onRequestDateChange(laterIso);
+    expect(component.requestDate).toBe(laterIso);
   });
 
   it('switches the birth date area to the saved static value when a birth date exists', () => {
@@ -325,5 +372,19 @@ describe('NewCycleRegisterComponent', () => {
     expect(alertSpy).not.toHaveBeenCalled();
     expect(proceedSpy).toHaveBeenCalled();
     expect(component.loanAmount).toBe('50000');
+  });
+
+  it('defensively blocks an earlier money date during submission', () => {
+    populateValidSubmissionFields('50 000');
+    component.requestDate = '2000-01-01';
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.registerClientNewDebtCycle();
+
+    expect(proceedSpy).not.toHaveBeenCalled();
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain(
+      'La date de remise ne peut pas être antérieure'
+    );
   });
 });

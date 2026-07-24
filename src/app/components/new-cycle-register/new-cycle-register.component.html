@@ -503,15 +503,81 @@
             />
           </label>
 
-          <label class="space-y-2 sm:col-span-2">
-            <span class="cycle-label">Date de remise de l'argent au client</span>
-            <input
-              [(ngModel)]="requestDate"
-              type="date"
-              id="requestDate"
-              class="cycle-input"
-            />
-          </label>
+          <section
+            class="money-availability-card sm:col-span-2"
+            [class.money-availability-card-best]="moneyAvailability.tier === 'best'"
+            [class.money-availability-card-standard]="moneyAvailability.tier === 'standard'"
+            [class.money-availability-card-building]="moneyAvailability.tier === 'building'"
+            aria-labelledby="moneyDateSectionTitle"
+            aria-live="polite"
+          >
+            <div class="money-availability-heading">
+              <h3 id="moneyDateSectionTitle">
+                Date de remise de l'argent au client
+              </h3>
+              <span class="money-availability-system">Automatique</span>
+            </div>
+
+            <div class="money-availability-intro">
+              <div
+                class="money-availability-score"
+                [class.money-availability-trophy]="moneyAvailability.tier === 'best'"
+                aria-hidden="true"
+              >
+                <span *ngIf="moneyAvailability.tier === 'best'">🏆</span>
+                <span *ngIf="moneyAvailability.tier !== 'best'">
+                  {{ moneyAvailability.score }}
+                </span>
+              </div>
+
+              <div class="min-w-0">
+                <div class="money-availability-badges">
+                  <span
+                    *ngIf="moneyAvailability.tier === 'best'; else scoreBadge"
+                    class="money-availability-tier"
+                  >
+                    Client {{ moneyAvailability.bestClientLevel }}
+                  </span>
+                  <ng-template #scoreBadge>
+                    <span class="money-availability-tier">
+                      Score de crédit {{ moneyAvailability.score }}
+                    </span>
+                  </ng-template>
+                </div>
+
+                <h4 class="money-availability-title">
+                  {{ moneyAvailabilityTitle }}
+                </h4>
+                <p id="requestDateRule" class="money-availability-copy">
+                  {{ moneyAvailabilityMessage }}
+                </p>
+              </div>
+            </div>
+
+            <div class="money-availability-date-panel">
+              <div>
+                <span class="money-availability-eyebrow">
+                  Date disponible
+                </span>
+                <strong class="money-availability-date">
+                  {{ earliestMoneyDateLabel }}
+                </strong>
+              </div>
+
+              <label class="money-availability-picker">
+                <span>Choisir une date plus tardive</span>
+                <input
+                  [(ngModel)]="requestDate"
+                  (input)="onRequestDateInput($any($event.target))"
+                  [min]="moneyAvailability.earliestDateIso"
+                  type="date"
+                  id="requestDate"
+                  class="cycle-input"
+                  aria-describedby="requestDateRule"
+                />
+              </label>
+            </div>
+          </section>
         </div>
       </div>
 

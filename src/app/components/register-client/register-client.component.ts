@@ -9,6 +9,13 @@ import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { recoverOrRetryClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
+import {
+  enforceEarliestMoneyDeliveryDate,
+  formatMoneyAvailabilityDate,
+  getMoneyAvailability,
+  isMoneyDeliveryDateAllowed,
+  MoneyAvailability,
+} from 'src/app/utils/money-availability.util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 
 @Component({
@@ -18,6 +25,7 @@ import { coerceToNumber } from 'src/app/utils/number-utils';
 })
 export class RegisterClientComponent implements OnInit {
   private readonly MIN_LOAN_AMOUNT = 50000;
+  readonly registrationCreditScore = 50;
 
   constructor(
     private router: Router,
@@ -90,7 +98,10 @@ export class RegisterClientComponent implements OnInit {
   memberShipFee: string = '';
   loanAmount: string = '';
   savings: string = '';
-  requestDate: string = '';
+  moneyAvailability: MoneyAvailability = getMoneyAvailability(
+    this.registrationCreditScore
+  );
+  requestDate: string = this.moneyAvailability.earliestDateIso;
   timeInBusiness: string = '';
   dailyIncome: string = '';
   monthlyIncome: string = '';
@@ -141,10 +152,9 @@ export class RegisterClientComponent implements OnInit {
     const today = new Date(); // current computer date
     // only for testing.
     this.creditworthinessScore = this.calculateCreditworthiness();
+    this.refreshMoneyAvailability();
     const normalizedLoanAmount = coerceToNumber(this.loanAmount);
-    let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
-      this.requestDate
-    );
+    const checkDate = this.isRequestDateAllowed();
     let inputValid = this.data.numbersValid(
       this.savings,
       this.applicationFee,
@@ -288,11 +298,9 @@ export class RegisterClientComponent implements OnInit {
     } else if (this.savingsPaidAtleast30PercentOfLoanAmount() === false) {
       return;
     } else if (!checkDate) {
-      alert(`Assurez-vous que la date de Donner L'argent au client\n
-          - Est Dans L'intervalle D'Une Semaine\n
-          - N'est Pas Aujourdhui ou au Passé\n
-          - N'est Pas Demain mais au Moins Un lendemain ou dans 2+ jour\n
-          `);
+      alert(
+        `La date de remise ne peut pas être antérieure au ${this.earliestMoneyDateLabel}.`
+      );
       return;
     } else if (this.codeVerificationStatus !== 'correct') {
       alert('Veuillez vérifier votre code de vérification');
@@ -370,6 +378,33 @@ export class RegisterClientComponent implements OnInit {
     this.calculateCreditworthiness();
   }
 
+  get earliestMoneyDateLabel(): string {
+    return formatMoneyAvailabilityDate(this.moneyAvailability.earliestDate);
+  }
+
+  onRequestDateChange(value: string): void {
+    this.requestDate = enforceEarliestMoneyDeliveryDate(
+      value,
+      this.moneyAvailability.earliestDateIso
+    );
+  }
+
+  onRequestDateInput(input: HTMLInputElement): void {
+    this.onRequestDateChange(input.value);
+    input.value = this.requestDate;
+  }
+
+  isRequestDateAllowed(): boolean {
+    return isMoneyDeliveryDateAllowed(
+      this.requestDate,
+      this.moneyAvailability.earliestDateIso
+    );
+  }
+
+  private refreshMoneyAvailability(): void {
+    this.moneyAvailability = getMoneyAvailability(this.registrationCreditScore);
+  }
+
   resetFields() {
     this.client = new Client();
     this.firstName = '';
@@ -387,6 +422,7 @@ export class RegisterClientComponent implements OnInit {
     this.applicationFee = '';
     this.memberShipFee = '';
     this.savings = '';
+    this.requestDate = this.moneyAvailability.earliestDateIso;
     this.birthDate = '';
     this.age = null;
     this.homePictureUrl = '';
