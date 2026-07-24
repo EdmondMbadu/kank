@@ -2,23 +2,16 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from '../services/auth.guard';
 import { InvestementsSummaryComponent } from '../components/investements-summary/investements-summary.component';
-import { HomeCentralComponent } from '../central/home-central/home-central.component';
 import { BenefitComponent } from '../components/benefit/benefit.component';
 import { TrackingComponent } from '../components/tracking/tracking.component';
-import { TrackingCentralComponent } from '../central/tracking-central/tracking-central.component';
 import { TrackingMonthComponent } from '../components/tracking-month/tracking-month.component';
-import { TrackingMonthCentralComponent } from '../central/tracking-month-central/tracking-month-central.component';
 import { TrackingCardMonthComponent } from '../card/tracking-card-month/tracking-card-month.component';
-import { TrackingCardMonthCentralComponent } from '../central/tracking-card-month-central/tracking-card-month-central.component';
 import { TodayComponent } from '../components/today/today.component';
-import { TodayCentralComponent } from '../central/today-central/today-central.component';
 import { TodayCardComponent } from '../card/today-card/today-card.component';
-import { TodayCardCentralComponent } from '../central/today-card-central/today-card-central.component';
 import { RetraceComponent } from '../components/retrace/retrace.component';
 import { ClientInfoComponent } from '../components/client-info/client-info.component';
 import { InfoRegisterComponent } from '../components/info-register/info-register.component';
 import { SummaryCardComponent } from '../card/summary-card/summary-card.component';
-import { SummaryCardCentralComponent } from '../central/summary-card-central/summary-card-central.component';
 import { ClientInfoCurrentComponent } from '../components/client-info-current/client-info-current.component';
 import { ClientInfoSavingsComponent } from '../components/client-info-savings/client-info-savings.component';
 import { ClientInfoCardComponent } from '../card/client-info-card/client-info-card.component';
@@ -80,7 +73,6 @@ import { LendingDateComponent } from '../components/lending-date/lending-date.co
 import { NotPaidTodayComponent } from '../components/not-paid-today/not-paid-today.component';
 import { NotPaidComponent } from '../components/not-paid/not-paid.component';
 import { TeamPageComponent } from '../components/team-page/team-page.component';
-import { TeamRankingMonthComponent } from '../central/team-ranking-month/team-ranking-month.component';
 import { CertificateComponent } from '../components/certificate/certificate.component';
 import { TutorialComponent } from '../components/tutorial/tutorial.component';
 import { ReviewsComponent } from '../components/reviews/reviews.component';
@@ -96,11 +88,6 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
-    path: 'home-central',
-    component: HomeCentralComponent,
-    canActivate: [AuthGuard],
-  },
-  {
     path: 'benefit',
     component: BenefitComponent,
     canActivate: [AuthGuard],
@@ -111,18 +98,8 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
-    path: 'tracking-central',
-    component: TrackingCentralComponent,
-    canActivate: [AuthGuard],
-  },
-  {
     path: 'tracking-month',
     component: TrackingMonthComponent,
-    canActivate: [AuthGuard],
-  },
-  {
-    path: 'tracking-month-central',
-    component: TrackingMonthCentralComponent,
     canActivate: [AuthGuard],
   },
   {
@@ -131,28 +108,13 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
-    path: 'tracking-card-month-central',
-    component: TrackingCardMonthCentralComponent,
-    canActivate: [AuthGuard],
-  },
-  {
     path: 'today',
     component: TodayComponent,
     canActivate: [AuthGuard],
   },
   {
-    path: 'today-central',
-    component: TodayCentralComponent,
-    canActivate: [AuthGuard],
-  },
-  {
     path: 'today-card',
     component: TodayCardComponent,
-    canActivate: [AuthGuard],
-  },
-  {
-    path: 'today-card-central',
-    component: TodayCardCentralComponent,
     canActivate: [AuthGuard],
   },
   {
@@ -163,7 +125,6 @@ const routes: Routes = [
   { path: 'client-info', component: ClientInfoComponent },
   { path: 'info-register', component: InfoRegisterComponent },
   { path: 'summary-card', component: SummaryCardComponent },
-  { path: 'summary-card-central', component: SummaryCardCentralComponent },
   { path: 'client-info-current', component: ClientInfoCurrentComponent },
   { path: 'client-info-savings', component: ClientInfoSavingsComponent },
   {
@@ -278,7 +239,6 @@ const routes: Routes = [
   { path: 'not-paid-today', component: NotPaidTodayComponent },
   { path: 'not-paid', component: NotPaidComponent },
   { path: 'team-page', component: TeamPageComponent },
-  { path: 'team-ranking-month', component: TeamRankingMonthComponent },
   { path: 'certificate', component: CertificateComponent },
   { path: 'tutorial', component: TutorialComponent },
   { path: 'reviews', component: ReviewsComponent },
@@ -289,6 +249,11 @@ const routes: Routes = [
     path: 'employee-page',
     loadChildren: () =>
       import('../shrink/shrink.module').then((m) => m.ShrinkModule),
+  },
+  {
+    path: '',
+    loadChildren: () =>
+      import('../central/central.module').then((m) => m.CentralModule),
   },
 ];
 

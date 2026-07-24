@@ -45,20 +45,12 @@ import { CardCycleComponent } from '../components/card-cycle/card-cycle.componen
 import { SummaryCardComponent } from '../card/summary-card/summary-card.component';
 import { TodayCardComponent } from '../card/today-card/today-card.component';
 import { TrackingCardMonthComponent } from '../card/tracking-card-month/tracking-card-month.component';
-import { HomeCentralComponent } from '../central/home-central/home-central.component';
-import { TrackingCentralComponent } from '../central/tracking-central/tracking-central.component';
-import { TodayCentralComponent } from '../central/today-central/today-central.component';
-import { TrackingMonthCentralComponent } from '../central/tracking-month-central/tracking-month-central.component';
-import { TodayCardCentralComponent } from '../central/today-card-central/today-card-central.component';
-import { TrackingCardMonthCentralComponent } from '../central/tracking-card-month-central/tracking-card-month-central.component';
-import { SummaryCardCentralComponent } from '../central/summary-card-central/summary-card-central.component';
 import { RegisterClientComponent } from '../components/register-client/register-client.component';
 import { InfoRegisterComponent } from '../components/info-register/info-register.component';
 import { RegiserPortalComponent } from '../components/register-portal/register-portal.component';
 import { TransformRegisterClientComponent } from '../components/transform-register-client/transform-register-client.component';
 import { RemoveCardComponent } from '../card/remove-card/remove-card.component';
 import { CertificateComponent } from '../components/certificate/certificate.component';
-import { TeamRankingMonthComponent } from '../central/team-ranking-month/team-ranking-month.component';
 import { SavingActivityComponent } from '../components/saving-activity/saving-activity.component';
 import { DailySavingsComponent } from '../components/daily-savings/daily-savings.component';
 import { NewCycleRegisterComponent } from '../components/new-cycle-register/new-cycle-register.component';
@@ -95,7 +87,6 @@ import { PaymentCycleActivityComponent } from '../components/payment-cycle-activ
 import { SavingCycleActivityComponent } from '../components/saving-cycle-activity/saving-cycle-activity.component';
 import { ReviewsComponent } from '../components/reviews/reviews.component';
 import { QuestionsComponent } from '../components/questions/questions.component';
-import { RotationScheduleComponent } from '../components/rotation-schedule/rotation-schedule.component';
 import { InvestigationComponent } from '../components/investigation/investigation.component';
 import { WhatsappAdminComponent } from '../components/whatsapp-admin/whatsapp-admin.component';
 import { ClientGalleryComponent } from '../components/client-gallery/client-gallery.component';
@@ -140,20 +131,12 @@ PlotlyModule.plotlyjs = PlotlyJS;
     SummaryCardComponent,
     TodayCardComponent,
     TrackingCardMonthComponent,
-    HomeCentralComponent,
-    TrackingCentralComponent,
-    TodayCentralComponent,
-    TrackingMonthCentralComponent,
-    TodayCardCentralComponent,
-    TrackingCardMonthCentralComponent,
-    SummaryCardCentralComponent,
     RegisterClientComponent,
     InfoRegisterComponent,
     RegiserPortalComponent,
     TransformRegisterClientComponent,
     RemoveCardComponent,
     CertificateComponent,
-    TeamRankingMonthComponent,
     SavingActivityComponent,
     DailySavingsComponent,
     NewCycleRegisterComponent,
@@ -189,7 +172,6 @@ PlotlyModule.plotlyjs = PlotlyJS;
     SavingCycleActivityComponent,
     ReviewsComponent,
     QuestionsComponent,
-    RotationScheduleComponent,
     InvestigationComponent,
     WhatsappAdminComponent,
     ClientGalleryComponent,
