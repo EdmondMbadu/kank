@@ -1467,14 +1467,19 @@
           Évolution des Paiements de la Semaine
         </h2>
         <p class="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-300">
-          Total de toutes les équipes, regroupé du lundi au dimanche. La période
-          se termine à la semaine sélectionnée ci-dessus.
+          Total de toutes les équipes, regroupé du lundi au dimanche.
           <span
             *ngIf="weeklyPaymentHistoryIncludesCurrentWeek"
             class="font-semibold text-amber-600 dark:text-amber-300"
           >
             La dernière semaine est encore en cours.
           </span>
+        </p>
+        <p
+          *ngIf="weeklyPaymentHistoryDateRangeLabel"
+          class="mt-1 text-xs font-semibold text-indigo-600 dark:text-indigo-300"
+        >
+          Période affichée : {{ weeklyPaymentHistoryDateRangeLabel }}
         </p>
       </div>
 
@@ -1488,18 +1493,74 @@
           type="button"
           [attr.data-testid]="'weekly-payment-history-range-' + range.value"
           (click)="updateWeeklyPaymentHistory(range.value)"
-          class="border border-indigo-100 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-          [ngClass]="{
-            'rounded-s-lg': first,
-            'rounded-e-lg': last,
-            'bg-indigo-600 text-white hover:bg-indigo-700 hover:text-white dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400':
-              weeklyPaymentHistoryRange === range.value
-          }"
+          class="border border-indigo-100 px-4 py-2 text-sm font-semibold transition focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:border-slate-700"
+          [class.rounded-s-lg]="first"
+          [class.rounded-e-lg]="last"
+          [ngClass]="
+            weeklyPaymentHistoryRange === range.value
+              ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400'
+              : 'bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
+          "
           [attr.aria-pressed]="weeklyPaymentHistoryRange === range.value"
         >
           {{ range.label }}
         </button>
       </div>
+    </div>
+
+    <div
+      class="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/40 md:flex-row md:items-end"
+    >
+      <label
+        for="weekly-payment-history-start"
+        class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+      >
+        Du
+        <input
+          id="weekly-payment-history-start"
+          data-testid="weekly-payment-history-start"
+          [(ngModel)]="weeklyPaymentHistoryStartDate"
+          type="date"
+          [max]="weeklyPaymentHistoryEndDate || weeklyPaymentHistoryMaxDate"
+          (change)="weeklyPaymentHistoryDateError = ''"
+          class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white md:w-44"
+        />
+      </label>
+
+      <label
+        for="weekly-payment-history-end"
+        class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+      >
+        Au
+        <input
+          id="weekly-payment-history-end"
+          data-testid="weekly-payment-history-end"
+          [(ngModel)]="weeklyPaymentHistoryEndDate"
+          type="date"
+          [min]="weeklyPaymentHistoryStartDate"
+          [max]="weeklyPaymentHistoryMaxDate"
+          (change)="weeklyPaymentHistoryDateError = ''"
+          class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white md:w-44"
+        />
+      </label>
+
+      <button
+        type="button"
+        data-testid="weekly-payment-history-apply"
+        (click)="applyWeeklyPaymentHistoryDateRange()"
+        class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+      >
+        Afficher la période
+      </button>
+
+      <p
+        *ngIf="weeklyPaymentHistoryDateError"
+        role="alert"
+        aria-live="polite"
+        class="text-sm font-semibold text-rose-600 dark:text-rose-300 md:pb-2"
+      >
+        {{ weeklyPaymentHistoryDateError }}
+      </p>
     </div>
 
     <plotly-plot

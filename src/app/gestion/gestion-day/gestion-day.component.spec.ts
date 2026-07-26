@@ -144,7 +144,10 @@ describe('GestionDayComponent weekly payment history', () => {
       },
     ];
 
-    const points = (component as any).buildWeeklyPaymentHistory('1M');
+    component.updateWeeklyPaymentHistory('1M');
+    const start = new Date(2026, 5, 22);
+    const end = new Date(2026, 6, 26);
+    const points = (component as any).buildWeeklyPaymentHistory(start, end);
 
     expect(points.map((point: any) => point.totalFc)).toEqual([
       0,
@@ -179,7 +182,10 @@ describe('GestionDayComponent weekly payment history', () => {
     expect(component.weeklyPaymentHistoryRange).toBe('1M');
     expect(component.graphWeeklyPayments).toBe(initialGraph);
     expect(
-      (component as any).buildWeeklyPaymentHistory('1M')
+      (component as any).buildWeeklyPaymentHistory(
+        new Date(2026, 6, 20),
+        new Date(2026, 6, 26)
+      )
     ).toEqual([]);
   });
 
@@ -211,5 +217,55 @@ describe('GestionDayComponent weekly payment history', () => {
       'Semaine du 20/07/2026 au 26/07/2026',
       '<br><i>Semaine en cours (partielle)</i>',
     ]);
+  });
+
+  it('applies an exact inclusive custom interval and labels partial boundary weeks', () => {
+    const component = createComponent();
+    component.allUsers = [
+      {
+        firstName: 'Pumbu',
+        dailyReimbursement: {
+          '1-12-2026': '900000',
+          '1-15-2026': '300000',
+          '1-19-2026': '600000',
+          '7-26-2026': '1200000',
+        },
+      },
+    ];
+    component.weeklyPaymentHistoryStartDate = '2026-01-15';
+    component.weeklyPaymentHistoryEndDate = '2026-07-26';
+
+    component.applyWeeklyPaymentHistoryDateRange();
+
+    const trace = component.graphWeeklyPayments.data[0];
+    expect(component.weeklyPaymentHistoryRange).toBe('CUSTOM');
+    expect(component.weeklyPaymentHistoryDateRangeLabel).toBe(
+      '15/01/2026 – 26/07/2026'
+    );
+    expect(trace.customdata[0]).toEqual([
+      300000,
+      'Semaine du 12/01/2026 au 18/01/2026',
+      '<br><i>Début de période (semaine partielle)</i>',
+    ]);
+    expect(trace.customdata[trace.customdata.length - 1]).toEqual([
+      1200000,
+      'Semaine du 20/07/2026 au 26/07/2026',
+      '<br><i>Semaine en cours (partielle)</i>',
+    ]);
+  });
+
+  it('rejects a reversed custom interval without replacing the graph', () => {
+    const component = createComponent();
+    const initialGraph = component.graphWeeklyPayments;
+    component.weeklyPaymentHistoryStartDate = '2026-07-26';
+    component.weeklyPaymentHistoryEndDate = '2026-01-15';
+
+    component.applyWeeklyPaymentHistoryDateRange();
+
+    expect(component.weeklyPaymentHistoryRange).toBe('1M');
+    expect(component.graphWeeklyPayments).toBe(initialGraph);
+    expect(component.weeklyPaymentHistoryDateError).toBe(
+      'La date de début doit précéder ou être égale à la date de fin.'
+    );
   });
 });

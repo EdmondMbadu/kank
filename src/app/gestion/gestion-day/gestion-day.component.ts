@@ -13,7 +13,8 @@ import { DataService } from 'src/app/services/data.service';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
-type WeeklyPaymentHistoryRange = '1M' | '3M' | '6M' | '1A' | 'MAX';
+type WeeklyPaymentHistoryPreset = '1M' | '3M' | '6M' | '1A' | 'MAX';
+type WeeklyPaymentHistoryRange = WeeklyPaymentHistoryPreset | 'CUSTOM';
 type GestionHeatmapMode =
   | 'paymentToday'
   | 'reserveToday'
@@ -29,6 +30,7 @@ interface WeeklyProgressMarker {
 interface WeeklyPaymentHistoryPoint {
   weekStart: Date;
   totalFc: number;
+  boundaryNote: string;
 }
 
 interface GestionHeatmapOption {
@@ -302,8 +304,13 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   weeklyPaymentRangeLabel: string = '';
   weeklyPaymentHistoryRange: WeeklyPaymentHistoryRange = '1M';
   weeklyPaymentHistoryIncludesCurrentWeek = false;
+  weeklyPaymentHistoryStartDate = '';
+  weeklyPaymentHistoryEndDate = '';
+  weeklyPaymentHistoryDateError = '';
+  readonly weeklyPaymentHistoryMaxDate =
+    this.time.getTodaysDateYearMonthDay();
   readonly weeklyPaymentHistoryRanges: Array<{
-    value: WeeklyPaymentHistoryRange;
+    value: WeeklyPaymentHistoryPreset;
     label: string;
   }> = [
     { value: '1M', label: '1M' },
@@ -321,6 +328,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       staticPlot: false,
     },
   };
+
+  get weeklyPaymentHistoryDateRangeLabel(): string {
+    const start = this.parseIsoDateKey(this.weeklyPaymentHistoryStartDate);
+    const end = this.parseIsoDateKey(this.weeklyPaymentHistoryEndDate);
+    if (!start || !end) return '';
+    return `${this.formatNumericDate(start)} – ${this.formatNumericDate(end)}`;
+  }
+
   weeklyPaymentTotals: Array<{
     firstName: string;
     total: number;
@@ -1225,16 +1240,25 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   updateWeeklyPaymentHistory(range: WeeklyPaymentHistoryRange): void {
     if (!this.auth.isAdmin) return;
 
+    this.weeklyPaymentHistoryDateError = '';
+    const bounds =
+      range === 'CUSTOM'
+        ? this.resolveCustomWeeklyPaymentHistoryBounds()
+        : this.resolvePresetWeeklyPaymentHistoryBounds(range);
+    if (!bounds) return;
+
     this.weeklyPaymentHistoryRange = range;
-    const points = this.buildWeeklyPaymentHistory(range);
-    const selectedWeekStart = this.getWeekBounds(
-      this.weeklyPaymentDateCorrectFormat
-    ).start;
+    this.weeklyPaymentHistoryStartDate = this.formatIsoDate(bounds.start);
+    this.weeklyPaymentHistoryEndDate = this.formatIsoDate(bounds.end);
+    const points = this.buildWeeklyPaymentHistory(bounds.start, bounds.end);
+    const today = this.parsePaymentDateKey(
+      this.time.todaysDateMonthDayYear()
+    )!;
     const currentWeekStart = this.getWeekBounds(
       this.time.todaysDateMonthDayYear()
     ).start;
     this.weeklyPaymentHistoryIncludesCurrentWeek =
-      selectedWeekStart.getTime() === currentWeekStart.getTime();
+      bounds.start <= today && bounds.end >= today;
     const hasPayments = points.some((point) => point.totalFc !== 0);
 
     if (!hasPayments) {
@@ -1290,13 +1314,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         {
           x: points.map((point) => this.formatIsoDate(point.weekStart)),
           y: totalsDollar,
-          customdata: points.map((point, index) => [
+          customdata: points.map((point) => [
             point.totalFc,
             this.formatWeeklyHistoryLabel(point.weekStart),
-            this.weeklyPaymentHistoryIncludesCurrentWeek &&
-            index === points.length - 1
-              ? '<br><i>Semaine en cours (partielle)</i>'
-              : '',
+            point.boundaryNote ? `<br><i>${point.boundaryNote}</i>` : '',
           ]),
           type: 'scatter',
           mode: 'lines+markers',
@@ -1331,22 +1352,26 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     };
   }
 
+  applyWeeklyPaymentHistoryDateRange(): void {
+    this.updateWeeklyPaymentHistory('CUSTOM');
+  }
+
   private buildWeeklyPaymentHistory(
-    range: WeeklyPaymentHistoryRange
+    rangeStart: Date,
+    rangeEnd: Date
   ): WeeklyPaymentHistoryPoint[] {
-    if (!this.auth.isAdmin || !this.weeklyPaymentDateCorrectFormat) {
+    if (!this.auth.isAdmin || rangeStart > rangeEnd) {
       return [];
     }
 
-    const selectedWeekStart = this.getWeekBounds(
-      this.weeklyPaymentDateCorrectFormat
+    const firstWeekStart = this.getWeekBounds(
+      this.formatDateKey(rangeStart)
     ).start;
-    const selectedWeekEnd = new Date(selectedWeekStart);
-    selectedWeekEnd.setDate(selectedWeekStart.getDate() + 6);
-    selectedWeekEnd.setHours(23, 59, 59, 999);
+    const lastWeekStart = this.getWeekBounds(
+      this.formatDateKey(rangeEnd)
+    ).start;
 
     const totalsByWeek = new Map<number, number>();
-    let earliestPaymentWeek: Date | undefined;
 
     (this.allUsers || []).forEach((user) => {
       Object.entries(user.dailyReimbursement || {}).forEach(
@@ -1356,7 +1381,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
           if (
             !paymentDate ||
-            paymentDate > selectedWeekEnd ||
+            paymentDate < rangeStart ||
+            paymentDate > rangeEnd ||
             !Number.isFinite(amount)
           ) {
             return;
@@ -1370,42 +1396,48 @@ export class GestionDayComponent implements OnInit, OnDestroy {
             weekStamp,
             (totalsByWeek.get(weekStamp) || 0) + amount
           );
-
-          if (
-            amount !== 0 &&
-            (!earliestPaymentWeek ||
-              weekStart.getTime() < earliestPaymentWeek.getTime())
-          ) {
-            earliestPaymentWeek = weekStart;
-          }
         }
       );
     });
 
-    let rangeStart: Date;
-    if (range === 'MAX') {
-      if (!earliestPaymentWeek) return [];
-      rangeStart = new Date(earliestPaymentWeek);
-    } else {
-      const weeksBack: Record<Exclude<WeeklyPaymentHistoryRange, 'MAX'>, number> =
-        {
-          '1M': 4,
-          '3M': 13,
-          '6M': 26,
-          '1A': 52,
-        };
-      rangeStart = new Date(selectedWeekStart);
-      rangeStart.setDate(
-        selectedWeekStart.getDate() - weeksBack[range] * 7
-      );
-    }
-
     const points: WeeklyPaymentHistoryPoint[] = [];
-    const cursor = new Date(rangeStart);
-    while (cursor <= selectedWeekStart) {
+    const cursor = new Date(firstWeekStart);
+    const today = this.parsePaymentDateKey(
+      this.time.todaysDateMonthDayYear()
+    )!;
+    const currentWeekStart = this.getWeekBounds(
+      this.time.todaysDateMonthDayYear()
+    ).start;
+
+    while (cursor <= lastWeekStart) {
+      const weekEnd = new Date(cursor);
+      weekEnd.setDate(cursor.getDate() + 6);
+      const boundaryNotes: string[] = [];
+
+      if (
+        cursor.getTime() === firstWeekStart.getTime() &&
+        rangeStart > cursor
+      ) {
+        boundaryNotes.push('Début de période (semaine partielle)');
+      }
+
+      if (
+        cursor.getTime() === lastWeekStart.getTime() &&
+        currentWeekStart.getTime() === cursor.getTime() &&
+        rangeEnd >= today
+      ) {
+        boundaryNotes.push('Semaine en cours (partielle)');
+      } else if (
+        cursor.getTime() === lastWeekStart.getTime() &&
+        rangeEnd < weekEnd
+      ) {
+        boundaryNotes.push('Fin de période (semaine partielle)');
+      }
+
       points.push({
         weekStart: new Date(cursor),
         totalFc: totalsByWeek.get(cursor.getTime()) || 0,
+        boundaryNote: boundaryNotes.join(' · '),
       });
       cursor.setDate(cursor.getDate() + 7);
     }
@@ -1413,13 +1445,117 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     return points;
   }
 
+  private resolvePresetWeeklyPaymentHistoryBounds(
+    range: WeeklyPaymentHistoryPreset
+  ): { start: Date; end: Date } {
+    const { start: selectedWeekStart, end: selectedWeekEnd } =
+      this.getWeekBounds(this.weeklyPaymentDateCorrectFormat);
+    const today = this.parsePaymentDateKey(
+      this.time.todaysDateMonthDayYear()
+    )!;
+    const selectedWeekContainsToday =
+      selectedWeekStart <= today && selectedWeekEnd >= today;
+    const end = selectedWeekContainsToday
+      ? new Date(today)
+      : new Date(selectedWeekEnd);
+
+    if (range === 'MAX') {
+      return {
+        start:
+          this.findEarliestWeeklyPaymentDate(end) ||
+          new Date(selectedWeekStart),
+        end,
+      };
+    }
+
+    const weeksBack: Record<
+      Exclude<WeeklyPaymentHistoryPreset, 'MAX'>,
+      number
+    > = {
+      '1M': 4,
+      '3M': 13,
+      '6M': 26,
+      '1A': 52,
+    };
+    const start = new Date(selectedWeekStart);
+    start.setDate(selectedWeekStart.getDate() - weeksBack[range] * 7);
+    return { start, end };
+  }
+
+  private resolveCustomWeeklyPaymentHistoryBounds(): {
+    start: Date;
+    end: Date;
+  } | null {
+    const start = this.parseIsoDateKey(this.weeklyPaymentHistoryStartDate);
+    const end = this.parseIsoDateKey(this.weeklyPaymentHistoryEndDate);
+
+    if (!start || !end) {
+      this.weeklyPaymentHistoryDateError =
+        'Sélectionnez une date de début et une date de fin valides.';
+      return null;
+    }
+
+    if (start > end) {
+      this.weeklyPaymentHistoryDateError =
+        'La date de début doit précéder ou être égale à la date de fin.';
+      return null;
+    }
+
+    return { start, end };
+  }
+
+  private findEarliestWeeklyPaymentDate(end: Date): Date | null {
+    let earliest: Date | null = null;
+
+    (this.allUsers || []).forEach((user) => {
+      Object.entries(user.dailyReimbursement || {}).forEach(
+        ([dateKey, rawAmount]) => {
+          const paymentDate = this.parsePaymentDateKey(dateKey);
+          const amount = Number(rawAmount);
+          if (
+            !paymentDate ||
+            paymentDate > end ||
+            !Number.isFinite(amount) ||
+            amount === 0
+          ) {
+            return;
+          }
+
+          if (!earliest || paymentDate < earliest) {
+            earliest = paymentDate;
+          }
+        }
+      );
+    });
+
+    return earliest ? new Date(earliest) : null;
+  }
+
+  private parseIsoDateKey(dateKey: string): Date | null {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey || '');
+    if (!match) return null;
+    return this.createValidatedDate(
+      Number(match[1]),
+      Number(match[2]),
+      Number(match[3])
+    );
+  }
+
   private parsePaymentDateKey(dateKey: string): Date | null {
     const match = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(dateKey || '');
     if (!match) return null;
+    return this.createValidatedDate(
+      Number(match[3]),
+      Number(match[1]),
+      Number(match[2])
+    );
+  }
 
-    const month = Number(match[1]);
-    const day = Number(match[2]);
-    const year = Number(match[3]);
+  private createValidatedDate(
+    year: number,
+    month: number,
+    day: number
+  ): Date | null {
     const parsed = new Date(year, month - 1, day);
 
     if (
