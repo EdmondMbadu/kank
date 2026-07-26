@@ -87,6 +87,7 @@ export class GestionExpenseComponent {
   budgetAmounts: string[] = [];
   budgetReasons: string[] = [];
   budgetDates: string[] = [];
+  isSavingExpense = false;
   constructor(
     public auth: AuthService,
     private data: DataService,
@@ -123,7 +124,11 @@ export class GestionExpenseComponent {
       : this.filteredExpenseEntries.slice(0, 3);
   }
 
-  addExpense() {
+  async addExpense(): Promise<void> {
+    if (this.isSavingExpense) {
+      return;
+    }
+
     if (this.expenseAmount === '' || this.expenseReason === '') {
       alert('Fill all fields!');
       return;
@@ -137,11 +142,24 @@ export class GestionExpenseComponent {
       if (!conf) {
         return;
       }
-      this.data.updateManagementInfoForAddExpense(
-        this.expenseAmount,
-        this.expenseReason
-      );
-      this.router.navigate(['/gestion-today']);
+
+      this.isSavingExpense = true;
+      try {
+        await this.data.updateManagementInfoForAddExpense(
+          this.expenseAmount,
+          this.expenseReason
+        );
+        await this.router.navigate(['/gestion-today']);
+      } catch (err: any) {
+        this.showFeedback(
+          `L'enregistrement de la dépense a échoué: ${
+            err?.message || 'Vérifiez la connexion et réessayez.'
+          }`,
+          'error'
+        );
+      } finally {
+        this.isSavingExpense = false;
+      }
     }
   }
 

@@ -2305,6 +2305,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   isSavingMoneyInHandsModal = false;
   showBudgetModal = false;
   budgetInput: number | null = null;
+  isSavingBudgetedExpense = false;
   showOtherExpenseModal = false;
   otherExpenseAmount: number | null = null;
   otherExpenseReason = '';
@@ -2359,6 +2360,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   closeBudgetModal() {
+    if (this.isSavingBudgetedExpense) return;
+
     this.showBudgetModal = false;
   }
 
@@ -2420,7 +2423,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     }
   }
 
-  async saveBudgetedExpense() {
+  async saveBudgetedExpense(): Promise<void> {
+    if (this.isSavingBudgetedExpense) return;
+
     if (this.budgetInput === null || isNaN(this.budgetInput)) {
       alert('Montant invalide');
       return;
@@ -2434,11 +2439,18 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.compute.convertUsDollarsToCongoleseFranc(this.budgetInput.toString())
     );
 
-    await this.data.addBudgetPlannedExpense(fc, this.budgetReason);
-
-    this.closeBudgetModal();
-    this.initalizeInputs(); // refresh dashboard
-    alert('Planned expense saved!');
+    this.isSavingBudgetedExpense = true;
+    try {
+      await this.data.addBudgetPlannedExpense(fc, this.budgetReason);
+      this.showBudgetModal = false;
+      this.initalizeInputs();
+      alert('Dépense planifiée enregistrée.');
+    } catch (error) {
+      console.error('Unable to save budgeted expense', error);
+      alert("Impossible d'enregistrer cette dépense planifiée.");
+    } finally {
+      this.isSavingBudgetedExpense = false;
+    }
   }
   /** Retourne le premier commentaire du jour ou null */
   private getTodaysComment(client: Client) {

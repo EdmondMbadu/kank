@@ -47,6 +47,7 @@
               id="lossAmount"
               type="text"
               [(ngModel)]="lossAmount"
+              [disabled]="isSavingLoss"
               class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-rose-500 focus:ring-rose-500"
               placeholder="20000"
               inputmode="numeric"
@@ -57,14 +58,16 @@
             <button
               type="button"
               routerLink="/gestion-today"
-              class="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+              [disabled]="isSavingLoss"
+              class="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50">
               Annuler
             </button>
             <button
               type="button"
               (click)="addLoss()"
-              class="rounded-full bg-rose-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-rose-800">
-              Ajouter
+              [disabled]="isSavingLoss"
+              class="rounded-full bg-rose-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50">
+              {{ isSavingLoss ? "Enregistrement..." : "Ajouter" }}
             </button>
           </div>
         </div>

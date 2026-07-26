@@ -34,6 +34,7 @@
             id="expenseReason"
             type="text"
             [(ngModel)]="expenseReason"
+            [disabled]="isSavingExpense"
             class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500"
             placeholder="Transport"
             required />
@@ -47,6 +48,7 @@
             id="expenseAmount"
             type="text"
             [(ngModel)]="expenseAmount"
+            [disabled]="isSavingExpense"
             class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500"
             placeholder="20000"
             required />
@@ -57,14 +59,16 @@
         <button
           type="button"
           routerLink="/gestion-today"
-          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800">
+          [disabled]="isSavingExpense"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50">
           Annuler
         </button>
         <button
           type="button"
           (click)="addExpense()"
-          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800">
-          Ajouter
+          [disabled]="isSavingExpense"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50">
+          {{ isSavingExpense ? "Enregistrement..." : "Ajouter" }}
         </button>
       </div>
     </div>

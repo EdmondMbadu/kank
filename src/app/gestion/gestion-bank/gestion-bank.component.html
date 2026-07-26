@@ -30,6 +30,7 @@
             pattern="[0-9]*"
             [ngModel]="bankAmount"
             (ngModelChange)="bankAmount = $event; compteDollarAmount()"
+            [disabled]="isSavingBankDeposit"
             id="savings"
             class="w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 pl-10 text-sm text-slate-900 focus:border-green-500 focus:ring-green-500"
             placeholder="20000"
@@ -47,6 +48,7 @@
             pattern="[0-9]*"
             [ngModel]="rateUsed"
             (ngModelChange)="rateUsed = $event; compteDollarAmount()"
+            [disabled]="isSavingBankDeposit"
             id="savings"
             class="w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-slate-900 focus:border-green-500 focus:ring-green-500"
             placeholder="2800"
@@ -64,6 +66,7 @@
             pattern="[0-9]*"
             [ngModel]="rateToday"
             (ngModelChange)="rateToday = $event; compteDollarAmount()"
+            [disabled]="isSavingBankDeposit"
             id="savings"
             class="w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-slate-900 focus:border-green-500 focus:ring-green-500"
             placeholder="2800"
@@ -88,15 +91,17 @@
           type="button"
           class="rounded-full border border-slate-300 px-5 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
           routerLink="/gestion-today"
+          [disabled]="isSavingBankDeposit"
         >
           Annuler
         </button>
         <button
           type="button"
           (click)="addToBank()"
-          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800"
+          [disabled]="isSavingBankDeposit"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Ajouter
+          {{ isSavingBankDeposit ? "Enregistrement..." : "Ajouter" }}
         </button>
       </div>
     </div>
@@ -368,7 +373,8 @@
         <button
           type="button"
           (click)="toggleRateEditor(false)"
-          class="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+          [disabled]="isSavingRates"
+          class="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
           aria-label="Fermer"
         >
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
@@ -390,6 +396,7 @@
           <input
             type="number"
             [(ngModel)]="tmpRateDollar"
+            [disabled]="isSavingRates"
             min="0"
             step="1"
             class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 focus:border-emerald-500 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
@@ -402,6 +409,7 @@
           <input
             type="number"
             [(ngModel)]="tmpRateFranc"
+            [disabled]="isSavingRates"
             min="0"
             step="0.00001"
             class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 focus:border-emerald-500 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
@@ -413,16 +421,18 @@
         <button
           type="button"
           (click)="toggleRateEditor(false)"
-          class="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+          [disabled]="isSavingRates"
+          class="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
         >
           Annuler
         </button>
         <button
           type="button"
           (click)="saveRates()"
-          class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          [disabled]="isSavingRates"
+          class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Enregistrer
+          {{ isSavingRates ? "Enregistrement..." : "Enregistrer" }}
         </button>
       </div>
 

@@ -61,6 +61,7 @@ export class GestionInvestmentComponent {
   feedbackMessage = '';
   feedbackType: 'success' | 'error' = 'success';
   private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  isSavingInvestment = false;
   constructor(
     public auth: AuthService,
     private data: DataService,
@@ -96,7 +97,11 @@ export class GestionInvestmentComponent {
     return Number(converted) || 0;
   }
 
-  async addToInvestment() {
+  async addToInvestment(): Promise<void> {
+    if (this.isSavingInvestment) {
+      return;
+    }
+
     if (this.investmentAmount === '') {
       alert('Fill all fields!');
       return;
@@ -110,16 +115,21 @@ export class GestionInvestmentComponent {
       if (!conf) {
         return;
       }
+      this.isSavingInvestment = true;
       try {
-        const updateManagement =
-          await this.data.updateManagementInfoForAddToInvestment(
-            this.investmentAmount
-          );
-        this.router.navigate(['/gestion-today']);
+        await this.data.updateManagementInfoForAddToInvestment(
+          this.investmentAmount
+        );
+        await this.router.navigate(['/gestion-today']);
       } catch (err: any) {
-        alert("Une erreur s'est produite lors de l'initialization, Réessayez");
-
-        return;
+        this.showFeedback(
+          `L'enregistrement de l'investissement a échoué: ${
+            err?.message || 'Vérifiez la connexion et réessayez.'
+          }`,
+          'error'
+        );
+      } finally {
+        this.isSavingInvestment = false;
       }
     }
   }

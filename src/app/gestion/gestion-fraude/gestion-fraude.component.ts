@@ -69,6 +69,10 @@ export class GestionFraudeComponent implements OnInit {
   }
 
   async saveFraud() {
+    if (this.isSaving) {
+      return;
+    }
+
     if (this.fraudAmount === '' || this.fraudReason.trim() === '') {
       alert('Fill all fields!');
       return;
@@ -132,6 +136,10 @@ export class GestionFraudeComponent implements OnInit {
   }
 
   async deleteEntry(entry: FraudEntry) {
+    if (this.isSaving) {
+      return;
+    }
+
     const conf = confirm(
       `Supprimer la fraude de ${entry.amount} FC (${entry.location}) ?`
     );

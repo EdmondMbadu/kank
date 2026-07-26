@@ -21,6 +21,7 @@
       <input
         type="text"
         [(ngModel)]="fraudReason"
+        [disabled]="isSaving"
         id="fraud-reason"
         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
         placeholder="fausse déclaration"
@@ -34,6 +35,7 @@
       </label>
       <select
         [(ngModel)]="fraudLocation"
+        [disabled]="isSaving"
         id="fraud-location"
         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
         required
@@ -49,6 +51,7 @@
       <input
         type="text"
         [(ngModel)]="fraudAmount"
+        [disabled]="isSaving"
         id="fraud-amount"
         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
         placeholder="20000"
@@ -61,6 +64,7 @@
         type="button"
         class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm px-5 py-2.5"
         routerLink="/gestion-today"
+        [disabled]="isSaving"
       >
         Retour
       </button>
@@ -71,7 +75,13 @@
         (click)="saveFraud()"
         [disabled]="isSaving"
       >
-        {{ editingEntryKey ? 'Mettre à jour' : 'Ajouter' }}
+        {{
+          isSaving
+            ? "Enregistrement..."
+            : editingEntryKey
+            ? "Mettre à jour"
+            : "Ajouter"
+        }}
       </button>
 
       <button
@@ -79,6 +89,7 @@
         type="button"
         class="text-white bg-gray-600 hover:bg-gray-700 font-medium rounded-full text-sm px-5 py-2.5"
         (click)="cancelEdit()"
+        [disabled]="isSaving"
       >
         Annuler modification
       </button>

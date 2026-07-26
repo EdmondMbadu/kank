@@ -1941,6 +1941,7 @@
     <input
       [(ngModel)]="budgetInput"
       type="number"
+      [disabled]="isSavingBudgetedExpense"
       class="border rounded w-full p-2 mb-4"
       placeholder="ex. 50 ou -25"
     />
@@ -1949,6 +1950,7 @@
     <input
       [(ngModel)]="budgetReason"
       type="text"
+      [disabled]="isSavingBudgetedExpense"
       class="border rounded w-full p-2 mb-4"
       placeholder="ex. transport"
     />
@@ -1956,15 +1958,17 @@
     <div class="flex justify-end space-x-2">
       <button
         (click)="closeBudgetModal()"
-        class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 dark:bg-gray-700"
+        [disabled]="isSavingBudgetedExpense"
+        class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-700"
       >
         Annuler
       </button>
       <button
         (click)="saveBudgetedExpense()"
-        class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+        [disabled]="isSavingBudgetedExpense"
+        class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Enregistrer
+        {{ isSavingBudgetedExpense ? "Enregistrement..." : "Enregistrer" }}
       </button>
     </div>
   </div>

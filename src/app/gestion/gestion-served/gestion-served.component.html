@@ -69,7 +69,8 @@
             inputmode="numeric"
             autocomplete="off"
             [(ngModel)]="reserveAmount"
-            class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3 py-2.5 text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
+            [disabled]="isSavingServed"
+            class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3 py-2.5 text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-white dark:border-slate-600"
             placeholder="20000"
           />
         </div>
@@ -86,7 +87,8 @@
         <button
           type="button"
           routerLink="/gestion-today"
-          class="inline-flex dark:text-white items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700"
+          [disabled]="isSavingServed"
+          class="inline-flex dark:text-white items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700"
         >
           Annuler
         </button>
@@ -94,10 +96,12 @@
         <button
           type="button"
           (click)="addToReserve()"
-          [disabled]="!canSubmit() && !this.auth.isAdmin"
+          [disabled]="
+            isSavingServed || (!canSubmit() && !auth.isAdmin)
+          "
           class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Ajouter
+          {{ isSavingServed ? "Enregistrement..." : "Ajouter" }}
         </button>
       </div>
     </div>

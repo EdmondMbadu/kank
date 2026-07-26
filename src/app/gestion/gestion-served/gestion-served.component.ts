@@ -32,6 +32,7 @@ export class GestionServedComponent {
   filteredRecords: ServedRecord[] = [];
   showAllRecords = false;
   showPeriodPanel = false;
+  isSavingServed = false;
 
   periodMode: PeriodMode = 'month';
   selectedMonth = new Date().getMonth() + 1;
@@ -85,7 +86,11 @@ export class GestionServedComponent {
     return Number(converted) || 0;
   }
 
-  async addToReserve() {
+  async addToReserve(): Promise<void> {
+    if (this.isSavingServed) {
+      return;
+    }
+
     if (this.reserveAmount === '') {
       alert('Fill all fields!');
       return;
@@ -102,12 +107,19 @@ export class GestionServedComponent {
     );
     if (!conf) return;
 
+    this.isSavingServed = true;
     try {
       await this.data.updateManagementInfoForMoneyGiven(this.reserveAmount);
-      this.router.navigate(['/gestion-today']);
-    } catch (err) {
-      alert("Une erreur s'est produite. Réessayez.");
+      await this.router.navigate(['/gestion-today']);
+    } catch (err: any) {
+      alert(
+        `L'enregistrement a échoué: ${
+          err?.message || 'vérifiez la connexion et réessayez.'
+        }`
+      );
       console.error('reserve amount error', err);
+    } finally {
+      this.isSavingServed = false;
     }
   }
 

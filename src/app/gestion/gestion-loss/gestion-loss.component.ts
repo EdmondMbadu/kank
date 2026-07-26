@@ -66,6 +66,7 @@ export class GestionLossComponent implements OnDestroy {
   feedbackMessage = '';
   feedbackType: 'success' | 'error' = 'success';
   private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  isSavingLoss = false;
 
   showDeleteLossModal = false;
   deletingLossKey: string | null = null;
@@ -154,6 +155,10 @@ export class GestionLossComponent implements OnDestroy {
   }
 
   async addLoss(): Promise<void> {
+    if (this.isSavingLoss) {
+      return;
+    }
+
     if (this.lossAmount.trim() === '') {
       this.showFeedback('Entrez un montant avant d’ajouter une perte.', 'error');
       return;
@@ -171,6 +176,7 @@ export class GestionLossComponent implements OnDestroy {
       return;
     }
 
+    this.isSavingLoss = true;
     try {
       await this.data.updateManagementInfoForMoneyLoss(this.lossAmount);
       this.lossAmount = '';
@@ -180,6 +186,8 @@ export class GestionLossComponent implements OnDestroy {
         `L’ajout de la perte a échoué: ${err?.message || 'Erreur inconnue'}`,
         'error'
       );
+    } finally {
+      this.isSavingLoss = false;
     }
   }
 

@@ -64,6 +64,7 @@ export class GestionOtherExpensesComponent {
   feedbackMessage = '';
   feedbackType: 'success' | 'error' = 'success';
   private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  isSavingOtherExpense = false;
 
   constructor(
     public auth: AuthService,
@@ -100,7 +101,7 @@ export class GestionOtherExpensesComponent {
   }
 
   async addOtherExpense(): Promise<void> {
-    if (!this.auth.isAdmin) return;
+    if (!this.auth.isAdmin || this.isSavingOtherExpense) return;
 
     if (this.otherExpenseAmount === '' || this.otherExpenseReason === '') {
       alert('Fill all fields!');
@@ -123,6 +124,7 @@ export class GestionOtherExpensesComponent {
     );
     if (!conf) return;
 
+    this.isSavingOtherExpense = true;
     try {
       const dateKey = this.time.todaysDate();
       await this.data.addManagementOtherExpense(amount.toString(), reason, dateKey);
@@ -144,6 +146,8 @@ export class GestionOtherExpensesComponent {
         }`,
         'error'
       );
+    } finally {
+      this.isSavingOtherExpense = false;
     }
   }
 

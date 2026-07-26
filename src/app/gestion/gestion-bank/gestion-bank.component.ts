@@ -38,6 +38,8 @@ export class GestionBankComponent {
   editingValue: string = '';
   editingFrancValue: string = '';
   isSavingEntry = false;
+  isSavingBankDeposit = false;
+  isSavingRates = false;
   showDeleteBankModal = false;
   deletingBankEntryKey: string | null = null;
   pendingDeleteBankEntry: {
@@ -63,7 +65,11 @@ export class GestionBankComponent {
     this.tmpRateFranc = this.compute.rateFranc;
   }
 
-  async addToBank() {
+  async addToBank(): Promise<void> {
+    if (this.isSavingBankDeposit) {
+      return;
+    }
+
     this.compteDollarAmount();
 
     if (
@@ -90,18 +96,23 @@ export class GestionBankComponent {
       if (!conf) {
         return;
       }
+      this.isSavingBankDeposit = true;
       try {
-        const updateManagement =
-          await this.data.updateManagementInfoToAddMoneyInTheBank(
-            this.bankAmount,
-            this.moneyInDollar,
-            this.loss
-          );
-        this.router.navigate(['/gestion-today']);
+        await this.data.updateManagementInfoToAddMoneyInTheBank(
+          this.bankAmount,
+          this.moneyInDollar,
+          this.loss
+        );
+        await this.router.navigate(['/gestion-today']);
       } catch (err: any) {
-        alert("Une erreur s'est produite lors de l'initialization, Réessayez");
-        console.log('error ocorred while entering reserve amount', err);
-        return;
+        alert(
+          `L'enregistrement bancaire a échoué: ${
+            err?.message || 'vérifiez la connexion et réessayez.'
+          }`
+        );
+        console.error('bank deposit error', err);
+      } finally {
+        this.isSavingBankDeposit = false;
       }
     }
   }
@@ -156,6 +167,10 @@ export class GestionBankComponent {
 
   // ADD methods
   toggleRateEditor(force?: boolean) {
+    if (this.isSavingRates && force === false) {
+      return;
+    }
+
     this.showRateEditor =
       typeof force === 'boolean' ? force : !this.showRateEditor;
     if (this.showRateEditor) {
@@ -164,20 +179,31 @@ export class GestionBankComponent {
     }
   }
 
-  async saveRates() {
+  async saveRates(): Promise<void> {
+    if (this.isSavingRates) {
+      return;
+    }
+
     const rd = Number(this.tmpRateDollar);
     const rf = Number(this.tmpRateFranc);
     if (!Number.isFinite(rd) || rd <= 0 || !Number.isFinite(rf) || rf <= 0) {
       alert('Entrez des valeurs valides pour les deux taux.');
       return;
     }
-    this.compute.setRates({ rateDollar: rd, rateFranc: rf }); // live now
+    this.isSavingRates = true;
     try {
       await this.compute.updateManagementRates(rd, rf);
-    } catch {
-      /* keep runtime */
+      this.compute.setRates({ rateDollar: rd, rateFranc: rf });
+      this.showRateEditor = false;
+    } catch (err: any) {
+      alert(
+        `L'enregistrement des taux a échoué: ${
+          err?.message || 'vérifiez la connexion et réessayez.'
+        }`
+      );
+    } finally {
+      this.isSavingRates = false;
     }
-    this.showRateEditor = false;
   }
 
   // convenience for filling inputs elsewhere (optional)

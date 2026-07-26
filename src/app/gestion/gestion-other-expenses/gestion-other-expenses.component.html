@@ -30,7 +30,8 @@
         <button
           type="button"
           (click)="backToMonth()"
-          class="self-start rounded-full border border-green-200 bg-white px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50">
+          [disabled]="isSavingOtherExpense"
+          class="self-start rounded-full border border-green-200 bg-white px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50">
           Retour au mois
         </button>
       </div>
@@ -48,6 +49,7 @@
             id="otherExpenseReason"
             type="text"
             [(ngModel)]="otherExpenseReason"
+            [disabled]="isSavingOtherExpense"
             class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500"
             placeholder="Salaire, transport, frais non saisis"
             required />
@@ -61,6 +63,7 @@
             id="otherExpenseAmount"
             type="text"
             [(ngModel)]="otherExpenseAmount"
+            [disabled]="isSavingOtherExpense"
             class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500"
             placeholder="50000"
             required />
@@ -75,14 +78,16 @@
         <button
           type="button"
           routerLink="/gestion-month"
-          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800">
+          [disabled]="isSavingOtherExpense"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50">
           Annuler
         </button>
         <button
           type="button"
           (click)="addOtherExpense()"
-          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800">
-          Ajouter
+          [disabled]="isSavingOtherExpense"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50">
+          {{ isSavingOtherExpense ? "Enregistrement..." : "Ajouter" }}
         </button>
       </div>
     </div>
