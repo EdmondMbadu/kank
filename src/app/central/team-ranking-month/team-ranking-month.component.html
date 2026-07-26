@@ -6735,6 +6735,368 @@
   </div>
 </section>
 
+<!-- === MONEY AVAILABILITY POLICY SECTION === -->
+<section
+  *ngIf="auth.isAdmin"
+  class="px-4 pb-8 mx-auto max-w-5xl lg:px-6"
+>
+  <div
+    class="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none"
+  >
+    <button
+      type="button"
+      (click)="moneyPolicySectionOpen = !moneyPolicySectionOpen"
+      class="flex w-full flex-col gap-4 px-6 py-5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md"
+        >
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" />
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+            Règles de disponibilité des prêts
+          </h2>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Délais automatiques selon le score de crédit, avec dérogations par localisation.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 self-end sm:self-center">
+        <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-200 dark:ring-indigo-800">
+          {{ activeMoneyPolicyOverrides.length }} dérogation(s) active(s)
+        </span>
+        <svg
+          class="h-6 w-6 text-slate-500 transition-transform dark:text-slate-300"
+          [class.rotate-180]="moneyPolicySectionOpen"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+
+    <div
+      *ngIf="moneyPolicySectionOpen"
+      class="border-t border-slate-200 p-5 dark:border-slate-800 sm:p-6"
+    >
+      <div class="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-sm font-semibold dark:border-slate-700 dark:bg-slate-800">
+        <button
+          type="button"
+          (click)="setMoneyPolicyView('global')"
+          class="rounded-lg px-4 py-2 transition"
+          [ngClass]="
+            moneyPolicyView === 'global'
+              ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-200'
+              : 'text-slate-600 dark:text-slate-300'
+          "
+        >
+          Règle générale
+        </button>
+        <button
+          type="button"
+          (click)="setMoneyPolicyView('location')"
+          class="rounded-lg px-4 py-2 transition"
+          [ngClass]="
+            moneyPolicyView === 'location'
+              ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-200'
+              : 'text-slate-600 dark:text-slate-300'
+          "
+        >
+          Par localisation
+        </button>
+      </div>
+
+      <div *ngIf="moneyPolicyView === 'global'" class="mt-6 space-y-5">
+        <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+          <strong>{{ moneyPolicyAffectedLocationCount }}</strong> sur
+          <strong>{{ allUsers.length }}</strong> localisation(s) utilisent actuellement
+          la règle générale. Les
+          <strong>{{ activeMoneyPolicyOverrides.length }}</strong> dérogation(s)
+          restent inchangées avec « Enregistrer la règle générale ».
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+          <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+              <tr>
+                <th class="px-4 py-3">Plage de score</th>
+                <th class="px-4 py-3">Fin de plage</th>
+                <th class="px-4 py-3">Jours ouvrables</th>
+                <th class="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr *ngFor="let rule of globalMoneyPolicyDraft; let i = index">
+                <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">
+                  {{ moneyPolicyRangeLabel(rule) }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    *ngIf="i === globalMoneyPolicyDraft.length - 1"
+                    class="text-slate-500 dark:text-slate-400"
+                  >
+                    Sans maximum
+                  </span>
+                  <input
+                    *ngIf="i < globalMoneyPolicyDraft.length - 1"
+                    [(ngModel)]="rule.maxScore"
+                    (ngModelChange)="onMoneyPolicyMaxScoreChange(globalMoneyPolicyDraft, i)"
+                    type="number"
+                    class="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  />
+                </td>
+                <td class="px-4 py-3">
+                  <input
+                    [(ngModel)]="rule.openDays"
+                    type="number"
+                    min="0"
+                    max="30"
+                    class="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  />
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <button
+                    type="button"
+                    (click)="removeMoneyPolicyRule(globalMoneyPolicyDraft, i)"
+                    [disabled]="globalMoneyPolicyDraft.length <= 2"
+                    class="rounded-lg px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                  >
+                    Retirer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <button
+          type="button"
+          (click)="addMoneyPolicyRule(globalMoneyPolicyDraft)"
+          class="rounded-xl border border-dashed border-indigo-300 px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-200 dark:hover:bg-indigo-950/30"
+        >
+          Ajouter une plage
+        </button>
+
+        <ul
+          *ngIf="globalMoneyPolicyErrors.length"
+          class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
+        >
+          <li *ngFor="let error of globalMoneyPolicyErrors">• {{ error }}</li>
+        </ul>
+
+        <div class="grid gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-800 sm:grid-cols-[180px_1fr] sm:items-end">
+          <label class="space-y-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <span>Prévisualiser un score</span>
+            <input
+              [(ngModel)]="moneyPolicyPreviewScore"
+              type="number"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-900"
+            />
+          </label>
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wide text-slate-500">Résultat à partir d’aujourd’hui</div>
+            <div class="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+              {{ globalMoneyPolicyPreviewLabel }}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 lg:flex-row lg:justify-end">
+          <button
+            type="button"
+            (click)="saveGlobalMoneyPolicy(false)"
+            [disabled]="moneyPolicySaving || globalMoneyPolicyErrors.length > 0"
+            class="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Enregistrer la règle générale
+          </button>
+          <button
+            type="button"
+            (click)="saveGlobalMoneyPolicy(true)"
+            [disabled]="moneyPolicySaving || globalMoneyPolicyErrors.length > 0"
+            class="rounded-xl bg-rose-600 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Appliquer à toutes les localisations
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="moneyPolicyView === 'location'" class="mt-6 space-y-5">
+        <label class="block space-y-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <span>Localisation</span>
+          <select
+            [(ngModel)]="selectedMoneyPolicyLocationId"
+            (change)="onMoneyPolicyLocationChange()"
+            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800"
+          >
+            <option *ngFor="let team of sortedBudgetTeams" [value]="team.uid">
+              {{ getBudgetTeamLabel(team) }}
+            </option>
+          </select>
+        </label>
+
+        <div
+          class="rounded-xl border p-4 text-sm"
+          [ngClass]="
+            selectedMoneyPolicyUsesOverride
+              ? 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100'
+          "
+        >
+          <strong>{{ getBudgetTeamLabel(selectedMoneyPolicyLocation) }}</strong>
+          utilise
+          <strong>
+            {{
+              selectedMoneyPolicyUsesOverride
+                ? "une dérogation locale"
+                : "la règle générale"
+            }}
+          </strong>.
+          <span *ngIf="selectedMoneyPolicyOverride && !selectedMoneyPolicyUsesOverride">
+            L’ancienne dérogation est conservée dans l’historique.
+          </span>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+          <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+              <tr>
+                <th class="px-4 py-3">Plage de score</th>
+                <th class="px-4 py-3">Fin de plage</th>
+                <th class="px-4 py-3">Jours ouvrables</th>
+                <th class="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr *ngFor="let rule of locationMoneyPolicyDraft; let i = index">
+                <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">
+                  {{ moneyPolicyRangeLabel(rule) }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    *ngIf="i === locationMoneyPolicyDraft.length - 1"
+                    class="text-slate-500 dark:text-slate-400"
+                  >
+                    Sans maximum
+                  </span>
+                  <input
+                    *ngIf="i < locationMoneyPolicyDraft.length - 1"
+                    [(ngModel)]="rule.maxScore"
+                    (ngModelChange)="onMoneyPolicyMaxScoreChange(locationMoneyPolicyDraft, i)"
+                    type="number"
+                    class="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  />
+                </td>
+                <td class="px-4 py-3">
+                  <input
+                    [(ngModel)]="rule.openDays"
+                    type="number"
+                    min="0"
+                    max="30"
+                    class="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  />
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <button
+                    type="button"
+                    (click)="removeMoneyPolicyRule(locationMoneyPolicyDraft, i)"
+                    [disabled]="locationMoneyPolicyDraft.length <= 2"
+                    class="rounded-lg px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                  >
+                    Retirer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button
+            type="button"
+            (click)="addMoneyPolicyRule(locationMoneyPolicyDraft)"
+            class="rounded-xl border border-dashed border-indigo-300 px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-200"
+          >
+            Ajouter une plage
+          </button>
+          <button
+            type="button"
+            (click)="copyGlobalMoneyPolicyToLocationDraft()"
+            class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200"
+          >
+            Copier la règle générale dans l’éditeur
+          </button>
+        </div>
+
+        <ul
+          *ngIf="locationMoneyPolicyErrors.length"
+          class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
+        >
+          <li *ngFor="let error of locationMoneyPolicyErrors">• {{ error }}</li>
+        </ul>
+
+        <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+          <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Prévisualisation pour le score {{ moneyPolicyPreviewScore }}
+          </div>
+          <div class="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+            {{ locationMoneyPolicyPreviewLabel }}
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            *ngIf="selectedMoneyPolicyUsesOverride"
+            type="button"
+            (click)="disableSelectedLocationMoneyPolicy()"
+            [disabled]="moneyPolicySaving"
+            class="rounded-xl border border-rose-300 px-5 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-800 dark:text-rose-200"
+          >
+            Revenir à la règle générale
+          </button>
+          <button
+            type="button"
+            (click)="saveSelectedLocationMoneyPolicy()"
+            [disabled]="moneyPolicySaving || locationMoneyPolicyErrors.length > 0 || !selectedMoneyPolicyLocationId"
+            class="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Enregistrer la dérogation
+          </button>
+        </div>
+      </div>
+
+      <p
+        *ngIf="moneyPolicyMessage"
+        class="mt-5 rounded-xl bg-slate-100 p-4 text-sm font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      >
+        {{ moneyPolicyMessage }}
+      </p>
+
+      <p class="mt-5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+        Les jours ouvrables sont actuellement du lundi au samedi. Les dates déjà
+        enregistrées pour les clients ne sont jamais modifiées rétroactivement.
+      </p>
+    </div>
+  </div>
+</section>
+
 <!-- === TEAM TRANSPORT RECEIPTS SECTION === -->
 <section
   *ngIf="auth.isAdmin"

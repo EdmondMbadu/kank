@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -7,35 +7,77 @@ import { TimeService } from 'src/app/services/time.service';
 import { Client } from 'src/app/models/client';
 import { LocationCoordinates } from 'src/app/models/user';
 import { coerceToNumber } from 'src/app/utils/number-utils';
+import { of, Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import {
+  MoneyAvailabilityLocationOverride,
+  MoneyAvailabilityPolicyActor,
+  MoneyAvailabilityPolicyService,
+} from 'src/app/services/money-availability-policy.service';
+import {
+  cloneMoneyAvailabilityRules,
+  DEFAULT_MONEY_AVAILABILITY_POLICY,
+  formatMoneyAvailabilityDate,
+  formatMoneyAvailabilityRuleRange,
+  formatOpenDaysLabel,
+  getMoneyAvailability,
+  MoneyAvailabilityRule,
+  ResolvedMoneyAvailabilityPolicy,
+  validateMoneyAvailabilityRules,
+} from 'src/app/utils/money-availability.util';
 type GeoStatus = 'granted' | 'prompt' | 'denied' | 'unknown';
 @Component({
   selector: 'app-tracking',
   templateUrl: './tracking.component.html',
   styleUrls: ['./tracking.component.css'],
 })
-export class TrackingComponent {
+export class TrackingComponent implements OnDestroy {
   constructor(
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
     private compute: ComputationService,
-    private data: DataService
+    private data: DataService,
+    private moneyPolicy: MoneyAvailabilityPolicyService
   ) {}
   ngOnInit() {
     this.setCurrentMonth();
+    this.listenToLocationMoneyPolicy();
     this.retrieveClients();
   }
 
+  ngOnDestroy(): void {
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe());
+    this.subscriptions = [];
+  }
+
   retrieveClients(): void {
-    this.auth.getAllClients().subscribe((data: any) => {
-      this.clients = Array.isArray(data)
-        ? (data.filter(Boolean) as Client[])
-        : [];
-      this.initalizeInputs();
-    });
+    this.subscriptions.push(
+      this.auth.getAllClients().subscribe((data: any) => {
+        this.clients = Array.isArray(data)
+          ? (data.filter(Boolean) as Client[])
+          : [];
+        this.initalizeInputs();
+      })
+    );
   }
   public currentMonth: string = '';
   clients: Client[] = [];
+  private subscriptions: Subscription[] = [];
+
+  resolvedMoneyPolicy: ResolvedMoneyAvailabilityPolicy = {
+    policy: DEFAULT_MONEY_AVAILABILITY_POLICY,
+    source: 'fallback',
+    locationId: '',
+  };
+  locationMoneyPolicyOverride: MoneyAvailabilityLocationOverride | null = null;
+  globalMoneyPolicyRules: MoneyAvailabilityRule[] =
+    cloneMoneyAvailabilityRules(DEFAULT_MONEY_AVAILABILITY_POLICY.rules);
+  locationMoneyPolicyDraft: MoneyAvailabilityRule[] =
+    cloneMoneyAvailabilityRules(DEFAULT_MONEY_AVAILABILITY_POLICY.rules);
+  locationMoneyPolicyPreviewScore = 50;
+  locationMoneyPolicySaving = false;
+  locationMoneyPolicyMessage = '';
   // ---------- existing fields ----------
 
   withinRadius: boolean | null = null;
@@ -248,6 +290,216 @@ export class TrackingComponent {
       return;
     }
     await this.setUserField('savingsRequiredPercent', value);
+  }
+
+  get locationMoneyPolicyErrors(): string[] {
+    return validateMoneyAvailabilityRules(this.locationMoneyPolicyDraft);
+  }
+
+  get locationMoneyPolicyPreviewLabel(): string {
+    const rules =
+      this.locationMoneyPolicyErrors.length === 0
+        ? this.locationMoneyPolicyDraft
+        : this.resolvedMoneyPolicy.policy.rules;
+    const availability = getMoneyAvailability(
+      Number(this.locationMoneyPolicyPreviewScore),
+      new Date(),
+      {
+        version: this.resolvedMoneyPolicy.policy.version,
+        rules,
+      }
+    );
+    return `${formatOpenDaysLabel(
+      availability.openDays
+    )} · ${formatMoneyAvailabilityDate(availability.earliestDate)}`;
+  }
+
+  get locationMoneyPolicySourceLabel(): string {
+    return this.resolvedMoneyPolicy.source === 'location'
+      ? 'Dérogation de cette localisation'
+      : 'Règle générale';
+  }
+
+  trackingMoneyPolicyRangeLabel(rule: MoneyAvailabilityRule): string {
+    return formatMoneyAvailabilityRuleRange(rule);
+  }
+
+  onTrackingMoneyPolicyMaxScoreChange(index: number): void {
+    const current = this.locationMoneyPolicyDraft[index];
+    const next = this.locationMoneyPolicyDraft[index + 1];
+    if (!current || !next || current.maxScore === null) return;
+    const maxScore = Number(current.maxScore);
+    if (Number.isInteger(maxScore)) {
+      current.maxScore = maxScore;
+      next.minScore = maxScore + 1;
+    }
+  }
+
+  addTrackingMoneyPolicyRule(): void {
+    const rules = this.locationMoneyPolicyDraft;
+    const lastIndex = rules.length - 1;
+    const last = rules[lastIndex];
+    if (!last || last.minScore === null) return;
+    const splitEnd = last.minScore + 9;
+    rules.splice(lastIndex, 0, {
+      id: `custom-${Date.now()}`,
+      minScore: last.minScore,
+      maxScore: splitEnd,
+      openDays: last.openDays,
+    });
+    last.minScore = splitEnd + 1;
+    this.locationMoneyPolicyMessage = '';
+  }
+
+  removeTrackingMoneyPolicyRule(index: number): void {
+    const rules = this.locationMoneyPolicyDraft;
+    if (rules.length <= 2 || index < 0 || index >= rules.length) return;
+    const removed = rules[index];
+    if (index === 0) {
+      rules[index + 1].minScore = null;
+    } else {
+      rules[index - 1].maxScore = removed.maxScore;
+    }
+    rules.splice(index, 1);
+    this.locationMoneyPolicyMessage = '';
+  }
+
+  copyGlobalPolicyToLocationDraft(): void {
+    this.locationMoneyPolicyDraft = cloneMoneyAvailabilityRules(
+      this.globalMoneyPolicyRules
+    );
+  }
+
+  async saveTrackingLocationMoneyPolicy(): Promise<void> {
+    const locationId = this.auth.currentUser?.uid || '';
+    if (
+      !this.auth.isAdmninistrator ||
+      !locationId ||
+      this.locationMoneyPolicySaving
+    ) {
+      return;
+    }
+    if (this.locationMoneyPolicyErrors.length > 0) {
+      this.locationMoneyPolicyMessage =
+        this.locationMoneyPolicyErrors.join(' ');
+      return;
+    }
+
+    this.locationMoneyPolicySaving = true;
+    this.locationMoneyPolicyMessage = '';
+    try {
+      await this.ensureTrackingMoneyPolicyAdminWriteAccess();
+      await this.moneyPolicy.saveLocationOverride(
+        locationId,
+        this.locationMoneyPolicyDraft,
+        this.trackingMoneyPolicyActor()
+      );
+      this.locationMoneyPolicyMessage =
+        'Dérogation enregistrée pour cette localisation.';
+    } catch (error: any) {
+      this.locationMoneyPolicyMessage =
+        error?.message || "Impossible d'enregistrer la dérogation.";
+    } finally {
+      this.locationMoneyPolicySaving = false;
+    }
+  }
+
+  async disableTrackingLocationMoneyPolicy(): Promise<void> {
+    const locationId = this.auth.currentUser?.uid || '';
+    if (
+      !this.auth.isAdmninistrator ||
+      !locationId ||
+      this.locationMoneyPolicySaving ||
+      this.resolvedMoneyPolicy.source !== 'location'
+    ) {
+      return;
+    }
+
+    this.locationMoneyPolicySaving = true;
+    this.locationMoneyPolicyMessage = '';
+    try {
+      await this.ensureTrackingMoneyPolicyAdminWriteAccess();
+      await this.moneyPolicy.disableLocationOverride(
+        locationId,
+        this.trackingMoneyPolicyActor()
+      );
+      this.locationMoneyPolicyDraft = cloneMoneyAvailabilityRules(
+        this.globalMoneyPolicyRules
+      );
+      this.locationMoneyPolicyMessage =
+        'Dérogation désactivée. La règle générale est de nouveau active.';
+    } catch (error: any) {
+      this.locationMoneyPolicyMessage =
+        error?.message || 'Impossible de désactiver la dérogation.';
+    } finally {
+      this.locationMoneyPolicySaving = false;
+    }
+  }
+
+  private listenToLocationMoneyPolicy(): void {
+    this.subscriptions.push(
+      this.moneyPolicy.globalPolicy$.subscribe((policy) => {
+        this.globalMoneyPolicyRules = cloneMoneyAvailabilityRules(policy.rules);
+      })
+    );
+    this.subscriptions.push(
+      (this.auth.user$ || of(this.auth.currentUser))
+        .pipe(
+          switchMap((user) =>
+            this.moneyPolicy.resolvedPolicy$(
+              user?.uid || this.auth.currentUser?.uid || ''
+            )
+          )
+        )
+        .subscribe((resolved) => {
+          this.resolvedMoneyPolicy = resolved;
+          if (!this.locationMoneyPolicySaving) {
+            this.locationMoneyPolicyDraft = cloneMoneyAvailabilityRules(
+              resolved.policy.rules
+            );
+          }
+        })
+    );
+    this.subscriptions.push(
+      (this.auth.user$ || of(this.auth.currentUser))
+        .pipe(
+          switchMap((user) =>
+            this.moneyPolicy.locationOverride$(
+              user?.uid || this.auth.currentUser?.uid || ''
+            )
+          )
+        )
+        .subscribe((override) => {
+          this.locationMoneyPolicyOverride = override;
+        })
+    );
+  }
+
+  private trackingMoneyPolicyActor(): MoneyAvailabilityPolicyActor {
+    const user = this.auth.currentUser || {};
+    return {
+      uid: user.uid || '',
+      name:
+        [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
+        user.email ||
+        'Administrateur',
+    };
+  }
+
+  private async ensureTrackingMoneyPolicyAdminWriteAccess(): Promise<void> {
+    const roles = Array.isArray(this.auth.currentUser?.roles)
+      ? this.auth.currentUser.roles
+      : [];
+    const hasPersistedAdmin =
+      this.auth.currentUser?.admin === 'true' || roles.includes('admin');
+    if (hasPersistedAdmin || !this.auth.isAdmninistrator) {
+      return;
+    }
+    await this.auth.makeAdmin();
+    this.auth.currentUser = {
+      ...this.auth.currentUser,
+      admin: 'true',
+    };
   }
 
   async setUserField(field: string, value: any, pass = '') {

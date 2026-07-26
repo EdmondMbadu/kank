@@ -4,19 +4,25 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
+import { MoneyAvailabilityPolicyService } from 'src/app/services/money-availability-policy.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { NewCycleRegisterComponent } from './new-cycle-register.component';
+import {
+  DEFAULT_MONEY_AVAILABILITY_POLICY,
+  ResolvedMoneyAvailabilityPolicy,
+} from 'src/app/utils/money-availability.util';
 
 describe('NewCycleRegisterComponent', () => {
   let component: NewCycleRegisterComponent;
   let fixture: ComponentFixture<NewCycleRegisterComponent>;
+  let resolvedPolicySubject: BehaviorSubject<ResolvedMoneyAvailabilityPolicy>;
 
   const cycleClient = Object.assign(new Client(), {
     uid: 'client-28',
@@ -106,6 +112,12 @@ describe('NewCycleRegisterComponent', () => {
   }
 
   beforeEach(async () => {
+    resolvedPolicySubject =
+      new BehaviorSubject<ResolvedMoneyAvailabilityPolicy>({
+        policy: DEFAULT_MONEY_AVAILABILITY_POLICY,
+        source: 'fallback',
+        locationId: 'location-1',
+      });
     const clients = Array.from({ length: 29 }, () => new Client());
     clients[28] = Object.assign(new Client(), cycleClient);
 
@@ -163,6 +175,12 @@ describe('NewCycleRegisterComponent', () => {
         {
           provide: PerformanceService,
           useValue: {},
+        },
+        {
+          provide: MoneyAvailabilityPolicyService,
+          useValue: {
+            resolvedPolicy$: () => resolvedPolicySubject.asObservable(),
+          },
         },
         {
           provide: ComputationService,
@@ -245,6 +263,28 @@ describe('NewCycleRegisterComponent', () => {
 
     component.onRequestDateChange(laterIso);
     expect(component.requestDate).toBe(laterIso);
+  });
+
+  it('uses a live location override for the current client score', () => {
+    resolvedPolicySubject.next({
+      source: 'location',
+      locationId: 'location-1',
+      policy: {
+        version: 8,
+        rules: [
+          { id: 'low', minScore: null, maxScore: 49, openDays: 6 },
+          { id: 'standard', minScore: 50, maxScore: 69, openDays: 3 },
+          { id: 'best', minScore: 70, maxScore: null, openDays: 2 },
+        ],
+      },
+    });
+    fixture.detectChanges();
+
+    expect(component.moneyAvailability.score).toBe(72);
+    expect(component.moneyAvailability.openDays).toBe(2);
+    expect(component.moneyAvailability.policyVersion).toBe(8);
+    expect(normalizedText()).toContain('2 jours ouvrables');
+    expect(normalizedText()).toContain('Exception de cette localisation');
   });
 
   it('switches the birth date area to the saved static value when a birth date exists', () => {

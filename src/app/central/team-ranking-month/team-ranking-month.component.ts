@@ -21,6 +21,22 @@ import { firstValueFrom, Subscription } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import {
+  MoneyAvailabilityLocationOverride,
+  MoneyAvailabilityPolicyActor,
+  MoneyAvailabilityPolicyService,
+} from 'src/app/services/money-availability-policy.service';
+import {
+  cloneMoneyAvailabilityRules,
+  DEFAULT_MONEY_AVAILABILITY_POLICY,
+  formatMoneyAvailabilityDate,
+  formatMoneyAvailabilityRuleRange,
+  formatOpenDaysLabel,
+  getMoneyAvailability,
+  MoneyAvailabilityPolicy,
+  MoneyAvailabilityRule,
+  validateMoneyAvailabilityRules,
+} from 'src/app/utils/money-availability.util';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -540,6 +556,26 @@ export class TeamRankingMonthComponent implements OnDestroy {
   budgetFormulaOverrideHigherBudgets = false;
   budgetFormulaSaving = false;
   budgetFormulaMessage = '';
+
+  // Money availability policy state
+  moneyPolicySectionOpen = false;
+  moneyPolicyView: 'global' | 'location' = 'global';
+  globalMoneyPolicy: MoneyAvailabilityPolicy = {
+    ...DEFAULT_MONEY_AVAILABILITY_POLICY,
+    rules: cloneMoneyAvailabilityRules(
+      DEFAULT_MONEY_AVAILABILITY_POLICY.rules
+    ),
+  };
+  globalMoneyPolicyDraft: MoneyAvailabilityRule[] =
+    cloneMoneyAvailabilityRules(DEFAULT_MONEY_AVAILABILITY_POLICY.rules);
+  moneyPolicyOverrides: MoneyAvailabilityLocationOverride[] = [];
+  selectedMoneyPolicyLocationId = '';
+  locationMoneyPolicyDraft: MoneyAvailabilityRule[] =
+    cloneMoneyAvailabilityRules(DEFAULT_MONEY_AVAILABILITY_POLICY.rules);
+  moneyPolicyPreviewScore = 50;
+  moneyPolicySaving = false;
+  moneyPolicyMessage = '';
+  private moneyPolicySubs: Subscription[] = [];
   
   // Employee transfer feature state
   showEmployeeCopySection = false;
@@ -4522,7 +4558,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     private data: DataService,
     private afs: AngularFirestore,
     private fns: AngularFireFunctions,
-    private storage: AngularFireStorage
+    private storage: AngularFireStorage,
+    private moneyPolicy: MoneyAvailabilityPolicyService
   ) {}
   isFetchingClients = false;
   currentEmployees: any = [];
@@ -4535,8 +4572,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.rankingMode = 'performance';
     }
     this.updateWeekPickerLabels();
+    this.listenToMoneyAvailabilityPolicies();
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
+      this.initializeMoneyPolicyLocationSelection();
       this.initializeBudgetTeamSelection();
       this.initializeTransportReceiptTeamSelection();
       this.loadTransportReceiptsForTeams();
@@ -4572,6 +4611,343 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.employeeCopySubs = [];
     this.employeeMergeSubs.forEach((sub) => sub.unsubscribe());
     this.employeeMergeSubs = [];
+    this.moneyPolicySubs.forEach((sub) => sub.unsubscribe());
+    this.moneyPolicySubs = [];
+  }
+
+  private listenToMoneyAvailabilityPolicies(): void {
+    this.moneyPolicySubs.push(
+      this.moneyPolicy.globalPolicy$.subscribe((policy) => {
+        this.globalMoneyPolicy = {
+          ...policy,
+          rules: cloneMoneyAvailabilityRules(policy.rules),
+        };
+        if (!this.moneyPolicySaving) {
+          this.globalMoneyPolicyDraft = cloneMoneyAvailabilityRules(
+            policy.rules
+          );
+        }
+        if (!this.selectedMoneyPolicyOverride) {
+          this.locationMoneyPolicyDraft = cloneMoneyAvailabilityRules(
+            policy.rules
+          );
+        }
+      })
+    );
+    this.moneyPolicySubs.push(
+      this.moneyPolicy.locationOverrides$.subscribe((overrides) => {
+        this.moneyPolicyOverrides = overrides;
+        this.loadSelectedLocationPolicyDraft();
+      })
+    );
+  }
+
+  get activeMoneyPolicyOverrides(): MoneyAvailabilityLocationOverride[] {
+    const currentLocationIds = new Set(
+      (this.allUsers || []).map((user) => user.uid).filter(Boolean)
+    );
+    return this.moneyPolicyOverrides.filter(
+      (override) =>
+        override.enabled &&
+        override.isValid !== false &&
+        (currentLocationIds.size === 0 ||
+          currentLocationIds.has(override.locationId))
+    );
+  }
+
+  get selectedMoneyPolicyLocation(): User | undefined {
+    return (this.allUsers || []).find(
+      (user) => user.uid === this.selectedMoneyPolicyLocationId
+    );
+  }
+
+  get selectedMoneyPolicyOverride():
+    | MoneyAvailabilityLocationOverride
+    | undefined {
+    return this.moneyPolicyOverrides.find(
+      (override) =>
+        override.locationId === this.selectedMoneyPolicyLocationId
+    );
+  }
+
+  get selectedMoneyPolicyUsesOverride(): boolean {
+    return (
+      this.selectedMoneyPolicyOverride?.enabled === true &&
+      this.selectedMoneyPolicyOverride?.isValid !== false
+    );
+  }
+
+  get moneyPolicyAffectedLocationCount(): number {
+    return Math.max(
+      0,
+      (this.allUsers?.length || 0) - this.activeMoneyPolicyOverrides.length
+    );
+  }
+
+  get globalMoneyPolicyErrors(): string[] {
+    return validateMoneyAvailabilityRules(this.globalMoneyPolicyDraft);
+  }
+
+  get locationMoneyPolicyErrors(): string[] {
+    return validateMoneyAvailabilityRules(this.locationMoneyPolicyDraft);
+  }
+
+  get globalMoneyPolicyPreviewLabel(): string {
+    const availability = getMoneyAvailability(
+      Number(this.moneyPolicyPreviewScore),
+      new Date(),
+      {
+        ...this.globalMoneyPolicy,
+        rules:
+          this.globalMoneyPolicyErrors.length === 0
+            ? this.globalMoneyPolicyDraft
+            : this.globalMoneyPolicy.rules,
+      }
+    );
+    return `${formatOpenDaysLabel(
+      availability.openDays
+    )} · ${formatMoneyAvailabilityDate(availability.earliestDate)}`;
+  }
+
+  get locationMoneyPolicyPreviewLabel(): string {
+    const rules =
+      this.locationMoneyPolicyErrors.length === 0
+        ? this.locationMoneyPolicyDraft
+        : this.globalMoneyPolicy.rules;
+    const availability = getMoneyAvailability(
+      Number(this.moneyPolicyPreviewScore),
+      new Date(),
+      {
+        version:
+          this.selectedMoneyPolicyOverride?.version ||
+          this.globalMoneyPolicy.version,
+        rules,
+      }
+    );
+    return `${formatOpenDaysLabel(
+      availability.openDays
+    )} · ${formatMoneyAvailabilityDate(availability.earliestDate)}`;
+  }
+
+  moneyPolicyRangeLabel(rule: MoneyAvailabilityRule): string {
+    return formatMoneyAvailabilityRuleRange(rule);
+  }
+
+  setMoneyPolicyView(view: 'global' | 'location'): void {
+    this.moneyPolicyView = view;
+    this.moneyPolicyMessage = '';
+    if (view === 'location') {
+      this.initializeMoneyPolicyLocationSelection();
+      this.loadSelectedLocationPolicyDraft();
+    }
+  }
+
+  onMoneyPolicyLocationChange(): void {
+    this.moneyPolicyMessage = '';
+    this.loadSelectedLocationPolicyDraft();
+  }
+
+  copyGlobalMoneyPolicyToLocationDraft(): void {
+    this.locationMoneyPolicyDraft = cloneMoneyAvailabilityRules(
+      this.globalMoneyPolicy.rules
+    );
+    this.moneyPolicyMessage = '';
+  }
+
+  onMoneyPolicyMaxScoreChange(
+    rules: MoneyAvailabilityRule[],
+    index: number
+  ): void {
+    const current = rules[index];
+    const next = rules[index + 1];
+    if (!current || !next || current.maxScore === null) return;
+    const maxScore = Number(current.maxScore);
+    if (Number.isInteger(maxScore)) {
+      current.maxScore = maxScore;
+      next.minScore = maxScore + 1;
+    }
+  }
+
+  addMoneyPolicyRule(rules: MoneyAvailabilityRule[]): void {
+    const lastIndex = rules.length - 1;
+    const last = rules[lastIndex];
+    if (!last || last.minScore === null) return;
+    const splitEnd = last.minScore + 9;
+    rules.splice(lastIndex, 0, {
+      id: `custom-${Date.now()}`,
+      minScore: last.minScore,
+      maxScore: splitEnd,
+      openDays: last.openDays,
+    });
+    last.minScore = splitEnd + 1;
+    this.moneyPolicyMessage = '';
+  }
+
+  removeMoneyPolicyRule(
+    rules: MoneyAvailabilityRule[],
+    index: number
+  ): void {
+    if (rules.length <= 2 || index < 0 || index >= rules.length) return;
+    const removed = rules[index];
+    if (index === 0) {
+      rules[index + 1].minScore = null;
+    } else {
+      rules[index - 1].maxScore = removed.maxScore;
+    }
+    rules.splice(index, 1);
+    this.moneyPolicyMessage = '';
+  }
+
+  async saveGlobalMoneyPolicy(applyToAllLocations: boolean): Promise<void> {
+    if (!this.auth.isAdmninistrator || this.moneyPolicySaving) return;
+    if (this.globalMoneyPolicyErrors.length > 0) {
+      this.moneyPolicyMessage = this.globalMoneyPolicyErrors.join(' ');
+      return;
+    }
+
+    if (
+      applyToAllLocations &&
+      this.activeMoneyPolicyOverrides.length > 0 &&
+      !confirm(
+        `Appliquer ces règles aux ${this.allUsers.length} localisations et désactiver ${this.activeMoneyPolicyOverrides.length} dérogation(s) ? Les anciennes règles resteront dans l'historique.`
+      )
+    ) {
+      return;
+    }
+
+    this.moneyPolicySaving = true;
+    this.moneyPolicyMessage = '';
+    try {
+      await this.ensureMoneyPolicyAdminWriteAccess();
+      const result = await this.moneyPolicy.saveGlobalRules(
+        this.globalMoneyPolicyDraft,
+        this.moneyPolicyActor(),
+        applyToAllLocations
+      );
+      this.moneyPolicyMessage = applyToAllLocations
+        ? `Règles appliquées à toutes les localisations. ${result.disabledLocationIds.length} dérogation(s) désactivée(s).`
+        : `Règle générale enregistrée. ${this.activeMoneyPolicyOverrides.length} dérogation(s) conservée(s).`;
+    } catch (error: any) {
+      this.moneyPolicyMessage =
+        error?.message || "Impossible d'enregistrer les règles.";
+    } finally {
+      this.moneyPolicySaving = false;
+    }
+  }
+
+  async saveSelectedLocationMoneyPolicy(): Promise<void> {
+    if (
+      !this.auth.isAdmninistrator ||
+      this.moneyPolicySaving ||
+      !this.selectedMoneyPolicyLocationId
+    ) {
+      return;
+    }
+    if (this.locationMoneyPolicyErrors.length > 0) {
+      this.moneyPolicyMessage = this.locationMoneyPolicyErrors.join(' ');
+      return;
+    }
+
+    this.moneyPolicySaving = true;
+    this.moneyPolicyMessage = '';
+    try {
+      await this.ensureMoneyPolicyAdminWriteAccess();
+      await this.moneyPolicy.saveLocationOverride(
+        this.selectedMoneyPolicyLocationId,
+        this.locationMoneyPolicyDraft,
+        this.moneyPolicyActor()
+      );
+      this.moneyPolicyMessage = `Dérogation enregistrée pour ${this.getBudgetTeamLabel(
+        this.selectedMoneyPolicyLocation
+      )}.`;
+    } catch (error: any) {
+      this.moneyPolicyMessage =
+        error?.message || "Impossible d'enregistrer la dérogation.";
+    } finally {
+      this.moneyPolicySaving = false;
+    }
+  }
+
+  async disableSelectedLocationMoneyPolicy(): Promise<void> {
+    if (
+      !this.auth.isAdmninistrator ||
+      this.moneyPolicySaving ||
+      !this.selectedMoneyPolicyLocationId ||
+      !this.selectedMoneyPolicyUsesOverride
+    ) {
+      return;
+    }
+
+    this.moneyPolicySaving = true;
+    this.moneyPolicyMessage = '';
+    try {
+      await this.ensureMoneyPolicyAdminWriteAccess();
+      await this.moneyPolicy.disableLocationOverride(
+        this.selectedMoneyPolicyLocationId,
+        this.moneyPolicyActor()
+      );
+      this.locationMoneyPolicyDraft = cloneMoneyAvailabilityRules(
+        this.globalMoneyPolicy.rules
+      );
+      this.moneyPolicyMessage =
+        'Dérogation désactivée. Cette localisation utilise maintenant la règle générale.';
+    } catch (error: any) {
+      this.moneyPolicyMessage =
+        error?.message || 'Impossible de désactiver la dérogation.';
+    } finally {
+      this.moneyPolicySaving = false;
+    }
+  }
+
+  private initializeMoneyPolicyLocationSelection(): void {
+    if (!this.allUsers?.length) {
+      this.selectedMoneyPolicyLocationId = '';
+      return;
+    }
+    if (
+      this.allUsers.some(
+        (user) => user.uid === this.selectedMoneyPolicyLocationId
+      )
+    ) {
+      return;
+    }
+    this.selectedMoneyPolicyLocationId =
+      this.auth.currentUser?.uid || this.allUsers[0]?.uid || '';
+    this.loadSelectedLocationPolicyDraft();
+  }
+
+  private loadSelectedLocationPolicyDraft(): void {
+    const override = this.selectedMoneyPolicyOverride;
+    this.locationMoneyPolicyDraft = cloneMoneyAvailabilityRules(
+      override?.rules || this.globalMoneyPolicy.rules
+    );
+  }
+
+  private moneyPolicyActor(): MoneyAvailabilityPolicyActor {
+    const user = this.auth.currentUser || {};
+    return {
+      uid: user.uid || '',
+      name:
+        [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
+        user.email ||
+        'Administrateur',
+    };
+  }
+
+  private async ensureMoneyPolicyAdminWriteAccess(): Promise<void> {
+    const roles = Array.isArray(this.auth.currentUser?.roles)
+      ? this.auth.currentUser.roles
+      : [];
+    const hasPersistedAdmin =
+      this.auth.currentUser?.admin === 'true' || roles.includes('admin');
+    if (hasPersistedAdmin || !this.auth.isAdmninistrator) {
+      return;
+    }
+    await this.auth.makeAdmin();
+    this.auth.currentUser = {
+      ...this.auth.currentUser,
+      admin: 'true',
+    };
   }
   // --- Performance ring geometry ---
   size = 220; // svg canvas

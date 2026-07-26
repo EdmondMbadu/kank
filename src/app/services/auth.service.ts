@@ -616,6 +616,9 @@ export class AuthService {
       requestStatus: 'pending',
       requestType: 'lending',
       requestDate: client.requestDate,
+      moneyAvailabilityMinimumDate: client.moneyAvailabilityMinimumDate,
+      moneyAvailabilityPolicySnapshot:
+        client.moneyAvailabilityPolicySnapshot,
       profession: client.profession,
       dateOfRequest: client.dateOfRequest,
       dateJoined: `${month}-${day}-${year}`,

@@ -4,17 +4,23 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
+import { MoneyAvailabilityPolicyService } from 'src/app/services/money-availability-policy.service';
 import { TimeService } from 'src/app/services/time.service';
+import {
+  DEFAULT_MONEY_AVAILABILITY_POLICY,
+  ResolvedMoneyAvailabilityPolicy,
+} from 'src/app/utils/money-availability.util';
 import { RegisterClientComponent } from './register-client.component';
 
 describe('RegisterClientComponent', () => {
   let component: RegisterClientComponent;
   let fixture: ComponentFixture<RegisterClientComponent>;
+  let resolvedPolicySubject: BehaviorSubject<ResolvedMoneyAvailabilityPolicy>;
 
   const existingClient = Object.assign(new Client(), {
     uid: 'client-existing',
@@ -91,6 +97,13 @@ describe('RegisterClientComponent', () => {
   }
 
   beforeEach(async () => {
+    resolvedPolicySubject =
+      new BehaviorSubject<ResolvedMoneyAvailabilityPolicy>({
+        policy: DEFAULT_MONEY_AVAILABILITY_POLICY,
+        source: 'fallback',
+        locationId: 'location-1',
+      });
+
     await TestBed.configureTestingModule({
       declarations: [RegisterClientComponent],
       imports: [FormsModule],
@@ -138,6 +151,12 @@ describe('RegisterClientComponent', () => {
         {
           provide: PerformanceService,
           useValue: {},
+        },
+        {
+          provide: MoneyAvailabilityPolicyService,
+          useValue: {
+            resolvedPolicy$: () => resolvedPolicySubject.asObservable(),
+          },
         },
         {
           provide: AngularFireFunctions,
@@ -217,6 +236,28 @@ describe('RegisterClientComponent', () => {
 
     component.onRequestDateChange(laterIso);
     expect(component.requestDate).toBe(laterIso);
+  });
+
+  it('recalculates a new-client date when the active location policy changes', () => {
+    resolvedPolicySubject.next({
+      source: 'location',
+      locationId: 'location-1',
+      policy: {
+        version: 4,
+        rules: [
+          { id: 'low', minScore: null, maxScore: 49, openDays: 6 },
+          { id: 'new-client', minScore: 50, maxScore: 59, openDays: 2 },
+          { id: 'upper-standard', minScore: 60, maxScore: 69, openDays: 3 },
+          { id: 'best', minScore: 70, maxScore: null, openDays: 1 },
+        ],
+      },
+    });
+    fixture.detectChanges();
+
+    expect(component.moneyAvailability.openDays).toBe(2);
+    expect(component.moneyAvailability.policyVersion).toBe(4);
+    expect(component.moneyAvailabilityPolicyLabel).toContain('Exception');
+    expect(normalizedText()).toContain('2 jours ouvrables');
   });
 
   it('shows and hides the custom savings field from the UI selection', () => {

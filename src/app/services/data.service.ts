@@ -1413,6 +1413,9 @@ export class DataService {
       agentSubmittedVerification: '',
       agentVerifiedAt: '',
       requestDate: client.requestDate,
+      moneyAvailabilityMinimumDate: client.moneyAvailabilityMinimumDate,
+      moneyAvailabilityPolicySnapshot:
+        client.moneyAvailabilityPolicySnapshot,
       dateOfRequest: client.dateOfRequest,
       applicationFeePayments: client.applicationFeePayments,
       membershipFeePayments: client.membershipFeePayments,

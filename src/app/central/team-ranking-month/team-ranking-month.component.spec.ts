@@ -59,6 +59,7 @@ describe('TeamRankingMonthComponent', () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
       {} as any
     );
     return { component, auth, compute };

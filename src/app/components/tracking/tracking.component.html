@@ -197,6 +197,191 @@
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
+<!-- Loan availability rules for this location -->
+<section class="mx-auto mt-16 max-w-5xl px-4 sm:px-6 lg:px-8">
+  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+    <div class="border-b border-slate-200 p-6 dark:border-slate-700">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-300">
+            Paramètre de cette localisation
+          </p>
+          <h2 class="mt-1 text-xl font-bold text-slate-900 dark:text-white">
+            Disponibilité de l’argent selon le score
+          </h2>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            Ces délais sont utilisés automatiquement sur l’enregistrement d’un
+            client et d’un nouveau cycle.
+          </p>
+        </div>
+        <span
+          class="w-fit rounded-full px-3 py-1 text-xs font-bold ring-1"
+          [ngClass]="
+            resolvedMoneyPolicy.source === 'location'
+              ? 'bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800'
+              : 'bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800'
+          "
+        >
+          {{ locationMoneyPolicySourceLabel }}
+        </span>
+      </div>
+    </div>
+
+    <div class="space-y-5 p-6">
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+          <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/50 dark:text-slate-300">
+            <tr>
+              <th class="px-4 py-3">Plage de score</th>
+              <th class="px-4 py-3">Fin de plage</th>
+              <th class="px-4 py-3">Jours ouvrables</th>
+              <th *ngIf="auth.isAdmninistrator" class="px-4 py-3 text-right">
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            <tr *ngFor="let rule of locationMoneyPolicyDraft; let i = index">
+              <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">
+                {{ trackingMoneyPolicyRangeLabel(rule) }}
+              </td>
+              <td class="px-4 py-3">
+                <ng-container *ngIf="auth.isAdmninistrator; else maxScoreReadOnly">
+                  <span
+                    *ngIf="i === locationMoneyPolicyDraft.length - 1"
+                    class="text-slate-500 dark:text-slate-400"
+                  >
+                    Sans maximum
+                  </span>
+                  <input
+                    *ngIf="i < locationMoneyPolicyDraft.length - 1"
+                    [(ngModel)]="rule.maxScore"
+                    (ngModelChange)="onTrackingMoneyPolicyMaxScoreChange(i)"
+                    type="number"
+                    class="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                  />
+                </ng-container>
+                <ng-template #maxScoreReadOnly>
+                  <span class="text-slate-600 dark:text-slate-300">
+                    {{
+                      i === locationMoneyPolicyDraft.length - 1
+                        ? "Sans maximum"
+                        : rule.maxScore
+                    }}
+                  </span>
+                </ng-template>
+              </td>
+              <td class="px-4 py-3">
+                <input
+                  *ngIf="auth.isAdmninistrator; else openDaysReadOnly"
+                  [(ngModel)]="rule.openDays"
+                  type="number"
+                  min="0"
+                  max="30"
+                  class="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                />
+                <ng-template #openDaysReadOnly>
+                  <span class="font-semibold text-slate-800 dark:text-slate-100">
+                    {{ rule.openDays }}
+                  </span>
+                </ng-template>
+              </td>
+              <td *ngIf="auth.isAdmninistrator" class="px-4 py-3 text-right">
+                <button
+                  type="button"
+                  (click)="removeTrackingMoneyPolicyRule(i)"
+                  [disabled]="locationMoneyPolicyDraft.length <= 2"
+                  class="rounded-lg px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-rose-300"
+                >
+                  Retirer
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="auth.isAdmninistrator" class="flex flex-wrap gap-3">
+        <button
+          type="button"
+          (click)="addTrackingMoneyPolicyRule()"
+          class="rounded-xl border border-dashed border-indigo-300 px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-200"
+        >
+          Ajouter une plage
+        </button>
+        <button
+          type="button"
+          (click)="copyGlobalPolicyToLocationDraft()"
+          class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200"
+        >
+          Copier la règle générale dans l’éditeur
+        </button>
+      </div>
+
+      <ul
+        *ngIf="locationMoneyPolicyErrors.length"
+        class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
+      >
+        <li *ngFor="let error of locationMoneyPolicyErrors">• {{ error }}</li>
+      </ul>
+
+      <div class="grid gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50 sm:grid-cols-[180px_1fr] sm:items-end">
+        <label class="space-y-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <span>Prévisualiser un score</span>
+          <input
+            [(ngModel)]="locationMoneyPolicyPreviewScore"
+            type="number"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-900"
+          />
+        </label>
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Résultat à partir d’aujourd’hui
+          </div>
+          <div class="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+            {{ locationMoneyPolicyPreviewLabel }}
+          </div>
+        </div>
+      </div>
+
+      <div
+        *ngIf="auth.isAdmninistrator"
+        class="flex flex-col gap-3 sm:flex-row sm:justify-end"
+      >
+        <button
+          *ngIf="resolvedMoneyPolicy.source === 'location'"
+          type="button"
+          (click)="disableTrackingLocationMoneyPolicy()"
+          [disabled]="locationMoneyPolicySaving"
+          class="rounded-xl border border-rose-300 px-5 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-800 dark:text-rose-200"
+        >
+          Revenir à la règle générale
+        </button>
+        <button
+          type="button"
+          (click)="saveTrackingLocationMoneyPolicy()"
+          [disabled]="locationMoneyPolicySaving || locationMoneyPolicyErrors.length > 0"
+          class="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Enregistrer comme dérogation
+        </button>
+      </div>
+
+      <p
+        *ngIf="locationMoneyPolicyMessage"
+        class="rounded-xl bg-slate-100 p-4 text-sm font-semibold text-slate-800 dark:bg-slate-900 dark:text-slate-100"
+      >
+        {{ locationMoneyPolicyMessage }}
+      </p>
+
+      <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">
+        Les jours ouvrables sont du lundi au samedi. Le dimanche n’est pas
+        compté. Les dates client déjà enregistrées ne sont pas modifiées.
+      </p>
+    </div>
+  </div>
+</section>
+
 <!-- ╭─ Finance settings grid (admin only) ───────────────────────────────╮ -->
 <section *ngIf="auth.isAdmninistrator"
          class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">

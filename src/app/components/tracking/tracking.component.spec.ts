@@ -1,21 +1,16 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { TrackingComponent } from './tracking.component';
 
 describe('TrackingComponent', () => {
-  let component: TrackingComponent;
-  let fixture: ComponentFixture<TrackingComponent>;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      declarations: [TrackingComponent]
-    });
-    fixture = TestBed.createComponent(TrackingComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
   it('should create', () => {
+    const component = new TrackingComponent(
+      {} as any,
+      { currentUser: {} } as any,
+      { todaysDateMonthDayYear: () => '7-25-2026' } as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+
     expect(component).toBeTruthy();
   });
 });

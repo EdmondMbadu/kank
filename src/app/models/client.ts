@@ -1,4 +1,5 @@
 import { Avatar, Employee } from './employee';
+import { MoneyAvailabilityPolicySnapshot } from '../utils/money-availability.util';
 
 export interface ClientBonusEvent {
   amount: string;
@@ -127,6 +128,8 @@ export class Client {
   previouslyRequestedAmount?: string;
   requestStatus?: string;
   requestDate?: string;
+  moneyAvailabilityMinimumDate?: string;
+  moneyAvailabilityPolicySnapshot?: MoneyAvailabilityPolicySnapshot;
   requestType?: string;
   rejectionReturnAmount?: string; // NEW
   dateOfRequest?: string;

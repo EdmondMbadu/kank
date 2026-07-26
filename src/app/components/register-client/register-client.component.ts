@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
@@ -7,14 +7,21 @@ import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
+import { MoneyAvailabilityPolicyService } from 'src/app/services/money-availability-policy.service';
 import { TimeService } from 'src/app/services/time.service';
+import { of, Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { recoverOrRetryClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
 import {
+  createMoneyAvailabilityPolicySnapshot,
+  DEFAULT_MONEY_AVAILABILITY_POLICY,
   enforceEarliestMoneyDeliveryDate,
+  formatOpenDaysLabel,
   formatMoneyAvailabilityDate,
   getMoneyAvailability,
   isMoneyDeliveryDateAllowed,
   MoneyAvailability,
+  ResolvedMoneyAvailabilityPolicy,
 } from 'src/app/utils/money-availability.util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 
@@ -23,7 +30,7 @@ import { coerceToNumber } from 'src/app/utils/number-utils';
   templateUrl: './register-client.component.html',
   styleUrls: ['./register-client.component.css'],
 })
-export class RegisterClientComponent implements OnInit {
+export class RegisterClientComponent implements OnInit, OnDestroy {
   private readonly MIN_LOAN_AMOUNT = 50000;
   readonly registrationCreditScore = 50;
 
@@ -34,7 +41,8 @@ export class RegisterClientComponent implements OnInit {
     private time: TimeService,
     private performance: PerformanceService,
     private fns: AngularFireFunctions,
-    private storage: AngularFireStorage
+    private storage: AngularFireStorage,
+    private moneyPolicy: MoneyAvailabilityPolicyService
   ) {}
   currentClients: Client[] = [];
   allClients: Client[] = [];
@@ -51,6 +59,19 @@ export class RegisterClientComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.moneyPolicySubscription = (this.auth.user$ || of(this.auth.currentUser))
+      .pipe(
+        switchMap((user) =>
+          this.moneyPolicy.resolvedPolicy$(
+            user?.uid || this.auth.currentUser?.uid || ''
+          )
+        )
+      )
+      .subscribe((resolvedPolicy) => {
+        this.resolvedMoneyPolicy = resolvedPolicy;
+        this.refreshMoneyAvailability();
+      });
+
     this.auth.getAllClients().subscribe((data: any) => {
       // get current clients directly
       this.allClients = data;
@@ -73,6 +94,10 @@ export class RegisterClientComponent implements OnInit {
     this.memberShipFee = this.FIXED_MEMBERSHIP_FEE;
     this.applicationFeeOtherDisplay = false;
     this.memberShipFeeOtherDisplay = false;
+  }
+
+  ngOnDestroy(): void {
+    this.moneyPolicySubscription?.unsubscribe();
   }
   employees: Employee[] = [];
   maxNumberOfClients: number = 0;
@@ -101,6 +126,12 @@ export class RegisterClientComponent implements OnInit {
   moneyAvailability: MoneyAvailability = getMoneyAvailability(
     this.registrationCreditScore
   );
+  resolvedMoneyPolicy: ResolvedMoneyAvailabilityPolicy = {
+    policy: DEFAULT_MONEY_AVAILABILITY_POLICY,
+    source: 'fallback',
+    locationId: '',
+  };
+  private moneyPolicySubscription?: Subscription;
   requestDate: string = this.moneyAvailability.earliestDateIso;
   timeInBusiness: string = '';
   dailyIncome: string = '';
@@ -152,7 +183,7 @@ export class RegisterClientComponent implements OnInit {
     const today = new Date(); // current computer date
     // only for testing.
     this.creditworthinessScore = this.calculateCreditworthiness();
-    this.refreshMoneyAvailability();
+    this.refreshMoneyAvailability(false);
     const normalizedLoanAmount = coerceToNumber(this.loanAmount);
     const checkDate = this.isRequestDateAllowed();
     let inputValid = this.data.numbersValid(
@@ -382,6 +413,20 @@ export class RegisterClientComponent implements OnInit {
     return formatMoneyAvailabilityDate(this.moneyAvailability.earliestDate);
   }
 
+  get moneyAvailabilityTitle(): string {
+    return formatOpenDaysLabel(this.moneyAvailability.openDays);
+  }
+
+  get moneyAvailabilityMessage(): string {
+    return `Nouveau client — score initial ${this.registrationCreditScore}. Cette date suit la règle active de votre localisation.`;
+  }
+
+  get moneyAvailabilityPolicyLabel(): string {
+    return this.resolvedMoneyPolicy.source === 'location'
+      ? 'Exception de cette localisation'
+      : 'Règle générale';
+  }
+
   onRequestDateChange(value: string): void {
     this.requestDate = enforceEarliestMoneyDeliveryDate(
       value,
@@ -401,8 +446,18 @@ export class RegisterClientComponent implements OnInit {
     );
   }
 
-  private refreshMoneyAvailability(): void {
-    this.moneyAvailability = getMoneyAvailability(this.registrationCreditScore);
+  private refreshMoneyAvailability(correctSelection = true): void {
+    this.moneyAvailability = getMoneyAvailability(
+      this.registrationCreditScore,
+      new Date(),
+      this.resolvedMoneyPolicy.policy
+    );
+    if (
+      correctSelection &&
+      (!this.requestDate || !this.isRequestDateAllowed())
+    ) {
+      this.requestDate = this.moneyAvailability.earliestDateIso;
+    }
   }
 
   resetFields() {
@@ -451,6 +506,13 @@ export class RegisterClientComponent implements OnInit {
     this.client.loanAmount = this.loanAmount;
     this.client.requestAmount = this.loanAmount;
     this.client.requestDate = this.requestDate;
+    this.client.moneyAvailabilityMinimumDate =
+      this.moneyAvailability.earliestDateIso;
+    this.client.moneyAvailabilityPolicySnapshot =
+      createMoneyAvailabilityPolicySnapshot(
+        this.moneyAvailability,
+        this.resolvedMoneyPolicy
+      );
     this.client.dateOfRequest = this.time.todaysDate();
     this.client.profilePicture = this.avatar;
     this.client.homePicture = this.homePictureAvatar;

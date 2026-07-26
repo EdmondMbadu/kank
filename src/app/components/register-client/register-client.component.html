@@ -661,11 +661,15 @@
                     <span class="money-availability-tier">
                       Score de crédit {{ registrationCreditScore }}
                     </span>
+                    <span class="money-availability-tier">
+                      {{ moneyAvailabilityPolicyLabel }}
+                    </span>
                   </div>
-                  <h4 class="money-availability-title">3 jours ouvrables</h4>
+                  <h4 class="money-availability-title">
+                    {{ moneyAvailabilityTitle }}
+                  </h4>
                   <p id="requestDateRule" class="money-availability-copy">
-                    Nouveau client — score initial 50. Améliorez ce score pour
-                    accéder au service dès le prochain jour ouvrable.
+                    {{ moneyAvailabilityMessage }}
                   </p>
                 </div>
               </div>

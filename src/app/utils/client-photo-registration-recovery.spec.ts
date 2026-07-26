@@ -47,7 +47,8 @@ describe('registration photo recovery wiring', () => {
       {} as any,
       {} as any,
       functions as any,
-      storage as any
+      storage as any,
+      {} as any
     );
     component.firstName = 'Marie';
     component.middleName = 'Kanku';
@@ -74,7 +75,8 @@ describe('registration photo recovery wiring', () => {
       {} as any,
       {} as any,
       functions as any,
-      storage as any
+      storage as any,
+      {} as any
     );
     component.firstName = 'Marie';
     component.middleName = 'Kanku';
@@ -102,7 +104,8 @@ describe('registration photo recovery wiring', () => {
       {} as any,
       {} as any,
       functions as any,
-      storage as any
+      storage as any,
+      {} as any
     );
     component.client = Object.assign(new Client(), {
       firstName: 'Marie',

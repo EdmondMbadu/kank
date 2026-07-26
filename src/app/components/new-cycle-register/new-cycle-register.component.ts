@@ -1,32 +1,37 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ActivatedRoute, Router } from '@angular/router';
-import { max } from 'rxjs';
+import { of, Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { Client } from 'src/app/models/client';
 import { Avatar, Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
+import { MoneyAvailabilityPolicyService } from 'src/app/services/money-availability-policy.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { recoverOrRetryClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
 import {
+  createMoneyAvailabilityPolicySnapshot,
+  DEFAULT_MONEY_AVAILABILITY_POLICY,
   enforceEarliestMoneyDeliveryDate,
+  formatOpenDaysLabel,
   formatMoneyAvailabilityDate,
   getMoneyAvailability,
   isMoneyDeliveryDateAllowed,
   MoneyAvailability,
+  ResolvedMoneyAvailabilityPolicy,
 } from 'src/app/utils/money-availability.util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
-import { __generator } from 'tslib';
 @Component({
   selector: 'app-new-cycle-register',
   templateUrl: './new-cycle-register.component.html',
   styleUrls: ['./new-cycle-register.component.css'],
 })
-export class NewCycleRegisterComponent implements OnInit {
+export class NewCycleRegisterComponent implements OnInit, OnDestroy {
   private readonly MIN_LOAN_AMOUNT = 50000;
 
   rateDisplay: boolean = false;
@@ -41,8 +46,14 @@ export class NewCycleRegisterComponent implements OnInit {
   loanAmount: string = '';
   middleName: string = '';
   moneyAvailability: MoneyAvailability = getMoneyAvailability(50);
+  resolvedMoneyPolicy: ResolvedMoneyAvailabilityPolicy = {
+    policy: DEFAULT_MONEY_AVAILABILITY_POLICY,
+    source: 'fallback',
+    locationId: '',
+  };
   requestDate: string = this.moneyAvailability.earliestDateIso;
   private moneyAvailabilityInitialized = false;
+  private moneyPolicySubscription?: Subscription;
   maxLoanAmount: number = 0;
   lastPaymentDate: Date | null = null;
   nextEligibleCreditDate: Date | null = null;
@@ -91,13 +102,32 @@ export class NewCycleRegisterComponent implements OnInit {
     private performance: PerformanceService,
     private compute: ComputationService,
     private fns: AngularFireFunctions,
-    private storage: AngularFireStorage
+    private storage: AngularFireStorage,
+    private moneyPolicy: MoneyAvailabilityPolicyService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   ngOnInit(): void {
+    this.moneyPolicySubscription = (this.auth.user$ || of(this.auth.currentUser))
+      .pipe(
+        switchMap((user) =>
+          this.moneyPolicy.resolvedPolicy$(
+            user?.uid || this.auth.currentUser?.uid || ''
+          )
+        )
+      )
+      .subscribe((resolvedPolicy) => {
+        this.resolvedMoneyPolicy = resolvedPolicy;
+        if (this.client?.uid) {
+          this.syncMoneyAvailability();
+        }
+      });
     this.retrieveClient();
     this.retrieveEmployees();
+  }
+
+  ngOnDestroy(): void {
+    this.moneyPolicySubscription?.unsubscribe();
   }
   phonePattern = /^[0-9]{10}$/;
 
@@ -428,27 +458,28 @@ export class NewCycleRegisterComponent implements OnInit {
   }
 
   get moneyAvailabilityTitle(): string {
-    if (this.moneyAvailability.tier === 'best') {
-      return 'Meilleur client';
-    }
-
-    if (this.moneyAvailability.tier === 'standard') {
-      return '3 jours ouvrables';
-    }
-
-    return 'Même jour, semaine prochaine';
+    return formatOpenDaysLabel(this.moneyAvailability.openDays);
   }
 
   get moneyAvailabilityMessage(): string {
+    if (
+      this.moneyAvailability.tier === 'best' &&
+      this.moneyAvailability.openDays === 1
+    ) {
+      return "Meilleur client. L'argent est disponible dès le prochain jour ouvrable selon la règle active de votre localisation.";
+    }
+
     if (this.moneyAvailability.tier === 'best') {
-      return "L'argent est disponible dès le prochain jour ouvrable.";
+      return `Meilleur client. Cette date suit la règle active de votre localisation.`;
     }
 
-    if (this.moneyAvailability.tier === 'standard') {
-      return 'Améliorez le score pour accéder au service dès le prochain jour ouvrable.';
-    }
+    return 'Ce délai correspond au score de crédit actuel et à la règle active de votre localisation.';
+  }
 
-    return 'Ce délai correspond au score de crédit actuel.';
+  get moneyAvailabilityPolicyLabel(): string {
+    return this.resolvedMoneyPolicy.source === 'location'
+      ? 'Exception de cette localisation'
+      : 'Règle générale';
   }
 
   onRequestDateChange(value: string): void {
@@ -473,7 +504,9 @@ export class NewCycleRegisterComponent implements OnInit {
   private syncMoneyAvailability(correctSelection = true): void {
     const score = Number(this.client?.creditScore);
     this.moneyAvailability = getMoneyAvailability(
-      Number.isFinite(score) ? score : 50
+      Number.isFinite(score) ? score : 50,
+      new Date(),
+      this.resolvedMoneyPolicy.policy
     );
 
     if (
@@ -506,6 +539,13 @@ export class NewCycleRegisterComponent implements OnInit {
     const today = toAppDateFull(new Date());
 
     this.client.requestDate = this.requestDate;
+    this.client.moneyAvailabilityMinimumDate =
+      this.moneyAvailability.earliestDateIso;
+    this.client.moneyAvailabilityPolicySnapshot =
+      createMoneyAvailabilityPolicySnapshot(
+        this.moneyAvailability,
+        this.resolvedMoneyPolicy
+      );
     this.client.dateOfRequest = today;
     this.client.homeAvenue = this.client.homeAvenue?.trim();
     this.client.homeQuartier = this.client.homeQuartier?.trim();
