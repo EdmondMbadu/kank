@@ -219,6 +219,31 @@ describe('GestionDayComponent weekly payment history', () => {
     ]);
   });
 
+  it('focuses the y-axis on positive weekly values without forcing a zero baseline', () => {
+    const component = createComponent();
+    component.allUsers = [
+      {
+        firstName: 'Pumbu',
+        dailyReimbursement: {
+          '7-6-2026': '3600000',
+          '7-13-2026': '5100000',
+        },
+      },
+    ];
+    component.weeklyPaymentHistoryStartDate = '2026-07-06';
+    component.weeklyPaymentHistoryEndDate = '2026-07-19';
+
+    component.applyWeeklyPaymentHistoryDateRange();
+
+    const graph = component.graphWeeklyPayments;
+    expect(graph.data[0].y).toEqual([1200, 1700]);
+    expect(graph.data[0].fill).toBeUndefined();
+    expect(graph.layout.yaxis.autorange).toBeFalse();
+    expect(graph.layout.yaxis.range[0]).toBeGreaterThan(0);
+    expect(graph.layout.yaxis.range[0]).toBeLessThan(1200);
+    expect(graph.layout.yaxis.range[1]).toBeGreaterThan(1700);
+  });
+
   it('applies an exact inclusive custom interval and labels partial boundary weeks', () => {
     const component = createComponent();
     component.allUsers = [

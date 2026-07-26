@@ -1308,6 +1308,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       tickformat: '%d/%m',
       hoverformat: '%d/%m/%Y',
     };
+    const focusedYAxisRange =
+      this.buildFocusedWeeklyPaymentYAxisRange(totalsDollar);
+    layout.yaxis = {
+      ...layout.yaxis,
+      autorange: focusedYAxisRange ? false : true,
+      ...(focusedYAxisRange ? { range: focusedYAxisRange } : {}),
+      nticks: 7,
+    };
 
     this.graphWeeklyPayments = {
       data: [
@@ -1334,8 +1342,6 @@ export class GestionDayComponent implements OnInit, OnDestroy {
               width: 1.5,
             },
           },
-          fill: 'tozeroy',
-          fillcolor: 'rgba(79, 70, 229, 0.10)',
           hovertemplate:
             '<b>%{customdata[1]}</b><br>' +
             'Paiements: <b>%{customdata[0]:,.0f} FC</b><br>' +
@@ -1350,6 +1356,30 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         staticPlot: false,
       },
     };
+  }
+
+  private buildFocusedWeeklyPaymentYAxisRange(
+    values: number[]
+  ): [number, number] | undefined {
+    const finiteValues = values.filter(
+      (value) => Number.isFinite(value) && value >= 0
+    );
+    if (finiteValues.length === 0) return undefined;
+
+    const minimum = Math.min(...finiteValues);
+    const maximum = Math.max(...finiteValues);
+    if (maximum <= 0) return undefined;
+
+    // A flat or zero-containing series keeps an honest zero baseline. When all
+    // displayed values are positive and vary, focus the scale on that visible
+    // range so weekly differences remain legible.
+    if (minimum <= 0 || minimum === maximum) {
+      return [0, maximum * 1.1];
+    }
+
+    const spread = maximum - minimum;
+    const padding = Math.max(spread * 0.12, maximum * 0.025);
+    return [Math.max(0, minimum - padding), maximum + padding];
   }
 
   applyWeeklyPaymentHistoryDateRange(): void {
