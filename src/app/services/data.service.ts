@@ -2720,6 +2720,23 @@ export class DataService {
     return clientRef.set(data, { merge: true });
   }
 
+  addCommentToClientProfileWithGalleryPictures(
+    client: Client,
+    comments: Comment[],
+    galleryPictures: ClientGalleryPicture[]
+  ) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+    const update: Record<string, unknown> = { comments };
+
+    galleryPictures.forEach((picture) => {
+      update[`galleryPictures.${picture.id}`] = picture;
+    });
+
+    return clientRef.update(update);
+  }
+
   addCommentToClientProfileForUser(
     userId: string,
     client: Client,

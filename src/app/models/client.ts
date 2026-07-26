@@ -36,7 +36,15 @@ export interface ClientGalleryPicture {
   uploadedBy?: string;
   uploadedByName?: string;
   captureTimeOriginalISO?: string;
-  captureTimeSource?: 'exif' | 'fileLastModified' | 'manual';
+  captureTimeSource?:
+    | 'exif'
+    | 'fileLastModified'
+    | 'manual'
+    | 'mediainfo'
+    | 'uploadTime';
+  source?: 'gallery' | 'comment';
+  sourceCommentAttachmentId?: string;
+  derivedFromComment?: boolean;
 }
 
 export interface ClientHomePictureHistoryEntry extends Avatar {
@@ -58,6 +66,7 @@ export interface AuditConversationAudioAttachment {
 export type AuditClientCommentTag = 'no_answer' | 'fraud' | 'other';
 
 export interface ClientCommentAttachment {
+  id?: string;
   type: 'image' | 'video' | 'audio';
   url: string;
   name?: string;
@@ -66,6 +75,7 @@ export interface ClientCommentAttachment {
   path?: string;
   uploadedAt?: string;
   uploadedBy?: string;
+  galleryPictureId?: string;
   width?: number; // px (image/video)
   height?: number; // px (image/video)
   durationSec?: number; // audio/video

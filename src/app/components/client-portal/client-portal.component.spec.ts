@@ -9,10 +9,17 @@ import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 
 describe('ClientPortalComponent', () => {
-  function createComponent(): ClientPortalComponent {
+  function createComponent(
+    dataService: DataService = {} as DataService,
+    storage: AngularFireStorage = {} as AngularFireStorage
+  ): ClientPortalComponent {
     return new ClientPortalComponent(
       {
-        currentUser: { email: 'admin@example.com', firstName: 'Admin' },
+        currentUser: {
+          uid: 'admin-1',
+          email: 'admin@example.com',
+          firstName: 'Admin',
+        },
         isAdmninistrator: true,
         isAdmin: true,
       } as AuthService,
@@ -24,14 +31,16 @@ describe('ClientPortalComponent', () => {
         },
       } as unknown as ActivatedRoute,
       {} as Router,
-      {} as TimeService,
-      {} as DataService,
+      {
+        todaysDate: () => '7-25-2026-18-0-0',
+      } as TimeService,
+      dataService,
       {
         getGradientColor: () => '#16a34a',
         convertCongoleseFrancToUsDollars: (value: string) =>
           Math.ceil(Number(value) * 0.00034),
       } as unknown as ComputationService,
-      {} as AngularFireStorage,
+      storage,
       {} as ChangeDetectorRef
     );
   }
@@ -156,6 +165,91 @@ describe('ClientPortalComponent', () => {
     ]);
     expect(component.trophyAwardAmountValue(component.trophyAwardList[0])).toBe(
       100
+    );
+  });
+
+  it('should save a comment image and its gallery entry in one write', async () => {
+    const dataService = jasmine.createSpyObj<DataService>('DataService', [
+      'addCommentToClientProfileWithGalleryPictures',
+    ]);
+    dataService.addCommentToClientProfileWithGalleryPictures.and.resolveTo();
+    const component = createComponent(dataService);
+    spyOn(window, 'alert');
+
+    component.client.uid = 'client-1';
+    component.personPostingComment = 'Agent Test';
+    component.comment = 'Photo du client';
+
+    await (component as any).postCommentToFirestoreWithAttachments(null, [
+      {
+        id: 'comment-image-1',
+        type: 'image',
+        url: 'https://example.com/comment-image.jpg',
+        name: 'client.jpg',
+        path: 'clients-media/images/client-1-comment-image-1-client.jpg',
+        mimeType: 'image/jpeg',
+        size: 1234,
+        uploadedAt: '2026-07-25T18:00:00.000Z',
+        uploadedBy: 'admin-1',
+        galleryPictureId: 'comment-image-1',
+        captureTimeOriginalISO: '2026-07-25T17:00:00.000Z',
+        captureTimeSource: 'exif',
+      },
+    ]);
+
+    expect(
+      dataService.addCommentToClientProfileWithGalleryPictures
+    ).toHaveBeenCalledTimes(1);
+    const [, savedComments, savedPictures] =
+      dataService.addCommentToClientProfileWithGalleryPictures.calls.mostRecent()
+        .args;
+    expect(savedComments.length).toBe(1);
+    expect(savedComments[0].attachments?.[0].galleryPictureId).toBe(
+      'comment-image-1'
+    );
+    expect(savedPictures).toEqual([
+      jasmine.objectContaining({
+        id: 'comment-image-1',
+        category: 'other',
+        source: 'comment',
+        url: 'https://example.com/comment-image.jpg',
+        path: 'clients-media/images/client-1-comment-image-1-client.jpg',
+      }),
+    ]);
+    expect(component.client.galleryPictures?.['comment-image-1']).toEqual(
+      jasmine.objectContaining({
+        category: 'other',
+        source: 'comment',
+      })
+    );
+  });
+
+  it('should upload a new comment image only once', async () => {
+    const storage = jasmine.createSpyObj<AngularFireStorage>(
+      'AngularFireStorage',
+      ['upload']
+    );
+    storage.upload.and.resolveTo({
+      totalBytes: 1234,
+      ref: {
+        getDownloadURL: () =>
+          Promise.resolve('https://example.com/comment-image.jpg'),
+      },
+    } as any);
+    const component = createComponent({} as DataService, storage);
+    component.client.uid = 'client-1';
+    component.selectedImageFile = new File(['image'], 'client.jpg', {
+      type: 'image/jpeg',
+      lastModified: Date.parse('2026-07-25T17:00:00.000Z'),
+    });
+
+    const attachment = await (component as any).uploadImageForComment();
+
+    expect(storage.upload).toHaveBeenCalledTimes(1);
+    expect(attachment.galleryPictureId).toBe(attachment.id);
+    expect(attachment.path).toContain(attachment.id);
+    expect(attachment.url).toBe(
+      'https://example.com/comment-image.jpg'
     );
   });
 });

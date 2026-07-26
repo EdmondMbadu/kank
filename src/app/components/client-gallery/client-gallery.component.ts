@@ -13,6 +13,10 @@ import { Card } from 'src/app/models/card';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
+import {
+  commentsReferenceGalleryPicture,
+  legacyCommentImageGalleryPictures,
+} from 'src/app/utils/client-comment-gallery.util';
 
 type GalleryOwnerType = 'client' | 'card' | 'trophy';
 type GalleryOwner = Client | Card;
@@ -227,8 +231,18 @@ export class ClientGalleryComponent implements OnDestroy {
       (systemPicture) =>
         !storedPictures.some((picture) => picture.url === systemPicture.url)
     );
+    const legacyCommentPictures =
+      this.ownerType === 'client'
+        ? legacyCommentImageGalleryPictures(
+            (this.owner as Client | undefined)?.comments,
+            gallery
+          )
+        : [];
+    const clientPictures = [...storedPictures, ...legacyCommentPictures].sort(
+      (a, b) => b.uploadedAt.localeCompare(a.uploadedAt)
+    );
 
-    return [...systemPictures, ...storedPictures];
+    return [...systemPictures, ...clientPictures];
   }
 
   get activePictures(): ClientGalleryPicture[] {
@@ -429,6 +443,14 @@ export class ClientGalleryComponent implements OnDestroy {
 
   isSystemHomePicture(picture?: ClientGalleryPicture): boolean {
     return picture?.id === this.systemHomePictureId;
+  }
+
+  canEditPicture(picture?: ClientGalleryPicture): boolean {
+    return Boolean(
+      picture &&
+        !this.isSystemHomePicture(picture) &&
+        !picture.derivedFromComment
+    );
   }
 
   categoryLabel(categoryId: ClientGalleryCategory): string {
@@ -1058,7 +1080,14 @@ export class ClientGalleryComponent implements OnDestroy {
   private async deleteStoredPictureFile(
     picture: ClientGalleryPicture
   ): Promise<void> {
-    if (!picture.path) {
+    const comments =
+      this.ownerType === 'client'
+        ? (this.owner as Client | undefined)?.comments
+        : undefined;
+    if (
+      !picture.path ||
+      commentsReferenceGalleryPicture(comments, picture)
+    ) {
       return;
     }
 

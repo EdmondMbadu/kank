@@ -22,12 +22,19 @@ import { TimeService } from 'src/app/services/time.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import exifr from 'exifr';
 import MediaInfo from 'mediainfo.js';
+import { commentImageToGalleryPicture } from 'src/app/utils/client-comment-gallery.util';
 
 type ImageAttachment = {
+  id: string;
   type: 'image';
   url: string;
+  name: string;
+  path: string;
   mimeType: string;
   size: number;
+  uploadedAt: string;
+  uploadedBy?: string;
+  galleryPictureId: string;
   width?: number;
   height?: number;
   captureTimeOriginalISO?: string;
@@ -1560,7 +1567,7 @@ export class ClientPortalComponent {
       );
 
       // 4) Post to Firestore with attachments + audio (+audio meta)
-      this.postCommentToFirestoreWithAttachments(audio, attachments);
+      await this.postCommentToFirestoreWithAttachments(audio, attachments);
 
       // 5) Reset local UI state
       this.clearSelectedImage();
@@ -1637,10 +1644,10 @@ export class ClientPortalComponent {
     return { url, meta };
   }
 
-  private postCommentToFirestoreWithAttachments(
+  private async postCommentToFirestoreWithAttachments(
     audio: { url: string; meta?: AudioMeta } | null,
     attachments: MediaAttachment[]
-  ) {
+  ): Promise<void> {
     const newComment: any = {
       name: this.personPostingComment!,
       time: this.time.todaysDate(),
@@ -1654,19 +1661,43 @@ export class ClientPortalComponent {
 
     const updated = [...this.comments, newComment];
     const sanitized = this.stripUndefinedDeep(updated);
+    const galleryPictures = attachments
+      .filter(
+        (attachment): attachment is ImageAttachment =>
+          attachment.type === 'image'
+      )
+      .map((attachment) =>
+        commentImageToGalleryPicture(attachment, {
+          id: attachment.galleryPictureId,
+          uploadedAt: attachment.uploadedAt,
+          uploadedBy: attachment.uploadedBy,
+          uploadedByName: this.personPostingComment?.trim(),
+        })
+      );
 
-    this.comments = sanitized;
-    this.data
-      .addCommentToClientProfile(this.client, sanitized)
-      .then(() => {
-        this.personPostingComment = '';
-        this.comment = '';
-        alert('Commentaire publié avec succès !');
-      })
-      .catch((error) => {
-        console.error(error);
-        alert('Erreur lors de la publication du commentaire.');
-      });
+    try {
+      await this.data.addCommentToClientProfileWithGalleryPictures(
+        this.client,
+        sanitized,
+        galleryPictures
+      );
+      this.comments = sanitized;
+      this.client.comments = sanitized;
+      if (galleryPictures.length) {
+        this.client.galleryPictures = {
+          ...(this.client.galleryPictures ?? {}),
+          ...Object.fromEntries(
+            galleryPictures.map((picture) => [picture.id, picture])
+          ),
+        };
+      }
+      this.personPostingComment = '';
+      this.comment = '';
+      alert('Commentaire publié avec succès !');
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   }
 
   private async uploadRecordedBlobAndThenPostComment() {
@@ -2036,10 +2067,12 @@ export class ClientPortalComponent {
     const file = this.selectedImageFile;
     const captureISO = this.imageCaptureTimeISO || new Date().toISOString();
     const captureSrc = this.imageCaptureTimeSource || 'uploadTime';
+    const attachmentId = `comment-image-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    const uploadedAt = new Date().toISOString();
 
-    const path = `clients-media/images/${this.client.uid}-${Date.now()}-${
-      file.name
-    }`;
+    const path = `clients-media/images/${this.client.uid}-${attachmentId}-${file.name}`;
     const metadata = {
       contentType: file.type,
       customMetadata: {
@@ -2057,10 +2090,16 @@ export class ClientPortalComponent {
     const url = await uploadTask.ref.getDownloadURL();
 
     const att: ImageAttachment = {
+      id: attachmentId,
       type: 'image',
       url,
+      name: file.name,
+      path,
       mimeType: file.type,
       size: file.size,
+      uploadedAt,
+      uploadedBy: this.auth.currentUser?.uid,
+      galleryPictureId: attachmentId,
       ...(this.imageMetaWH?.width !== undefined
         ? { width: this.imageMetaWH.width }
         : {}),
