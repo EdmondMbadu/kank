@@ -169,33 +169,39 @@ describe('TrackingCentralComponent', () => {
     expect(component.projectedWeeklyPaymentVisible).toBeFalse();
   });
 
-  it('previews one uniform payroll deduction per missing tranche down to zero', () => {
+  it('previews bonuses, the neutral zone, and deductions in one payroll scale', () => {
     const { component } = createComponent();
     component.weeklyPaymentTargetFc = 1200000;
     component.weeklyDeductionTargetFc = 900000;
     component.weeklyObjectiveDeductionConfig = {
       bandFc: 100000,
       penaltyPerBandUsd: 1,
+      bonusBandFc: 100000,
+      bonusPerBandUsd: 1,
     };
 
-    const rows = component.weeklyDeductionPreviewRows;
+    const rows = component.weeklyAdjustmentPreviewRows;
 
     expect(rows[0]).toEqual(
       jasmine.objectContaining({
-        label: '900 000 FC ou plus',
-        deductionUsd: 0,
+        label: '1 600 000 - 1 699 999 FC',
+        adjustmentUsd: 5,
+        kind: 'bonus',
+        note: 'Continue sans plafond',
       })
     );
-    expect(rows[1]).toEqual(
+    expect(rows).toContain(
       jasmine.objectContaining({
-        label: '800 000 - 899 999 FC',
-        deductionUsd: 1,
+        label: '900 000 - 1 199 999 FC',
+        adjustmentUsd: 0,
+        kind: 'neutral',
       })
     );
     expect(rows[rows.length - 1]).toEqual(
       jasmine.objectContaining({
         label: '0 - 99 999 FC',
-        deductionUsd: 9,
+        adjustmentUsd: -9,
+        kind: 'deduction',
       })
     );
   });

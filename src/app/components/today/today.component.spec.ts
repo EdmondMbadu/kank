@@ -1,5 +1,6 @@
 import { of } from 'rxjs';
 import { resolveWeeklyPaymentTargetForDate } from 'src/app/utils/weekly-payment-target.util';
+import { computeWeeklyObjectiveAdjustment } from 'src/app/utils/weekly-objective-adjustment.util';
 
 import { TodayComponent } from './today.component';
 
@@ -27,6 +28,8 @@ describe('TodayComponent', () => {
       weeklyObjectiveDeductionConfig$: of({
         bandFc: 100000,
         penaltyPerBandUsd: 1,
+        bonusBandFc: 100000,
+        bonusPerBandUsd: 1,
       }),
       getAllClients: () => of([]),
       getAllClientsCard: () => of([]),
@@ -91,6 +94,22 @@ describe('TodayComponent', () => {
       convertCongoleseFrancToUsDollars: (value: string) =>
         (Number(value || 0) / 2900).toString(),
       computeWeeklyObjectiveDeductionUsd: () => 5,
+      computeWeeklyObjectiveAdjustmentUsd: (
+        totalFc: number,
+        deductionTargetFc: number,
+        visibleTargetFc: number
+      ) =>
+        computeWeeklyObjectiveAdjustment(
+          totalFc,
+          deductionTargetFc,
+          visibleTargetFc,
+          {
+            bandFc: 100000,
+            penaltyPerBandUsd: 1,
+            bonusBandFc: 100000,
+            bonusPerBandUsd: 1,
+          }
+        ),
       findTotalForToday: (entries: Record<string, any> = {}, dateKey: string) =>
         Object.keys(entries || {})
           .filter((key) => key.startsWith(`${dateKey}-`))
@@ -350,6 +369,35 @@ describe('TodayComponent', () => {
     expect(component.showCodeModal).toBeFalse();
     expect(component.showWeeklyShortfallDeductionModal).toBeTrue();
     expect(component.selectedWeeklyShortfall).not.toBeNull();
+  });
+
+  it('shows the essential path from deductions to the first unlimited bonus', () => {
+    const { component } = createComponent();
+    component.selectedWeeklyShortfall = {
+      start: new Date(2026, 6, 20),
+      end: new Date(2026, 6, 26),
+      label: '20-26 Juillet 2026',
+      targetFc: 1200000,
+      deductionTargetFc: 900000,
+      totalFc: 34000,
+      totalUsd: 0,
+      deductionUsd: 9,
+      adjustmentKind: 'deduction',
+      adjustmentUsd: 9,
+      signedAdjustmentUsd: -9,
+      isComplete: false,
+    };
+
+    expect(
+      component.selectedShortfallMilestones.map((milestone) => ({
+        amountFc: milestone.amountFc,
+        adjustmentLabel: milestone.adjustmentLabel,
+      }))
+    ).toEqual([
+      { amountFc: 600000, adjustmentLabel: '-$3' },
+      { amountFc: 900000, adjustmentLabel: '$0' },
+      { amountFc: 1200000, adjustmentLabel: '+$1' },
+    ]);
   });
 
   it('hides the projected weekly target when projection visibility is off', () => {

@@ -436,57 +436,6 @@
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
-            Bonus équipe
-          </p>
-          <h3 class="mt-2 text-xl font-semibold text-slate-900">
-            Seuil bonus hebdomadaire d’équipe
-          </h3>
-          <p class="mt-2 text-sm text-slate-600">
-            Valeur actuelle :
-            <strong>{{ teamWeeklyBonusThresholdFc | number : "1.0-0" }} FC</strong>
-          </p>
-          <p class="mt-1 text-xs text-slate-500">
-            À partir de ce seuil, chaque tranche supplémentaire de 100 000 FC ajoute 5 $ par membre.
-          </p>
-        </div>
-        <button
-          type="button"
-          (click)="saveTeamWeeklyBonusThresholdGlobal()"
-          [disabled]="teamWeeklyBonusThresholdSaving"
-          class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {{
-            teamWeeklyBonusThresholdSaving ? 'Sauvegarde...' : 'Enregistrer'
-          }}
-        </button>
-      </div>
-
-      <div class="mt-6">
-        <label class="text-sm font-semibold text-slate-700">
-          Seuil de départ (FC)
-          <input
-            [(ngModel)]="teamWeeklyBonusThresholdInput"
-            type="number"
-            min="100000"
-            step="100000"
-            class="mt-2 w-full max-w-xs rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-            placeholder="1500000"
-          />
-        </label>
-      </div>
-
-    <p
-      *ngIf="teamWeeklyBonusThresholdSaved"
-      class="mt-4 text-sm text-emerald-600"
-    >
-      Seuil du bonus d’équipe mis à jour.
-    </p>
-  </div>
-
-    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
             Rentabilité
           </p>
           <h3 class="mt-2 text-xl font-semibold text-slate-900">
@@ -618,16 +567,18 @@
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
-            Retenues objectif
+            Ajustement objectif
           </p>
           <h3 class="mt-2 text-xl font-semibold text-slate-900">
             Barème appliqué à la paie
           </h3>
           <p class="mt-2 max-w-3xl text-sm text-slate-600">
-            Aperçu basé sur le minimum de retenue actif de
-            <strong>{{ weeklyDeductionTargetFc | number : "1.0-0" }} FC</strong>.
-            Chaque tranche manquante retire le même montant par employé,
-            jusqu’à zéro paiement.
+            En dessous du minimum de paie actif de
+            <strong>{{ weeklyDeductionTargetFc | number : "1.0-0" }} FC</strong>,
+            chaque tranche manquante retire un montant. À partir du minimum
+            visible de
+            <strong>{{ weeklyPaymentTargetFc | number : "1.0-0" }} FC</strong>,
+            chaque tranche atteinte ajoute un bonus par employé, sans plafond.
           </p>
         </div>
         <button
@@ -642,7 +593,7 @@
         </button>
       </div>
 
-      <div class="mt-6 grid gap-4 md:grid-cols-2">
+      <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <label class="text-sm font-semibold text-slate-700">
           Tranche manquante (FC)
           <input
@@ -663,6 +614,26 @@
             class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           />
         </label>
+        <label class="text-sm font-semibold text-slate-700">
+          Tranche bonus (FC)
+          <input
+            [(ngModel)]="weeklyObjectiveBonusBandInput"
+            type="number"
+            min="100000"
+            step="100000"
+            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">
+          Bonus par tranche ($)
+          <input
+            [(ngModel)]="weeklyObjectiveBonusAmountInput"
+            type="number"
+            min="1"
+            step="1"
+            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
       </div>
 
       <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200">
@@ -670,20 +641,40 @@
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th class="px-4 py-3">Paiement semaine</th>
-              <th class="px-4 py-3">Retenue</th>
+              <th class="px-4 py-3">Ajustement paie</th>
               <th class="px-4 py-3">Note</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200">
-            <tr *ngFor="let row of weeklyDeductionPreviewRows">
+            <tr
+              *ngFor="let row of weeklyAdjustmentPreviewRows"
+              [ngClass]="{
+                'bg-emerald-50/80': row.kind === 'bonus',
+                'bg-slate-50/80': row.kind === 'neutral',
+                'bg-rose-50/70': row.kind === 'deduction'
+              }"
+            >
               <td class="px-4 py-3 font-medium text-slate-900">
                 {{ row.label }}
               </td>
-              <td class="px-4 py-3 font-semibold text-slate-900">
-                $ {{ row.deductionUsd | number : "1.0-0" }}
+              <td
+                class="px-4 py-3 font-semibold"
+                [ngClass]="{
+                  'text-emerald-700': row.kind === 'bonus',
+                  'text-slate-700': row.kind === 'neutral',
+                  'text-rose-700': row.kind === 'deduction'
+                }"
+              >
+                {{
+                  row.adjustmentUsd > 0
+                    ? '+$ ' + (row.adjustmentUsd | number : "1.0-0")
+                    : row.adjustmentUsd < 0
+                    ? '-$ ' + (-row.adjustmentUsd | number : "1.0-0")
+                    : '$ 0'
+                }}
               </td>
               <td class="px-4 py-3 text-slate-600">
-                {{ row.note || 'Tranche manquante' }}
+                {{ row.note }}
               </td>
             </tr>
           </tbody>
@@ -694,7 +685,7 @@
         *ngIf="weeklyObjectiveDeductionSaved"
         class="mt-4 text-sm text-emerald-600"
       >
-        Barème de retenue mis à jour.
+        Barème d’ajustement mis à jour.
       </p>
     </div>
 

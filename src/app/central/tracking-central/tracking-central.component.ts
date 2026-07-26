@@ -21,10 +21,15 @@ import {
   normalizeWeeklyPaymentTargetPeriods,
   parseWeeklyPaymentTargetDate,
 } from 'src/app/utils/weekly-payment-target.util';
+import {
+  computeWeeklyObjectiveAdjustment,
+  WeeklyObjectiveAdjustmentKind,
+} from 'src/app/utils/weekly-objective-adjustment.util';
 
-type WeeklyDeductionPreviewRow = {
+type WeeklyAdjustmentPreviewRow = {
   label: string;
-  deductionUsd: number;
+  adjustmentUsd: number;
+  kind: WeeklyObjectiveAdjustmentKind;
   note?: string;
 };
 
@@ -64,10 +69,6 @@ export class TrackingCentralComponent {
   weeklyDeductionTargetEffectiveDateInput = '';
   weeklyDeductionTargetSaving = false;
   weeklyDeductionTargetSaved = false;
-  teamWeeklyBonusThresholdFc = 1500000;
-  teamWeeklyBonusThresholdInput = '';
-  teamWeeklyBonusThresholdSaving = false;
-  teamWeeklyBonusThresholdSaved = false;
   profitabilityThresholdUsd = 3000;
   profitabilityThresholdInput = '';
   profitabilityThresholdSaving = false;
@@ -83,9 +84,13 @@ export class TrackingCentralComponent {
   weeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig = {
     bandFc: 100000,
     penaltyPerBandUsd: 1,
+    bonusBandFc: 100000,
+    bonusPerBandUsd: 1,
   };
   weeklyObjectiveDeductionBandInput = '100000';
   weeklyObjectiveDeductionPenaltyInput = '1';
+  weeklyObjectiveBonusBandInput = '100000';
+  weeklyObjectiveBonusAmountInput = '1';
   weeklyObjectiveDeductionSaving = false;
   weeklyObjectiveDeductionSaved = false;
   monthlyBudgetGlobalInput = '';
@@ -118,9 +123,6 @@ export class TrackingCentralComponent {
     this.auth.weeklyDeductionTargetVersions$.subscribe((versions) => {
       this.weeklyDeductionTargetVersions = versions;
     });
-    this.auth.teamWeeklyBonusConfig$.subscribe((config) => {
-      this.teamWeeklyBonusThresholdFc = config.thresholdFc;
-    });
     this.auth.profitabilityConfig$.subscribe((config) => {
       this.profitabilityThresholdUsd = config.thresholdUsd;
     });
@@ -136,6 +138,9 @@ export class TrackingCentralComponent {
       this.weeklyObjectiveDeductionBandInput = config.bandFc.toString();
       this.weeklyObjectiveDeductionPenaltyInput =
         config.penaltyPerBandUsd.toString();
+      this.weeklyObjectiveBonusBandInput = config.bonusBandFc.toString();
+      this.weeklyObjectiveBonusAmountInput =
+        config.bonusPerBandUsd.toString();
     });
   }
 
@@ -514,86 +519,82 @@ export class TrackingCentralComponent {
     return this.projectedWeeklyPaymentVisible ? 'Visible' : 'Masquée';
   }
 
-  get weeklyDeductionPreviewRows(): WeeklyDeductionPreviewRow[] {
-    const targetFc =
+  get weeklyAdjustmentPreviewRows(): WeeklyAdjustmentPreviewRow[] {
+    const deductionTargetFc =
       Number.isFinite(Number(this.weeklyDeductionTargetFc)) &&
       Number(this.weeklyDeductionTargetFc) > 0
         ? Number(this.weeklyDeductionTargetFc)
         : 600000;
-    const rows: WeeklyDeductionPreviewRow[] = [
-      {
-        label: `${this.formatFc(targetFc)} FC ou plus`,
-        deductionUsd: 0,
-        note: 'Aucune retenue',
-      },
-    ];
+    const visibleTargetFc =
+      Number.isFinite(Number(this.weeklyPaymentTargetFc)) &&
+      Number(this.weeklyPaymentTargetFc) > 0
+        ? Number(this.weeklyPaymentTargetFc)
+        : deductionTargetFc;
+    const config = this.weeklyObjectiveDeductionConfig;
+    const rows: WeeklyAdjustmentPreviewRow[] = [];
+    const positiveLevelCount = 5;
 
-    const bandFc = this.weeklyObjectiveDeductionConfig.bandFc;
-    for (let upperBound = targetFc - 1; upperBound >= 0; upperBound -= bandFc) {
-      const lowerBound = Math.max(0, upperBound - bandFc + 1);
-      const deductionUsd = this.computeWeeklyObjectiveDeductionUsd(
+    for (let level = positiveLevelCount; level >= 1; level -= 1) {
+      const lowerBound =
+        visibleTargetFc + (level - 1) * config.bonusBandFc;
+      const upperBound = lowerBound + config.bonusBandFc - 1;
+      const result = computeWeeklyObjectiveAdjustment(
         lowerBound,
-        targetFc
+        deductionTargetFc,
+        visibleTargetFc,
+        config
       );
-      if (deductionUsd <= 0) continue;
       rows.push({
         label: `${this.formatFc(lowerBound)} - ${this.formatFc(
           upperBound
         )} FC`,
-        deductionUsd,
+        adjustmentUsd: result.signedAmountUsd,
+        kind: 'bonus',
+        note:
+          level === positiveLevelCount
+            ? 'Continue sans plafond'
+            : 'Tranche bonus',
+      });
+    }
+
+    if (visibleTargetFc > deductionTargetFc) {
+      rows.push({
+        label: `${this.formatFc(deductionTargetFc)} - ${this.formatFc(
+          visibleTargetFc - 1
+        )} FC`,
+        adjustmentUsd: 0,
+        kind: 'neutral',
+        note: 'Zone neutre',
+      });
+    }
+
+    for (
+      let upperBound = deductionTargetFc - 1;
+      upperBound >= 0;
+      upperBound -= config.bandFc
+    ) {
+      const lowerBound = Math.max(0, upperBound - config.bandFc + 1);
+      const result = computeWeeklyObjectiveAdjustment(
+        lowerBound,
+        deductionTargetFc,
+        visibleTargetFc,
+        config
+      );
+      rows.push({
+        label: `${this.formatFc(lowerBound)} - ${this.formatFc(
+          upperBound
+        )} FC`,
+        adjustmentUsd: result.signedAmountUsd,
+        kind: 'deduction',
+        note: 'Tranche manquante',
       });
     }
 
     return rows;
   }
 
-  private computeWeeklyObjectiveDeductionUsd(
-    weeklyTotalFc: number,
-    weeklyTargetFc: number
-  ): number {
-    const total = Number(weeklyTotalFc) || 0;
-    const target = Number(weeklyTargetFc) || 0;
-    const { bandFc, penaltyPerBandUsd } =
-      this.weeklyObjectiveDeductionConfig;
-
-    if (!Number.isFinite(target) || target <= 0 || total >= target) {
-      return 0;
-    }
-    const boundedTotal = Math.max(0, total);
-    const missingBands = Math.ceil((target - boundedTotal) / bandFc);
-    return Math.max(1, missingBands) * penaltyPerBandUsd;
-  }
-
   private formatFc(value: number): string {
     return new Intl.NumberFormat('fr-FR').format(value);
-  }
-
-  saveTeamWeeklyBonusThresholdGlobal(): void {
-    if (!this.auth.isAdmin) return;
-    if (this.teamWeeklyBonusThresholdSaving) return;
-    const value = Number(this.teamWeeklyBonusThresholdInput);
-    if (!Number.isFinite(value) || value < 100000 || value % 100000 !== 0) {
-      alert(
-        'Entrez un seuil valide par tranche de 100 000 FC (minimum 100 000 FC).'
-      );
-      return;
-    }
-
-    this.teamWeeklyBonusThresholdSaving = true;
-    this.teamWeeklyBonusThresholdSaved = false;
-    this.auth
-      .updateTeamWeeklyBonusThresholdGlobal(value)
-      .then(() => {
-        this.teamWeeklyBonusThresholdSaved = true;
-        this.teamWeeklyBonusThresholdInput = '';
-      })
-      .catch((err) => {
-        console.error('Failed to update team weekly bonus threshold:', err);
-        alert("Impossible d'enregistrer le seuil du bonus d'équipe.");
-      })
-      .finally(() => {
-        this.teamWeeklyBonusThresholdSaving = false;
-      });
   }
 
   saveProfitabilityThresholdGlobal(): void {
@@ -688,6 +689,8 @@ export class TrackingCentralComponent {
 
     const bandFc = Number(this.weeklyObjectiveDeductionBandInput);
     const penaltyPerBandUsd = Number(this.weeklyObjectiveDeductionPenaltyInput);
+    const bonusBandFc = Number(this.weeklyObjectiveBonusBandInput);
+    const bonusPerBandUsd = Number(this.weeklyObjectiveBonusAmountInput);
 
     if (!Number.isFinite(bandFc) || bandFc < 100000 || bandFc % 100000 !== 0) {
       alert('Entrez une tranche valide en FC (minimum 100 000 FC).');
@@ -697,20 +700,33 @@ export class TrackingCentralComponent {
       alert('Entrez une retenue par tranche valide en dollars.');
       return;
     }
-
+    if (
+      !Number.isFinite(bonusBandFc) ||
+      bonusBandFc < 100000 ||
+      bonusBandFc % 100000 !== 0
+    ) {
+      alert('Entrez une tranche bonus valide en FC (minimum 100 000 FC).');
+      return;
+    }
+    if (!Number.isFinite(bonusPerBandUsd) || bonusPerBandUsd <= 0) {
+      alert('Entrez un bonus par tranche valide en dollars.');
+      return;
+    }
     this.weeklyObjectiveDeductionSaving = true;
     this.weeklyObjectiveDeductionSaved = false;
     this.auth
       .updateWeeklyObjectiveDeductionConfigGlobal({
         bandFc,
         penaltyPerBandUsd,
+        bonusBandFc,
+        bonusPerBandUsd,
       })
       .then(() => {
         this.weeklyObjectiveDeductionSaved = true;
       })
       .catch((err) => {
-        console.error('Failed to update weekly deduction config:', err);
-        alert("Impossible d'enregistrer le barème de retenue.");
+        console.error('Failed to update weekly objective adjustment config:', err);
+        alert("Impossible d'enregistrer le barème d’ajustement.");
       })
       .finally(() => {
         this.weeklyObjectiveDeductionSaving = false;

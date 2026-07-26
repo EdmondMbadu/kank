@@ -20,6 +20,7 @@ import {
   normalizeWeeklyPaymentTargetPeriods,
   parseWeeklyPaymentTargetDate,
 } from 'src/app/utils/weekly-payment-target.util';
+import { WeeklyObjectiveAdjustmentKind } from 'src/app/utils/weekly-objective-adjustment.util';
 interface Receipt {
   docId: string;
   url: string;
@@ -36,12 +37,16 @@ interface WeeklyShortfall {
   totalFc: number;
   totalUsd: number;
   deductionUsd: number;
+  adjustmentKind: WeeklyObjectiveAdjustmentKind;
+  adjustmentUsd: number;
+  signedAdjustmentUsd: number;
   isComplete: boolean;
 }
-interface WeeklyShortfallDeductionBand {
+interface WeeklyAdjustmentMilestone {
+  amountFc: number;
   label: string;
-  deductionUsd: number;
-  isCurrent: boolean;
+  adjustmentLabel: string;
+  kind: WeeklyObjectiveAdjustmentKind;
 }
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 type PaymentPerformanceMode = 'day' | 'week';
@@ -218,6 +223,8 @@ export class TodayComponent {
   weeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig = {
     bandFc: 100000,
     penaltyPerBandUsd: 1,
+    bonusBandFc: 100000,
+    bonusPerBandUsd: 1,
   };
   dailyFees: string = '0';
   dailyReserve: string = '0';
@@ -800,6 +807,9 @@ export class TodayComponent {
         totalFc,
         totalUsd: Number.isNaN(totalUsd) ? 0 : totalUsd,
         deductionUsd,
+        adjustmentKind: 'deduction',
+        adjustmentUsd: deductionUsd,
+        signedAdjustmentUsd: -deductionUsd,
         isComplete,
       });
     }
@@ -848,7 +858,7 @@ export class TodayComponent {
   }
 
   get weeklyObjectiveDeductionHeaderLabel(): string {
-    return `-$${this.weeklyObjectiveDeductionConfig.penaltyPerBandUsd} / tranche / personne`;
+    return `-$${this.weeklyObjectiveDeductionConfig.penaltyPerBandUsd} ou +$${this.weeklyObjectiveDeductionConfig.bonusPerBandUsd} / tranche / personne`;
   }
 
   private buildWeeklyShortfallForModalDate(
@@ -870,6 +880,11 @@ export class TodayComponent {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const adjustment = this.compute.computeWeeklyObjectiveAdjustmentUsd(
+      totalFc,
+      deductionTargetFc,
+      targetFc
+    );
 
     return {
       start,
@@ -879,10 +894,11 @@ export class TodayComponent {
       deductionTargetFc,
       totalFc,
       totalUsd: Number.isNaN(totalUsd) ? 0 : totalUsd,
-      deductionUsd: this.compute.computeWeeklyObjectiveDeductionUsd(
-        totalFc,
-        deductionTargetFc
-      ),
+      deductionUsd:
+        adjustment.kind === 'deduction' ? adjustment.amountUsd : 0,
+      adjustmentKind: adjustment.kind,
+      adjustmentUsd: adjustment.amountUsd,
+      signedAdjustmentUsd: adjustment.signedAmountUsd,
       isComplete: today > end,
     };
   }
@@ -898,61 +914,146 @@ export class TodayComponent {
   }
 
   get selectedShortfallBandCount(): number {
-    const bandFc = Number(this.weeklyObjectiveDeductionConfig.bandFc) || 100000;
-    return Math.ceil(this.selectedShortfallMissingFc / bandFc);
+    const week = this.selectedWeeklyShortfall;
+    if (!week) return 0;
+    return this.compute.computeWeeklyObjectiveAdjustmentUsd(
+      week.totalFc,
+      week.deductionTargetFc,
+      week.targetFc
+    ).bandCount;
   }
 
-  get selectedShortfallDeductionBands(): WeeklyShortfallDeductionBand[] {
-    const row = this.selectedWeeklyShortfall;
-    const targetFc = Number(
-      row?.deductionTargetFc || row?.targetFc || this.weeklyTargetFc || 0
-    );
-    const totalFc = Math.max(0, Number(row?.totalFc || 0));
-    const bandFc = Number(this.weeklyObjectiveDeductionConfig.bandFc) || 100000;
-    const bands: WeeklyShortfallDeductionBand[] = [];
-
-    if (!Number.isFinite(targetFc) || targetFc <= 0 || bandFc <= 0) {
-      return bands;
+  get selectedShortfallAdjustmentLabel(): string {
+    switch (this.selectedWeeklyShortfall?.adjustmentKind) {
+      case 'deduction':
+        return 'Retenue';
+      case 'bonus':
+        return 'Bonus';
+      default:
+        return 'Aucun ajustement';
     }
+  }
 
-    bands.push({
-      label: `${this.formatFc(targetFc)} FC ou plus`,
-      deductionUsd: 0,
-      isCurrent: totalFc >= targetFc,
-    });
+  get selectedShortfallFormulaLabel(): string {
+    const week = this.selectedWeeklyShortfall;
+    if (!week) return '';
 
-    for (let upperBound = targetFc - 1; upperBound >= 0; upperBound -= bandFc) {
-      const lowerBound = Math.max(0, upperBound - bandFc + 1);
-      bands.push({
-        label: `${this.formatFc(lowerBound)} - ${this.formatFc(
-          upperBound
-        )} FC`,
-        deductionUsd: this.compute.computeWeeklyObjectiveDeductionUsd(
-          lowerBound,
-          targetFc
-        ),
-        isCurrent: totalFc >= lowerBound && totalFc <= upperBound,
+    if (week.adjustmentKind === 'deduction') {
+      return `Retenue = ${this.selectedShortfallBandCount} tranche(s) manquante(s) × $${this.weeklyObjectiveDeductionConfig.penaltyPerBandUsd}.`;
+    }
+    if (week.adjustmentKind === 'neutral') {
+      return 'Le seuil paie est atteint. Le bonus commence à l’objectif visible.';
+    }
+    return `Bonus = ${this.selectedShortfallBandCount} tranche(s) atteinte(s) × $${this.weeklyObjectiveDeductionConfig.bonusPerBandUsd}.`;
+  }
+
+  get selectedShortfallToneClasses(): string {
+    switch (this.selectedWeeklyShortfall?.adjustmentKind) {
+      case 'deduction':
+        return 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-100';
+      case 'bonus':
+        return 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100';
+      default:
+        return 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100';
+    }
+  }
+
+  get selectedShortfallSignedAmountLabel(): string {
+    const week = this.selectedWeeklyShortfall;
+    if (!week || week.adjustmentUsd === 0) return '$ 0';
+    return `${week.adjustmentKind === 'bonus' ? '+' : '-'}$ ${this.formatFc(
+      week.adjustmentUsd
+    )}`;
+  }
+
+  get selectedShortfallMilestones(): WeeklyAdjustmentMilestone[] {
+    const week = this.selectedWeeklyShortfall;
+    if (!week) return [];
+
+    const deductionBandFc =
+      Number(this.weeklyObjectiveDeductionConfig.bandFc) || 100000;
+    const deductionTargetFc = Number(week.deductionTargetFc) || 0;
+    const visibleTargetFc = Number(week.targetFc) || deductionTargetFc;
+    const candidates = [
+      {
+        amountFc: Math.max(0, deductionTargetFc - 3 * deductionBandFc),
+        label: 'Moins de retenue',
+      },
+      { amountFc: deductionTargetFc, label: 'Paie protégée' },
+      { amountFc: visibleTargetFc, label: 'Bonus commence' },
+    ];
+
+    return candidates
+      .filter(
+        (candidate, index, all) =>
+          candidate.amountFc > 0 &&
+          all.findIndex((item) => item.amountFc === candidate.amountFc) ===
+            index
+      )
+      .map((candidate) => {
+        const adjustment = this.compute.computeWeeklyObjectiveAdjustmentUsd(
+          candidate.amountFc,
+          deductionTargetFc,
+          visibleTargetFc
+        );
+        return {
+          ...candidate,
+          adjustmentLabel:
+            adjustment.signedAmountUsd > 0
+              ? `+$${this.formatFc(adjustment.signedAmountUsd)}`
+              : adjustment.signedAmountUsd < 0
+              ? `-$${this.formatFc(Math.abs(adjustment.signedAmountUsd))}`
+              : '$0',
+          kind: adjustment.kind,
+        };
       });
-    }
-
-    return bands;
   }
 
-  getWeeklyDeductionStepWidthPercent(
-    band: WeeklyShortfallDeductionBand
-  ): number {
-    const maxDeduction = this.selectedShortfallDeductionBands.reduce(
-      (max, item) => Math.max(max, Number(item.deductionUsd || 0)),
-      0
+  get selectedShortfallScaleMaxFc(): number {
+    const visibleTargetFc =
+      Number(this.selectedWeeklyShortfall?.targetFc) || 0;
+    const bonusBandFc =
+      Number(this.weeklyObjectiveDeductionConfig.bonusBandFc) || 100000;
+    return Math.max(visibleTargetFc + 3 * bonusBandFc, 1);
+  }
+
+  get selectedShortfallCurrentPositionPercent(): number {
+    const totalFc = Number(this.selectedWeeklyShortfall?.totalFc) || 0;
+    return Math.min(
+      97,
+      Math.max(3, (totalFc / this.selectedShortfallScaleMaxFc) * 100)
     );
+  }
 
-    if (maxDeduction <= 0 || Number(band.deductionUsd || 0) <= 0) {
-      return 0;
-    }
-
+  get selectedShortfallDeductionZonePercent(): number {
     return Math.min(
       100,
-      Math.max(10, (Number(band.deductionUsd || 0) / maxDeduction) * 100)
+      Math.max(
+        0,
+        ((Number(this.selectedWeeklyShortfall?.deductionTargetFc) || 0) /
+          this.selectedShortfallScaleMaxFc) *
+          100
+      )
+    );
+  }
+
+  get selectedShortfallNeutralZonePercent(): number {
+    const week = this.selectedWeeklyShortfall;
+    if (!week) return 0;
+    return Math.max(
+      0,
+      ((Number(week.targetFc) - Number(week.deductionTargetFc)) /
+        this.selectedShortfallScaleMaxFc) *
+        100
+    );
+  }
+
+  get selectedShortfallBonusZonePercent(): number {
+    return Math.max(
+      0,
+      100 -
+        this.selectedShortfallDeductionZonePercent -
+        this.selectedShortfallNeutralZonePercent
     );
   }
 

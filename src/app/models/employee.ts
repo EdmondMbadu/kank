@@ -89,6 +89,8 @@ export class Employee {
   paymentManualAdditionReason?: string;
   paymentObjectiveWeekDeductionTotal?: string;
   paymentObjectiveWeekDeductions?: WeeklyObjectiveDeduction[];
+  paymentObjectiveWeekBonusTotal?: string;
+  paymentObjectiveWeekBonuses?: WeeklyObjectiveBonus[];
   // NEW: parallel map of attachments by date
   attendanceAttachments?: { [date: string]: AttendanceAttachment };
 
@@ -159,6 +161,8 @@ export interface WeeklyObjectiveDeduction {
   /** Internal threshold actually used to calculate the payroll deduction. */
   weeklyDeductionTargetFc?: number;
 }
+
+export interface WeeklyObjectiveBonus extends WeeklyObjectiveDeduction {}
 
 export interface FoundationWithdrawalRequest {
   id: string;

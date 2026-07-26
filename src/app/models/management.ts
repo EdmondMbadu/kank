@@ -33,6 +33,8 @@ export class Management {
     bandFc?: number;
     penaltyPerBandUsd?: number;
     basePenaltyUsd?: number;
+    bonusBandFc?: number;
+    bonusPerBandUsd?: number;
   };
   monthlyPaymentSnapshots?: { [monthYear: string]: MonthlyPaymentSnapshot };
   rolePasswords?: {

@@ -9,6 +9,10 @@ import { AuthService } from '../../services/auth.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Observable, map, catchError, of, firstValueFrom } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
+import {
+  computeWeeklyObjectiveAdjustment,
+  WeeklyObjectiveAdjustmentResult,
+} from '../../utils/weekly-objective-adjustment.util';
 // (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 @Injectable({
   providedIn: 'root',
@@ -16,6 +20,8 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
 export class ComputationService {
   private weeklyObjectiveBandFc = 100000;
   private weeklyObjectivePenaltyPerBandUsd = 1;
+  private weeklyObjectiveBonusBandFc = 100000;
+  private weeklyObjectiveBonusPerBandUsd = 1;
 
   constructor(
     private time: TimeService,
@@ -135,11 +141,15 @@ export class ComputationService {
     bandFc?: number;
     penaltyPerBandUsd?: number;
     basePenaltyUsd?: number;
+    bonusBandFc?: number;
+    bonusPerBandUsd?: number;
   }) {
     const bandFc = Number(config?.bandFc);
     const penaltyPerBandUsd = Number(
       config?.penaltyPerBandUsd ?? config?.basePenaltyUsd
     );
+    const bonusBandFc = Number(config?.bonusBandFc);
+    const bonusPerBandUsd = Number(config?.bonusPerBandUsd);
 
     if (
       Number.isFinite(bandFc) &&
@@ -150,6 +160,16 @@ export class ComputationService {
     }
     if (Number.isFinite(penaltyPerBandUsd) && penaltyPerBandUsd > 0) {
       this.weeklyObjectivePenaltyPerBandUsd = penaltyPerBandUsd;
+    }
+    if (
+      Number.isFinite(bonusBandFc) &&
+      bonusBandFc >= 100000 &&
+      bonusBandFc % 100000 === 0
+    ) {
+      this.weeklyObjectiveBonusBandFc = bonusBandFc;
+    }
+    if (Number.isFinite(bonusPerBandUsd) && bonusPerBandUsd > 0) {
+      this.weeklyObjectiveBonusPerBandUsd = bonusPerBandUsd;
     }
   }
 
@@ -238,6 +258,36 @@ export class ComputationService {
       (target - boundedTotal) / this.weeklyObjectiveBandFc
     );
     return Math.max(1, missingBands) * this.weeklyObjectivePenaltyPerBandUsd;
+  }
+
+  computeWeeklyObjectiveAdjustmentUsd(
+    weeklyTotalFc: number,
+    weeklyDeductionTargetFc: number,
+    weeklyVisibleTargetFc: number
+  ): WeeklyObjectiveAdjustmentResult {
+    return computeWeeklyObjectiveAdjustment(
+      weeklyTotalFc,
+      weeklyDeductionTargetFc,
+      weeklyVisibleTargetFc,
+      {
+        bandFc: this.weeklyObjectiveBandFc,
+        penaltyPerBandUsd: this.weeklyObjectivePenaltyPerBandUsd,
+        bonusBandFc: this.weeklyObjectiveBonusBandFc,
+        bonusPerBandUsd: this.weeklyObjectiveBonusPerBandUsd,
+      }
+    );
+  }
+
+  computeWeeklyObjectiveBonusUsd(
+    weeklyTotalFc: number,
+    weeklyVisibleTargetFc: number
+  ): number {
+    const result = this.computeWeeklyObjectiveAdjustmentUsd(
+      weeklyTotalFc,
+      weeklyVisibleTargetFc,
+      weeklyVisibleTargetFc
+    );
+    return result.kind === 'bonus' ? result.amountUsd : 0;
   }
   salaries: any[] = [
     [
@@ -1917,6 +1967,15 @@ export class ComputationService {
         weeklyTargetFc?: number;
         weeklyDeductionTargetFc?: number;
       }>;
+      objectiveBonus?: number;
+      objectiveBonusWeeks?: Array<{
+        start: string;
+        end: string;
+        amount: number;
+        weeklyTotalFc?: number;
+        weeklyTargetFc?: number;
+        weeklyDeductionTargetFc?: number;
+      }>;
       manualWithdrawal?: number;
       manualWithdrawalReason?: string;
       manualAddition?: number;
@@ -2044,6 +2103,14 @@ export class ComputationService {
         : Array.isArray(employee.paymentObjectiveWeekDeductions)
         ? employee.paymentObjectiveWeekDeductions
         : [];
+      const objectiveBonus = Number(
+        breakdown?.objectiveBonus ?? employee.paymentObjectiveWeekBonusTotal ?? 0
+      );
+      const objectiveBonusWeeks = Array.isArray(breakdown?.objectiveBonusWeeks)
+        ? breakdown?.objectiveBonusWeeks || []
+        : Array.isArray(employee.paymentObjectiveWeekBonuses)
+        ? employee.paymentObjectiveWeekBonuses
+        : [];
 
       netPay =
         baseSalary +
@@ -2054,7 +2121,8 @@ export class ComputationService {
         late -
         objectiveDed -
         manualWithdrawal +
-        manualAddition;
+        manualAddition +
+        objectiveBonus;
       const modalNetPay = Number(paymentAmount);
       if (Number.isFinite(modalNetPay)) {
         netPay = modalNetPay;
@@ -2092,6 +2160,10 @@ export class ComputationService {
         [
           'Retenues – Objectif semaine non atteint',
           { text: `-${safeNumber(objectiveDed)}`, alignment: 'right' },
+        ],
+        [
+          'Bonus – Objectif semaine dépassé',
+          { text: safeNumber(objectiveBonus), alignment: 'right' },
         ],
         [
           manualWithdrawalReason
@@ -2155,6 +2227,48 @@ export class ComputationService {
               text: `Montant retenu: -${formatWeekAmount(week.amount)}`,
               alignment: 'right',
               style: 'objectiveWeekAmount',
+            } as any,
+          ]);
+        });
+      }
+
+      if (objectiveBonusWeeks.length > 0) {
+        tableRows.splice(tableRows.length - 1, 0, [
+          {
+            text: `Détail bonus objectif (${objectiveBonusWeeks.length} semaine${
+              objectiveBonusWeeks.length > 1 ? 's' : ''
+            })`,
+            colSpan: 2,
+            style: 'tiny',
+            color: '#047857',
+            bold: true,
+          } as any,
+          '' as any,
+        ]);
+
+        objectiveBonusWeeks.forEach((week, index) => {
+          const range = formatWeekRange(week.start, week.end);
+          if (!range) return;
+          const totalFc = Number(week.weeklyTotalFc);
+          const targetFc = Number(week.weeklyTargetFc);
+          const progressLabel =
+            Number.isFinite(totalFc) && Number.isFinite(targetFc)
+              ? ` - Réalisé: ${formatFrancs(totalFc)} / Objectif: ${formatFrancs(
+                  targetFc
+                )}`
+              : '';
+          tableRows.splice(tableRows.length - 1, 0, [
+            {
+              text: `${index + 1}. ${range}${progressLabel}`,
+              style: 'tiny',
+              color: '#047857',
+            } as any,
+            {
+              text: `+${safeNumber(Number(week.amount) || 0)}`,
+              alignment: 'right',
+              style: 'tiny',
+              color: '#047857',
+              bold: true,
             } as any,
           ]);
         });

@@ -32,6 +32,10 @@ import {
   normalizeWeeklyPaymentTargetPeriods,
   resolveWeeklyPaymentTargetForDate as resolveWeeklyPaymentTargetForDateUtil,
 } from '../utils/weekly-payment-target.util';
+import {
+  DEFAULT_WEEKLY_OBJECTIVE_ADJUSTMENT_CONFIG,
+  WeeklyObjectiveAdjustmentConfig,
+} from '../utils/weekly-objective-adjustment.util';
 
 const ADMIN_FLAG_KEY = 'kank-admin-flag';
 const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
@@ -59,10 +63,7 @@ export type ProfitabilityConfig = {
   thresholdUsd: number;
 };
 
-export type WeeklyObjectiveDeductionConfig = {
-  bandFc: number;
-  penaltyPerBandUsd: number;
-};
+export type WeeklyObjectiveDeductionConfig = WeeklyObjectiveAdjustmentConfig;
 @Injectable({
   providedIn: 'root',
 })
@@ -109,8 +110,7 @@ export class AuthService {
   };
   private readonly defaultWeeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig =
     {
-      bandFc: 100000,
-      penaltyPerBandUsd: 1,
+      ...DEFAULT_WEEKLY_OBJECTIVE_ADJUSTMENT_CONFIG,
     };
   private weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
   private weeklyPaymentTargetSubject = new BehaviorSubject<number>(
@@ -1691,6 +1691,8 @@ export class AuthService {
     const penaltyPerBandUsd = Number(
       value?.penaltyPerBandUsd ?? value?.basePenaltyUsd
     );
+    const bonusBandFc = Number(value?.bonusBandFc);
+    const bonusPerBandUsd = Number(value?.bonusPerBandUsd);
     return {
       bandFc:
         Number.isFinite(bandFc) && bandFc >= 100000 && bandFc % 100000 === 0
@@ -1700,6 +1702,16 @@ export class AuthService {
         Number.isFinite(penaltyPerBandUsd) && penaltyPerBandUsd > 0
           ? penaltyPerBandUsd
           : this.defaultWeeklyObjectiveDeductionConfig.penaltyPerBandUsd,
+      bonusBandFc:
+        Number.isFinite(bonusBandFc) &&
+        bonusBandFc >= 100000 &&
+        bonusBandFc % 100000 === 0
+          ? bonusBandFc
+          : this.defaultWeeklyObjectiveDeductionConfig.bonusBandFc,
+      bonusPerBandUsd:
+        Number.isFinite(bonusPerBandUsd) && bonusPerBandUsd > 0
+          ? bonusPerBandUsd
+          : this.defaultWeeklyObjectiveDeductionConfig.bonusPerBandUsd,
     };
   }
 

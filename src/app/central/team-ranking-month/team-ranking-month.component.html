@@ -3705,6 +3705,7 @@
                     <span *ngIf="row.bankFee">Virement {{ row.bankFee | number : "1.0-0" }}$</span>
                     <span *ngIf="row.experience"> Exp. {{ row.experience | number : "1.0-0" }}$</span>
                     <span *ngIf="row.manualAddition"> Ajout {{ row.manualAddition | number : "1.0-0" }}$</span>
+                    <span *ngIf="row.objectiveBonus"> Objectif +{{ row.objectiveBonus | number : "1.0-0" }}$</span>
                   </div>
                 </td>
                 <td class="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-300">
@@ -4150,6 +4151,15 @@
                                     Ajout ($)
                                     <input type="number" [(ngModel)]="draft.manualAddition" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100" />
                                   </label>
+                                  <label class="text-[11px] font-semibold text-emerald-700">
+                                    Bonus objectif ($)
+                                    <input
+                                      type="number"
+                                      [(ngModel)]="draft.objectiveBonus"
+                                      disabled
+                                      class="mt-1 w-full cursor-not-allowed rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-800"
+                                    />
+                                  </label>
                                   <label class="text-[11px] font-semibold text-slate-500">
                                     Retrait ($)
                                     <input type="number" [(ngModel)]="draft.manualWithdrawal" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100" />
@@ -4212,6 +4222,27 @@
                                     >
                                       Ajouter
                                     </button>
+                                  </div>
+                                </div>
+                                <div
+                                  *ngIf="draft.objectiveBonuses.length > 0"
+                                  class="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-2 dark:border-emerald-900/40 dark:bg-emerald-900/10"
+                                >
+                                  <div class="mb-2 text-[11px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-200">
+                                    Bonus objectif automatique
+                                  </div>
+                                  <div class="space-y-1.5">
+                                    <div
+                                      *ngFor="let bonus of draft.objectiveBonuses"
+                                      class="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5 text-xs ring-1 ring-emerald-100 dark:bg-slate-900 dark:ring-emerald-900/40"
+                                    >
+                                      <span class="font-semibold text-slate-800 dark:text-slate-100">
+                                        {{ formatPayrollObjectiveLabel(bonus) }}
+                                      </span>
+                                      <span class="font-bold text-emerald-700 dark:text-emerald-300">
+                                        +{{ bonus.amount | number : "1.0-0" }} $
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                                 <div

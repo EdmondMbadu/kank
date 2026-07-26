@@ -1,5 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { AuthService } from 'src/app/services/auth.service';
+import {
+  AuthService,
+  WeeklyObjectiveDeductionConfig,
+} from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { Subscription } from 'rxjs';
 
@@ -58,13 +61,17 @@ export class TutorialComponent implements OnInit, OnDestroy {
   weeklyMinimumInput: string = '';
   weeklyDeductionGuide: WeeklyDeductionGuideRow[] = [];
   weeklyMinimumSaving = false;
-  teamWeeklyBonusThresholdFc = 1500000;
-  teamWeeklyBonusThresholdInput = '';
+  teamWeeklyBonusThresholdFc = 600000;
   teamWeeklyBonusTotalInput = '';
   teamWeeklyBonusGuide: TeamWeeklyBonusGuideRow[] = [];
-  teamWeeklyBonusSaving = false;
+  weeklyObjectiveAdjustmentConfig: WeeklyObjectiveDeductionConfig = {
+    bandFc: 100000,
+    penaltyPerBandUsd: 1,
+    bonusBandFc: 100000,
+    bonusPerBandUsd: 1,
+  };
   private weeklyTargetSub?: Subscription;
-  private teamWeeklyBonusSub?: Subscription;
+  private weeklyObjectiveConfigSub?: Subscription;
 
   constructor(
     public auth: AuthService,
@@ -77,18 +84,18 @@ export class TutorialComponent implements OnInit, OnDestroy {
     this.weeklyTargetSub = this.auth.weeklyPaymentTarget$.subscribe((targetFc) => {
       this.syncWeeklyMinimum(targetFc || 600000);
     });
-    this.syncTeamWeeklyBonusThreshold(
-      this.auth.teamWeeklyBonusThresholdFc || 1500000
-    );
-    this.teamWeeklyBonusSub = this.auth.teamWeeklyBonusConfig$.subscribe(
+    this.syncTeamWeeklyBonusThreshold(this.weeklyMinimumFc);
+    this.weeklyObjectiveConfigSub =
+      this.auth.weeklyObjectiveDeductionConfig$.subscribe(
       (config) => {
-        this.syncTeamWeeklyBonusThreshold(config?.thresholdFc || 1500000);
+        this.weeklyObjectiveAdjustmentConfig = { ...config };
+        this.syncTeamWeeklyBonusThreshold(this.weeklyMinimumFc);
       }
     );
   }
   ngOnDestroy() {
     this.weeklyTargetSub?.unsubscribe();
-    this.teamWeeklyBonusSub?.unsubscribe();
+    this.weeklyObjectiveConfigSub?.unsubscribe();
   }
   /* === Calcul frais prêt === */
   isNewClient: boolean = true; // Nouveau = true, Ancien = false
@@ -207,31 +214,6 @@ export class TutorialComponent implements OnInit, OnDestroy {
     }
   }
 
-  async saveTeamWeeklyBonusThreshold(): Promise<void> {
-    if (!this.auth.isAdmin || this.teamWeeklyBonusSaving) {
-      return;
-    }
-
-    const value = Number(this.teamWeeklyBonusThresholdInput);
-    if (!Number.isFinite(value) || value < 100000 || value % 100000 !== 0) {
-      alert(
-        'Entrez un seuil valide en tranche de 100 000 FC (minimum 100 000 FC).'
-      );
-      return;
-    }
-
-    this.teamWeeklyBonusSaving = true;
-    try {
-      await this.auth.updateTeamWeeklyBonusThresholdGlobal(value);
-      this.syncTeamWeeklyBonusThreshold(value);
-      alert("Seuil du bonus hebdomadaire d'équipe mis à jour.");
-    } catch (error) {
-      alert("Erreur lors de la mise à jour du seuil du bonus d'équipe.");
-    } finally {
-      this.teamWeeklyBonusSaving = false;
-    }
-  }
-
   toneClass(row: WeeklyDeductionGuideRow): string {
     if (row.tone === 'success') {
       return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200';
@@ -250,6 +232,7 @@ export class TutorialComponent implements OnInit, OnDestroy {
     this.weeklyMinimumFc = normalizedTarget;
     this.weeklyMinimumInput = normalizedTarget.toString();
     this.weeklyDeductionGuide = this.buildWeeklyDeductionGuide(normalizedTarget);
+    this.syncTeamWeeklyBonusThreshold(normalizedTarget);
   }
 
   private buildWeeklyDeductionGuide(targetFc: number): WeeklyDeductionGuideRow[] {
@@ -291,11 +274,11 @@ export class TutorialComponent implements OnInit, OnDestroy {
   }
 
   get teamWeeklyBonusStepFc(): number {
-    return 100000;
+    return this.weeklyObjectiveAdjustmentConfig.bonusBandFc;
   }
 
   get teamWeeklyBonusStepUsd(): number {
-    return 5;
+    return this.weeklyObjectiveAdjustmentConfig.bonusPerBandUsd;
   }
 
   get teamWeeklyBonusEnteredTotalFc(): number {
@@ -319,7 +302,9 @@ export class TutorialComponent implements OnInit, OnDestroy {
   }
 
   get teamWeeklyBonusCurrentLevel(): number {
-    return this.teamWeeklyBonusExpectedUsd / this.teamWeeklyBonusStepUsd;
+    return this.teamWeeklyBonusStepUsd > 0
+      ? this.teamWeeklyBonusExpectedUsd / this.teamWeeklyBonusStepUsd
+      : 0;
   }
 
   get teamWeeklyBonusNextTargetFc(): number {
@@ -363,10 +348,9 @@ export class TutorialComponent implements OnInit, OnDestroy {
       Number(thresholdFc) >= 100000 &&
       Number(thresholdFc) % 100000 === 0
         ? Number(thresholdFc)
-        : 1500000;
+        : 600000;
 
     this.teamWeeklyBonusThresholdFc = normalizedThreshold;
-    this.teamWeeklyBonusThresholdInput = normalizedThreshold.toString();
     this.teamWeeklyBonusGuide =
       this.buildTeamWeeklyBonusGuide(normalizedThreshold);
   }
@@ -391,17 +375,19 @@ export class TutorialComponent implements OnInit, OnDestroy {
       'font-bold flex items-center gap-1',
     ];
 
-    return Array.from({ length: 6 }, (_, index) => {
+    const levelCount = 6;
+    return Array.from({ length: levelCount }, (_, index) => {
       const totalFc = thresholdFc + index * this.teamWeeklyBonusStepFc;
       const bonusUsd = (index + 1) * this.teamWeeklyBonusStepUsd;
-      const progressPercent = 50 + index * 10;
+      const progressPercent =
+        ((index + 1) / Math.max(levelCount, 1)) * 100;
 
       return {
         totalFc,
         bonusUsd,
         progressPercent,
-        rowClass: rowClasses[index],
-        bonusClass: bonusClasses[index],
+        rowClass: rowClasses[Math.min(index, rowClasses.length - 1)],
+        bonusClass: bonusClasses[Math.min(index, bonusClasses.length - 1)],
       };
     });
   }

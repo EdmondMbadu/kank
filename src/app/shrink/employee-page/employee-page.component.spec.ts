@@ -1,5 +1,6 @@
 import { of } from 'rxjs';
 import { resolveWeeklyPaymentTargetForDate } from 'src/app/utils/weekly-payment-target.util';
+import { computeWeeklyObjectiveAdjustment } from 'src/app/utils/weekly-objective-adjustment.util';
 
 import { EmployeePageComponent } from './employee-page.component';
 
@@ -60,6 +61,22 @@ describe('EmployeePageComponent', () => {
           'Décembre',
         ][month - 1],
       computeWeeklyObjectiveDeductionUsd: () => 5,
+      computeWeeklyObjectiveAdjustmentUsd: (
+        totalFc: number,
+        deductionTargetFc: number,
+        visibleTargetFc: number
+      ) =>
+        computeWeeklyObjectiveAdjustment(
+          totalFc,
+          deductionTargetFc,
+          visibleTargetFc,
+          {
+            bandFc: 100000,
+            penaltyPerBandUsd: 1,
+            bonusBandFc: 100000,
+            bonusPerBandUsd: 1,
+          }
+        ),
     } as any;
 
     return new EmployeePageComponent(
@@ -114,13 +131,17 @@ describe('EmployeePageComponent', () => {
       },
     });
 
-    const deductions = (component as any).computeWeeklyShortfallDeductions(
+    const adjustments = (component as any).computeWeeklyObjectiveAdjustments(
       3,
       2026
     );
 
-    expect(deductions.some((d: any) => d.end === '2026-03-01')).toBeFalse();
-    expect(deductions.some((d: any) => d.end === '2026-03-08')).toBeTrue();
+    expect(
+      adjustments.deductions.some((d: any) => d.end === '2026-03-01')
+    ).toBeFalse();
+    expect(
+      adjustments.deductions.some((d: any) => d.end === '2026-03-08')
+    ).toBeTrue();
   });
 
   it('filters persisted carryover deductions out of the selected month', () => {
@@ -166,6 +187,26 @@ describe('EmployeePageComponent', () => {
       computeWeeklyObjectiveDeductionUsd: jasmine
         .createSpy('computeWeeklyObjectiveDeductionUsd')
         .and.returnValue(5),
+      computeWeeklyObjectiveAdjustmentUsd: jasmine
+        .createSpy('computeWeeklyObjectiveAdjustmentUsd')
+        .and.callFake(
+          (
+            totalFc: number,
+            deductionTargetFc: number,
+            visibleTargetFc: number
+          ) =>
+            computeWeeklyObjectiveAdjustment(
+              totalFc,
+              deductionTargetFc,
+              visibleTargetFc,
+              {
+                bandFc: 100000,
+                penaltyPerBandUsd: 1,
+                bonusBandFc: 100000,
+                bonusPerBandUsd: 1,
+              }
+            )
+        ),
     } as any;
 
     const auth = {
@@ -240,13 +281,13 @@ describe('EmployeePageComponent', () => {
       {} as any
     );
 
-    const deductions = (component as any).computeWeeklyShortfallDeductions(
+    const adjustments = (component as any).computeWeeklyObjectiveAdjustments(
       4,
       2026
     );
 
-    expect(deductions).toEqual([]);
-    expect(compute.computeWeeklyObjectiveDeductionUsd).not.toHaveBeenCalled();
+    expect(adjustments.deductions).toEqual([]);
+    expect(adjustments.bonuses).toEqual([]);
   });
 
   it('stores both targets and calculates payroll from the internal threshold', () => {
@@ -260,16 +301,21 @@ describe('EmployeePageComponent', () => {
       weeklyPaymentTargetFc: 1200000,
       resolveWeeklyDeductionTargetForDate: () => 900000,
     });
-    const deductionSpy = spyOn(
+    const adjustmentSpy = spyOn(
       component.compute,
-      'computeWeeklyObjectiveDeductionUsd'
-    ).and.returnValue(2);
+      'computeWeeklyObjectiveAdjustmentUsd'
+    ).and.returnValue({
+      kind: 'deduction',
+      amountUsd: 2,
+      signedAmountUsd: -2,
+      bandCount: 2,
+    });
 
-    const deductions = (component as any).computeWeeklyShortfallDeductions(
+    const adjustments = (component as any).computeWeeklyObjectiveAdjustments(
       3,
       2026
     );
-    const week = deductions.find(
+    const week = adjustments.deductions.find(
       (item: any) => item.end === '2026-03-08'
     );
 
@@ -281,7 +327,16 @@ describe('EmployeePageComponent', () => {
         amount: 2,
       })
     );
-    expect(deductionSpy).toHaveBeenCalledWith(700000, 900000);
+    expect(adjustmentSpy).toHaveBeenCalledWith(700000, 900000, 1200000);
+  });
+
+  it('adds completed weekly objective bonuses to salary', () => {
+    const component = createComponent();
+    component.paymentAmount = 100;
+    component.paymentObjectiveWeekBonusTotal = 3;
+    component.paymentObjectiveWeekDeductionTotal = 1;
+
+    expect(component.computeTotalPayment()).toBe(102);
   });
 
   it('computes the foundation balance from completed months and employee-of-the-month trophies', () => {

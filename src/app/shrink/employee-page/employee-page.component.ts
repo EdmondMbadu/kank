@@ -16,6 +16,7 @@ import {
   InvestigationPerformanceMonth,
   InvestigationPerformanceWeek,
   Trophy,
+  WeeklyObjectiveBonus,
   WeeklyObjectiveDeduction,
 } from 'src/app/models/employee';
 import { Client, Comment } from 'src/app/models/client';
@@ -493,6 +494,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   paymentSignNote: string = '';
   paymentObjectiveWeekDeductionTotal: number = 0;
   paymentObjectiveWeekDeductions: WeeklyObjectiveDeduction[] = [];
+  paymentObjectiveWeekBonusTotal: number = 0;
+  paymentObjectiveWeekBonuses: WeeklyObjectiveBonus[] = [];
   weekObjectiveStartDate: string = '';
   weekObjectiveEndDate: string = '';
   weekObjectiveEndLabel: string = '';
@@ -2881,6 +2884,23 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     ) {
       this.recomputeObjectiveWeekDeductionTotal();
     }
+    this.paymentObjectiveWeekBonusTotal =
+      this.employee.paymentObjectiveWeekBonusTotal
+        ? parseFloat(this.employee.paymentObjectiveWeekBonusTotal)
+        : 0;
+    this.paymentObjectiveWeekBonuses = Array.isArray(
+      this.employee.paymentObjectiveWeekBonuses
+    )
+      ? this.employee.paymentObjectiveWeekBonuses.map((bonus) =>
+          this.normalizeObjectiveDeduction(bonus)
+        )
+      : [];
+    if (
+      this.paymentObjectiveWeekBonusTotal === 0 &&
+      this.paymentObjectiveWeekBonuses.length > 0
+    ) {
+      this.recomputeObjectiveWeekBonusTotal();
+    }
     this.totalPayments = this.employee.totalPayments
       ? parseFloat(this.employee.totalPayments)
       : 0;
@@ -2924,12 +2944,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const manualWithdrawal = Math.max(Number(this.paymentManualWithdrawal) || 0, 0);
     const manualAddition = Math.max(Number(this.paymentManualAddition) || 0, 0);
     const objectiveDeduction = Number(this.paymentObjectiveWeekDeductionTotal) || 0;
+    const objectiveBonus = Number(this.paymentObjectiveWeekBonusTotal) || 0;
 
     this.totalPayments =
       amount +
       bankFee +
       increase +
-      manualAddition -
+      manualAddition +
+      objectiveBonus -
       absent -
       late -
       nothing -
@@ -3519,6 +3541,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       );
   }
 
+  private recomputeObjectiveWeekBonusTotal() {
+    this.paymentObjectiveWeekBonusTotal =
+      this.paymentObjectiveWeekBonuses.reduce(
+        (sum, bonus) => sum + (Number(bonus.amount) || 0),
+        0
+      );
+  }
+
   private prefillPaymentDeductions() {
     this.applyAttendanceDeductionsForMonth(this.currentMonth, this.year);
     this.applyWeeklyObjectiveDeductionsForMonth(this.currentMonth, this.year);
@@ -3547,7 +3577,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         this.currentMonth,
         this.year
       );
+      this.paymentObjectiveWeekBonuses = this.filterObjectiveDeductionsForMonth(
+        this.paymentObjectiveWeekBonuses || [],
+        this.currentMonth,
+        this.year
+      );
+      if (!this.employee.paidPaymentThisMonth) {
+        this.paymentObjectiveWeekBonuses =
+          this.computeWeeklyObjectiveAdjustments(
+            this.currentMonth,
+            this.year
+          ).bonuses.sort((a, b) => a.start.localeCompare(b.start));
+      }
       this.recomputeObjectiveWeekDeductionTotal();
+      this.recomputeObjectiveWeekBonusTotal();
       this.computeTotalPayment();
       return;
     }
@@ -3589,21 +3632,29 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   private applyWeeklyObjectiveDeductionsForMonth(month: number, year: number) {
-    const computed = this.computeWeeklyShortfallDeductions(month, year);
-    this.paymentObjectiveWeekDeductions = computed.sort(
+    const computed = this.computeWeeklyObjectiveAdjustments(month, year);
+    this.paymentObjectiveWeekDeductions = computed.deductions.sort(
+      (a, b) => a.start.localeCompare(b.start)
+    );
+    this.paymentObjectiveWeekBonuses = computed.bonuses.sort(
       (a, b) => a.start.localeCompare(b.start)
     );
     this.recomputeObjectiveWeekDeductionTotal();
+    this.recomputeObjectiveWeekBonusTotal();
   }
 
-  private computeWeeklyShortfallDeductions(
+  private computeWeeklyObjectiveAdjustments(
     month: number,
     year: number
-  ): WeeklyObjectiveDeduction[] {
+  ): {
+    deductions: WeeklyObjectiveDeduction[];
+    bonuses: WeeklyObjectiveBonus[];
+  } {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const lastDay = new Date(year, month, 0);
     const deductions: WeeklyObjectiveDeduction[] = [];
+    const bonuses: WeeklyObjectiveBonus[] = [];
 
     for (let day = 1; day <= lastDay.getDate(); day += 1) {
       const end = new Date(year, month - 1, day);
@@ -3624,24 +3675,29 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       const totalFc = this.computeWeeklyPaymentTotalForLocation(
         this.formatDateKey(start)
       );
-      if (totalFc >= weeklyDeductionTargetFc) continue;
-      const amount = this.compute.computeWeeklyObjectiveDeductionUsd(
+      const adjustment = this.compute.computeWeeklyObjectiveAdjustmentUsd(
         totalFc,
-        weeklyDeductionTargetFc
+        weeklyDeductionTargetFc,
+        weeklyTargetFc
       );
-      if (amount <= 0) continue;
+      if (adjustment.amountUsd <= 0) continue;
 
-      deductions.push({
+      const entry: WeeklyObjectiveDeduction = {
         start: this.formatIsoDate(start),
         end: this.formatIsoDate(end),
-        amount,
+        amount: adjustment.amountUsd,
         weeklyTotalFc: totalFc,
         weeklyTargetFc,
         weeklyDeductionTargetFc,
-      });
+      };
+      if (adjustment.kind === 'deduction') {
+        deductions.push(entry);
+      } else if (adjustment.kind === 'bonus') {
+        bonuses.push(entry);
+      }
     }
 
-    return deductions;
+    return { deductions, bonuses };
   }
 
   private isSundayOnlyCarryoverWeek(start: Date, end: Date): boolean {
@@ -6053,6 +6109,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         weeklyDeductionTargetFc:
           Number(d.weeklyDeductionTargetFc) || Number(d.weeklyTargetFc) || 0,
       }));
+    this.employee.paymentObjectiveWeekBonusTotal = p(
+      this.paymentObjectiveWeekBonusTotal
+    ).toString();
+    this.paymentObjectiveWeekBonuses = this.paymentObjectiveWeekBonuses.map(
+      (bonus) => this.normalizeObjectiveDeduction(bonus)
+    );
+    this.employee.paymentObjectiveWeekBonuses =
+      this.paymentObjectiveWeekBonuses.map((bonus) => ({
+        start: bonus.start,
+        end: bonus.end,
+        amount: Number(bonus.amount) || 0,
+        weeklyTotalFc: Number(bonus.weeklyTotalFc) || 0,
+        weeklyTargetFc: Number(bonus.weeklyTargetFc) || 0,
+        weeklyDeductionTargetFc:
+          Number(bonus.weeklyDeductionTargetFc) ||
+          Number(bonus.weeklyTargetFc) ||
+          0,
+      }));
     this.employee.totalPayments = this.computeTotalPayment().toString();
   }
   async updateEmployeePaymentInfoAndSignCheck() {
@@ -6082,6 +6156,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             weeklyDeductionTargetFc:
               Number(d.weeklyDeductionTargetFc) ||
               Number(d.weeklyTargetFc) ||
+              0,
+          })),
+          objectiveBonus: Number(this.paymentObjectiveWeekBonusTotal) || 0,
+          objectiveBonusWeeks: this.paymentObjectiveWeekBonuses.map((bonus) => ({
+            start: bonus.start,
+            end: bonus.end,
+            amount: Number(bonus.amount) || 0,
+            weeklyTotalFc: Number(bonus.weeklyTotalFc) || 0,
+            weeklyTargetFc: Number(bonus.weeklyTargetFc) || 0,
+            weeklyDeductionTargetFc:
+              Number(bonus.weeklyDeductionTargetFc) ||
+              Number(bonus.weeklyTargetFc) ||
               0,
           })),
           manualWithdrawal: Math.max(

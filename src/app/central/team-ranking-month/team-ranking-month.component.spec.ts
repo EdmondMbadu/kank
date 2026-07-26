@@ -40,6 +40,14 @@ describe('TeamRankingMonthComponent', () => {
       computeWeeklyObjectiveDeductionUsd: jasmine
         .createSpy('computeWeeklyObjectiveDeductionUsd')
         .and.returnValue(2),
+      computeWeeklyObjectiveAdjustmentUsd: jasmine
+        .createSpy('computeWeeklyObjectiveAdjustmentUsd')
+        .and.returnValue({
+          kind: 'deduction',
+          amountUsd: 2,
+          signedAmountUsd: -2,
+          bandCount: 2,
+        }),
     } as any;
 
     const component = new TeamRankingMonthComponent(
@@ -80,9 +88,9 @@ describe('TeamRankingMonthComponent', () => {
     };
     const employee = { tempUser: owner } as any;
 
-    const deductions = (component as any)
-      .computePayrollWeeklyShortfallDeductions(employee);
-    const week = deductions.find(
+    const adjustments = (component as any)
+      .computePayrollWeeklyObjectiveAdjustments(employee);
+    const week = adjustments.deductions.find(
       (item: any) => item.end === '2026-06-07'
     );
 
@@ -94,9 +102,10 @@ describe('TeamRankingMonthComponent', () => {
         amount: 2,
       })
     );
-    expect(compute.computeWeeklyObjectiveDeductionUsd).toHaveBeenCalledWith(
+    expect(compute.computeWeeklyObjectiveAdjustmentUsd).toHaveBeenCalledWith(
       700000,
-      900000
+      900000,
+      1200000
     );
   });
 });
