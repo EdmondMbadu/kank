@@ -13,6 +13,7 @@ import { DataService } from 'src/app/services/data.service';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
+type WeeklyPaymentHistoryRange = '1M' | '3M' | '6M' | '1A' | 'MAX';
 type GestionHeatmapMode =
   | 'paymentToday'
   | 'reserveToday'
@@ -23,6 +24,11 @@ interface WeeklyProgressMarker {
   amountFc: number;
   label: string;
   percent: number;
+}
+
+interface WeeklyPaymentHistoryPoint {
+  weekStart: Date;
+  totalFc: number;
 }
 
 interface GestionHeatmapOption {
@@ -294,6 +300,27 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   weeklyPaymentDate: string = this.time.getTodaysDateYearMonthDay();
   weeklyPaymentDateCorrectFormat: string = this.time.todaysDateMonthDayYear();
   weeklyPaymentRangeLabel: string = '';
+  weeklyPaymentHistoryRange: WeeklyPaymentHistoryRange = '1M';
+  weeklyPaymentHistoryIncludesCurrentWeek = false;
+  readonly weeklyPaymentHistoryRanges: Array<{
+    value: WeeklyPaymentHistoryRange;
+    label: string;
+  }> = [
+    { value: '1M', label: '1M' },
+    { value: '3M', label: '3M' },
+    { value: '6M', label: '6M' },
+    { value: '1A', label: '1A' },
+    { value: 'MAX', label: 'Max' },
+  ];
+  public graphWeeklyPayments: any = {
+    data: [],
+    layout: {},
+    config: {
+      responsive: true,
+      displayModeBar: false,
+      staticPlot: false,
+    },
+  };
   weeklyPaymentTotals: Array<{
     firstName: string;
     total: number;
@@ -1192,6 +1219,239 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.weeklyPaymentDateCorrectFormat
     );
     this.computeWeeklyPaymentTotals();
+    this.updateWeeklyPaymentHistory(this.weeklyPaymentHistoryRange);
+  }
+
+  updateWeeklyPaymentHistory(range: WeeklyPaymentHistoryRange): void {
+    if (!this.auth.isAdmin) return;
+
+    this.weeklyPaymentHistoryRange = range;
+    const points = this.buildWeeklyPaymentHistory(range);
+    const selectedWeekStart = this.getWeekBounds(
+      this.weeklyPaymentDateCorrectFormat
+    ).start;
+    const currentWeekStart = this.getWeekBounds(
+      this.time.todaysDateMonthDayYear()
+    ).start;
+    this.weeklyPaymentHistoryIncludesCurrentWeek =
+      selectedWeekStart.getTime() === currentWeekStart.getTime();
+    const hasPayments = points.some((point) => point.totalFc !== 0);
+
+    if (!hasPayments) {
+      this.graphWeeklyPayments = this.createEmptyStockGraph(
+        'Paiements par semaine (en $)'
+      );
+      return;
+    }
+
+    const totalsDollar = points.map((point) =>
+      this.convertFcToDollar(point.totalFc)
+    );
+    const latestPoint = points[points.length - 1];
+    const previousPoint =
+      points.length > 1 ? points[points.length - 2] : undefined;
+    const latestDollar = totalsDollar[totalsDollar.length - 1] || 0;
+    const previousDollar =
+      totalsDollar.length > 1 ? totalsDollar[totalsDollar.length - 2] : 0;
+    const changeDollar = previousPoint ? latestDollar - previousDollar : 0;
+    const changePercent =
+      previousPoint && previousDollar > 0
+        ? (changeDollar / previousDollar) * 100
+        : null;
+    const trendColor =
+      changeDollar > 0
+        ? '#059669'
+        : changeDollar < 0
+        ? '#e11d48'
+        : '#64748b';
+    const layout: any = this.buildStockChartLayout(
+      'Paiements par semaine (en $)',
+      {
+        annotations: [
+          this.buildWeeklyPaymentSummaryAnnotation(
+            latestPoint.totalFc,
+            latestDollar,
+            changeDollar,
+            changePercent,
+            trendColor
+          ),
+        ],
+      }
+    );
+    layout.xaxis = {
+      ...layout.xaxis,
+      type: 'date',
+      tickformat: '%d/%m',
+      hoverformat: '%d/%m/%Y',
+    };
+
+    this.graphWeeklyPayments = {
+      data: [
+        {
+          x: points.map((point) => this.formatIsoDate(point.weekStart)),
+          y: totalsDollar,
+          customdata: points.map((point, index) => [
+            point.totalFc,
+            this.formatWeeklyHistoryLabel(point.weekStart),
+            this.weeklyPaymentHistoryIncludesCurrentWeek &&
+            index === points.length - 1
+              ? '<br><i>Semaine en cours (partielle)</i>'
+              : '',
+          ]),
+          type: 'scatter',
+          mode: 'lines+markers',
+          line: {
+            color: '#4f46e5',
+            width: 2.5,
+            shape: 'spline',
+          },
+          marker: {
+            color: '#4f46e5',
+            size: 7,
+            line: {
+              color: this.isDarkModeEnabled() ? '#0f172a' : '#ffffff',
+              width: 1.5,
+            },
+          },
+          fill: 'tozeroy',
+          fillcolor: 'rgba(79, 70, 229, 0.10)',
+          hovertemplate:
+            '<b>%{customdata[1]}</b><br>' +
+            'Paiements: <b>%{customdata[0]:,.0f} FC</b><br>' +
+            'Équivalent: <b>$%{y:,.2f}</b>%{customdata[2]}' +
+            '<extra></extra>',
+        },
+      ],
+      layout,
+      config: {
+        responsive: true,
+        displayModeBar: false,
+        staticPlot: false,
+      },
+    };
+  }
+
+  private buildWeeklyPaymentHistory(
+    range: WeeklyPaymentHistoryRange
+  ): WeeklyPaymentHistoryPoint[] {
+    if (!this.auth.isAdmin || !this.weeklyPaymentDateCorrectFormat) {
+      return [];
+    }
+
+    const selectedWeekStart = this.getWeekBounds(
+      this.weeklyPaymentDateCorrectFormat
+    ).start;
+    const selectedWeekEnd = new Date(selectedWeekStart);
+    selectedWeekEnd.setDate(selectedWeekStart.getDate() + 6);
+    selectedWeekEnd.setHours(23, 59, 59, 999);
+
+    const totalsByWeek = new Map<number, number>();
+    let earliestPaymentWeek: Date | undefined;
+
+    (this.allUsers || []).forEach((user) => {
+      Object.entries(user.dailyReimbursement || {}).forEach(
+        ([dateKey, rawAmount]) => {
+          const paymentDate = this.parsePaymentDateKey(dateKey);
+          const amount = Number(rawAmount);
+
+          if (
+            !paymentDate ||
+            paymentDate > selectedWeekEnd ||
+            !Number.isFinite(amount)
+          ) {
+            return;
+          }
+
+          const weekStart = this.getWeekBounds(
+            this.formatDateKey(paymentDate)
+          ).start;
+          const weekStamp = weekStart.getTime();
+          totalsByWeek.set(
+            weekStamp,
+            (totalsByWeek.get(weekStamp) || 0) + amount
+          );
+
+          if (
+            amount !== 0 &&
+            (!earliestPaymentWeek ||
+              weekStart.getTime() < earliestPaymentWeek.getTime())
+          ) {
+            earliestPaymentWeek = weekStart;
+          }
+        }
+      );
+    });
+
+    let rangeStart: Date;
+    if (range === 'MAX') {
+      if (!earliestPaymentWeek) return [];
+      rangeStart = new Date(earliestPaymentWeek);
+    } else {
+      const weeksBack: Record<Exclude<WeeklyPaymentHistoryRange, 'MAX'>, number> =
+        {
+          '1M': 4,
+          '3M': 13,
+          '6M': 26,
+          '1A': 52,
+        };
+      rangeStart = new Date(selectedWeekStart);
+      rangeStart.setDate(
+        selectedWeekStart.getDate() - weeksBack[range] * 7
+      );
+    }
+
+    const points: WeeklyPaymentHistoryPoint[] = [];
+    const cursor = new Date(rangeStart);
+    while (cursor <= selectedWeekStart) {
+      points.push({
+        weekStart: new Date(cursor),
+        totalFc: totalsByWeek.get(cursor.getTime()) || 0,
+      });
+      cursor.setDate(cursor.getDate() + 7);
+    }
+
+    return points;
+  }
+
+  private parsePaymentDateKey(dateKey: string): Date | null {
+    const match = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(dateKey || '');
+    if (!match) return null;
+
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    const year = Number(match[3]);
+    const parsed = new Date(year, month - 1, day);
+
+    if (
+      parsed.getFullYear() !== year ||
+      parsed.getMonth() !== month - 1 ||
+      parsed.getDate() !== day
+    ) {
+      return null;
+    }
+
+    parsed.setHours(0, 0, 0, 0);
+    return parsed;
+  }
+
+  private formatIsoDate(date: Date): string {
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+  }
+
+  private formatWeeklyHistoryLabel(weekStart: Date): string {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    return `Semaine du ${this.formatNumericDate(
+      weekStart
+    )} au ${this.formatNumericDate(weekEnd)}`;
+  }
+
+  private formatNumericDate(date: Date): string {
+    return `${`${date.getDate()}`.padStart(2, '0')}/${`${
+      date.getMonth() + 1
+    }`.padStart(2, '0')}/${date.getFullYear()}`;
   }
 
   private computeWeeklyPaymentTotals() {
@@ -2147,6 +2407,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.updateReserveGraphics(this.graphicsRange);
     this.updateServeGraphics(this.graphicsRangeServe);
     this.updateCombinedGraphics(this.graphicsRangeCombined);
+    this.updateWeeklyPaymentHistory(this.weeklyPaymentHistoryRange);
   }
 
   private isDarkModeEnabled(): boolean {
@@ -2290,6 +2551,51 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       xanchor: 'left',
       yanchor: 'top',
       text: `<span style="font-size: 28px; font-weight: 600; color: ${theme.titleColor};">$${lastValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+      showarrow: false,
+      align: 'left',
+      bgcolor: theme.panelBg,
+      bordercolor: theme.borderColor,
+      borderwidth: 1,
+      borderpad: 8,
+    };
+  }
+
+  private buildWeeklyPaymentSummaryAnnotation(
+    latestFc: number,
+    latestDollar: number,
+    changeDollar: number,
+    changePercent: number | null,
+    trendColor: string
+  ) {
+    const theme = this.getStockChartTheme();
+    const changeSign = changeDollar > 0 ? '+' : '';
+    const percentLabel =
+      changePercent === null
+        ? '—'
+        : `${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%`;
+
+    return {
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.02,
+      y: 0.85,
+      xanchor: 'left',
+      yanchor: 'top',
+      text:
+        `<span style="font-size: 28px; font-weight: 600; color: ${
+          theme.titleColor
+        };">$${latestDollar.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}</span>` +
+        `<br><span style="font-size: 12px; color: ${
+          theme.mutedColor
+        };">${latestFc.toLocaleString('fr-FR')} FC</span>` +
+        `<br><span style="font-size: 14px; color: ${trendColor};">` +
+        `${changeSign}$${changeDollar.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} (${percentLabel}) vs semaine précédente</span>`,
       showarrow: false,
       align: 'left',
       bgcolor: theme.panelBg,

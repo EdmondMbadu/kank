@@ -1454,6 +1454,64 @@
 </div>
 
 <section
+  *ngIf="auth.isAdmin"
+  data-testid="weekly-payment-history"
+  class="container mx-auto mb-8 min-w-0 px-4"
+>
+  <div
+    class="overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800 md:p-5"
+  >
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div>
+        <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+          Évolution des Paiements de la Semaine
+        </h2>
+        <p class="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-300">
+          Total de toutes les équipes, regroupé du lundi au dimanche. La période
+          se termine à la semaine sélectionnée ci-dessus.
+          <span
+            *ngIf="weeklyPaymentHistoryIncludesCurrentWeek"
+            class="font-semibold text-amber-600 dark:text-amber-300"
+          >
+            La dernière semaine est encore en cours.
+          </span>
+        </p>
+      </div>
+
+      <div
+        class="flex shrink-0 flex-wrap rounded-lg shadow-sm"
+        role="group"
+        aria-label="Période de l'historique des paiements"
+      >
+        <button
+          *ngFor="let range of weeklyPaymentHistoryRanges; let first = first; let last = last"
+          type="button"
+          [attr.data-testid]="'weekly-payment-history-range-' + range.value"
+          (click)="updateWeeklyPaymentHistory(range.value)"
+          class="border border-indigo-100 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+          [ngClass]="{
+            'rounded-s-lg': first,
+            'rounded-e-lg': last,
+            'bg-indigo-600 text-white hover:bg-indigo-700 hover:text-white dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400':
+              weeklyPaymentHistoryRange === range.value
+          }"
+          [attr.aria-pressed]="weeklyPaymentHistoryRange === range.value"
+        >
+          {{ range.label }}
+        </button>
+      </div>
+    </div>
+
+    <plotly-plot
+      class="gestion-day-plot mt-2"
+      [data]="graphWeeklyPayments.data"
+      [layout]="graphWeeklyPayments.layout"
+      [config]="graphWeeklyPayments.config"
+    ></plotly-plot>
+  </div>
+</section>
+
+<section
   *ngIf="auth.isAdmin && gestionHeatmapView as heatmap"
   class="container mx-auto mb-8 min-w-0 px-4"
 >
