@@ -37,6 +37,12 @@ import {
   MoneyAvailabilityRule,
   validateMoneyAvailabilityRules,
 } from 'src/app/utils/money-availability.util';
+import {
+  computeMonthlyPayrollAttendanceDeductions,
+  computeMonthlyPayrollObjectiveAdjustments,
+  computeMonthlyPayrollPayment,
+  usesAttendanceOnlyPayroll,
+} from 'src/app/utils/monthly-payroll.util';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -2822,18 +2828,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
   payrollEditNetPreview(): number {
     const draft = this.payrollEditDraft;
     if (!draft) return 0;
-    return (
-      this.numberFrom(draft.base) +
-      this.numberFrom(draft.experience) +
-      this.numberFrom(draft.bankFee) +
-      Math.max(this.numberFrom(draft.manualAddition), 0) +
-      this.numberFrom(draft.objectiveBonus) -
-      this.numberFrom(draft.absent) -
-      this.numberFrom(draft.nothing) -
-      this.numberFrom(draft.late) -
-      this.numberFrom(draft.objective) -
-      Math.max(this.numberFrom(draft.manualWithdrawal), 0)
-    );
+    return computeMonthlyPayrollPayment({
+      base: this.numberFrom(draft.base),
+      experience: this.numberFrom(draft.experience),
+      bankFee: this.numberFrom(draft.bankFee),
+      manualAddition: this.numberFrom(draft.manualAddition),
+      objectiveBonus: this.numberFrom(draft.objectiveBonus),
+      absent: this.numberFrom(draft.absent),
+      nothing: this.numberFrom(draft.nothing),
+      late: this.numberFrom(draft.late),
+      objectiveDeduction: this.numberFrom(draft.objective),
+      manualWithdrawal: this.numberFrom(draft.manualWithdrawal),
+    });
   }
 
   payrollEditBonusPreview(): number {
@@ -2956,7 +2962,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         ? '0'
         : this.numberFrom(draft.objectiveBonus).toString(),
       paymentObjectiveWeekBonuses: paymentBonuses,
-      paymentObjectiveWeekBonusesManuallyAdjusted: false,
+      paymentObjectiveWeekBonusesManuallyAdjusted:
+        row.employee.paymentObjectiveWeekBonusesManuallyAdjusted === true,
       paymentManualWithdrawal: Math.max(
         this.numberFrom(draft.manualWithdrawal),
         0
@@ -3730,32 +3737,22 @@ export class TeamRankingMonthComponent implements OnDestroy {
       : computedObjectiveAdjustments.deductions;
     const objectiveBonuses = attendanceOnly
       ? []
-      : configured && employee.paidPaymentThisMonth
-      ? this.filterPayrollObjectiveDeductionsForSelectedMonth(
+      : configured &&
+        (employee.paidPaymentThisMonth ||
+          employee.paymentObjectiveWeekBonusesManuallyAdjusted === true)
+      ? this.filterPayrollObjectiveBonusesForSelectedMonth(
           employee,
           employee.paymentObjectiveWeekBonuses || []
         )
       : computedObjectiveAdjustments.bonuses;
-    const savedObjectiveTotal = this.numberFrom(
-      employee.paymentObjectiveWeekDeductionTotal
-    );
     const objective = attendanceOnly
       ? 0
-      : configured && savedObjectiveTotal > 0
-        ? savedObjectiveTotal
-        : objectiveDeductions.reduce(
-            (sum, item) => sum + this.numberFrom(item.amount),
-            0
-          );
-    const savedObjectiveBonusTotal = this.numberFrom(
-      employee.paymentObjectiveWeekBonusTotal
-    );
+      : objectiveDeductions.reduce(
+          (sum, item) => sum + this.numberFrom(item.amount),
+          0
+        );
     const objectiveBonus = attendanceOnly
       ? 0
-      : configured &&
-        employee.paidPaymentThisMonth &&
-        savedObjectiveBonusTotal > 0
-      ? savedObjectiveBonusTotal
       : objectiveBonuses.reduce(
           (sum, item) => sum + this.numberFrom(item.amount),
           0
@@ -3768,19 +3765,26 @@ export class TeamRankingMonthComponent implements OnDestroy {
       attendanceDeductions.late +
       objective +
       manualWithdrawal;
-    const net = base + additionsTotal - deductionsTotal;
-    const salaryDue = Math.max(net, 0);
+    const net = computeMonthlyPayrollPayment({
+      base,
+      bankFee,
+      experience,
+      manualAddition,
+      objectiveBonus,
+      absent: attendanceDeductions.absent,
+      nothing: attendanceDeductions.nothing,
+      late: attendanceDeductions.late,
+      objectiveDeduction: objective,
+      manualWithdrawal,
+    });
+    const salaryDue = net;
     const bonusPerformance = this.numberFrom(employee.bonusAmount);
     const bonusTeam = this.numberFrom(employee.bestTeamBonusAmount);
     const bonusEmployee = this.numberFrom(employee.bestEmployeeBonusAmount);
     const bonusManager = this.numberFrom(employee.bestManagerBonusAmount);
-    const savedBonusTotal = this.numberFrom(employee.totalBonusThisMonth);
     const computedBonusTotal =
       bonusPerformance + bonusTeam + bonusEmployee + bonusManager;
-    const bonusTotal =
-      savedBonusTotal > 0 || computedBonusTotal <= 0
-        ? Math.max(savedBonusTotal, 0)
-        : computedBonusTotal;
+    const bonusTotal = computedBonusTotal;
     const salaryRemaining = employee.paidPaymentThisMonth ? 0 : salaryDue;
     const bonusRemaining = employee.paidBonusThisMonth ? 0 : bonusTotal;
     const totalDue = salaryDue + bonusTotal;
@@ -4020,32 +4024,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
     nothing: number;
     late: number;
   } {
-    const attendance = employee.attendance || {};
-    const byDate = new Map<string, string>();
-    Object.entries(attendance).forEach(([key, value]) => {
-      const label = this.normalizeAttendanceLabel(key);
-      if (label) byDate.set(label, String(value));
-    });
-
-    let absentCount = 0;
-    let nothingCount = 0;
-    let lateCount = 0;
-
-    for (const [label, value] of byDate.entries()) {
-      const parts = this.attendanceLabelDateParts(label);
-      if (!parts) continue;
-      if (parts.month !== Number(this.givenMonth)) continue;
-      if (parts.year !== Number(this.givenYear)) continue;
-      if (value === 'A') absentCount += 1;
-      if (value === 'N') nothingCount += 1;
-      if (value === 'L') lateCount += 1;
-    }
-
-    return {
-      absent: absentCount * 3,
-      nothing: nothingCount * 3,
-      late: lateCount,
-    };
+    return computeMonthlyPayrollAttendanceDeductions(
+      employee.attendance,
+      Number(this.givenMonth),
+      Number(this.givenYear)
+    );
   }
 
   private computeAttendanceDeductionDetailsForPayroll(
@@ -4091,62 +4074,20 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const owner = employee.tempUser || this.auth.currentUser;
     if (!owner) return { deductions: [], bonuses: [] };
 
-    const month = Number(this.givenMonth);
-    const year = Number(this.givenYear);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lastDay = new Date(year, month, 0);
-    const deductions: WeeklyObjectiveDeduction[] = [];
-    const bonuses: WeeklyObjectiveBonus[] = [];
-
-    for (let day = 1; day <= lastDay.getDate(); day += 1) {
-      const end = new Date(year, month - 1, day);
-      if (end.getDay() !== 0) continue;
-
-      const start = new Date(end);
-      start.setDate(end.getDate() - 6);
-      if (!this.payrollWeekIsReadyForDeduction(start, end, today)) continue;
-      if (this.isSundayOnlyCarryoverWeek(start, end)) continue;
-
-      const startKey = this.formatDateKey(start);
-      const weeklyTargetFc = this.resolvePayrollWeeklyTargetFc(owner, startKey);
-      const weeklyDeductionTargetFc =
-        this.resolvePayrollWeeklyDeductionTargetFc(owner, startKey);
-      const totalFc = this.computeWeeklyPaymentTotalForPayroll(owner, startKey);
-      const deductionAmount = this.compute.computeWeeklyObjectiveDeductionUsd(
-        totalFc,
-        weeklyDeductionTargetFc
-      );
-      const entry: Omit<WeeklyObjectiveDeduction, 'amount'> = {
-        start: this.formatIsoDate(start),
-        end: this.formatIsoDate(end),
-        weeklyTotalFc: totalFc,
-        weeklyTargetFc,
-        weeklyDeductionTargetFc,
-      };
-      if (deductionAmount > 0) {
-        deductions.push({ ...entry, amount: deductionAmount });
-        continue;
-      }
-
-      const bonusAmount = this.compute.computeWeeklyObjectiveBonusUsd(
-        totalFc,
-        weeklyTargetFc
-      );
-      if (bonusAmount > 0) {
-        bonuses.push({ ...entry, amount: bonusAmount });
-      }
-    }
-
-    return { deductions, bonuses };
-  }
-
-  private payrollWeekIsReadyForDeduction(
-    _start: Date,
-    end: Date,
-    today: Date
-  ): boolean {
-    return today > end;
+    return computeMonthlyPayrollObjectiveAdjustments({
+      month: Number(this.givenMonth),
+      year: Number(this.givenYear),
+      dailyReimbursement: owner.dailyReimbursement,
+      attendanceOnly: this.employeeUsesAttendanceOnlyPayroll(employee),
+      resolveVisibleTargetFc: (dateKey) =>
+        this.resolvePayrollWeeklyTargetFc(owner, dateKey),
+      resolveDeductionTargetFc: (dateKey) =>
+        this.resolvePayrollWeeklyDeductionTargetFc(owner, dateKey),
+      computeDeductionUsd: (totalFc, targetFc) =>
+        this.compute.computeWeeklyObjectiveDeductionUsd(totalFc, targetFc),
+      computeBonusUsd: (totalFc, targetFc) =>
+        this.compute.computeWeeklyObjectiveBonusUsd(totalFc, targetFc),
+    });
   }
 
   private filterPayrollObjectiveDeductionsForSelectedMonth(
@@ -4161,6 +4102,30 @@ export class TeamRankingMonthComponent implements OnDestroy {
       .filter((item) => {
         const end = this.parseIsoDate(item.end);
         return end.getMonth() + 1 === month && end.getFullYear() === year;
+      });
+  }
+
+  private filterPayrollObjectiveBonusesForSelectedMonth(
+    employee: Employee,
+    bonuses: WeeklyObjectiveBonus[]
+  ): WeeklyObjectiveBonus[] {
+    const month = Number(this.givenMonth);
+    const year = Number(this.givenYear);
+    const owner = employee.tempUser || this.auth.currentUser;
+    return (bonuses || [])
+      .map((item) => this.normalizePayrollObjectiveBonus(item, owner))
+      .filter((item) => {
+        const end = this.parseIsoDate(item.end);
+        if (end.getMonth() + 1 !== month || end.getFullYear() !== year) {
+          return false;
+        }
+        if (employee.paymentObjectiveWeekBonusesManuallyAdjusted === true) {
+          return true;
+        }
+        return (
+          Number(item.weeklyTotalFc) >= Number(item.weeklyTargetFc) &&
+          Number(item.weeklyTargetFc) > 0
+        );
       });
   }
 
@@ -4203,6 +4168,23 @@ export class TeamRankingMonthComponent implements OnDestroy {
       weeklyTotalFc,
       weeklyTargetFc,
       weeklyDeductionTargetFc,
+    };
+  }
+
+  private normalizePayrollObjectiveBonus(
+    bonus: WeeklyObjectiveBonus,
+    owner?: User
+  ): WeeklyObjectiveBonus {
+    const normalized = this.normalizePayrollObjectiveDeduction(bonus, owner);
+    if (!owner || !normalized.start) return normalized;
+    const start = this.parseIsoDate(normalized.start);
+    if (start.getTime() === 0) return normalized;
+    return {
+      ...normalized,
+      weeklyTargetFc: this.resolvePayrollWeeklyTargetFc(
+        owner,
+        this.formatDateKey(start)
+      ),
     };
   }
 
@@ -4259,12 +4241,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private employeeUsesAttendanceOnlyPayroll(employee: Employee): boolean {
-    const role = this.normalizeRole(employee.role);
-    return (
-      role.includes('auditr') ||
-      role.includes('investig') ||
-      role.includes('region')
-    );
+    return usesAttendanceOnlyPayroll(employee.role);
   }
 
   private attendanceLabelDateParts(
@@ -4273,15 +4250,6 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const [month, day, year] = label.split('-').map(Number);
     if (!month || !day || !year) return null;
     return { month, day, year };
-  }
-
-  private isSundayOnlyCarryoverWeek(start: Date, end: Date): boolean {
-    return (
-      start.getFullYear() !== end.getFullYear() ||
-      start.getMonth() !== end.getMonth()
-    )
-      ? end.getDate() === 1
-      : false;
   }
 
   private parseIsoDate(value: string): Date {

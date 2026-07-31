@@ -1,4 +1,5 @@
 import { TeamRankingMonthComponent } from './team-ranking-month.component';
+import { EmployeePageComponent } from 'src/app/shrink/employee-page/employee-page.component';
 
 describe('TeamRankingMonthComponent', () => {
   function createComponent() {
@@ -29,6 +30,7 @@ describe('TeamRankingMonthComponent', () => {
       ],
       todaysDateKinshasFormat: () => '23 Juillet 2026',
       todaysDateMonthDayYear: () => '7-23-2026',
+      convertDateToDayMonthYear: () => '23 Juillet 2026',
       getTodaysDateYearMonthDay: () => '2026-07-23',
       toDate: (dateKey: string) => {
         const [month, day, year] = dateKey.split('-').map(Number);
@@ -147,5 +149,109 @@ describe('TeamRankingMonthComponent', () => {
     expect(auth.resolveWeeklyPaymentTargetForDate).toHaveBeenCalledWith(
       '7-13-2026'
     );
+  });
+
+  it('matches the employee page salary and bonus totals for the same saved draft', () => {
+    const { component, auth, compute } = createComponent();
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    const employee: any = {
+      uid: 'employee-1',
+      firstName: 'Test',
+      lastName: 'Employé',
+      role: 'Agent Marketing',
+      paymentConfiguredMonthKey: '2026-07',
+      paymentAmount: '100',
+      paymentBankFee: '5',
+      paymentIncreaseYears: '10',
+      paymentManualAddition: '3',
+      paymentManualWithdrawal: '4',
+      paymentAbsent: '3',
+      paymentNothing: '0',
+      paymentLate: '1',
+      paymentObjectiveWeekDeductionTotal: '99',
+      paymentObjectiveWeekDeductions: [
+        { start: '2026-07-06', end: '2026-07-12', amount: 2 },
+      ],
+      paymentObjectiveWeekBonusTotal: '99',
+      paymentObjectiveWeekBonuses: [
+        {
+          start: '2026-07-13',
+          end: '2026-07-19',
+          amount: 2,
+          weeklyTotalFc: 1300000,
+          weeklyTargetFc: 1200000,
+        },
+      ],
+      paymentObjectiveWeekBonusesManuallyAdjusted: true,
+      bonusAmount: '7',
+      bestTeamBonusAmount: '2',
+      bestEmployeeBonusAmount: '1',
+      bestManagerBonusAmount: '0',
+      totalBonusThisMonth: '999',
+      tempUser: { dailyReimbursement: {} },
+    };
+
+    const employeePage = new EmployeePageComponent(
+      {} as any,
+      {} as any,
+      auth,
+      {
+        yearsList: [2026],
+        todaysDateMonthDayYear: () => '7-23-2026',
+        convertDateToDayMonthYear: () => '23 Juillet 2026',
+        getTodaysDateYearMonthDay: () => '2026-07-23',
+        toDate: (dateKey: string) => {
+          const [month, day, year] = dateKey.split('-').map(Number);
+          return new Date(year, month - 1, day);
+        },
+      } as any,
+      compute,
+      {} as any,
+      { snapshot: { paramMap: { get: () => 'employee-1' } } } as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+    employeePage.employee = employee;
+    employeePage.paymentAmount = 100;
+    employeePage.paymentBankFee = 5;
+    employeePage.paymentIncreaseYears = 10;
+    employeePage.paymentManualAddition = 3;
+    employeePage.paymentManualWithdrawal = 4;
+    employeePage.paymentAbsent = 3;
+    employeePage.paymentNothing = 0;
+    employeePage.paymentLate = 1;
+    employeePage.paymentObjectiveWeekDeductions = [
+      { start: '2026-07-06', end: '2026-07-12', amount: 2 },
+    ];
+    employeePage.paymentObjectiveWeekDeductionTotal = 99;
+    employeePage.paymentObjectiveWeekBonuses = [
+      {
+        start: '2026-07-13',
+        end: '2026-07-19',
+        amount: 2,
+        weeklyTotalFc: 1300000,
+        weeklyTargetFc: 1200000,
+      },
+    ];
+    employeePage.paymentObjectiveWeekBonusTotal = 99;
+    employeePage.paymentObjectiveWeekBonusesManuallyAdjusted = true;
+    employeePage.bonusAmount = 7;
+    employeePage.bestTeamBonusAmount = 2;
+    employeePage.bestEmployeeBonusAmount = 1;
+    employeePage.bestManagerBonusAmount = 0;
+
+    (employeePage as any).ensurePaymentDraftForCurrentMonth();
+    employeePage.computeTotalBonusAmount();
+    const row = (component as any).buildPayrollBreakdownRow(employee);
+
+    expect(row.net).toBe(employeePage.totalPayments);
+    expect(row.bonusTotal).toBe(employeePage.totalBonusAmount);
+    expect(row.totalDue).toBe(
+      employeePage.totalPayments + employeePage.totalBonusAmount
+    );
+    expect(row.objective).toBe(2);
+    expect(row.objectiveBonus).toBe(2);
   });
 });

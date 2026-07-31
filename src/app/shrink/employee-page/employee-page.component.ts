@@ -32,6 +32,12 @@ import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { firstValueFrom, Subscription } from 'rxjs';
 import firebase from 'firebase/compat/app';
+import {
+  computeMonthlyPayrollAttendanceDeductions,
+  computeMonthlyPayrollObjectiveAdjustments,
+  computeMonthlyPayrollPayment,
+  usesAttendanceOnlyPayroll,
+} from 'src/app/utils/monthly-payroll.util';
 
 // at the top, with other imports
 import exifr from 'exifr'; // if TS complains, use: import * as exifr from 'exifr';
@@ -2954,20 +2960,26 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const nothing = Number(this.paymentNothing) || 0;
     const manualWithdrawal = Math.max(Number(this.paymentManualWithdrawal) || 0, 0);
     const manualAddition = Math.max(Number(this.paymentManualAddition) || 0, 0);
-    const objectiveDeduction = Number(this.paymentObjectiveWeekDeductionTotal) || 0;
-    const objectiveBonus = Number(this.paymentObjectiveWeekBonusTotal) || 0;
+    const attendanceOnly = usesAttendanceOnlyPayroll(this.employee?.role);
+    const objectiveDeduction = attendanceOnly
+      ? 0
+      : Number(this.paymentObjectiveWeekDeductionTotal) || 0;
+    const objectiveBonus = attendanceOnly
+      ? 0
+      : Number(this.paymentObjectiveWeekBonusTotal) || 0;
 
-    this.totalPayments =
-      amount +
-      bankFee +
-      increase +
-      manualAddition +
-      objectiveBonus -
-      absent -
-      late -
-      nothing -
-      objectiveDeduction -
-      manualWithdrawal;
+    this.totalPayments = computeMonthlyPayrollPayment({
+      base: amount,
+      bankFee,
+      experience: increase,
+      manualAddition,
+      objectiveBonus,
+      absent,
+      nothing,
+      late,
+      objectiveDeduction,
+      manualWithdrawal,
+    });
     return this.totalPayments;
   }
 
@@ -3661,6 +3673,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   private ensurePaymentDraftForCurrentMonth() {
     if (this.isPaymentConfiguredForCurrentMonth()) {
+      if (usesAttendanceOnlyPayroll(this.employee?.role)) {
+        this.paymentObjectiveWeekDeductions = [];
+        this.paymentObjectiveWeekBonuses = [];
+        this.recomputeObjectiveWeekDeductionTotal();
+        this.recomputeObjectiveWeekBonusTotal();
+        this.computeTotalPayment();
+        return;
+      }
       this.paymentObjectiveWeekDeductions = this.filterObjectiveDeductionsForMonth(
         this.paymentObjectiveWeekDeductions || [],
         this.currentMonth,
@@ -3699,29 +3719,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   private applyAttendanceDeductionsForMonth(month: number, year: number) {
-    const attendance = this.employee?.attendance || {};
-    const byDate = new Map<string, string>();
-    Object.entries(attendance).forEach(([key, value]) => {
-      const label = this.normalizeLabel(key);
-      if (label) byDate.set(label, String(value));
-    });
-
-    let absentCount = 0;
-    let nothingCount = 0;
-    let lateCount = 0;
-
-    for (const [label, value] of byDate.entries()) {
-      const parts = this.labelToDateParts(label);
-      if (!parts) continue;
-      if (parts.m !== month || parts.y !== year) continue;
-      if (value === 'A') absentCount += 1;
-      if (value === 'N') nothingCount += 1;
-      if (value === 'L') lateCount += 1;
-    }
-
-    this.paymentAbsent = absentCount * 3;
-    this.paymentNothing = nothingCount * 3;
-    this.paymentLate = lateCount * 1;
+    const deductions = computeMonthlyPayrollAttendanceDeductions(
+      this.employee?.attendance,
+      month,
+      year
+    );
+    this.paymentAbsent = deductions.absent;
+    this.paymentNothing = deductions.nothing;
+    this.paymentLate = deductions.late;
   }
 
   private applyWeeklyObjectiveDeductionsForMonth(month: number, year: number) {
@@ -3744,60 +3749,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     deductions: WeeklyObjectiveDeduction[];
     bonuses: WeeklyObjectiveBonus[];
   } {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lastDay = new Date(year, month, 0);
-    const deductions: WeeklyObjectiveDeduction[] = [];
-    const bonuses: WeeklyObjectiveBonus[] = [];
-
-    for (let day = 1; day <= lastDay.getDate(); day += 1) {
-      const end = new Date(year, month - 1, day);
-      if (end.getDay() !== 0) continue; // Sunday only
-      if (today <= end) continue; // current/future week isn't deducted yet
-
-      const start = new Date(end);
-      start.setDate(end.getDate() - 6);
-      if (this.isSundayOnlyCarryoverWeek(start, end)) continue;
-
-      const weeklyTargetFc = this.resolveWeeklySalaryBonusTargetFcForDate(
-        this.formatDateKey(start)
-      );
-      const weeklyDeductionTargetFc =
-        this.resolveWeeklyDeductionTargetFcForDate(
-          this.formatDateKey(start)
-        );
-      const totalFc = this.computeWeeklyPaymentTotalForLocation(
-        this.formatDateKey(start)
-      );
-      const baseEntry: Omit<WeeklyObjectiveDeduction, 'amount'> = {
-        start: this.formatIsoDate(start),
-        end: this.formatIsoDate(end),
-        weeklyTotalFc: totalFc,
-        weeklyTargetFc,
-        weeklyDeductionTargetFc,
-      };
-
-      const deductionAmount = this.compute.computeWeeklyObjectiveDeductionUsd(
-        totalFc,
-        weeklyDeductionTargetFc
-      );
-      if (deductionAmount > 0) {
-        deductions.push({ ...baseEntry, amount: deductionAmount });
-        continue;
-      }
-
-      // Bonuses always start from the public/visible objective. The separate
-      // payroll threshold is intentionally not part of this calculation.
-      const bonusAmount = this.compute.computeWeeklyObjectiveBonusUsd(
-        totalFc,
-        weeklyTargetFc
-      );
-      if (bonusAmount > 0) {
-        bonuses.push({ ...baseEntry, amount: bonusAmount });
-      }
-    }
-
-    return { deductions, bonuses };
+    return computeMonthlyPayrollObjectiveAdjustments({
+      month,
+      year,
+      dailyReimbursement: this.auth.currentUser?.dailyReimbursement,
+      attendanceOnly: usesAttendanceOnlyPayroll(this.employee?.role),
+      resolveVisibleTargetFc: (dateKey) =>
+        this.resolveWeeklySalaryBonusTargetFcForDate(dateKey),
+      resolveDeductionTargetFc: (dateKey) =>
+        this.resolveWeeklyDeductionTargetFcForDate(dateKey),
+      computeDeductionUsd: (totalFc, targetFc) =>
+        this.compute.computeWeeklyObjectiveDeductionUsd(totalFc, targetFc),
+      computeBonusUsd: (totalFc, targetFc) =>
+        this.compute.computeWeeklyObjectiveBonusUsd(totalFc, targetFc),
+    });
   }
 
   private isSundayOnlyCarryoverWeek(start: Date, end: Date): boolean {
