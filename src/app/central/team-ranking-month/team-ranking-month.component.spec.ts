@@ -39,7 +39,18 @@ describe('TeamRankingMonthComponent', () => {
       getMonthNameFrench: () => 'Juillet',
       computeWeeklyObjectiveDeductionUsd: jasmine
         .createSpy('computeWeeklyObjectiveDeductionUsd')
-        .and.returnValue(2),
+        .and.callFake((totalFc: number, targetFc: number) =>
+          totalFc < targetFc
+            ? Math.ceil((targetFc - totalFc) / 100000)
+            : 0
+        ),
+      computeWeeklyObjectiveBonusUsd: jasmine
+        .createSpy('computeWeeklyObjectiveBonusUsd')
+        .and.callFake((totalFc: number, visibleTargetFc: number) =>
+          totalFc >= visibleTargetFc
+            ? Math.floor((totalFc - visibleTargetFc) / 100000) + 1
+            : 0
+        ),
       computeWeeklyObjectiveAdjustmentUsd: jasmine
         .createSpy('computeWeeklyObjectiveAdjustmentUsd')
         .and.returnValue({
@@ -103,10 +114,38 @@ describe('TeamRankingMonthComponent', () => {
         amount: 2,
       })
     );
-    expect(compute.computeWeeklyObjectiveAdjustmentUsd).toHaveBeenCalledWith(
+    expect(compute.computeWeeklyObjectiveDeductionUsd).toHaveBeenCalledWith(
       700000,
-      900000,
+      900000
+    );
+  });
+
+  it('does not add a bonus at 901K when the global visible minimum is 1.2M', () => {
+    const { component, auth, compute } = createComponent();
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    const owner = {
+      weeklyPaymentTargetFc: 900000,
+      dailyReimbursement: {
+        '7-13-2026': 901000,
+      },
+    };
+    const employee = { tempUser: owner } as any;
+
+    const adjustments = (component as any)
+      .computePayrollWeeklyObjectiveAdjustments(employee);
+
+    expect(
+      adjustments.bonuses.some(
+        (item: any) => item.end === '2026-07-19'
+      )
+    ).toBeFalse();
+    expect(compute.computeWeeklyObjectiveBonusUsd).toHaveBeenCalledWith(
+      901000,
       1200000
+    );
+    expect(auth.resolveWeeklyPaymentTargetForDate).toHaveBeenCalledWith(
+      '7-13-2026'
     );
   });
 });

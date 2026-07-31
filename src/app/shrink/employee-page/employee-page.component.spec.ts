@@ -60,7 +60,40 @@ describe('EmployeePageComponent', () => {
           'Novembre',
           'Décembre',
         ][month - 1],
-      computeWeeklyObjectiveDeductionUsd: () => 5,
+      computeWeeklyObjectiveDeductionUsd: (
+        totalFc: number,
+        deductionTargetFc: number
+      ) => {
+        const adjustment = computeWeeklyObjectiveAdjustment(
+          totalFc,
+          deductionTargetFc,
+          deductionTargetFc,
+          {
+            bandFc: 100000,
+            penaltyPerBandUsd: 1,
+            bonusBandFc: 100000,
+            bonusPerBandUsd: 1,
+          }
+        );
+        return adjustment.kind === 'deduction' ? adjustment.amountUsd : 0;
+      },
+      computeWeeklyObjectiveBonusUsd: (
+        totalFc: number,
+        visibleTargetFc: number
+      ) => {
+        const adjustment = computeWeeklyObjectiveAdjustment(
+          totalFc,
+          visibleTargetFc,
+          visibleTargetFc,
+          {
+            bandFc: 100000,
+            penaltyPerBandUsd: 1,
+            bonusBandFc: 100000,
+            bonusPerBandUsd: 1,
+          }
+        );
+        return adjustment.kind === 'bonus' ? adjustment.amountUsd : 0;
+      },
       computeWeeklyObjectiveAdjustmentUsd: (
         totalFc: number,
         deductionTargetFc: number,
@@ -186,7 +219,36 @@ describe('EmployeePageComponent', () => {
         ][month - 1],
       computeWeeklyObjectiveDeductionUsd: jasmine
         .createSpy('computeWeeklyObjectiveDeductionUsd')
-        .and.returnValue(5),
+        .and.callFake((totalFc: number, deductionTargetFc: number) => {
+          const adjustment = computeWeeklyObjectiveAdjustment(
+            totalFc,
+            deductionTargetFc,
+            deductionTargetFc,
+            {
+              bandFc: 100000,
+              penaltyPerBandUsd: 1,
+              bonusBandFc: 100000,
+              bonusPerBandUsd: 1,
+            }
+          );
+          return adjustment.kind === 'deduction' ? adjustment.amountUsd : 0;
+        }),
+      computeWeeklyObjectiveBonusUsd: jasmine
+        .createSpy('computeWeeklyObjectiveBonusUsd')
+        .and.callFake((totalFc: number, visibleTargetFc: number) => {
+          const adjustment = computeWeeklyObjectiveAdjustment(
+            totalFc,
+            visibleTargetFc,
+            visibleTargetFc,
+            {
+              bandFc: 100000,
+              penaltyPerBandUsd: 1,
+              bonusBandFc: 100000,
+              bonusPerBandUsd: 1,
+            }
+          );
+          return adjustment.kind === 'bonus' ? adjustment.amountUsd : 0;
+        }),
       computeWeeklyObjectiveAdjustmentUsd: jasmine
         .createSpy('computeWeeklyObjectiveAdjustmentUsd')
         .and.callFake(
@@ -290,7 +352,7 @@ describe('EmployeePageComponent', () => {
     expect(adjustments.bonuses).toEqual([]);
   });
 
-  it('stores both targets and calculates payroll from the internal threshold', () => {
+  it('uses the payroll threshold for deductions while retaining both targets', () => {
     const component = createComponent({
       currentUser: {
         dailyReimbursement: {
@@ -301,15 +363,14 @@ describe('EmployeePageComponent', () => {
       weeklyPaymentTargetFc: 1200000,
       resolveWeeklyDeductionTargetForDate: () => 900000,
     });
-    const adjustmentSpy = spyOn(
+    const deductionSpy = spyOn(
       component.compute,
-      'computeWeeklyObjectiveAdjustmentUsd'
-    ).and.returnValue({
-      kind: 'deduction',
-      amountUsd: 2,
-      signedAmountUsd: -2,
-      bandCount: 2,
-    });
+      'computeWeeklyObjectiveDeductionUsd'
+    ).and.returnValue(2);
+    const bonusSpy = spyOn(
+      component.compute,
+      'computeWeeklyObjectiveBonusUsd'
+    ).and.returnValue(0);
 
     const adjustments = (component as any).computeWeeklyObjectiveAdjustments(
       3,
@@ -327,7 +388,47 @@ describe('EmployeePageComponent', () => {
         amount: 2,
       })
     );
-    expect(adjustmentSpy).toHaveBeenCalledWith(700000, 900000, 1200000);
+    expect(deductionSpy).toHaveBeenCalledWith(700000, 900000);
+    expect(bonusSpy).not.toHaveBeenCalled();
+  });
+
+  it('calculates salary additions from the visible minimum, not the payroll threshold', () => {
+    const component = createComponent({
+      currentUser: {
+        dailyReimbursement: {
+          '3-2-2026': 1200000,
+        },
+        weeklyPaymentTargetFc: 900000,
+      },
+      weeklyPaymentTargetFc: 1200000,
+      resolveWeeklyDeductionTargetForDate: () => 900000,
+    });
+    spyOn(
+      component.compute,
+      'computeWeeklyObjectiveDeductionUsd'
+    ).and.returnValue(0);
+    const bonusSpy = spyOn(
+      component.compute,
+      'computeWeeklyObjectiveBonusUsd'
+    ).and.returnValue(1);
+
+    const adjustments = (component as any).computeWeeklyObjectiveAdjustments(
+      3,
+      2026
+    );
+    const week = adjustments.bonuses.find(
+      (item: any) => item.end === '2026-03-08'
+    );
+
+    expect(week).toEqual(
+      jasmine.objectContaining({
+        weeklyTotalFc: 1200000,
+        weeklyTargetFc: 1200000,
+        weeklyDeductionTargetFc: 900000,
+        amount: 1,
+      })
+    );
+    expect(bonusSpy).toHaveBeenCalledWith(1200000, 1200000);
   });
 
   it('adds completed weekly objective bonuses to salary', () => {
@@ -337,6 +438,113 @@ describe('EmployeePageComponent', () => {
     component.paymentObjectiveWeekDeductionTotal = 1;
 
     expect(component.computeTotalPayment()).toBe(102);
+  });
+
+  it('allows an admin to add and remove a weekly objective addition', () => {
+    const component = createComponent();
+    component.weekObjectiveBonusStartDate = '2026-03-02';
+    component.weekObjectiveBonusEndDate = '2026-03-08';
+    component.weekObjectiveBonusAmount = 4;
+
+    component.addObjectiveWeekBonus();
+
+    expect(component.paymentObjectiveWeekBonuses).toEqual([
+      jasmine.objectContaining({
+        start: '2026-03-02',
+        end: '2026-03-08',
+        amount: 4,
+        weeklyTargetFc: 600000,
+      }),
+    ]);
+    expect(component.paymentObjectiveWeekBonusTotal).toBe(4);
+    expect(component.paymentObjectiveWeekBonusesManuallyAdjusted).toBeTrue();
+
+    component.removeObjectiveWeekBonus(0);
+
+    expect(component.paymentObjectiveWeekBonuses).toEqual([]);
+    expect(component.paymentObjectiveWeekBonusTotal).toBe(0);
+    expect(component.computeTotalPayment()).toBe(0);
+  });
+
+  it('preserves manually adjusted additions when reopening an unpaid draft', () => {
+    const component = createComponent();
+    component.employee = {
+      paymentConfiguredMonthKey: '2026-03',
+      paidPaymentThisMonth: false,
+    };
+    component.paymentObjectiveWeekBonuses = [
+      { start: '2026-03-02', end: '2026-03-08', amount: 4 },
+    ];
+    component.paymentObjectiveWeekBonusesManuallyAdjusted = true;
+    const computeSpy = spyOn<any>(
+      component as any,
+      'computeWeeklyObjectiveAdjustments'
+    );
+
+    (component as any).ensurePaymentDraftForCurrentMonth();
+
+    expect(computeSpy).not.toHaveBeenCalled();
+    expect(component.paymentObjectiveWeekBonuses).toEqual([
+      jasmine.objectContaining({
+        start: '2026-03-02',
+        end: '2026-03-08',
+        amount: 4,
+      }),
+    ]);
+    expect(component.paymentObjectiveWeekBonusTotal).toBe(4);
+  });
+
+  it('removes a stale automatic addition below the global visible minimum', () => {
+    const component = createComponent({
+      currentUser: {
+        dailyReimbursement: { '3-2-2026': 901000 },
+        weeklyPaymentTargetFc: 900000,
+      },
+      weeklyPaymentTargetFc: 1200000,
+    });
+    component.employee = {
+      paymentConfiguredMonthKey: '2026-03',
+      paidPaymentThisMonth: true,
+    };
+    component.paymentObjectiveWeekBonuses = [
+      {
+        start: '2026-03-02',
+        end: '2026-03-08',
+        amount: 1,
+        weeklyTotalFc: 901000,
+        weeklyTargetFc: 900000,
+      },
+    ];
+    component.paymentObjectiveWeekBonusesManuallyAdjusted = false;
+
+    (component as any).ensurePaymentDraftForCurrentMonth();
+
+    expect(component.paymentObjectiveWeekBonuses).toEqual([]);
+    expect(component.paymentObjectiveWeekBonusTotal).toBe(0);
+  });
+
+  it('copies objective additions and their manual override into saved payment data', () => {
+    const component = createComponent();
+    component.employee = {};
+    component.paymentObjectiveWeekBonuses = [
+      { start: '2026-03-02', end: '2026-03-08', amount: 4 },
+    ];
+    component.paymentObjectiveWeekBonusTotal = 4;
+    component.paymentObjectiveWeekBonusesManuallyAdjusted = true;
+
+    component.setPaymentInfo();
+
+    expect(component.employee.paymentObjectiveWeekBonusTotal).toBe('4');
+    expect(component.employee.paymentObjectiveWeekBonuses).toEqual([
+      jasmine.objectContaining({
+        start: '2026-03-02',
+        end: '2026-03-08',
+        amount: 4,
+      }),
+    ]);
+    expect(
+      component.employee.paymentObjectiveWeekBonusesManuallyAdjusted
+    ).toBeTrue();
   });
 
   it('computes the foundation balance from completed months and employee-of-the-month trophies', () => {

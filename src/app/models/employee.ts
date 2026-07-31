@@ -91,6 +91,7 @@ export class Employee {
   paymentObjectiveWeekDeductions?: WeeklyObjectiveDeduction[];
   paymentObjectiveWeekBonusTotal?: string;
   paymentObjectiveWeekBonuses?: WeeklyObjectiveBonus[];
+  paymentObjectiveWeekBonusesManuallyAdjusted?: boolean;
   // NEW: parallel map of attachments by date
   attendanceAttachments?: { [date: string]: AttendanceAttachment };
 
@@ -158,7 +159,7 @@ export interface WeeklyObjectiveDeduction {
   weeklyTotalFc?: number;
   /** Public objective displayed to the team. Legacy records store the only target here. */
   weeklyTargetFc?: number;
-  /** Internal threshold actually used to calculate the payroll deduction. */
+  /** Internal threshold used only to calculate the payroll deduction. */
   weeklyDeductionTargetFc?: number;
 }
 

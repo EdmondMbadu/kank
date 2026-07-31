@@ -496,10 +496,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   paymentObjectiveWeekDeductions: WeeklyObjectiveDeduction[] = [];
   paymentObjectiveWeekBonusTotal: number = 0;
   paymentObjectiveWeekBonuses: WeeklyObjectiveBonus[] = [];
+  paymentObjectiveWeekBonusesManuallyAdjusted = false;
   weekObjectiveStartDate: string = '';
   weekObjectiveEndDate: string = '';
   weekObjectiveEndLabel: string = '';
   weekObjectiveAmount: number = 0;
+  weekObjectiveBonusStartDate: string = '';
+  weekObjectiveBonusEndDate: string = '';
+  weekObjectiveBonusEndLabel: string = '';
+  weekObjectiveBonusAmount: number = 0;
 
   averagePointsMonth: string = '';
   performancePercentageMonth: string = '';
@@ -2892,9 +2897,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.employee.paymentObjectiveWeekBonuses
     )
       ? this.employee.paymentObjectiveWeekBonuses.map((bonus) =>
-          this.normalizeObjectiveDeduction(bonus)
+          this.normalizeObjectiveBonus(bonus)
         )
       : [];
+    this.paymentObjectiveWeekBonusesManuallyAdjusted =
+      this.employee.paymentObjectiveWeekBonusesManuallyAdjusted === true;
     if (
       this.paymentObjectiveWeekBonusTotal === 0 &&
       this.paymentObjectiveWeekBonuses.length > 0
@@ -2923,6 +2930,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.weekObjectiveStartDate = this.time.getTodaysDateYearMonthDay();
     }
     this.updateWeekObjectivePreview();
+    if (!this.weekObjectiveBonusStartDate) {
+      this.weekObjectiveBonusStartDate = this.time.getTodaysDateYearMonthDay();
+    }
+    this.updateWeekObjectiveBonusPreview();
   }
 
   computeTotalBonusAmount() {
@@ -2980,6 +2991,28 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.resolveWeeklyDeductionTargetFcForDate(
         this.formatDateKey(startDate)
       )
+    );
+  }
+
+  updateWeekObjectiveBonusPreview() {
+    if (!this.weekObjectiveBonusStartDate) {
+      this.weekObjectiveBonusEndDate = '';
+      this.weekObjectiveBonusEndLabel = '';
+      this.weekObjectiveBonusAmount = 0;
+      return;
+    }
+
+    const startDate = this.parseIsoDate(this.weekObjectiveBonusStartDate);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    this.weekObjectiveBonusEndDate = this.formatIsoDate(endDate);
+    this.weekObjectiveBonusEndLabel = this.formatWeekDate(endDate);
+
+    const dateKey = this.formatDateKey(startDate);
+    const totalFc = this.computeWeeklyPaymentTotalForLocation(dateKey);
+    this.weekObjectiveBonusAmount = this.compute.computeWeeklyObjectiveBonusUsd(
+      totalFc,
+      this.resolveWeeklySalaryBonusTargetFcForDate(dateKey)
     );
   }
 
@@ -3452,6 +3485,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  private resolveWeeklySalaryBonusTargetFcForDate(dateKey: string): number {
+    const { start } = this.getWeekBounds(dateKey);
+    return this.auth.resolveWeeklyPaymentTargetForDate(
+      this.formatDateKey(start)
+    );
+  }
+
   private resolveWeeklyDeductionTargetFcForDate(dateKey: string): number {
     const { start } = this.getWeekBounds(dateKey);
     return this.auth.resolveWeeklyDeductionTargetForDate(
@@ -3527,6 +3567,55 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.computeTotalPayment();
   }
 
+  addObjectiveWeekBonus() {
+    if (!this.weekObjectiveBonusStartDate) {
+      alert('Sélectionnez la date de début de semaine.');
+      return;
+    }
+
+    const amount = Number(this.weekObjectiveBonusAmount) || 0;
+    if (amount <= 0) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+
+    if (!this.weekObjectiveBonusEndDate) {
+      this.updateWeekObjectiveBonusPreview();
+    }
+
+    const normalizedEntry = this.normalizeObjectiveBonus({
+      start: this.weekObjectiveBonusStartDate,
+      end: this.weekObjectiveBonusEndDate,
+      amount,
+    });
+    const existingIndex = this.paymentObjectiveWeekBonuses.findIndex(
+      (bonus) =>
+        bonus.start === normalizedEntry.start &&
+        bonus.end === normalizedEntry.end
+    );
+
+    if (existingIndex >= 0) {
+      this.paymentObjectiveWeekBonuses[existingIndex] = normalizedEntry;
+    } else {
+      this.paymentObjectiveWeekBonuses.push(normalizedEntry);
+      this.paymentObjectiveWeekBonuses.sort((a, b) =>
+        a.start.localeCompare(b.start)
+      );
+    }
+
+    this.paymentObjectiveWeekBonusesManuallyAdjusted = true;
+    this.recomputeObjectiveWeekBonusTotal();
+    this.computeTotalPayment();
+  }
+
+  removeObjectiveWeekBonus(index: number) {
+    if (index < 0 || index >= this.paymentObjectiveWeekBonuses.length) return;
+    this.paymentObjectiveWeekBonuses.splice(index, 1);
+    this.paymentObjectiveWeekBonusesManuallyAdjusted = true;
+    this.recomputeObjectiveWeekBonusTotal();
+    this.computeTotalPayment();
+  }
+
   formatObjectiveWeekLabel(d: WeeklyObjectiveDeduction): string {
     const start = this.parseIsoDate(d.start);
     const end = this.parseIsoDate(d.end);
@@ -3577,12 +3666,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         this.currentMonth,
         this.year
       );
-      this.paymentObjectiveWeekBonuses = this.filterObjectiveDeductionsForMonth(
+      this.paymentObjectiveWeekBonuses = this.filterObjectiveBonusesForMonth(
         this.paymentObjectiveWeekBonuses || [],
         this.currentMonth,
         this.year
       );
-      if (!this.employee.paidPaymentThisMonth) {
+      if (
+        !this.employee.paidPaymentThisMonth &&
+        !this.paymentObjectiveWeekBonusesManuallyAdjusted
+      ) {
         this.paymentObjectiveWeekBonuses =
           this.computeWeeklyObjectiveAdjustments(
             this.currentMonth,
@@ -3601,6 +3693,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.paymentManualWithdrawalReason = '';
     this.paymentManualAddition = 0;
     this.paymentManualAdditionReason = '';
+    this.paymentObjectiveWeekBonusesManuallyAdjusted = false;
     this.paymentSignNote = '';
     this.computeTotalPayment();
   }
@@ -3639,6 +3732,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.paymentObjectiveWeekBonuses = computed.bonuses.sort(
       (a, b) => a.start.localeCompare(b.start)
     );
+    this.paymentObjectiveWeekBonusesManuallyAdjusted = false;
     this.recomputeObjectiveWeekDeductionTotal();
     this.recomputeObjectiveWeekBonusTotal();
   }
@@ -3665,7 +3759,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       start.setDate(end.getDate() - 6);
       if (this.isSundayOnlyCarryoverWeek(start, end)) continue;
 
-      const weeklyTargetFc = this.resolveWeeklyTargetFcForDate(
+      const weeklyTargetFc = this.resolveWeeklySalaryBonusTargetFcForDate(
         this.formatDateKey(start)
       );
       const weeklyDeductionTargetFc =
@@ -3675,25 +3769,31 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       const totalFc = this.computeWeeklyPaymentTotalForLocation(
         this.formatDateKey(start)
       );
-      const adjustment = this.compute.computeWeeklyObjectiveAdjustmentUsd(
-        totalFc,
-        weeklyDeductionTargetFc,
-        weeklyTargetFc
-      );
-      if (adjustment.amountUsd <= 0) continue;
-
-      const entry: WeeklyObjectiveDeduction = {
+      const baseEntry: Omit<WeeklyObjectiveDeduction, 'amount'> = {
         start: this.formatIsoDate(start),
         end: this.formatIsoDate(end),
-        amount: adjustment.amountUsd,
         weeklyTotalFc: totalFc,
         weeklyTargetFc,
         weeklyDeductionTargetFc,
       };
-      if (adjustment.kind === 'deduction') {
-        deductions.push(entry);
-      } else if (adjustment.kind === 'bonus') {
-        bonuses.push(entry);
+
+      const deductionAmount = this.compute.computeWeeklyObjectiveDeductionUsd(
+        totalFc,
+        weeklyDeductionTargetFc
+      );
+      if (deductionAmount > 0) {
+        deductions.push({ ...baseEntry, amount: deductionAmount });
+        continue;
+      }
+
+      // Bonuses always start from the public/visible objective. The separate
+      // payroll threshold is intentionally not part of this calculation.
+      const bonusAmount = this.compute.computeWeeklyObjectiveBonusUsd(
+        totalFc,
+        weeklyTargetFc
+      );
+      if (bonusAmount > 0) {
+        bonuses.push({ ...baseEntry, amount: bonusAmount });
       }
     }
 
@@ -3766,6 +3866,21 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     };
   }
 
+  private normalizeObjectiveBonus(
+    bonus: WeeklyObjectiveBonus
+  ): WeeklyObjectiveBonus {
+    const normalized = this.normalizeObjectiveDeduction(bonus);
+    if (!normalized.start) return normalized;
+
+    const startDate = this.parseIsoDate(normalized.start);
+    return {
+      ...normalized,
+      weeklyTargetFc: this.resolveWeeklySalaryBonusTargetFcForDate(
+        this.formatDateKey(startDate)
+      ),
+    };
+  }
+
   private filterObjectiveDeductionsForMonth(
     deductions: WeeklyObjectiveDeduction[],
     month: number,
@@ -3779,6 +3894,29 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         const end = this.parseIsoDate(d.end);
         if (this.isSundayOnlyCarryoverWeek(start, end)) return false;
         return end.getMonth() + 1 === month && end.getFullYear() === year;
+      });
+  }
+
+  private filterObjectiveBonusesForMonth(
+    bonuses: WeeklyObjectiveBonus[],
+    month: number,
+    year: number
+  ): WeeklyObjectiveBonus[] {
+    return (bonuses || [])
+      .map((bonus) => this.normalizeObjectiveBonus(bonus))
+      .filter((bonus) => {
+        if (!bonus?.start) return false;
+        const start = this.parseIsoDate(bonus.start);
+        const end = this.parseIsoDate(bonus.end);
+        if (this.isSundayOnlyCarryoverWeek(start, end)) return false;
+        if (end.getMonth() + 1 !== month || end.getFullYear() !== year) {
+          return false;
+        }
+        if (this.paymentObjectiveWeekBonusesManuallyAdjusted) return true;
+        return (
+          Number(bonus.weeklyTotalFc) >= Number(bonus.weeklyTargetFc) &&
+          Number(bonus.weeklyTargetFc) > 0
+        );
       });
   }
 
@@ -6113,7 +6251,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.paymentObjectiveWeekBonusTotal
     ).toString();
     this.paymentObjectiveWeekBonuses = this.paymentObjectiveWeekBonuses.map(
-      (bonus) => this.normalizeObjectiveDeduction(bonus)
+      (bonus) => this.normalizeObjectiveBonus(bonus)
     );
     this.employee.paymentObjectiveWeekBonuses =
       this.paymentObjectiveWeekBonuses.map((bonus) => ({
@@ -6127,6 +6265,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           Number(bonus.weeklyTargetFc) ||
           0,
       }));
+    this.employee.paymentObjectiveWeekBonusesManuallyAdjusted =
+      this.paymentObjectiveWeekBonusesManuallyAdjusted;
     this.employee.totalPayments = this.computeTotalPayment().toString();
   }
   async updateEmployeePaymentInfoAndSignCheck() {

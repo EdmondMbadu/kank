@@ -1219,6 +1219,10 @@ export class DataService {
       paymentObjectiveWeekDeductionTotal:
         employee.paymentObjectiveWeekDeductionTotal,
       paymentObjectiveWeekDeductions: employee.paymentObjectiveWeekDeductions,
+      paymentObjectiveWeekBonusTotal: employee.paymentObjectiveWeekBonusTotal,
+      paymentObjectiveWeekBonuses: employee.paymentObjectiveWeekBonuses,
+      paymentObjectiveWeekBonusesManuallyAdjusted:
+        employee.paymentObjectiveWeekBonusesManuallyAdjusted,
       totalPayments: employee.totalPayments,
     };
 

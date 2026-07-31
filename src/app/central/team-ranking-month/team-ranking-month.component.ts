@@ -2956,6 +2956,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         ? '0'
         : this.numberFrom(draft.objectiveBonus).toString(),
       paymentObjectiveWeekBonuses: paymentBonuses,
+      paymentObjectiveWeekBonusesManuallyAdjusted: false,
       paymentManualWithdrawal: Math.max(
         this.numberFrom(draft.manualWithdrawal),
         0
@@ -4112,25 +4113,28 @@ export class TeamRankingMonthComponent implements OnDestroy {
       const weeklyDeductionTargetFc =
         this.resolvePayrollWeeklyDeductionTargetFc(owner, startKey);
       const totalFc = this.computeWeeklyPaymentTotalForPayroll(owner, startKey);
-      const adjustment = this.compute.computeWeeklyObjectiveAdjustmentUsd(
+      const deductionAmount = this.compute.computeWeeklyObjectiveDeductionUsd(
         totalFc,
-        weeklyDeductionTargetFc,
-        weeklyTargetFc
+        weeklyDeductionTargetFc
       );
-      if (adjustment.amountUsd <= 0) continue;
-
-      const entry: WeeklyObjectiveDeduction = {
+      const entry: Omit<WeeklyObjectiveDeduction, 'amount'> = {
         start: this.formatIsoDate(start),
         end: this.formatIsoDate(end),
-        amount: adjustment.amountUsd,
         weeklyTotalFc: totalFc,
         weeklyTargetFc,
         weeklyDeductionTargetFc,
       };
-      if (adjustment.kind === 'deduction') {
-        deductions.push(entry);
-      } else if (adjustment.kind === 'bonus') {
-        bonuses.push(entry);
+      if (deductionAmount > 0) {
+        deductions.push({ ...entry, amount: deductionAmount });
+        continue;
+      }
+
+      const bonusAmount = this.compute.computeWeeklyObjectiveBonusUsd(
+        totalFc,
+        weeklyTargetFc
+      );
+      if (bonusAmount > 0) {
+        bonuses.push({ ...entry, amount: bonusAmount });
       }
     }
 
@@ -4229,11 +4233,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return total;
   }
 
-  private resolvePayrollWeeklyTargetFc(owner: User, dateKey: string): number {
+  private resolvePayrollWeeklyTargetFc(_owner: User, dateKey: string): number {
     const { start } = this.getWeekBounds(dateKey);
     return this.auth.resolveWeeklyPaymentTargetForDate(
-      this.formatDateKey(start),
-      owner
+      this.formatDateKey(start)
     );
   }
 
