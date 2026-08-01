@@ -142,8 +142,19 @@
                   id="phone"
                   class="register-input"
                   placeholder="0893258653"
+                  inputmode="numeric"
+                  maxlength="10"
+                  aria-describedby="clientPhoneValidation"
+                  [attr.aria-invalid]="phoneNumber && !isClientPhoneNumberValid()"
                   [(ngModel)]="phoneNumber"
                 />
+                <p
+                  *ngIf="clientPhoneValidationMessage"
+                  id="clientPhoneValidation"
+                  class="text-sm font-semibold text-red-600"
+                >
+                  {{ clientPhoneValidationMessage }}
+                </p>
               </label>
 
               <label class="space-y-2 sm:col-span-2">

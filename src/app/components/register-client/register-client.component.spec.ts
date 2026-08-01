@@ -318,6 +318,64 @@ describe('RegisterClientComponent', () => {
     expect(normalizedText()).toContain('1/3');
   });
 
+  it('shows the missing digit count and blocks verification SMS until the client phone has 10 digits', () => {
+    const functions = TestBed.inject(AngularFireFunctions);
+    const callableSpy = functions.httpsCallable as jasmine.Spy;
+    const alertSpy = spyOn(window, 'alert');
+
+    setInput('#phone', '090745188');
+
+    expect(component.isClientPhoneNumberValid()).toBeFalse();
+    expect(normalizedText()).toContain(
+      'Il manque 1 chiffre. Entrez exactement 10 chiffres.'
+    );
+
+    component.sendMyVerificationCode();
+
+    expect(callableSpy).not.toHaveBeenCalled();
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Le numéro de téléphone du client doit contenir exactement 10 chiffres.'
+    );
+
+    setInput('#phone', '0907451880');
+
+    expect(component.isClientPhoneNumberValid()).toBeTrue();
+    expect(normalizedText()).not.toContain('Il manque');
+  });
+
+  it('blocks final registration when the client phone does not have 10 digits', () => {
+    populateValidSubmissionFields('50 000');
+    component.phoneNumber = '090745188';
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.addNewClient();
+
+    expect(proceedSpy).not.toHaveBeenCalled();
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Le numéro de téléphone du client doit contenir exactement 10 chiffres.'
+    );
+  });
+
+  it('keeps the existing duplicate phone check for a valid 10-digit number', () => {
+    const functions = TestBed.inject(AngularFireFunctions);
+    const callableSpy = functions.httpsCallable as jasmine.Spy;
+    const alertSpy = spyOn(window, 'alert');
+    component.phoneNumber = '0812345678';
+    component.allClients = [
+      Object.assign(new Client(), existingClient, {
+        phoneNumber: '0812345678',
+      }),
+    ];
+
+    component.sendMyVerificationCode();
+
+    expect(callableSpy).not.toHaveBeenCalled();
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Ce numéro de téléphone est déjà utilisé par un autre client. Veuillez utiliser un autre numéro de téléphone.'
+    );
+  });
+
   it('blocks submission when the requested loan amount is less than 50 000 FC', () => {
     populateValidSubmissionFields('40 000');
     const alertSpy = spyOn(window, 'alert');

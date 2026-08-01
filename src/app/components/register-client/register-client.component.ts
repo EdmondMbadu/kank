@@ -51,6 +51,28 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
 
   phonePattern = /^[0-9]{10}$/;
 
+  isClientPhoneNumberValid(): boolean {
+    return this.phonePattern.test((this.phoneNumber || '').trim());
+  }
+
+  get clientPhoneValidationMessage(): string {
+    const phoneNumber = (this.phoneNumber || '').trim();
+
+    if (!phoneNumber || this.isClientPhoneNumberValid()) return '';
+    if (!/^\d+$/.test(phoneNumber)) {
+      return 'Entrez uniquement des chiffres (10 chiffres requis).';
+    }
+
+    const missingDigits = 10 - phoneNumber.length;
+    if (missingDigits > 0) {
+      return `Il manque ${missingDigits} chiffre${
+        missingDigits > 1 ? 's' : ''
+      }. Entrez exactement 10 chiffres.`;
+    }
+
+    return 'Entrez exactement 10 chiffres.';
+  }
+
   canAddRef(): boolean {
     return (
       this.newReferenceName?.trim().length > 1 &&
@@ -254,6 +276,13 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
         `⚠️ Veuillez compléter les champs suivants :\n\n- ${missingFields.join(
           '\n- '
         )}`
+      );
+      return;
+    }
+
+    if (!this.isClientPhoneNumberValid()) {
+      alert(
+        'Le numéro de téléphone du client doit contenir exactement 10 chiffres.'
       );
       return;
     }
@@ -816,6 +845,13 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
   sendMyVerificationCode() {
     const phoneNumber = this.phoneNumber;
     const name = `${this.firstName} ${this.middleName} ${this.lastName}`;
+
+    if (!this.isClientPhoneNumberValid()) {
+      alert(
+        'Le numéro de téléphone du client doit contenir exactement 10 chiffres.'
+      );
+      return;
+    }
 
     if (this.allClients.some((cl) => cl.phoneNumber === phoneNumber)) {
       alert(
