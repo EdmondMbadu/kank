@@ -91,6 +91,57 @@ describe('TeamRankingMonthComponent', () => {
     expect(createComponent().component).toBeTruthy();
   });
 
+  it('includes former and vacationing employees only in the trophy history map', () => {
+    const { component } = createComponent();
+    const activeEmployee = {
+      uid: 'active',
+      firstName: 'Active',
+      lastName: 'Employee',
+      status: 'Travaille',
+      bestEmployeeTrophies: [{ month: '1', year: '2026' }],
+    } as any;
+    const formerEmployee = {
+      uid: 'former',
+      firstName: 'Former',
+      lastName: 'Employee',
+      status: 'Ne travaille plus',
+      bestTeamTrophies: [{ month: '2', year: '2025' }],
+    } as any;
+    const vacationingEmployee = {
+      uid: 'vacation',
+      firstName: 'Vacation',
+      lastName: 'Employee',
+      status: 'Vacances',
+      bestEmployeeTrophies: [{ month: '3', year: '2024' }],
+    } as any;
+    const formerDuplicateOfActive = {
+      uid: 'active-old-record',
+      firstName: 'Active',
+      lastName: 'Employee',
+      status: 'Ne travaille plus',
+      bestEmployeeTrophies: [{ month: '1', year: '2026' }],
+      bestTeamTrophies: [{ month: '4', year: '2025' }],
+    } as any;
+
+    component.allEmployees = [activeEmployee];
+    component.allEmployeesAll = [
+      formerDuplicateOfActive,
+      activeEmployee,
+      formerEmployee,
+      vacationingEmployee,
+    ];
+
+    expect(
+      component.trophyHeatmapTiles.map((tile) => tile.employee.uid)
+    ).toEqual(jasmine.arrayWithExactContents(['active', 'former', 'vacation']));
+    expect(component.trophyHeatmapStats.employeesWithTrophies).toBe(3);
+    expect(component.allEmployees).toEqual([activeEmployee]);
+    const activeTile = component.trophyHeatmapTiles.find(
+      (tile) => tile.employee.uid === 'active'
+    );
+    expect(activeTile?.total).toBe(2);
+  });
+
   it('keeps the visible objective but calculates payroll from the internal threshold', () => {
     const { component, compute } = createComponent();
     component.givenMonth = 6;

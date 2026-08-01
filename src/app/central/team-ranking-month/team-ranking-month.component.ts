@@ -43,6 +43,7 @@ import {
   computeMonthlyPayrollPayment,
   usesAttendanceOnlyPayroll,
 } from 'src/app/utils/monthly-payroll.util';
+import { dedupeTrophyHistoryEmployees } from 'src/app/utils/trophy-history-employees.util';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -6711,22 +6712,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const source = this.allEmployeesAll?.length
       ? this.allEmployeesAll
       : this.allEmployees || [];
-    const seen = new Set<string>();
-    return source.filter((employee) => {
-      if (!this.isTrophyHeatmapWorkingEmployee(employee)) return false;
-      const key =
-        employee.uid ||
-        `${employee.firstName || ''}|${employee.lastName || ''}|${
-          employee.trackingId || ''
-        }`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
-
-  private isTrophyHeatmapWorkingEmployee(employee: Employee): boolean {
-    return (employee?.status || '').toLowerCase().trim() === 'travaille';
+    return dedupeTrophyHistoryEmployees(source);
   }
 
   employeePhotoUrl(employee?: Employee | null): string {

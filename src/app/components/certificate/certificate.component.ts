@@ -8,6 +8,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { combineLatest, Subscription } from 'rxjs';
+import { dedupeTrophyHistoryEmployees } from 'src/app/utils/trophy-history-employees.util';
 
 type TrophyModalType = 'team' | 'employee' | 'all';
 type TrophyModalEntry = {
@@ -546,22 +547,7 @@ export class CertificateComponent implements OnInit, OnDestroy {
   }
 
   private trophyHeatmapSourceEmployees(): Employee[] {
-    const seen = new Set<string>();
-    return (this.allEmployeesAll || []).filter((employee) => {
-      if (!this.isTrophyHeatmapWorkingEmployee(employee)) return false;
-      const key =
-        employee.uid ||
-        `${employee.firstName || ''}|${employee.lastName || ''}|${
-          employee.trackingId || ''
-        }`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
-
-  private isTrophyHeatmapWorkingEmployee(employee: Employee): boolean {
-    return (employee?.status || '').toLowerCase().trim() === 'travaille';
+    return dedupeTrophyHistoryEmployees(this.allEmployeesAll || []);
   }
 
   private buildTrophyHeatmapTiles(employees: Employee[]): TrophyHeatmapTile[] {
