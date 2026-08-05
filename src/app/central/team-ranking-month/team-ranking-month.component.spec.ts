@@ -91,6 +91,135 @@ describe('TeamRankingMonthComponent', () => {
     expect(createComponent().component).toBeTruthy();
   });
 
+  it('does not load the amount performance metric for non-admin users', async () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = false;
+    const loadSpy = spyOn<any>(
+      component as any,
+      'loadAmountPerformancePreview'
+    );
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.performanceMetricMode).toBe('legacy');
+    expect(loadSpy).not.toHaveBeenCalled();
+  });
+
+  it('computes and caches the global amount performance from all sites', async () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+
+    const siteA = {
+      uid: 'site-a',
+      dailyReimbursement: {
+        '7-1-2026': '300',
+        '7-2-2026': '200',
+      },
+    } as any;
+    const siteB = {
+      uid: 'site-b',
+      dailyReimbursement: { '7-1-2026': '100' },
+    } as any;
+    component.allUsers = [siteA, siteB];
+    component.allEmployeesAll = [
+      { uid: 'employee-a', tempUser: siteA },
+      { uid: 'employee-b', tempUser: siteB },
+    ] as any;
+
+    const fetchSpy = spyOn<any>(
+      component as any,
+      'fetchEmployeeAmountRecordsForMonth'
+    ).and.callFake((_ownerUid: string, employeeUid: string) =>
+      Promise.resolve(
+        employeeUid === 'employee-a'
+          ? [
+              {
+                dayKey: '7-1-2026',
+                expected: 400,
+                total: 300,
+                expectedPresent: true,
+                totalPresent: true,
+                employeeUid,
+              },
+              {
+                dayKey: '7-2-2026',
+                expected: 300,
+                total: 200,
+                expectedPresent: true,
+                totalPresent: true,
+                employeeUid,
+              },
+            ]
+          : [
+              {
+                dayKey: '7-1-2026',
+                expected: 200,
+                total: 100,
+                expectedPresent: true,
+                totalPresent: true,
+                employeeUid,
+              },
+            ]
+      )
+    );
+
+    await component.setPerformanceMetricMode('amount');
+    await component.setPerformanceMetricMode('amount');
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(component.amountPerformanceSummary).toEqual(
+      jasmine.objectContaining({
+        collectedFc: 600,
+        expectedFc: 900,
+        percent: 66.66666666666666,
+        reconciliationDifferenceFc: 0,
+        status: 'ready',
+      })
+    );
+    expect(component.currentPerformancePercent).toBeCloseTo(66.67, 2);
+  });
+
+  it('uses site totals as the global numerator and exposes reconciliation gaps', async () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    const site = {
+      uid: 'site-a',
+      dailyReimbursement: { '7-1-2026': '600' },
+    } as any;
+    component.allUsers = [site];
+    component.allEmployeesAll = [
+      { uid: 'employee-a', tempUser: site },
+    ] as any;
+    spyOn<any>(
+      component as any,
+      'fetchEmployeeAmountRecordsForMonth'
+    ).and.resolveTo([
+      {
+        dayKey: '7-1-2026',
+        expected: 900,
+        total: 550,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'employee-a',
+      },
+    ]);
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.amountPerformanceSummary).toEqual(
+      jasmine.objectContaining({
+        collectedFc: 600,
+        expectedFc: 900,
+        reconciliationDifferenceFc: 50,
+        status: 'partial',
+      })
+    );
+  });
+
   it('includes former and vacationing employees only in the trophy history map', () => {
     const { component } = createComponent();
     const activeEmployee = {

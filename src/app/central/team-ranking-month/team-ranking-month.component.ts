@@ -44,6 +44,12 @@ import {
   usesAttendanceOnlyPayroll,
 } from 'src/app/utils/monthly-payroll.util';
 import { dedupeTrophyHistoryEmployees } from 'src/app/utils/trophy-history-employees.util';
+import {
+  AmountPerformanceDayRecord,
+  AmountPerformanceSummary,
+  buildAmountPerformanceSummary,
+  sumAmountMapThroughDate,
+} from 'src/app/utils/amount-performance.util';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -289,6 +295,7 @@ type TrophyHeatmapRect = {
   width: number;
   height: number;
 };
+type PerformanceMetricMode = 'legacy' | 'amount';
 
 @Component({
   selector: 'app-team-ranking-month',
@@ -528,6 +535,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
   isCopyingMonthlyRanking = false;
   copyMonthlyRankingMessage: string | null = null;
   performanceEmployees: Employee[] = [];
+  performanceMetricMode: PerformanceMetricMode = 'legacy';
+  amountPerformanceSummary: AmountPerformanceSummary | null = null;
+  amountPerformanceLoading = false;
+  amountPerformanceError = '';
+  private amountPerformanceLoadedKey = '';
+  private amountPerformanceLoadingKey = '';
+  private amountPerformanceRequestId = 0;
 
   // state: all closed initially
   collapse: Record<'payroll' | 'loyer', boolean> = {
@@ -4540,6 +4554,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   totalHouse: string = '0';
   allUsers: User[] = [];
   ngOnInit(): void {
+    this.resetAmountPerformancePreview();
     if (this.auth.isInvestigator) {
       this.rankingMode = 'performance';
     }
@@ -4934,8 +4949,243 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   // clamp + parse the avg string you already compute
   get avgPerf(): number {
+    if (this.isAmountPerformanceMode) {
+      return this.amountPerformanceSummary?.visualPercent ?? 0;
+    }
     const n = parseFloat(this.averagePerformancePercentage || '0');
     return Math.min(100, Math.max(0, isNaN(n) ? 0 : n));
+  }
+
+  get currentPerformancePercent(): number | null {
+    if (this.isAmountPerformanceMode) {
+      return this.amountPerformanceSummary?.percent ?? null;
+    }
+    const value = Number(this.averagePerformancePercentage);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  get isAmountPerformanceMode(): boolean {
+    return this.performanceMetricMode === 'amount';
+  }
+
+  get amountPerformanceThroughLabel(): string {
+    const date = this.amountPerformanceSummary?.throughDate;
+    if (!date) return '';
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Africa/Kinshasa',
+    }).format(date);
+  }
+
+  get amountPerformanceStatusLabel(): string {
+    const status = this.amountPerformanceSummary?.status;
+    if (status === 'ready') return 'Données disponibles';
+    if (status === 'partial') return 'Données à vérifier';
+    return 'Attendu indisponible';
+  }
+
+  async setPerformanceMetricMode(mode: PerformanceMetricMode): Promise<void> {
+    if (mode === 'amount' && !this.auth.isAdmin) return;
+    this.performanceMetricMode = mode;
+    if (mode === 'amount') {
+      await this.loadAmountPerformancePreview();
+    }
+  }
+
+  async retryAmountPerformancePreview(): Promise<void> {
+    if (!this.auth.isAdmin || !this.isAmountPerformanceMode) return;
+    this.amountPerformanceLoadedKey = '';
+    await this.loadAmountPerformancePreview();
+  }
+
+  private resetAmountPerformancePreview(): void {
+    this.amountPerformanceRequestId += 1;
+    this.amountPerformanceSummary = null;
+    this.amountPerformanceLoading = false;
+    this.amountPerformanceError = '';
+    this.amountPerformanceLoadedKey = '';
+    this.amountPerformanceLoadingKey = '';
+  }
+
+  private amountPerformanceBusinessDate(): Date {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Africa/Kinshasa',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    }).formatToParts(new Date());
+    const numberFor = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(parts.find((part) => part.type === type)?.value || 0);
+    return new Date(
+      numberFor('year'),
+      numberFor('month') - 1,
+      numberFor('day')
+    );
+  }
+
+  private amountPerformanceEmployeePairs(): Array<{
+    ownerUid: string;
+    employeeUid: string;
+  }> {
+    const uniquePairs = new Map<
+      string,
+      { ownerUid: string; employeeUid: string }
+    >();
+    const employees = this.allEmployeesAll?.length
+      ? this.allEmployeesAll
+      : this.allEmployees;
+
+    for (const employee of employees || []) {
+      const ownerUid = employee?.tempUser?.uid || '';
+      const employeeUid = employee?.uid || '';
+      if (!ownerUid || !employeeUid) continue;
+      const key = `${ownerUid}|${employeeUid}`;
+      uniquePairs.set(key, { ownerUid, employeeUid });
+    }
+    return Array.from(uniquePairs.values());
+  }
+
+  private amountPerformanceCacheKey(): string {
+    const employeeKey = this.amountPerformanceEmployeePairs()
+      .map(({ ownerUid, employeeUid }) => `${ownerUid}:${employeeUid}`)
+      .sort()
+      .join(',');
+    const ownerKey = (this.allUsers || [])
+      .map((user) => user.uid || '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    return [ownerKey, employeeKey, this.givenYear, this.givenMonth].join('|');
+  }
+
+  private async fetchEmployeeAmountRecordsForMonth(
+    ownerUid: string,
+    employeeUid: string,
+    month: number,
+    year: number
+  ): Promise<AmountPerformanceDayRecord[]> {
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    const collection = this.afs.collection(
+      `users/${ownerUid}/employees/${employeeUid}/dayTotals`,
+      (ref) => ref.where('monthKey', '==', monthKey)
+    );
+    const snapshot = await firstValueFrom(collection.get());
+    const records: AmountPerformanceDayRecord[] = [];
+
+    snapshot.forEach((doc) => {
+      const data: any = doc.data() || {};
+      records.push({
+        dayKey: doc.id,
+        expected: Number(data.expected || 0),
+        total: Number(data.total ?? data.collected ?? data.paid ?? 0),
+        expectedPresent: Object.prototype.hasOwnProperty.call(
+          data,
+          'expected'
+        ),
+        totalPresent:
+          Object.prototype.hasOwnProperty.call(data, 'total') ||
+          Object.prototype.hasOwnProperty.call(data, 'collected') ||
+          Object.prototype.hasOwnProperty.call(data, 'paid'),
+        employeeUid,
+      });
+    });
+    return records;
+  }
+
+  private async loadAmountPerformancePreview(): Promise<void> {
+    if (!this.auth.isAdmin || !this.isAmountPerformanceMode) return;
+
+    const employeePairs = this.amountPerformanceEmployeePairs();
+    if (!employeePairs.length || !this.allUsers?.length) {
+      this.amountPerformanceSummary = null;
+      this.amountPerformanceError =
+        'Aucun site ou employé disponible pour ce calcul.';
+      return;
+    }
+
+    const cacheKey = this.amountPerformanceCacheKey();
+    if (
+      cacheKey === this.amountPerformanceLoadedKey &&
+      this.amountPerformanceSummary
+    ) {
+      return;
+    }
+    if (
+      this.amountPerformanceLoading &&
+      this.amountPerformanceLoadingKey === cacheKey
+    ) {
+      return;
+    }
+
+    const requestId = ++this.amountPerformanceRequestId;
+    this.amountPerformanceLoading = true;
+    this.amountPerformanceLoadingKey = cacheKey;
+    this.amountPerformanceError = '';
+
+    try {
+      const asOf = this.amountPerformanceBusinessDate();
+      const recordsByEmployee = await Promise.all(
+        employeePairs.map(({ ownerUid, employeeUid }) =>
+          this.fetchEmployeeAmountRecordsForMonth(
+            ownerUid,
+            employeeUid,
+            this.givenMonth,
+            this.givenYear
+          )
+        )
+      );
+      const records = recordsByEmployee.flat();
+      const employeeTotals = buildAmountPerformanceSummary({
+        records,
+        month: this.givenMonth,
+        year: this.givenYear,
+        asOf,
+      });
+      const collectedFc = (this.allUsers || []).reduce(
+        (sum, user) =>
+          sum +
+          sumAmountMapThroughDate(
+            user.dailyReimbursement,
+            this.givenMonth,
+            this.givenYear,
+            asOf
+          ),
+        0
+      );
+      const reconciliationDifferenceFc = Math.abs(
+        collectedFc - employeeTotals.collectedFc
+      );
+
+      const summary = buildAmountPerformanceSummary({
+        records,
+        month: this.givenMonth,
+        year: this.givenYear,
+        asOf,
+        collectedOverrideFc: collectedFc,
+        reconciliationDifferenceFc,
+      });
+      if (
+        requestId !== this.amountPerformanceRequestId ||
+        cacheKey !== this.amountPerformanceCacheKey()
+      ) {
+        return;
+      }
+      this.amountPerformanceSummary = summary;
+      this.amountPerformanceLoadedKey = cacheKey;
+    } catch (error) {
+      if (requestId !== this.amountPerformanceRequestId) return;
+      console.error('Failed to load global amount performance:', error);
+      this.amountPerformanceSummary = null;
+      this.amountPerformanceError =
+        'Impossible de calculer la performance actuelle globale.';
+    } finally {
+      if (requestId === this.amountPerformanceRequestId) {
+        this.amountPerformanceLoading = false;
+        this.amountPerformanceLoadingKey = '';
+      }
+    }
   }
 
   // stroke offset for the arc
@@ -8168,6 +8418,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
 
     this.setGraphics();
+
+    if (this.auth.isAdmin && this.isAmountPerformanceMode) {
+      void this.loadAmountPerformancePreview();
+    }
 
     this.recomputePayrollRowsForAdmin();
   }

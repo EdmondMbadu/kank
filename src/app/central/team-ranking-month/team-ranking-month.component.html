@@ -28,6 +28,22 @@
       <div class="flex flex-col">
         <!-- PERFORMANCE RING (replaces the plotly-plot block) -->
         <div class="w-full max-w-sm mx-auto mt-0 md:-mt-8 mb-4">
+          <div *ngIf="auth.isAdmin" class="mb-4 flex justify-center">
+            <button
+              type="button"
+              class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              [ngClass]="
+                isAmountPerformanceMode
+                  ? 'border-indigo-300 bg-indigo-600 text-white shadow-sm'
+                  : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'
+              "
+              [attr.aria-pressed]="isAmountPerformanceMode"
+              (click)="setPerformanceMetricMode(isAmountPerformanceMode ? 'legacy' : 'amount')"
+            >
+              {{ isAmountPerformanceMode ? "Performance habituelle" : "Performance actuelle" }}
+            </button>
+          </div>
+
           <div class="relative flex items-center justify-center">
             <svg
               [attr.width]="size"
@@ -109,10 +125,14 @@
               class="absolute inset-0 flex flex-col items-center justify-center"
             >
               <div class="text-4xl font-extrabold text-gray-900">
-                {{ avgPerf | number : "1.0-0" }}%
+                <ng-container *ngIf="!amountPerformanceLoading; else globalPerformanceLoading">
+                  <ng-container *ngIf="currentPerformancePercent !== null; else globalPerformanceUnavailable">
+                    {{ currentPerformancePercent | number : "1.0-1" }}%
+                  </ng-container>
+                </ng-container>
               </div>
               <div class="text-xs uppercase tracking-wide text-gray-500">
-                Performance Moyenne
+                {{ isAmountPerformanceMode ? "Performance actuelle globale" : "Performance moyenne" }}
               </div>
             </div>
 
@@ -124,7 +144,111 @@
                 class="inline-block h-2.5 w-2.5 rounded-full"
                 [ngStyle]="{ background: colorForPerf(avgPerf) }"
               ></span>
-              <span class="text-gray-500">aujourd’hui</span>
+              <span class="text-gray-500">
+                {{
+                  isAmountPerformanceMode
+                    ? "montants à ce jour"
+                    : auth.isAdmin
+                    ? "performance habituelle"
+                    : "aujourd’hui"
+                }}
+              </span>
+            </div>
+          </div>
+
+          <ng-template #globalPerformanceLoading>…</ng-template>
+          <ng-template #globalPerformanceUnavailable>—</ng-template>
+
+          <div
+            *ngIf="isAmountPerformanceMode"
+            class="mt-7 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4"
+          >
+            <div
+              *ngIf="amountPerformanceLoading"
+              class="text-center text-sm font-medium text-indigo-700"
+            >
+              Calcul des montants globaux en cours…
+            </div>
+
+            <div
+              *ngIf="!amountPerformanceLoading && amountPerformanceSummary as amountSummary"
+              class="space-y-3"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div class="text-sm font-semibold text-slate-900">
+                    Total de tous les sites
+                  </div>
+                  <div class="text-xs text-slate-500">
+                    Du 1er au {{ amountPerformanceThroughLabel }}
+                  </div>
+                </div>
+                <span
+                  class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                  [ngClass]="{
+                    'bg-emerald-100 text-emerald-800': amountSummary.status === 'ready',
+                    'bg-amber-100 text-amber-800': amountSummary.status === 'partial',
+                    'bg-slate-200 text-slate-700': amountSummary.status === 'unavailable'
+                  }"
+                >
+                  {{ amountPerformanceStatusLabel }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div class="rounded-xl bg-white/90 p-3 ring-1 ring-emerald-100">
+                  <div class="text-[11px] uppercase tracking-wide text-slate-500">
+                    Collecté à ce jour
+                  </div>
+                  <div class="mt-1 text-lg font-bold text-emerald-700">
+                    {{ amountSummary.collectedFc | number : "1.0-0" }} FC
+                  </div>
+                </div>
+                <div class="rounded-xl bg-white/90 p-3 ring-1 ring-indigo-100">
+                  <div class="text-[11px] uppercase tracking-wide text-slate-500">
+                    Attendu à ce jour
+                  </div>
+                  <div class="mt-1 text-lg font-bold text-indigo-700">
+                    {{ amountSummary.expectedFc | number : "1.0-0" }} FC
+                  </div>
+                </div>
+              </div>
+
+              <div
+                *ngIf="amountSummary.status === 'partial'"
+                class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
+              >
+                <div *ngIf="amountSummary.missingExpectedOnPaidRecordCount > 0">
+                  {{ amountSummary.missingExpectedOnPaidRecordCount }} paiement(s) journalier(s) sans attendu enregistré.
+                </div>
+                <div *ngIf="amountSummary.reconciliationDifferenceFc > 0">
+                  Écart sites/employés :
+                  {{ amountSummary.reconciliationDifferenceFc | number : "1.0-0" }} FC.
+                </div>
+              </div>
+
+              <div
+                *ngIf="amountSummary.status === 'unavailable'"
+                class="text-xs text-slate-600"
+              >
+                Aucun attendu fiable n’est enregistré pour cette période; aucun pourcentage n’est inventé.
+              </div>
+            </div>
+
+            <div
+              *ngIf="!amountPerformanceLoading && amountPerformanceError"
+              class="text-center"
+            >
+              <div class="text-sm font-medium text-rose-700">
+                {{ amountPerformanceError }}
+              </div>
+              <button
+                type="button"
+                class="mt-2 rounded-full border border-rose-300 bg-white px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                (click)="retryAmountPerformancePreview()"
+              >
+                Réessayer
+              </button>
             </div>
           </div>
         </div>
