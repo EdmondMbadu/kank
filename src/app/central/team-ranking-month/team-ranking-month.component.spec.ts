@@ -220,6 +220,74 @@ describe('TeamRankingMonthComponent', () => {
     );
   });
 
+  it('switches every employee row to amount performance and keeps managers site-scoped', async () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    const site = {
+      uid: 'site-a',
+      dailyReimbursement: { '7-1-2026': '400' },
+    } as any;
+    const manager = {
+      uid: 'manager-a',
+      role: 'Manager',
+      performancePercentageMonth: '90',
+      tempUser: site,
+    } as any;
+    const employee = {
+      uid: 'employee-a',
+      role: 'Agent Marketing',
+      performancePercentageMonth: '20',
+      tempUser: site,
+    } as any;
+    component.allUsers = [site];
+    component.allEmployees = [manager, employee];
+    component.allEmployeesAll = [manager, employee];
+    spyOn<any>(
+      component as any,
+      'fetchEmployeeAmountRecordsForMonth'
+    ).and.callFake((_ownerUid: string, employeeUid: string) =>
+      Promise.resolve([
+        employeeUid === 'manager-a'
+          ? {
+              dayKey: '7-1-2026',
+              expected: 200,
+              total: 100,
+              expectedPresent: true,
+              totalPresent: true,
+              employeeUid,
+            }
+          : {
+              dayKey: '7-1-2026',
+              expected: 400,
+              total: 300,
+              expectedPresent: true,
+              totalPresent: true,
+              employeeUid,
+            },
+      ])
+    );
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.employeePerformancePercent(employee)).toBe(75);
+    expect(component.employeePerformancePercent(manager)).toBeCloseTo(
+      66.67,
+      2
+    );
+    expect(component.employeeAmountPerformanceScopeLabel(employee)).toBe(
+      'Individuel'
+    );
+    expect(component.employeeAmountPerformanceScopeLabel(manager)).toBe(
+      'Total du site'
+    );
+    expect(component.performanceEmployees.map((item) => item.uid)).toEqual([
+      'employee-a',
+      'manager-a',
+    ]);
+  });
+
   it('includes former and vacationing employees only in the trophy history map', () => {
     const { component } = createComponent();
     const activeEmployee = {

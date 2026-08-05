@@ -539,6 +539,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   amountPerformanceSummary: AmountPerformanceSummary | null = null;
   amountPerformanceLoading = false;
   amountPerformanceError = '';
+  private amountPerformanceByEmployee: Record<
+    string,
+    AmountPerformanceSummary
+  > = {};
   private amountPerformanceLoadedKey = '';
   private amountPerformanceLoadingKey = '';
   private amountPerformanceRequestId = 0;
@@ -4968,6 +4972,36 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.performanceMetricMode === 'amount';
   }
 
+  employeeAmountPerformanceSummary(
+    employee: Employee
+  ): AmountPerformanceSummary | null {
+    return this.amountPerformanceByEmployee[
+      this.amountPerformanceEmployeeKey(employee)
+    ] || null;
+  }
+
+  employeePerformancePercent(employee: Employee): number | null {
+    if (this.isAmountPerformanceMode) {
+      return this.employeeAmountPerformanceSummary(employee)?.percent ?? null;
+    }
+    const value = Number(employee.performancePercentageMonth);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  employeePerformanceVisualPercent(employee: Employee): number {
+    if (this.isAmountPerformanceMode) {
+      return (
+        this.employeeAmountPerformanceSummary(employee)?.visualPercent ?? 0
+      );
+    }
+    const value = this.employeePerformancePercent(employee);
+    return value === null ? 0 : Math.max(0, Math.min(100, value));
+  }
+
+  employeeAmountPerformanceScopeLabel(employee: Employee): string {
+    return this.isManagerEmployee(employee) ? 'Total du site' : 'Individuel';
+  }
+
   get amountPerformanceThroughLabel(): string {
     const date = this.amountPerformanceSummary?.throughDate;
     if (!date) return '';
@@ -4992,6 +5026,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (mode === 'amount') {
       await this.loadAmountPerformancePreview();
     }
+    this.sortEmployeesByPerformance();
   }
 
   async retryAmountPerformancePreview(): Promise<void> {
@@ -5003,6 +5038,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private resetAmountPerformancePreview(): void {
     this.amountPerformanceRequestId += 1;
     this.amountPerformanceSummary = null;
+    this.amountPerformanceByEmployee = {};
     this.amountPerformanceLoading = false;
     this.amountPerformanceError = '';
     this.amountPerformanceLoadedKey = '';
@@ -5045,6 +5081,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
       uniquePairs.set(key, { ownerUid, employeeUid });
     }
     return Array.from(uniquePairs.values());
+  }
+
+  private amountPerformanceEmployeeKey(employee: Employee): string {
+    return `${employee?.tempUser?.uid || ''}|${employee?.uid || ''}`;
+  }
+
+  private isManagerEmployee(employee: Employee): boolean {
+    return String(employee?.role || '').trim().toLowerCase() === 'manager';
   }
 
   private amountPerformanceCacheKey(): string {
@@ -5137,6 +5181,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
         )
       );
       const records = recordsByEmployee.flat();
+      const recordsByEmployeeKey = new Map<string, AmountPerformanceDayRecord[]>();
+      const recordsByOwner = new Map<string, AmountPerformanceDayRecord[]>();
+      employeePairs.forEach((pair, index) => {
+        const pairKey = `${pair.ownerUid}|${pair.employeeUid}`;
+        const employeeRecords = recordsByEmployee[index] || [];
+        recordsByEmployeeKey.set(pairKey, employeeRecords);
+        recordsByOwner.set(pair.ownerUid, [
+          ...(recordsByOwner.get(pair.ownerUid) || []),
+          ...employeeRecords,
+        ]);
+      });
       const employeeTotals = buildAmountPerformanceSummary({
         records,
         month: this.givenMonth,
@@ -5166,6 +5221,56 @@ export class TeamRankingMonthComponent implements OnDestroy {
         collectedOverrideFc: collectedFc,
         reconciliationDifferenceFc,
       });
+      const usersByUid = new Map(
+        (this.allUsers || [])
+          .filter((user) => !!user?.uid)
+          .map((user) => [user.uid as string, user] as const)
+      );
+      const siteSummaries = new Map<string, AmountPerformanceSummary>();
+      for (const [ownerUid, ownerRecords] of recordsByOwner.entries()) {
+        const owner = usersByUid.get(ownerUid);
+        const ownerEmployeeTotals = buildAmountPerformanceSummary({
+          records: ownerRecords,
+          month: this.givenMonth,
+          year: this.givenYear,
+          asOf,
+        });
+        const ownerCollectedFc = sumAmountMapThroughDate(
+          owner?.dailyReimbursement,
+          this.givenMonth,
+          this.givenYear,
+          asOf
+        );
+        siteSummaries.set(
+          ownerUid,
+          buildAmountPerformanceSummary({
+            records: ownerRecords,
+            month: this.givenMonth,
+            year: this.givenYear,
+            asOf,
+            collectedOverrideFc: ownerCollectedFc,
+            reconciliationDifferenceFc: Math.abs(
+              ownerCollectedFc - ownerEmployeeTotals.collectedFc
+            ),
+          })
+        );
+      }
+      const employeeSummaries: Record<string, AmountPerformanceSummary> = {};
+      for (const employee of this.allEmployees || []) {
+        const employeeKey = this.amountPerformanceEmployeeKey(employee);
+        const ownerUid = employee?.tempUser?.uid || '';
+        const employeeSummary = this.isManagerEmployee(employee)
+          ? siteSummaries.get(ownerUid)
+          : buildAmountPerformanceSummary({
+              records: recordsByEmployeeKey.get(employeeKey) || [],
+              month: this.givenMonth,
+              year: this.givenYear,
+              asOf,
+            });
+        if (employeeSummary) {
+          employeeSummaries[employeeKey] = employeeSummary;
+        }
+      }
       if (
         requestId !== this.amountPerformanceRequestId ||
         cacheKey !== this.amountPerformanceCacheKey()
@@ -5173,7 +5278,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
         return;
       }
       this.amountPerformanceSummary = summary;
+      this.amountPerformanceByEmployee = employeeSummaries;
       this.amountPerformanceLoadedKey = cacheKey;
+      this.sortEmployeesByPerformance();
     } catch (error) {
       if (requestId !== this.amountPerformanceRequestId) return;
       console.error('Failed to load global amount performance:', error);
@@ -6410,10 +6517,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
 
     this.allEmployees.sort((a, b) => {
-      const aVal = parseFloat(a.performancePercentageMonth ?? '0');
-      const bVal = parseFloat(b.performancePercentageMonth ?? '0');
-      const aPerf = isNaN(aVal) ? -Infinity : aVal; // NaN goes last
-      const bPerf = isNaN(bVal) ? -Infinity : bVal;
+      const aVal = this.employeePerformancePercent(a);
+      const bVal = this.employeePerformancePercent(b);
+      const aPerf = aVal === null ? -Infinity : aVal;
+      const bPerf = bVal === null ? -Infinity : bVal;
       return bPerf - aPerf;
     });
 
@@ -6423,8 +6530,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.performanceFallbackReason = '';
 
     for (const employee of this.allEmployees) {
-      const v = parseFloat(employee.performancePercentageMonth ?? '0');
-      if (!isNaN(v) && v > 0) valid.push(employee);
+      const value = this.employeePerformancePercent(employee);
+      if (value !== null && value > 0) valid.push(employee);
       else excluded.push(employee);
     }
 
@@ -6448,7 +6555,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
         this.performanceEmployees = excluded;
         this.performanceFallbackActive = true;
         this.performanceFallbackReason =
-          "Aucun pourcentage n'a pu être calculé pour ce mois. Tous les employés sont affichés avec des valeurs brutes.";
+          this.isAmountPerformanceMode
+            ? "Aucun attendu fiable n'a pu être calculé pour ce mois. Tous les employés sont affichés."
+            : "Aucun pourcentage n'a pu être calculé pour ce mois. Tous les employés sont affichés avec des valeurs brutes.";
         this.logDebug('Performance fallback triggered', {
           reason: 'No valid percentages',
           excludedCount: excluded.length,

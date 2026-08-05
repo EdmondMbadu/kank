@@ -1683,12 +1683,16 @@
             Classement Performance Du Mois —
             <span
               class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
-              >Pourcentage</span
+              >{{ isAmountPerformanceMode ? "Montants à ce jour" : "Pourcentage" }}</span
             >
           </h3>
         </div>
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Somme des paiements inscrits par employé
+          {{
+            isAmountPerformanceMode
+              ? "Collecté ÷ attendu pour chaque employé jusqu’à la date courante"
+              : "Somme des paiements inscrits par employé"
+          }}
         </p>
       </div>
       <!-- Admin-only toggle to include excluded employees -->
@@ -1741,7 +1745,7 @@
             alt="Employee Avatar"
             class="h-14 w-14 rounded-full object-cover border-2 cursor-pointer"
             [ngStyle]="{
-              borderColor: colorForPerf(em.performancePercentageMonth)
+              borderColor: colorForPerf(employeePerformanceVisualPercent(em))
             }"
             (click)="openEmployeeModal(em)"
           />
@@ -1749,7 +1753,7 @@
             <div
               class="h-14 w-14 rounded-full flex items-center justify-center text-white font-bold border-2 cursor-pointer"
               [ngStyle]="{
-                borderColor: colorForPerf(em.performancePercentageMonth),
+                borderColor: colorForPerf(employeePerformanceVisualPercent(em)),
                 background: '#94a3b8'
               }"
               (click)="openEmployeeModal(em)"
@@ -2035,9 +2039,21 @@
             <!-- Performance % -->
             <div *ngIf="auth.isAdmin" class="text-right shrink-0">
               <div class="text-sm font-bold">
-                {{ toNum(em.performancePercentageMonth) }}%
+                <ng-container *ngIf="employeePerformancePercent(em) !== null; else employeePerformanceUnavailable">
+                  {{ employeePerformancePercent(em) | number : "1.0-1" }}%
+                </ng-container>
+                <ng-template #employeePerformanceUnavailable>—</ng-template>
               </div>
-              <div class="text-[10px] text-gray-500">Performance</div>
+              <div class="text-[10px] text-gray-500">
+                {{ isAmountPerformanceMode ? employeeAmountPerformanceScopeLabel(em) : "Performance" }}
+              </div>
+              <div
+                *ngIf="isAmountPerformanceMode && employeeAmountPerformanceSummary(em) as employeeAmountSummary"
+                class="mt-0.5 whitespace-nowrap text-[10px] text-slate-500"
+              >
+                {{ employeeAmountSummary.collectedFc | number : "1.0-0" }} /
+                {{ employeeAmountSummary.expectedFc | number : "1.0-0" }} FC
+              </div>
             </div>
           </div>
 
@@ -2046,10 +2062,10 @@
             <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
               <div
                 class="h-full rounded-full transition-all"
-                [style.width.%]="toNum(em.performancePercentageMonth)"
+                [style.width.%]="employeePerformanceVisualPercent(em)"
                 [ngStyle]="{
                   background: getBackgroundColor(
-                    em.performancePercentageMonth || '0'
+                    employeePerformanceVisualPercent(em).toString()
                   )
                 }"
               ></div>
