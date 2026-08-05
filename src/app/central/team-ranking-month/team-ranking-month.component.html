@@ -138,7 +138,7 @@
               <div
                 class="mt-2 max-w-[150px] text-[10px] font-semibold uppercase leading-tight tracking-[0.08em] text-gray-500"
               >
-                {{ isAmountPerformanceMode ? "Performance actuelle globale" : "Performance moyenne" }}
+                {{ showAmountPerformanceDiagnostics ? "Performance actuelle globale" : "Performance moyenne" }}
               </div>
             </div>
 
@@ -152,7 +152,7 @@
               ></span>
               <span class="text-gray-500">
                 {{
-                  isAmountPerformanceMode
+                  showAmountPerformanceDiagnostics
                     ? "montants à ce jour"
                     : auth.isAdmin
                     ? "performance habituelle"
@@ -166,7 +166,7 @@
           <ng-template #globalPerformanceUnavailable>—</ng-template>
 
           <div
-            *ngIf="isAmountPerformanceMode"
+            *ngIf="showAmountPerformanceDiagnostics"
             class="mt-7 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4"
           >
             <div
@@ -1695,13 +1695,13 @@
             Classement Performance Du Mois —
             <span
               class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
-              >{{ isAmountPerformanceMode ? "Montants à ce jour" : "Pourcentage" }}</span
+              >{{ showAmountPerformanceDiagnostics ? "Montants à ce jour" : "Pourcentage" }}</span
             >
           </h3>
         </div>
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
           {{
-            isAmountPerformanceMode
+            showAmountPerformanceDiagnostics
               ? "Collecté ÷ attendu pour chaque employé jusqu’à la date courante"
               : "Somme des paiements inscrits par employé"
           }}
@@ -7890,6 +7890,110 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- === EMPLOYEE PERFORMANCE METRIC SETTING === -->
+<section
+  *ngIf="auth.isAdmin"
+  class="px-4 pb-12 mx-auto max-w-5xl lg:px-6"
+>
+  <div
+    class="overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-white via-indigo-50/40 to-violet-50/70 shadow-lg shadow-indigo-100/60 dark:border-indigo-900/70 dark:from-slate-900 dark:via-indigo-950/20 dark:to-violet-950/20 dark:shadow-none"
+  >
+    <div class="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-start gap-3">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none"
+        >
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 13l2.5 2.5L16 10" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+              Performance visible aux employés
+            </h2>
+            <span
+              class="rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-200 dark:ring-indigo-800"
+            >
+              Réglage général
+            </span>
+          </div>
+          <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Publie la formule utilisée sur le classement et les pages employés.
+            Seuls les pourcentages changent&nbsp;; les montants restent réservés aux administrateurs.
+          </p>
+        </div>
+      </div>
+
+      <div class="shrink-0">
+        <div
+          class="inline-flex w-full rounded-2xl border border-slate-200 bg-white/90 p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80 sm:w-auto"
+          role="group"
+          aria-label="Performance publiée aux employés"
+        >
+          <button
+            type="button"
+            (click)="publishEmployeePerformanceMode('legacy')"
+            [disabled]="performanceMetricSettingSaving"
+            [attr.aria-pressed]="publishedEmployeePerformanceMode === 'legacy'"
+            class="flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:cursor-wait disabled:opacity-60 sm:flex-none"
+            [ngClass]="
+              publishedEmployeePerformanceMode === 'legacy'
+                ? 'bg-slate-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900'
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+            "
+          >
+            Habituelle
+          </button>
+          <button
+            type="button"
+            (click)="publishEmployeePerformanceMode('amount')"
+            [disabled]="performanceMetricSettingSaving"
+            [attr.aria-pressed]="publishedEmployeePerformanceMode === 'amount'"
+            class="flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:cursor-wait disabled:opacity-60 sm:flex-none"
+            [ngClass]="
+              publishedEmployeePerformanceMode === 'amount'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-300 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-200'
+            "
+          >
+            Actuelle
+          </button>
+        </div>
+        <div class="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+          {{
+            performanceMetricSettingSaving
+              ? "Publication en cours…"
+              : publishedEmployeePerformanceMode === "amount"
+              ? "Collecté ÷ attendu"
+              : "Formule clients habituelle"
+          }}
+        </div>
+      </div>
+    </div>
+
+    <div
+      *ngIf="performanceMetricSettingMessage"
+      class="border-t px-6 py-3 text-sm font-semibold"
+      [ngClass]="
+        performanceMetricSettingMessage.includes('Impossible')
+          ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200'
+          : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200'
+      "
+    >
+      {{ performanceMetricSettingMessage }}
     </div>
   </div>
 </section>

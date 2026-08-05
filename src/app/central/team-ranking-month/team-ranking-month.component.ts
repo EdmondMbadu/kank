@@ -15,6 +15,10 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import {
+  PerformanceMetricMode,
+  PerformanceMetricSettingsService,
+} from 'src/app/services/performance-metric-settings.service';
 import { DataService } from 'src/app/services/data.service';
 import exifr from 'exifr';
 import { firstValueFrom, Subscription } from 'rxjs';
@@ -295,7 +299,6 @@ type TrophyHeatmapRect = {
   width: number;
   height: number;
 };
-type PerformanceMetricMode = 'legacy' | 'amount';
 
 @Component({
   selector: 'app-team-ranking-month',
@@ -536,6 +539,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   copyMonthlyRankingMessage: string | null = null;
   performanceEmployees: Employee[] = [];
   performanceMetricMode: PerformanceMetricMode = 'legacy';
+  publishedEmployeePerformanceMode: PerformanceMetricMode = 'legacy';
+  performanceMetricSettingSaving = false;
+  performanceMetricSettingMessage = '';
+  private performanceMetricSettingsSub?: Subscription;
   amountPerformanceSummary: AmountPerformanceSummary | null = null;
   amountPerformanceLoading = false;
   amountPerformanceError = '';
@@ -4549,7 +4556,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     private afs: AngularFirestore,
     private fns: AngularFireFunctions,
     private storage: AngularFireStorage,
-    private moneyPolicy: MoneyAvailabilityPolicyService
+    private moneyPolicy: MoneyAvailabilityPolicyService,
+    private performanceMetricSettings: PerformanceMetricSettingsService
   ) {}
   isFetchingClients = false;
   currentEmployees: any = [];
@@ -4559,6 +4567,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   allUsers: User[] = [];
   ngOnInit(): void {
     this.resetAmountPerformancePreview();
+    this.performanceMetricSettingsSub =
+      this.performanceMetricSettings.employeeMode$.subscribe((mode) => {
+        this.applyPublishedEmployeePerformanceMode(mode);
+      });
     if (this.auth.isInvestigator) {
       this.rankingMode = 'performance';
     }
@@ -4604,6 +4616,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.employeeMergeSubs = [];
     this.moneyPolicySubs.forEach((sub) => sub.unsubscribe());
     this.moneyPolicySubs = [];
+    this.performanceMetricSettingsSub?.unsubscribe();
   }
 
   private listenToMoneyAvailabilityPolicies(): void {
@@ -4809,7 +4822,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.moneyPolicySaving = true;
     this.moneyPolicyMessage = '';
     try {
-      await this.ensureMoneyPolicyAdminWriteAccess();
+      await this.ensurePersistedAdminWriteAccess();
       const result = await this.moneyPolicy.saveGlobalRules(
         this.globalMoneyPolicyDraft,
         this.moneyPolicyActor(),
@@ -4842,7 +4855,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.moneyPolicySaving = true;
     this.moneyPolicyMessage = '';
     try {
-      await this.ensureMoneyPolicyAdminWriteAccess();
+      await this.ensurePersistedAdminWriteAccess();
       await this.moneyPolicy.saveLocationOverride(
         this.selectedMoneyPolicyLocationId,
         this.locationMoneyPolicyDraft,
@@ -4872,7 +4885,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.moneyPolicySaving = true;
     this.moneyPolicyMessage = '';
     try {
-      await this.ensureMoneyPolicyAdminWriteAccess();
+      await this.ensurePersistedAdminWriteAccess();
       await this.moneyPolicy.disableLocationOverride(
         this.selectedMoneyPolicyLocationId,
         this.moneyPolicyActor()
@@ -4925,7 +4938,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     };
   }
 
-  private async ensureMoneyPolicyAdminWriteAccess(): Promise<void> {
+  private async ensurePersistedAdminWriteAccess(): Promise<void> {
     const roles = Array.isArray(this.auth.currentUser?.roles)
       ? this.auth.currentUser.roles
       : [];
@@ -4954,7 +4967,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
   // clamp + parse the avg string you already compute
   get avgPerf(): number {
     if (this.isAmountPerformanceMode) {
-      return this.amountPerformanceSummary?.visualPercent ?? 0;
+      const amountPercent = this.amountPerformanceSummary?.percent;
+      if (amountPercent !== null && amountPercent !== undefined) {
+        return this.amountPerformanceSummary?.visualPercent ?? 0;
+      }
+      if (this.auth.isAdmin) return 0;
     }
     const n = parseFloat(this.averagePerformancePercentage || '0');
     return Math.min(100, Math.max(0, isNaN(n) ? 0 : n));
@@ -4962,14 +4979,25 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   get currentPerformancePercent(): number | null {
     if (this.isAmountPerformanceMode) {
-      return this.amountPerformanceSummary?.percent ?? null;
+      const amountPercent = this.amountPerformanceSummary?.percent;
+      if (amountPercent !== null && amountPercent !== undefined) {
+        return amountPercent;
+      }
+      if (this.auth.isAdmin) return null;
     }
     const value = Number(this.averagePerformancePercentage);
     return Number.isFinite(value) ? value : 0;
   }
 
   get isAmountPerformanceMode(): boolean {
-    return this.performanceMetricMode === 'amount';
+    const effectiveMode = this.auth.isAdmin
+      ? this.performanceMetricMode
+      : this.publishedEmployeePerformanceMode;
+    return effectiveMode === 'amount';
+  }
+
+  get showAmountPerformanceDiagnostics(): boolean {
+    return this.auth.isAdmin && this.isAmountPerformanceMode;
   }
 
   employeeAmountPerformanceSummary(
@@ -4982,7 +5010,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   employeePerformancePercent(employee: Employee): number | null {
     if (this.isAmountPerformanceMode) {
-      return this.employeeAmountPerformanceSummary(employee)?.percent ?? null;
+      const amountPercent =
+        this.employeeAmountPerformanceSummary(employee)?.percent;
+      if (amountPercent !== null && amountPercent !== undefined) {
+        return amountPercent;
+      }
+      if (this.auth.isAdmin) return null;
     }
     const value = Number(employee.performancePercentageMonth);
     return Number.isFinite(value) ? value : 0;
@@ -4990,9 +5023,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   employeePerformanceVisualPercent(employee: Employee): number {
     if (this.isAmountPerformanceMode) {
-      return (
-        this.employeeAmountPerformanceSummary(employee)?.visualPercent ?? 0
-      );
+      const amountSummary = this.employeeAmountPerformanceSummary(employee);
+      if (amountSummary?.percent !== null && amountSummary?.percent !== undefined) {
+        return amountSummary.visualPercent;
+      }
+      if (this.auth.isAdmin) return 0;
     }
     const value = this.employeePerformancePercent(employee);
     return value === null ? 0 : Math.max(0, Math.min(100, value));
@@ -5027,6 +5062,34 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return usd === '' ? 0 : usd;
   }
 
+  private applyPublishedEmployeePerformanceMode(
+    mode: PerformanceMetricMode
+  ): void {
+    this.publishedEmployeePerformanceMode = mode;
+
+    // The ranking page is also an admin preview. Start it from the published
+    // employee setting so a fresh navigation is consistent with employee pages.
+    // The admin-only preview toggle can still override this locally afterward.
+    if (this.auth.isAdmin) {
+      this.performanceMetricMode = mode;
+    }
+
+    if (this.isAmountPerformanceMode) {
+      if (this.allEmployeesAll?.length) {
+        void this.loadAmountPerformancePreview();
+      } else {
+        // Employees/sites load independently. Keep the amount view in a loading
+        // state until afterEmployeesAggregated() can launch the cached query.
+        this.amountPerformanceLoading = true;
+      }
+      return;
+    }
+
+    this.amountPerformanceLoading = false;
+    this.sortEmployeesByPerformance();
+    this.setGraphics();
+  }
+
   async setPerformanceMetricMode(mode: PerformanceMetricMode): Promise<void> {
     if (mode === 'amount' && !this.auth.isAdmin) return;
     this.performanceMetricMode = mode;
@@ -5034,6 +5097,41 @@ export class TeamRankingMonthComponent implements OnDestroy {
       await this.loadAmountPerformancePreview();
     }
     this.sortEmployeesByPerformance();
+  }
+
+  async publishEmployeePerformanceMode(
+    mode: PerformanceMetricMode
+  ): Promise<void> {
+    if (!this.auth.isAdmin || this.performanceMetricSettingSaving) return;
+
+    this.performanceMetricSettingSaving = true;
+    this.performanceMetricSettingMessage = '';
+    try {
+      await this.ensurePersistedAdminWriteAccess();
+      await this.performanceMetricSettings.updateEmployeeMode(
+        mode,
+        this.auth.currentUser?.uid
+      );
+      this.publishedEmployeePerformanceMode = mode;
+      this.performanceMetricMode = mode;
+
+      if (mode === 'amount') {
+        await this.loadAmountPerformancePreview();
+      } else {
+        this.sortEmployeesByPerformance();
+        this.setGraphics();
+      }
+      this.performanceMetricSettingMessage =
+        mode === 'amount'
+          ? 'Performance actuelle publiée aux employés.'
+          : 'Performance habituelle publiée aux employés.';
+    } catch (error) {
+      console.error('Failed to publish employee performance mode:', error);
+      this.performanceMetricSettingMessage =
+        "Impossible d'enregistrer la performance visible aux employés.";
+    } finally {
+      this.performanceMetricSettingSaving = false;
+    }
   }
 
   async retryAmountPerformancePreview(): Promise<void> {
@@ -5146,7 +5244,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private async loadAmountPerformancePreview(): Promise<void> {
-    if (!this.auth.isAdmin || !this.isAmountPerformanceMode) return;
+    if (!this.isAmountPerformanceMode) return;
 
     const employeePairs = this.amountPerformanceEmployeePairs();
     if (!employeePairs.length || !this.allUsers?.length) {
@@ -6562,7 +6660,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         this.performanceEmployees = excluded;
         this.performanceFallbackActive = true;
         this.performanceFallbackReason =
-          this.isAmountPerformanceMode
+          this.showAmountPerformanceDiagnostics
             ? "Aucun attendu fiable n'a pu être calculé pour ce mois. Tous les employés sont affichés."
             : "Aucun pourcentage n'a pu être calculé pour ce mois. Tous les employés sont affichés avec des valeurs brutes.";
         this.logDebug('Performance fallback triggered', {
@@ -8535,7 +8633,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
     this.setGraphics();
 
-    if (this.auth.isAdmin && this.isAmountPerformanceMode) {
+    if (this.isAmountPerformanceMode) {
       void this.loadAmountPerformancePreview();
     }
 

@@ -24,6 +24,10 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import {
+  PerformanceMetricMode,
+  PerformanceMetricSettingsService,
+} from 'src/app/services/performance-metric-settings.service';
 
 import { DataService } from 'src/app/services/data.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
@@ -92,7 +96,6 @@ type PickerStateOption = {
 };
 
 type PerformanceRangeKey = '3M' | '6M' | '9M' | '1A' | 'MAX';
-type PerformanceMetricMode = 'legacy' | 'amount';
 
 type PerformanceBarTrace = {
   x: string[];
@@ -264,8 +267,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
     this.viewAsMode = mode;
-    if (mode === 'employee') {
-      this.performanceMetricMode = 'legacy';
+    if (this.isAmountPerformanceMode && this.employee?.uid) {
+      void Promise.all([
+        this.loadAmountPerformancePreview(),
+        this.loadHistoricalAmountPerformance(),
+      ]).then(() =>
+        this.updatePerformanceGraphics(
+          this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+        )
+      );
     }
     this.updatePerformanceGraphics(
       this.rangeValueFromPerformanceKey(this.performanceActiveRange)
@@ -321,7 +331,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   /** dayKey "M-D-YYYY" -> frozen amount-performance inputs for that day. */
   monthlyDayTotals: Record<string, AmountPerformanceDayRecord> = {};
+  private monthlyDayTotalsLoadedKey = '';
   performanceMetricMode: PerformanceMetricMode = 'legacy';
+  publishedEmployeePerformanceMode: PerformanceMetricMode = 'legacy';
+  private performanceMetricSettingsSub?: Subscription;
   amountPerformanceSummary: AmountPerformanceSummary | null = null;
   amountPerformanceLoading = false;
   amountPerformanceError = '';
@@ -682,11 +695,42 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     public activatedRoute: ActivatedRoute,
     private storage: AngularFireStorage,
     private fns: AngularFireFunctions,
-    private afs: AngularFirestore
+    private afs: AngularFirestore,
+    private performanceMetricSettings: PerformanceMetricSettingsService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   ngOnInit(): void {
+    this.performanceMetricSettingsSub =
+      this.performanceMetricSettings.employeeMode$.subscribe((mode) => {
+        const previouslyUsingAmount = this.isAmountPerformanceMode;
+        this.publishedEmployeePerformanceMode = mode;
+        const nowUsingAmount = this.isAmountPerformanceMode;
+
+        if (nowUsingAmount && !previouslyUsingAmount && this.employee?.uid) {
+          if (!this.selectedAmountMonthRecordsReady()) {
+            this.amountPerformanceLoading = true;
+            return;
+          }
+          void Promise.all([
+            this.loadAmountPerformancePreview(),
+            this.loadHistoricalAmountPerformance(),
+          ]).then(() =>
+            this.updatePerformanceGraphics(
+              this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+            )
+          );
+          return;
+        }
+
+        if (!nowUsingAmount) {
+          this.amountPerformanceLoading = false;
+        }
+
+        this.updatePerformanceGraphics(
+          this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+        );
+      });
     this.retrieveEmployees();
     this.allUsersSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.allLocations = Array.isArray(data) ? (data as User[]) : [];
@@ -714,6 +758,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.auditLegacySub?.unsubscribe();
     this.allUsersSub?.unsubscribe();
     this.taskForcePerformanceClientsSub?.unsubscribe();
+    this.performanceMetricSettingsSub?.unsubscribe();
     this.clearTaskForceAttendanceSubscriptions();
   }
 
@@ -2649,23 +2694,34 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get currentPerformancePercent(): number | null {
-    if (this.performanceMetricMode === 'amount') {
-      return this.amountPerformanceSummary?.percent ?? null;
+    const legacyValue = Number(this.performancePercentageMonth);
+    const legacyPercent = Number.isFinite(legacyValue) ? legacyValue : 0;
+    if (this.isAmountPerformanceMode) {
+      const amountPercent = this.amountPerformanceSummary?.percent;
+      if (amountPercent !== null && amountPercent !== undefined) {
+        return amountPercent;
+      }
+      return this.isAdminUi ? null : legacyPercent;
     }
-
-    const value = Number(this.performancePercentageMonth);
-    return Number.isFinite(value) ? value : 0;
+    return legacyPercent;
   }
 
   get currentPerformanceVisualPercent(): number {
-    if (this.performanceMetricMode === 'amount') {
-      return this.amountPerformanceSummary?.visualPercent ?? 0;
+    if (this.isAmountPerformanceMode) {
+      const amountPercent = this.amountPerformanceSummary?.percent;
+      if (amountPercent !== null && amountPercent !== undefined) {
+        return this.amountPerformanceSummary?.visualPercent ?? 0;
+      }
+      return this.isAdminUi ? 0 : this.performancePercentageMonthWidth;
     }
     return this.performancePercentageMonthWidth;
   }
 
   get isAmountPerformanceMode(): boolean {
-    return this.performanceMetricMode === 'amount';
+    const effectiveMode = this.isAdminUi
+      ? this.performanceMetricMode
+      : this.publishedEmployeePerformanceMode;
+    return effectiveMode === 'amount';
   }
 
   get amountPerformanceScopeLabel(): string {
@@ -2762,18 +2818,29 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     ].join('|');
   }
 
+  private selectedAmountMonthRecordsReady(): boolean {
+    return (
+      this.monthlyDayTotalsLoadedKey ===
+      this.mmKey(this.givenYear, this.givenMonth)
+    );
+  }
+
   private currentEmployeeAmountRecords(): AmountPerformanceDayRecord[] {
     return Object.values(this.monthlyDayTotals || {});
   }
 
   private async loadAmountPerformancePreview(): Promise<void> {
-    if (!this.isAdminUi || !this.isAmountPerformanceMode) return;
+    if (!this.isAmountPerformanceMode) return;
 
     const ownerUid = this.auth.currentUser?.uid;
     const employeeUid = this.employee?.uid;
     if (!ownerUid || !employeeUid) {
       this.amountPerformanceSummary = null;
       this.amountPerformanceError = 'Employé ou site introuvable.';
+      return;
+    }
+    if (!this.selectedAmountMonthRecordsReady()) {
+      this.amountPerformanceLoading = true;
       return;
     }
 
@@ -2955,7 +3022,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   private async loadHistoricalAmountPerformance(): Promise<void> {
-    if (!this.isAdminUi || !this.isAmountPerformanceMode) return;
+    if (!this.isAmountPerformanceMode) return;
     const ownerUid = this.auth.currentUser?.uid;
     const scopeEmployees = this.historicalAmountScopeEmployees();
     if (!ownerUid || !scopeEmployees.length) {
@@ -4365,6 +4432,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.closeFoundationRequestModal();
     this.employee = {};
     this.employees = [];
+    this.monthlyDayTotalsLoadedKey = '';
     this.performanceMetricMode = 'legacy';
     this.amountPerformanceSummary = null;
     this.amountPerformanceError = '';
@@ -4406,11 +4474,17 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
         const employeeChanged = this.employee?.uid !== selectedEmployee.uid;
         this.employee = selectedEmployee;
+        if (employeeChanged) {
+          this.monthlyDayTotalsLoadedKey = '';
+        }
         this.amountPerformanceSummary = null;
         this.amountPerformanceError = '';
         this.amountPerformanceLoadedKey = '';
         if (employeeChanged) {
           this.resetHistoricalAmountPerformance();
+        }
+        if (this.isAmountPerformanceMode) {
+          this.amountPerformanceLoading = true;
         }
         if (
           this.employee.vacationTotalDays === undefined ||
@@ -4537,7 +4611,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         this.generateAttendanceTable(this.givenMonth, this.givenYear);
         await this.loadDayTotalsForMonth(this.givenMonth, this.givenYear);
         this.generateCollectionsTable(this.givenMonth, this.givenYear);
-        if (this.isAdminUi && this.isAmountPerformanceMode) {
+        if (this.isAmountPerformanceMode) {
           await Promise.all([
             this.loadAmountPerformancePreview(),
             this.loadHistoricalAmountPerformance(),
@@ -4833,7 +4907,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       if (Number.isFinite(value)) legacyByMonth.set(key, value);
     });
 
-    if (!this.isAmountPerformanceMode || !this.isAdminUi) {
+    if (!this.isAmountPerformanceMode) {
       return Array.from(legacyByMonth.entries())
         .map(([key, value]) => ({
           key,
@@ -9305,6 +9379,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     year: number
   ): Promise<void> {
     this.monthlyDayTotals = {};
+    this.monthlyDayTotalsLoadedKey = '';
     const ownerUid = this.auth.currentUser?.uid;
     const empUid = this.employee?.uid;
     if (!ownerUid || !empUid) return;
@@ -9343,6 +9418,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         employeeUid: empUid,
       };
     });
+    this.monthlyDayTotalsLoadedKey = monthKey;
   }
 
   private async fetchEmployeeAmountRecordsForMonth(

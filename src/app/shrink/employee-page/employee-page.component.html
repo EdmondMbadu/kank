@@ -575,7 +575,7 @@
                           [ngStyle]="{ background: colorForPerf(avgPerf) }"
                         ></span>
                         <span class="text-slate-500 dark:text-slate-400">
-                          {{ isAmountPerformanceMode ? "Performance actuelle" : "Performance mensuelle" }}
+                          {{ isAdminUi && isAmountPerformanceMode ? "Performance actuelle" : "Performance mensuelle" }}
                         </span>
                       </div>
                     </div>
@@ -584,7 +584,7 @@
                   <ng-template #ringPerformanceUnavailable>—</ng-template>
 
                   <div
-                    *ngIf="isAmountPerformanceMode"
+                    *ngIf="isAdminUi && isAmountPerformanceMode"
                     class="mt-7 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/20"
                   >
                     <div *ngIf="amountPerformanceLoading" class="text-center text-sm font-medium text-indigo-700 dark:text-indigo-200">

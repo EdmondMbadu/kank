@@ -1,5 +1,6 @@
 import { TeamRankingMonthComponent } from './team-ranking-month.component';
 import { EmployeePageComponent } from 'src/app/shrink/employee-page/employee-page.component';
+import { of } from 'rxjs';
 
 describe('TeamRankingMonthComponent', () => {
   function createComponent() {
@@ -62,6 +63,12 @@ describe('TeamRankingMonthComponent', () => {
           bandCount: 2,
         }),
     } as any;
+    const performanceMetricSettings = {
+      employeeMode$: of('legacy'),
+      updateEmployeeMode: jasmine
+        .createSpy('updateEmployeeMode')
+        .and.resolveTo(),
+    } as any;
 
     const component = new TeamRankingMonthComponent(
       {} as any,
@@ -73,9 +80,10 @@ describe('TeamRankingMonthComponent', () => {
       {} as any,
       {} as any,
       {} as any,
-      {} as any
+      {} as any,
+      performanceMetricSettings
     );
-    return { component, auth, compute };
+    return { component, auth, compute, performanceMetricSettings };
   }
 
   beforeEach(() => {
@@ -103,6 +111,107 @@ describe('TeamRankingMonthComponent', () => {
 
     expect(component.performanceMetricMode).toBe('legacy');
     expect(loadSpy).not.toHaveBeenCalled();
+  });
+
+  it('uses the published amount metric for employees without exposing diagnostics', () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = false;
+    component.publishedEmployeePerformanceMode = 'amount';
+    component.averagePerformancePercentage = '41';
+    component.amountPerformanceSummary = {
+      percent: 62.5,
+      visualPercent: 62.5,
+    } as any;
+    const employee = { uid: 'employee-1', performancePercentageMonth: '35' } as any;
+    (component as any).amountPerformanceByEmployee = {
+      '|employee-1': { percent: 70, visualPercent: 70 },
+    };
+
+    expect(component.isAmountPerformanceMode).toBeTrue();
+    expect(component.showAmountPerformanceDiagnostics).toBeFalse();
+    expect(component.currentPerformancePercent).toBe(62.5);
+    expect(component.employeePerformancePercent(employee)).toBe(70);
+  });
+
+  it('initializes the admin ranking preview from the published amount mode', () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.performanceMetricMode = 'legacy';
+    component.allEmployeesAll = [{ uid: 'employee-1' } as any];
+    const loadSpy = spyOn<any>(
+      component as any,
+      'loadAmountPerformancePreview'
+    ).and.resolveTo();
+
+    (component as any).applyPublishedEmployeePerformanceMode('amount');
+
+    expect(component.publishedEmployeePerformanceMode).toBe('amount');
+    expect(component.performanceMetricMode).toBe('amount');
+    expect(component.isAmountPerformanceMode).toBeTrue();
+    expect(loadSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not launch amount queries when the published mode is habitual', () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.performanceMetricMode = 'amount';
+    component.allEmployeesAll = [{ uid: 'employee-1' } as any];
+    const loadSpy = spyOn<any>(
+      component as any,
+      'loadAmountPerformancePreview'
+    );
+    spyOn(component, 'setGraphics');
+
+    (component as any).applyPublishedEmployeePerformanceMode('legacy');
+
+    expect(component.performanceMetricMode).toBe('legacy');
+    expect(component.isAmountPerformanceMode).toBeFalse();
+    expect(loadSpy).not.toHaveBeenCalled();
+  });
+
+  it('falls back to habitual employee percentages when amount data is unavailable', () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = false;
+    component.publishedEmployeePerformanceMode = 'amount';
+    component.averagePerformancePercentage = '41';
+    const employee = { uid: 'employee-1', performancePercentageMonth: '35' } as any;
+
+    expect(component.currentPerformancePercent).toBe(41);
+    expect(component.employeePerformancePercent(employee)).toBe(35);
+    expect(component.employeePerformanceVisualPercent(employee)).toBe(35);
+  });
+
+  it('publishes the global employee mode and mirrors it in the admin preview', async () => {
+    const { component, auth, performanceMetricSettings } = createComponent();
+    auth.isAdmin = true;
+    auth.currentUser = { uid: 'admin-1' };
+    spyOn<any>(component as any, 'loadAmountPerformancePreview').and.resolveTo();
+
+    await component.publishEmployeePerformanceMode('amount');
+
+    expect(performanceMetricSettings.updateEmployeeMode).toHaveBeenCalledWith(
+      'amount',
+      'admin-1'
+    );
+    expect(component.publishedEmployeePerformanceMode).toBe('amount');
+    expect(component.performanceMetricMode).toBe('amount');
+    expect(component.performanceMetricSettingMessage).toContain('publiée');
+  });
+
+  it('keeps the previous published mode when saving fails', async () => {
+    spyOn(console, 'error');
+    const { component, auth, performanceMetricSettings } = createComponent();
+    auth.isAdmin = true;
+    component.publishedEmployeePerformanceMode = 'legacy';
+    performanceMetricSettings.updateEmployeeMode.and.rejectWith(
+      new Error('permission denied')
+    );
+
+    await component.publishEmployeePerformanceMode('amount');
+
+    expect(component.publishedEmployeePerformanceMode).toBe('legacy');
+    expect(component.performanceMetricMode).toBe('legacy');
+    expect(component.performanceMetricSettingMessage).toContain('Impossible');
   });
 
   it('computes and caches the global amount performance from all sites', async () => {
@@ -459,7 +568,8 @@ describe('TeamRankingMonthComponent', () => {
       { snapshot: { paramMap: { get: () => 'employee-1' } } } as any,
       {} as any,
       {} as any,
-      {} as any
+      {} as any,
+      { employeeMode$: of('legacy') } as any
     );
     employeePage.employee = employee;
     employeePage.paymentAmount = 100;

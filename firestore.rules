@@ -52,7 +52,8 @@ service cloud.firestore {
         topCollection == 'clientLoginOtps' ||
         topCollection == 'clientPortalSessions' ||
         topCollection == 'mobileMoneyTransactionLookup' ||
-        topCollection == 'moneyAvailabilityPolicies';
+        topCollection == 'moneyAvailabilityPolicies' ||
+        topCollection == 'performanceMetricSettings';
     }
 
     match /users/{userId} {
@@ -216,6 +217,11 @@ service cloud.firestore {
         allow read: if signedIn() && !isPortalClient();
         allow write: if isAppAdmin();
       }
+    }
+
+    match /performanceMetricSettings/{settingsId} {
+      allow read: if signedIn() && !isPortalClient();
+      allow write: if isAppAdmin();
     }
 
     match /{topCollection}/{docId} {

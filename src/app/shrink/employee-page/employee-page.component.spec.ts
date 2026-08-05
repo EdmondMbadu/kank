@@ -130,6 +130,12 @@ describe('EmployeePageComponent', () => {
       convertCongoleseFrancToUsDollars: (value: string) =>
         Math.ceil(Number(value || 0) / 2900),
     } as any;
+    const performanceMetricSettings = {
+      employeeMode$: of('legacy'),
+      updateEmployeeMode: jasmine
+        .createSpy('updateEmployeeMode')
+        .and.resolveTo(),
+    } as any;
 
     return new EmployeePageComponent(
       {} as any,
@@ -147,7 +153,8 @@ describe('EmployeePageComponent', () => {
       } as any,
       {} as any,
       {} as any,
-      {} as any
+      {} as any,
+      performanceMetricSettings
     );
   }
 
@@ -196,6 +203,31 @@ describe('EmployeePageComponent', () => {
     expect(historySpy).not.toHaveBeenCalled();
   });
 
+  it('uses the published amount percentage for an employee without admin mode', () => {
+    const component = createComponent({ isAdmninistrator: false });
+    component.publishedEmployeePerformanceMode = 'amount';
+    component.performancePercentageMonth = '40';
+    component.amountPerformanceSummary = {
+      percent: 64.5,
+      visualPercent: 64.5,
+    } as any;
+
+    expect(component.isAmountPerformanceMode).toBeTrue();
+    expect(component.isAdminUi).toBeFalse();
+    expect(component.currentPerformancePercent).toBe(64.5);
+    expect(component.currentPerformanceVisualPercent).toBe(64.5);
+  });
+
+  it('falls back to the habitual employee percentage when amount data is unavailable', () => {
+    const component = createComponent({ isAdmninistrator: false });
+    component.publishedEmployeePerformanceMode = 'amount';
+    component.performancePercentageMonth = '40';
+    component.amountPerformanceSummary = null;
+
+    expect(component.currentPerformancePercent).toBe(40);
+    expect(component.currentPerformanceVisualPercent).toBe(40);
+  });
+
   it('computes an individual amount preview from the already loaded month data', async () => {
     const component = createComponent({
       isAdmninistrator: true,
@@ -230,6 +262,7 @@ describe('EmployeePageComponent', () => {
         employeeUid: 'employee-1',
       },
     };
+    (component as any).monthlyDayTotalsLoadedKey = '2026-03';
     spyOn<any>(
       component as any,
       'loadHistoricalAmountPerformance'
@@ -278,6 +311,7 @@ describe('EmployeePageComponent', () => {
         employeeUid: 'manager-1',
       },
     };
+    (component as any).monthlyDayTotalsLoadedKey = '2026-03';
     spyOn<any>(
       component as any,
       'fetchEmployeeAmountRecordsForMonth'
@@ -308,6 +342,68 @@ describe('EmployeePageComponent', () => {
       })
     );
     expect(component.amountPerformanceScopeLabel).toBe('Total du site');
+  });
+
+  it('does not cache a manager percentage before the manager month records are loaded', async () => {
+    const component = createComponent({
+      isAdmninistrator: true,
+      currentUser: {
+        uid: 'owner-1',
+        dailyReimbursement: { '3-27-2026': 593500 },
+      },
+    });
+    component.employee = {
+      uid: 'manager-1',
+      firstName: 'Manager',
+      role: 'Manager',
+    };
+    component.employees = [
+      component.employee,
+      { uid: 'employee-2', role: 'Agent Marketing' },
+    ];
+    component.givenMonth = 3;
+    component.givenYear = 2026;
+    component.performanceMetricMode = 'amount';
+    const employeeFetch = spyOn<any>(
+      component as any,
+      'fetchEmployeeAmountRecordsForMonth'
+    ).and.resolveTo([
+      {
+        dayKey: '3-27-2026',
+        total: 403500,
+        expected: 825000,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'employee-2',
+      },
+    ]);
+
+    await (component as any).loadAmountPerformancePreview();
+
+    expect(employeeFetch).not.toHaveBeenCalled();
+    expect(component.amountPerformanceSummary).toBeNull();
+    expect((component as any).amountPerformanceLoadedKey).toBe('');
+
+    component.monthlyDayTotals = {
+      '3-27-2026': {
+        dayKey: '3-27-2026',
+        total: 40000,
+        expected: 797500,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'manager-1',
+      },
+    };
+    (component as any).monthlyDayTotalsLoadedKey = '2026-03';
+
+    await (component as any).loadAmountPerformancePreview();
+
+    expect(employeeFetch).toHaveBeenCalledTimes(1);
+    expect(component.amountPerformanceSummary?.expectedFc).toBe(1622500);
+    expect(component.amountPerformanceSummary?.percent).toBeCloseTo(
+      36.579,
+      3
+    );
   });
 
   it('uses sparse expected records because zero-expected days are not persisted', () => {
@@ -440,6 +536,42 @@ describe('EmployeePageComponent', () => {
     expect(component.historicalLegacyFallbackMonthCount).toBe(1);
   });
 
+  it('changes employee histogram values without exposing source diagnostics', () => {
+    const component = createComponent({ isAdmninistrator: false });
+    component.publishedEmployeePerformanceMode = 'amount';
+    component.employee = {
+      uid: 'employee-1',
+      role: 'Agent Marketing',
+      dailyPoints: {
+        '1-10-2026': '20',
+        '2-10-2026': '30',
+      },
+      totalDailyPoints: {
+        '1-10-2026': '100',
+        '2-10-2026': '100',
+      },
+    };
+    (component as any).historicalAmountPerformanceByMonth = {
+      '1-2026': {
+        eligible: true,
+        summary: {
+          percent: 75,
+          collectedFc: 750,
+          expectedFc: 1000,
+          visualPercent: 75,
+        },
+      },
+    };
+
+    component.updatePerformanceGraphics(0);
+
+    expect(component.recentPerformanceNumbers).toEqual([75, 30]);
+    expect(component.graphPerformance.data.length).toBe(1);
+    expect(component.graphPerformance.data[0].name).toBeUndefined();
+    expect(component.graphPerformance.data[0].text).toBeUndefined();
+    expect(component.graphPerformance.layout.showlegend).toBeFalse();
+  });
+
   it('uses the authoritative site total even when employee attribution needs review', () => {
     const records = completeOperatingDayRecords(3, 2026, 28);
     const siteCollected = records.reduce(
@@ -478,13 +610,15 @@ describe('EmployeePageComponent', () => {
     expect(mismatched.eligible).toBeTrue();
   });
 
-  it('returns to the legacy metric when an admin switches to employee view', () => {
+  it('uses the published metric when an admin switches to employee view', () => {
     const component = createComponent({ isAdmninistrator: true });
     component.performanceMetricMode = 'amount';
+    component.publishedEmployeePerformanceMode = 'legacy';
 
     component.setViewAsMode('employee');
 
-    expect(component.performanceMetricMode).toBe('legacy');
+    expect(component.performanceMetricMode).toBe('amount');
+    expect(component.isAmountPerformanceMode).toBeFalse();
   });
 
   it('skips the carryover week that ends on the first Sunday of the month', () => {
@@ -686,7 +820,8 @@ describe('EmployeePageComponent', () => {
       } as any,
       {} as any,
       {} as any,
-      {} as any
+      {} as any,
+      { employeeMode$: of('legacy') } as any
     );
 
     const adjustments = (component as any).computeWeeklyObjectiveAdjustments(
