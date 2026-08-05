@@ -619,11 +619,17 @@
                           <div class="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">
                             {{ amountSummary.collectedFc | number : "1.0-0" }} FC
                           </div>
+                          <div class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            ≈ $ {{ amountPerformanceUsd(amountSummary.collectedFc) | number : "1.0-0" }}
+                          </div>
                         </div>
                         <div class="rounded-xl bg-white/90 p-3 ring-1 ring-indigo-100 dark:bg-slate-900/70 dark:ring-indigo-900/40">
                           <div class="text-[11px] uppercase tracking-wide text-slate-500">Attendu à ce jour</div>
                           <div class="mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300">
                             {{ amountSummary.expectedFc | number : "1.0-0" }} FC
+                          </div>
+                          <div class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            ≈ $ {{ amountPerformanceUsd(amountSummary.expectedFc) | number : "1.0-0" }}
                           </div>
                         </div>
                       </div>
