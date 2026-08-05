@@ -44,7 +44,11 @@
             </button>
           </div>
 
-          <div class="relative flex items-center justify-center">
+          <div
+            class="relative mx-auto flex items-center justify-center"
+            [style.width.px]="size"
+            [style.height.px]="size"
+          >
             <svg
               [attr.width]="size"
               [attr.height]="size"
@@ -122,16 +126,18 @@
 
             <!-- center label -->
             <div
-              class="absolute inset-0 flex flex-col items-center justify-center"
+              class="absolute inset-0 flex flex-col items-center justify-center text-center"
             >
-              <div class="text-4xl font-extrabold text-gray-900">
+              <div class="text-4xl font-extrabold leading-none text-gray-900">
                 <ng-container *ngIf="!amountPerformanceLoading; else globalPerformanceLoading">
                   <ng-container *ngIf="currentPerformancePercent !== null; else globalPerformanceUnavailable">
                     {{ currentPerformancePercent | number : "1.0-1" }}%
                   </ng-container>
                 </ng-container>
               </div>
-              <div class="text-xs uppercase tracking-wide text-gray-500">
+              <div
+                class="mt-2 max-w-[150px] text-[10px] font-semibold uppercase leading-tight tracking-[0.08em] text-gray-500"
+              >
                 {{ isAmountPerformanceMode ? "Performance actuelle globale" : "Performance moyenne" }}
               </div>
             </div>
