@@ -129,25 +129,34 @@
                         Vacances : <strong class="ml-1">{{ vacation }}</strong>
                       </span>
 
-                      <span
-                        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ring-1 ring-amber-200 bg-amber-50 text-amber-700 dark:ring-amber-800 dark:bg-amber-900/25 dark:text-amber-200"
-                      >
-                        <svg
-                          class="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          [ngStyle]="{ color: perfColor }"
+                      <div class="flex flex-wrap items-center gap-1.5">
+                        <span
+                          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ring-1 ring-amber-200 bg-amber-50 text-amber-700 dark:ring-amber-800 dark:bg-amber-900/25 dark:text-amber-200"
                         >
-                          <path
-                            d="M12 2l1.9 6H20l-4.9 3.6L17 18l-5-3.6L7 18l1.9-6L4 8h6.1L12 2z"
-                          />
-                        </svg>
-                        Perf.
-                        {{ time.monthFrenchNames[givenMonth - 1] }} :
-                        <strong class="ml-1" [ngStyle]="{ color: perfColor }"
-                          >{{ performancePercentageMonth }}%</strong
-                        >
-                      </span>
+                          <svg
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            [ngStyle]="{ color: perfColor }"
+                          >
+                            <path
+                              d="M12 2l1.9 6H20l-4.9 3.6L17 18l-5-3.6L7 18l1.9-6L4 8h6.1L12 2z"
+                            />
+                          </svg>
+                          Perf.
+                          {{ time.monthFrenchNames[givenMonth - 1] }} :
+                          <strong class="ml-1" [ngStyle]="{ color: perfColor }">
+                            <ng-container *ngIf="!amountPerformanceLoading; else headerPerformanceLoading">
+                              <ng-container *ngIf="currentPerformancePercent !== null; else headerPerformanceUnavailable">
+                                {{ currentPerformancePercent | number : "1.0-1" }}%
+                              </ng-container>
+                            </ng-container>
+                          </strong>
+                        </span>
+
+                        <ng-template #headerPerformanceLoading>…</ng-template>
+                        <ng-template #headerPerformanceUnavailable>—</ng-template>
+                      </div>
                     </div>
 
                     <div
@@ -155,7 +164,7 @@
                     >
                       <div
                         class="h-full rounded-full transition-all duration-500 ease-out"
-                        [style.width.%]="performancePercentageMonthWidth"
+                        [style.width.%]="currentPerformanceVisualPercent"
                         [ngStyle]="{ 'background-color': perfColor }"
                       ></div>
                     </div>
@@ -435,8 +444,24 @@
                 <div
                   class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm backdrop-blur-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-900/80"
                 >
-                  <div class="relative flex items-center justify-center">
-                    <svg
+                  <div *ngIf="isAdminUi" class="mb-4 flex justify-center">
+                    <button
+                      type="button"
+                      class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      [ngClass]="
+                        isAmountPerformanceMode
+                          ? 'border-indigo-300 bg-indigo-600 text-white shadow-sm'
+                          : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200'
+                      "
+                      [attr.aria-pressed]="isAmountPerformanceMode"
+                      (click)="setPerformanceMetricMode(isAmountPerformanceMode ? 'legacy' : 'amount')"
+                    >
+                      {{ isAmountPerformanceMode ? "Performance habituelle" : "Performance actuelle" }}
+                    </button>
+                  </div>
+
+                    <div class="relative flex items-center justify-center">
+                      <svg
                       [attr.width]="size"
                       [attr.height]="size"
                       [attr.viewBox]="'0 0 ' + size + ' ' + size"
@@ -518,36 +543,122 @@
                         filter="url(#perfGlow)"
                         class="transition-all duration-700 ease-out"
                       ></circle>
-                    </svg>
+                      </svg>
 
-                    <!-- center labels -->
-                    <div
-                      class="absolute inset-0 flex flex-col items-center justify-center"
-                    >
+                      <!-- center labels -->
                       <div
-                        class="text-4xl font-extrabold text-slate-900 dark:text-slate-100"
+                        class="absolute inset-0 flex flex-col items-center justify-center"
                       >
-                        {{ avgPerf | number : "1.0-0" }}%
+                        <div
+                          class="text-4xl font-extrabold text-slate-900 dark:text-slate-100"
+                        >
+                          <ng-container *ngIf="!amountPerformanceLoading; else ringPerformanceLoading">
+                            <ng-container *ngIf="currentPerformancePercent !== null; else ringPerformanceUnavailable">
+                              {{ currentPerformancePercent | number : "1.0-1" }}%
+                            </ng-container>
+                          </ng-container>
+                        </div>
+                        <div
+                          class="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                        >
+                          {{ time.monthFrenchNames[givenMonth - 1] }}
+                          {{ givenYear }}
+                        </div>
                       </div>
+
+                      <!-- tiny status chip -->
                       <div
-                        class="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                        class="absolute -bottom-1.5 right-1 flex items-center gap-1 text-[11px]"
                       >
-                        {{ time.monthFrenchNames[givenMonth - 1] }}
-                        {{ givenYear }}
+                        <span
+                          class="inline-block h-2.5 w-2.5 rounded-full"
+                          [ngStyle]="{ background: colorForPerf(avgPerf) }"
+                        ></span>
+                        <span class="text-slate-500 dark:text-slate-400">
+                          {{ isAmountPerformanceMode ? "Performance actuelle" : "Performance mensuelle" }}
+                        </span>
                       </div>
                     </div>
 
-                    <!-- tiny status chip -->
-                    <div
-                      class="absolute -bottom-1.5 right-1 flex items-center gap-1 text-[11px]"
-                    >
-                      <span
-                        class="inline-block h-2.5 w-2.5 rounded-full"
-                        [ngStyle]="{ background: colorForPerf(avgPerf) }"
-                      ></span>
-                      <span class="text-slate-500 dark:text-slate-400"
-                        >Performance mensuelle</span
+                  <ng-template #ringPerformanceLoading>…</ng-template>
+                  <ng-template #ringPerformanceUnavailable>—</ng-template>
+
+                  <div
+                    *ngIf="isAmountPerformanceMode"
+                    class="mt-7 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/20"
+                  >
+                    <div *ngIf="amountPerformanceLoading" class="text-center text-sm font-medium text-indigo-700 dark:text-indigo-200">
+                      Calcul des montants en cours…
+                    </div>
+
+                    <div *ngIf="!amountPerformanceLoading && amountPerformanceSummary as amountSummary" class="space-y-3">
+                      <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            {{ amountPerformanceScopeLabel }}
+                          </div>
+                          <div class="text-xs text-slate-500 dark:text-slate-400">
+                            Du 1er au {{ amountPerformanceThroughLabel }}
+                          </div>
+                        </div>
+                        <span
+                          class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                          [ngClass]="{
+                            'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200': amountSummary.status === 'ready',
+                            'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200': amountSummary.status === 'partial',
+                            'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200': amountSummary.status === 'unavailable'
+                          }"
+                        >
+                          {{ amountPerformanceStatusLabel }}
+                        </span>
+                      </div>
+
+                      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div class="rounded-xl bg-white/90 p-3 ring-1 ring-emerald-100 dark:bg-slate-900/70 dark:ring-emerald-900/40">
+                          <div class="text-[11px] uppercase tracking-wide text-slate-500">Collecté à ce jour</div>
+                          <div class="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                            {{ amountSummary.collectedFc | number : "1.0-0" }} FC
+                          </div>
+                        </div>
+                        <div class="rounded-xl bg-white/90 p-3 ring-1 ring-indigo-100 dark:bg-slate-900/70 dark:ring-indigo-900/40">
+                          <div class="text-[11px] uppercase tracking-wide text-slate-500">Attendu à ce jour</div>
+                          <div class="mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300">
+                            {{ amountSummary.expectedFc | number : "1.0-0" }} FC
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        *ngIf="amountSummary.status === 'partial'"
+                        class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
                       >
+                        <div *ngIf="amountSummary.missingExpectedOnPaidRecordCount > 0">
+                          {{ amountSummary.missingExpectedOnPaidRecordCount }} paiement(s) journalier(s) sans attendu enregistré.
+                        </div>
+                        <div *ngIf="amountSummary.reconciliationDifferenceFc > 0">
+                          Écart site/employés : {{ amountSummary.reconciliationDifferenceFc | number : "1.0-0" }} FC.
+                        </div>
+                      </div>
+
+                      <div
+                        *ngIf="amountSummary.status === 'unavailable'"
+                        class="text-xs text-slate-600 dark:text-slate-300"
+                      >
+                        Aucun attendu fiable n’est enregistré pour cette période; aucun pourcentage n’est inventé.
+                      </div>
+                    </div>
+
+                    <div *ngIf="!amountPerformanceLoading && amountPerformanceError" class="text-center">
+                      <div class="text-sm font-medium text-rose-700 dark:text-rose-300">
+                        {{ amountPerformanceError }}
+                      </div>
+                      <button
+                        type="button"
+                        class="mt-2 rounded-full border border-rose-300 bg-white px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 dark:bg-slate-900"
+                        (click)="retryAmountPerformancePreview()"
+                      >
+                        Réessayer
+                      </button>
                     </div>
                   </div>
                 </div>

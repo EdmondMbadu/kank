@@ -141,6 +141,131 @@ describe('EmployeePageComponent', () => {
     jasmine.clock().uninstall();
   });
 
+  it('does not activate amount performance for a non-admin', async () => {
+    const component = createComponent({ isAdmninistrator: false });
+    const loadSpy = spyOn<any>(component as any, 'loadAmountPerformancePreview');
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.performanceMetricMode).toBe('legacy');
+    expect(loadSpy).not.toHaveBeenCalled();
+  });
+
+  it('computes an individual amount preview from the already loaded month data', async () => {
+    const component = createComponent({
+      isAdmninistrator: true,
+      currentUser: {
+        uid: 'owner-1',
+        dailyReimbursement: {},
+        weeklyPaymentTargetFc: 600000,
+      },
+    });
+    component.employee = {
+      uid: 'employee-1',
+      firstName: 'Amina',
+      role: 'Agent Marketing',
+    };
+    component.givenMonth = 3;
+    component.givenYear = 2026;
+    component.monthlyDayTotals = {
+      '3-27-2026': {
+        dayKey: '3-27-2026',
+        total: 250000,
+        expected: 500000,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'employee-1',
+      },
+      '3-29-2026': {
+        dayKey: '3-29-2026',
+        total: 900000,
+        expected: 900000,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'employee-1',
+      },
+    };
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.performanceMetricMode).toBe('amount');
+    expect(component.amountPerformanceSummary).toEqual(
+      jasmine.objectContaining({
+        collectedFc: 250000,
+        expectedFc: 500000,
+        percent: 50,
+        status: 'ready',
+      })
+    );
+  });
+
+  it('computes manager performance from site totals instead of averaging employees', async () => {
+    const component = createComponent({
+      isAdmninistrator: true,
+      currentUser: {
+        uid: 'owner-1',
+        dailyReimbursement: { '3-27-2026': 190000 },
+        weeklyPaymentTargetFc: 600000,
+      },
+    });
+    component.employee = {
+      uid: 'manager-1',
+      firstName: 'Manager',
+      role: 'Manager',
+    };
+    component.employees = [
+      component.employee,
+      { uid: 'employee-2', role: 'Agent Marketing' },
+    ];
+    component.givenMonth = 3;
+    component.givenYear = 2026;
+    component.monthlyDayTotals = {
+      '3-27-2026': {
+        dayKey: '3-27-2026',
+        total: 90000,
+        expected: 100000,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'manager-1',
+      },
+    };
+    spyOn<any>(
+      component as any,
+      'fetchEmployeeAmountRecordsForMonth'
+    ).and.resolveTo([
+      {
+        dayKey: '3-27-2026',
+        total: 100000,
+        expected: 900000,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'employee-2',
+      },
+    ]);
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.amountPerformanceSummary).toEqual(
+      jasmine.objectContaining({
+        collectedFc: 190000,
+        expectedFc: 1000000,
+        percent: 19,
+        reconciliationDifferenceFc: 0,
+        status: 'ready',
+      })
+    );
+    expect(component.amountPerformanceScopeLabel).toBe('Total du site');
+  });
+
+  it('returns to the legacy metric when an admin switches to employee view', () => {
+    const component = createComponent({ isAdmninistrator: true });
+    component.performanceMetricMode = 'amount';
+
+    component.setViewAsMode('employee');
+
+    expect(component.performanceMetricMode).toBe('legacy');
+  });
+
   it('skips the carryover week that ends on the first Sunday of the month', () => {
     const component = createComponent({
       currentUser: {
