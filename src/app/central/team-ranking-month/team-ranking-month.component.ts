@@ -5020,6 +5020,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return 'Attendu indisponible';
   }
 
+  amountPerformanceUsd(amountFc: number): number {
+    const usd = this.compute.convertCongoleseFrancToUsDollars(
+      String(amountFc || 0)
+    );
+    return usd === '' ? 0 : usd;
+  }
+
   async setPerformanceMetricMode(mode: PerformanceMetricMode): Promise<void> {
     if (mode === 'amount' && !this.auth.isAdmin) return;
     this.performanceMetricMode = mode;

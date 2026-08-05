@@ -209,6 +209,9 @@
                   <div class="mt-1 text-lg font-bold text-emerald-700">
                     {{ amountSummary.collectedFc | number : "1.0-0" }} FC
                   </div>
+                  <div class="mt-0.5 text-xs font-medium text-slate-500">
+                    ≈ $ {{ amountPerformanceUsd(amountSummary.collectedFc) | number : "1.0-0" }}
+                  </div>
                 </div>
                 <div class="rounded-xl bg-white/90 p-3 ring-1 ring-indigo-100">
                   <div class="text-[11px] uppercase tracking-wide text-slate-500">
@@ -216,6 +219,9 @@
                   </div>
                   <div class="mt-1 text-lg font-bold text-indigo-700">
                     {{ amountSummary.expectedFc | number : "1.0-0" }} FC
+                  </div>
+                  <div class="mt-0.5 text-xs font-medium text-slate-500">
+                    ≈ $ {{ amountPerformanceUsd(amountSummary.expectedFc) | number : "1.0-0" }}
                   </div>
                 </div>
               </div>
