@@ -42,6 +42,7 @@ import {
   AmountPerformanceDayRecord,
   AmountPerformanceSummary,
   buildAmountPerformanceSummary,
+  parseAmountPerformanceDayKey,
   sumAmountMapThroughDate,
 } from 'src/app/utils/amount-performance.util';
 
@@ -95,8 +96,12 @@ type PerformanceMetricMode = 'legacy' | 'amount';
 
 type PerformanceBarTrace = {
   x: string[];
-  y: number[];
+  y: Array<number | null>;
   type: 'bar';
+  name?: string;
+  text?: string[];
+  hovertext?: string[];
+  hovertemplate?: string;
   marker: {
     color: string | string[];
     line?: {
@@ -104,6 +109,20 @@ type PerformanceBarTrace = {
       width?: number;
     };
   };
+};
+
+type HistoricalPerformanceSource = 'amount' | 'legacy';
+
+type HistoricalAmountPerformanceMonth = {
+  summary: AmountPerformanceSummary;
+  eligible: boolean;
+};
+
+type PerformanceMonthSeriesPoint = {
+  key: string;
+  value: number;
+  source: HistoricalPerformanceSource;
+  summary?: AmountPerformanceSummary;
 };
 
 type PerformanceGraph = {
@@ -248,6 +267,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (mode === 'employee') {
       this.performanceMetricMode = 'legacy';
     }
+    this.updatePerformanceGraphics(
+      this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+    );
   }
 
   // ── Commentaires individuels ───────────────────────
@@ -304,6 +326,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   amountPerformanceLoading = false;
   amountPerformanceError = '';
   private amountPerformanceLoadedKey = '';
+  historicalAmountPerformanceLoading = false;
+  historicalAmountPerformanceError = '';
+  private historicalAmountPerformanceLoadedKey = '';
+  private historicalAmountPerformanceRequestId = 0;
+  private historicalAmountPerformanceByMonth: Record<
+    string,
+    HistoricalAmountPerformanceMonth
+  > = {};
 
   public friendlyFromKey(key: string): string {
     // key examples: "8-23-2025" or "8-23-2025-09-15-02" → show DD/MM/YYYY
@@ -2676,14 +2706,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     this.performanceMetricMode = mode;
     if (mode === 'amount') {
-      await this.loadAmountPerformancePreview();
+      await Promise.all([
+        this.loadAmountPerformancePreview(),
+        this.loadHistoricalAmountPerformance(),
+      ]);
     }
+    this.updatePerformanceGraphics(
+      this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+    );
   }
 
   async retryAmountPerformancePreview(): Promise<void> {
     if (!this.isAdminUi || !this.isAmountPerformanceMode) return;
     this.amountPerformanceLoadedKey = '';
-    await this.loadAmountPerformancePreview();
+    this.historicalAmountPerformanceLoadedKey = '';
+    await Promise.all([
+      this.loadAmountPerformancePreview(),
+      this.loadHistoricalAmountPerformance(),
+    ]);
   }
 
   private amountPerformanceBusinessDate(): Date {
@@ -2811,6 +2851,186 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     } finally {
       this.amountPerformanceLoading = false;
     }
+  }
+
+  private historicalAmountScopeEmployees(): Employee[] {
+    const candidates =
+      this.employee?.role === 'Manager'
+        ? this.employees || []
+        : this.employee?.uid
+        ? [this.employee]
+        : [];
+    const unique = new Map<string, Employee>();
+    for (const employee of candidates) {
+      if (employee?.uid) unique.set(employee.uid, employee);
+    }
+    return Array.from(unique.values());
+  }
+
+  private historicalAmountPerformanceCacheKey(): string {
+    const ownerUid = this.auth.currentUser?.uid || '';
+    const employeeKey = this.historicalAmountScopeEmployees()
+      .map((employee) => employee.uid || '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    return [ownerUid, this.employee?.uid || '', employeeKey].join('|');
+  }
+
+  private async fetchEmployeeAmountHistory(
+    ownerUid: string,
+    employeeUid: string
+  ): Promise<AmountPerformanceDayRecord[]> {
+    const collection = this.afs.collection(
+      `users/${ownerUid}/employees/${employeeUid}/dayTotals`
+    );
+    const snapshot = await firstValueFrom(collection.get());
+    const records: AmountPerformanceDayRecord[] = [];
+
+    snapshot.forEach((doc) => {
+      const data: any = doc.data() || {};
+      records.push({
+        dayKey: doc.id,
+        expected: Number(data.expected || 0),
+        total: Number(data.total ?? data.collected ?? data.paid ?? 0),
+        expectedPresent: Object.prototype.hasOwnProperty.call(
+          data,
+          'expected'
+        ),
+        totalPresent:
+          Object.prototype.hasOwnProperty.call(data, 'total') ||
+          Object.prototype.hasOwnProperty.call(data, 'collected') ||
+          Object.prototype.hasOwnProperty.call(data, 'paid'),
+        employeeUid,
+      });
+    });
+    return records;
+  }
+
+  private historicalAmountMonth(
+    records: AmountPerformanceDayRecord[],
+    month: number,
+    year: number,
+    asOf: Date
+  ): HistoricalAmountPerformanceMonth {
+    let collectedOverrideFc: number | undefined;
+    let reconciliationDifferenceFc = 0;
+    if (this.employee?.role === 'Manager') {
+      const employeeTotals = buildAmountPerformanceSummary({
+        records,
+        month,
+        year,
+        asOf,
+      });
+      collectedOverrideFc = sumAmountMapThroughDate(
+        this.auth.currentUser?.dailyReimbursement,
+        month,
+        year,
+        asOf
+      );
+      reconciliationDifferenceFc = Math.abs(
+        collectedOverrideFc - employeeTotals.collectedFc
+      );
+    }
+
+    const summary = buildAmountPerformanceSummary({
+      records,
+      month,
+      year,
+      asOf,
+      collectedOverrideFc,
+      reconciliationDifferenceFc,
+    });
+    // The expected-value job only writes a dayTotals document when an
+    // employee actually has an expected payment that day. An absent calendar
+    // day therefore represents an expected value of zero, not missing data.
+    // Older months without any expected denominator still fall back safely.
+    const eligible =
+      summary.expectedDayCount > 0 && summary.percent !== null;
+
+    return {
+      summary,
+      eligible,
+    };
+  }
+
+  private async loadHistoricalAmountPerformance(): Promise<void> {
+    if (!this.isAdminUi || !this.isAmountPerformanceMode) return;
+    const ownerUid = this.auth.currentUser?.uid;
+    const scopeEmployees = this.historicalAmountScopeEmployees();
+    if (!ownerUid || !scopeEmployees.length) {
+      this.historicalAmountPerformanceByMonth = {};
+      this.historicalAmountPerformanceError =
+        'Historique des montants indisponible.';
+      return;
+    }
+
+    const cacheKey = this.historicalAmountPerformanceCacheKey();
+    if (cacheKey === this.historicalAmountPerformanceLoadedKey) return;
+    if (this.historicalAmountPerformanceLoading) return;
+
+    const requestId = ++this.historicalAmountPerformanceRequestId;
+    this.historicalAmountPerformanceLoading = true;
+    this.historicalAmountPerformanceError = '';
+
+    try {
+      const records = (
+        await Promise.all(
+          scopeEmployees.map((employee) =>
+            this.fetchEmployeeAmountHistory(ownerUid, employee.uid!)
+          )
+        )
+      ).flat();
+      const monthKeys = new Set<string>();
+      for (const record of records) {
+        const date = parseAmountPerformanceDayKey(record.dayKey);
+        if (date) {
+          monthKeys.add(`${date.getMonth() + 1}-${date.getFullYear()}`);
+        }
+      }
+
+      const asOf = this.amountPerformanceBusinessDate();
+      const months: Record<string, HistoricalAmountPerformanceMonth> = {};
+      for (const key of monthKeys) {
+        const [month, year] = key.split('-').map(Number);
+        months[key] = this.historicalAmountMonth(
+          records,
+          month,
+          year,
+          asOf
+        );
+      }
+
+      if (
+        requestId !== this.historicalAmountPerformanceRequestId ||
+        cacheKey !== this.historicalAmountPerformanceCacheKey()
+      ) {
+        return;
+      }
+      this.historicalAmountPerformanceByMonth = months;
+      this.historicalAmountPerformanceLoadedKey = cacheKey;
+      this.updatePerformanceGraphics(
+        this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+      );
+    } catch (error) {
+      if (requestId !== this.historicalAmountPerformanceRequestId) return;
+      console.error('Failed to load historical amount performance:', error);
+      this.historicalAmountPerformanceByMonth = {};
+      this.historicalAmountPerformanceError =
+        "Impossible de charger l'historique des montants.";
+    } finally {
+      if (requestId === this.historicalAmountPerformanceRequestId) {
+        this.historicalAmountPerformanceLoading = false;
+      }
+    }
+  }
+
+  private resetHistoricalAmountPerformance(): void {
+    this.historicalAmountPerformanceRequestId += 1;
+    this.historicalAmountPerformanceLoading = false;
+    this.historicalAmountPerformanceError = '';
+    this.historicalAmountPerformanceLoadedKey = '';
+    this.historicalAmountPerformanceByMonth = {};
   }
 
   private setPerformancePercentageMonth(
@@ -4149,6 +4369,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.amountPerformanceSummary = null;
     this.amountPerformanceError = '';
     this.amountPerformanceLoadedKey = '';
+    this.resetHistoricalAmountPerformance();
     this.paymentCodeLoaded = false;
     this.individualReviews = [];
     this.individualReviewsSub?.unsubscribe();
@@ -4183,10 +4404,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           return;
         }
 
+        const employeeChanged = this.employee?.uid !== selectedEmployee.uid;
         this.employee = selectedEmployee;
         this.amountPerformanceSummary = null;
         this.amountPerformanceError = '';
         this.amountPerformanceLoadedKey = '';
+        if (employeeChanged) {
+          this.resetHistoricalAmountPerformance();
+        }
         if (
           this.employee.vacationTotalDays === undefined ||
           this.employee.vacationTotalDays === null ||
@@ -4313,7 +4538,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         await this.loadDayTotalsForMonth(this.givenMonth, this.givenYear);
         this.generateCollectionsTable(this.givenMonth, this.givenYear);
         if (this.isAdminUi && this.isAmountPerformanceMode) {
-          await this.loadAmountPerformancePreview();
+          await Promise.all([
+            this.loadAmountPerformancePreview(),
+            this.loadHistoricalAmountPerformance(),
+          ]);
         }
 
         this.updatePerformanceGraphics(
@@ -4595,6 +4823,73 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     });
 
     return [labels, values];
+  }
+
+  private buildPerformanceMonthSeries(): PerformanceMonthSeriesPoint[] {
+    const [legacyLabels, legacyValues] = this.aggregatePerformanceByMonth();
+    const legacyByMonth = new Map<string, number>();
+    legacyLabels.forEach((key, index) => {
+      const value = Number(legacyValues[index]);
+      if (Number.isFinite(value)) legacyByMonth.set(key, value);
+    });
+
+    if (!this.isAmountPerformanceMode || !this.isAdminUi) {
+      return Array.from(legacyByMonth.entries())
+        .map(([key, value]) => ({
+          key,
+          value,
+          source: 'legacy' as HistoricalPerformanceSource,
+        }))
+        .sort((a, b) => this.performanceMonthTime(a.key) - this.performanceMonthTime(b.key));
+    }
+
+    const monthKeys = new Set<string>([
+      ...legacyByMonth.keys(),
+      ...Object.keys(this.historicalAmountPerformanceByMonth),
+    ]);
+    const series: PerformanceMonthSeriesPoint[] = [];
+    for (const key of monthKeys) {
+      const amountMonth = this.historicalAmountPerformanceByMonth[key];
+      if (
+        amountMonth?.eligible &&
+        amountMonth.summary.percent !== null &&
+        Number.isFinite(amountMonth.summary.percent)
+      ) {
+        series.push({
+          key,
+          value: amountMonth.summary.percent,
+          source: 'amount',
+          summary: amountMonth.summary,
+        });
+        continue;
+      }
+
+      const legacyValue = legacyByMonth.get(key);
+      if (legacyValue !== undefined) {
+        series.push({ key, value: legacyValue, source: 'legacy' });
+      }
+    }
+    return series.sort(
+      (a, b) => this.performanceMonthTime(a.key) - this.performanceMonthTime(b.key)
+    );
+  }
+
+  private performanceMonthTime(key: string): number {
+    const [month, year] = key.split('-').map(Number);
+    return new Date(year || 0, (month || 1) - 1, 1).getTime();
+  }
+
+  get historicalAmountMonthCount(): number {
+    return this.buildPerformanceMonthSeries().filter(
+      (point) => point.source === 'amount'
+    ).length;
+  }
+
+  get historicalLegacyFallbackMonthCount(): number {
+    if (!this.isAmountPerformanceMode) return 0;
+    return this.buildPerformanceMonthSeries().filter(
+      (point) => point.source === 'legacy'
+    ).length;
   }
   toggleMakePayment() {
     this.displayMakePayment = !this.displayMakePayment;
@@ -4984,17 +5279,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const [labels, values] = this.aggregatePerformanceByMonth();
-    this.performanceMaxRange = labels.length;
-    this.maxRange = labels.length;
+    const series = this.buildPerformanceMonthSeries();
+    this.performanceMaxRange = series.length;
+    this.maxRange = series.length;
+    const targetRange =
+      range > 0 ? Math.min(range, series.length) : series.length;
+    const selected = series.slice(Math.max(series.length - targetRange, 0));
 
-    const [selectedLabels, selectedValues] = this.sliceForRange(
-      labels,
-      values,
-      range
-    );
-
-    if (!selectedLabels.length) {
+    if (!selected.length) {
       this.recentPerformanceDates = [];
       this.recentPerformanceNumbers = [];
       this.performanceGraphLabels = [];
@@ -5003,43 +5295,100 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.recentPerformanceDates = selectedLabels;
-    this.recentPerformanceNumbers = selectedValues.map((value) =>
-      Number.parseFloat(value)
-    );
-    this.performanceGraphLabels = selectedLabels.map((label) =>
-      this.formatMonthYearLabel(label)
+    this.recentPerformanceDates = selected.map((point) => point.key);
+    this.recentPerformanceNumbers = selected.map((point) => point.value);
+    this.performanceGraphLabels = selected.map((point) =>
+      this.formatMonthYearLabel(point.key)
     );
     this.performanceGraphValues = this.recentPerformanceNumbers.map((value) =>
       Number.isFinite(value) ? Math.round(value * 100) / 100 : 0
     );
 
-    const fallbackColor = selectedValues.length
-      ? this.compute.findColor(selectedValues)
-      : this.compute.colorPositive;
-
-    const barColors = this.performanceGraphValues.length
-      ? this.performanceGraphValues.map((value) =>
-          this.colorForPerf(Number.isFinite(value) ? value : 0)
-        )
-      : [fallbackColor];
-
-    this.graphPerformance = {
-      data: [
-        {
+    if (this.isAmountPerformanceMode && this.isAdminUi) {
+      const amountValues = selected.map((point) =>
+        point.source === 'amount' ? point.value : null
+      );
+      const legacyValues = selected.map((point) =>
+        point.source === 'legacy' ? point.value : null
+      );
+      const amountColors = selected.map((point) =>
+        point.source === 'amount'
+          ? this.colorForPerf(point.value)
+          : 'rgba(0,0,0,0)'
+      );
+      const amountText = selected.map((point) =>
+        point.source === 'amount' && point.summary
+          ? `Performance actuelle<br>Collecté : ${point.summary.collectedFc.toLocaleString(
+              'fr-FR'
+            )} FC<br>Attendu : ${point.summary.expectedFc.toLocaleString(
+              'fr-FR'
+            )} FC`
+          : ''
+      );
+      const legacyText = selected.map((point) =>
+        point.source === 'legacy'
+          ? 'Performance habituelle<br>Données montant absentes ou incomplètes'
+          : ''
+      );
+      const traces: PerformanceBarTrace[] = [];
+      if (amountValues.some((value) => value !== null)) {
+        traces.push({
           x: this.performanceGraphLabels,
-          y: this.performanceGraphValues,
+          y: amountValues,
           type: 'bar',
+          name: 'Performance actuelle',
+          text: amountText,
+          hovertemplate:
+            '%{x}<br><b>%{y:.1f}%</b><br>%{text}<extra></extra>',
           marker: {
-            color: barColors,
-            line: { color: barColors, width: 1 },
+            color: amountColors,
+            line: { color: amountColors, width: 1 },
           },
-        },
-      ],
-      layout: this.createPerformanceLayout(),
-    };
-    if (!selectedLabels.length) {
-      this.graphPerformance = this.createEmptyPerformanceGraph();
+        });
+      }
+      if (legacyValues.some((value) => value !== null)) {
+        traces.push({
+          x: this.performanceGraphLabels,
+          y: legacyValues,
+          type: 'bar',
+          name: 'Performance habituelle (repli)',
+          text: legacyText,
+          hovertemplate:
+            '%{x}<br><b>%{y:.1f}%</b><br>%{text}<extra></extra>',
+          marker: {
+            color: '#94a3b8',
+            line: { color: '#64748b', width: 1 },
+          },
+        });
+      }
+      this.graphPerformance = {
+        data: traces,
+        layout: this.createPerformanceLayout(this.performanceGraphLabels),
+      };
+    } else {
+      const valuesAsStrings = this.performanceGraphValues.map(String);
+      const fallbackColor = valuesAsStrings.length
+        ? this.compute.findColor(valuesAsStrings)
+        : this.compute.colorPositive;
+      const barColors = this.performanceGraphValues.length
+        ? this.performanceGraphValues.map((value) =>
+            this.colorForPerf(Number.isFinite(value) ? value : 0)
+          )
+        : [fallbackColor];
+      this.graphPerformance = {
+        data: [
+          {
+            x: this.performanceGraphLabels,
+            y: this.performanceGraphValues,
+            type: 'bar',
+            marker: {
+              color: barColors,
+              line: { color: barColors, width: 1 },
+            },
+          },
+        ],
+        layout: this.createPerformanceLayout(this.performanceGraphLabels),
+      };
     }
     let num = Number(this.performancePercentageMonth);
     let gaugeColor = this.compute.getGradientColor(Number(num));
@@ -5116,14 +5465,32 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return this.performanceRangeMap[key] ?? 0;
   }
 
-  private createPerformanceLayout() {
+  private createPerformanceLayout(categoryLabels: string[] = []) {
+    const amountMode = this.isAmountPerformanceMode && this.isAdminUi;
     return {
-      title: 'Performance % par mois',
+      title: amountMode
+        ? 'Performance actuelle par mois'
+        : 'Performance % par mois',
       barmode: 'stack',
+      showlegend: amountMode,
+      legend: amountMode
+        ? {
+            orientation: 'h',
+            x: 0.5,
+            xanchor: 'center',
+            y: -0.28,
+          }
+        : undefined,
       paper_bgcolor: 'rgba(0,0,0,0)',
       plot_bgcolor: 'rgba(0,0,0,0)',
       font: { color: '#0f172a' },
-      margin: { t: 48, r: 24, l: 48, b: 64 },
+      margin: { t: 48, r: 24, l: 48, b: amountMode ? 96 : 64 },
+      xaxis: categoryLabels.length
+        ? {
+            categoryorder: 'array',
+            categoryarray: categoryLabels,
+          }
+        : undefined,
       yaxis: { ticksuffix: '%', rangemode: 'tozero' },
     };
   }
@@ -9167,7 +9534,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.generateCollectionsTable(this.givenMonth, this.givenYear);
       if (this.isAmountPerformanceMode) {
         this.amountPerformanceLoadedKey = '';
-        await this.loadAmountPerformancePreview();
+        this.resetHistoricalAmountPerformance();
+        await Promise.all([
+          this.loadAmountPerformancePreview(),
+          this.loadHistoricalAmountPerformance(),
+        ]);
       }
       this.showCollectionsEditor = false;
     } catch (e: any) {
@@ -9207,7 +9578,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.generateCollectionsTable(this.givenMonth, this.givenYear);
       if (this.isAmountPerformanceMode) {
         this.amountPerformanceLoadedKey = '';
-        await this.loadAmountPerformancePreview();
+        this.resetHistoricalAmountPerformance();
+        await Promise.all([
+          this.loadAmountPerformancePreview(),
+          this.loadHistoricalAmountPerformance(),
+        ]);
       }
       this.showCollectionsEditor = false;
     } catch (e: any) {

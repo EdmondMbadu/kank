@@ -3625,6 +3625,29 @@
                 </button>
               </div>
 
+              <div
+                *ngIf="isAdminUi && isAmountPerformanceMode"
+                class="-mt-2 mb-4 px-4 text-center text-xs text-slate-500 dark:text-slate-400"
+              >
+                <div *ngIf="historicalAmountPerformanceLoading">
+                  Vérification de l’historique collecté / attendu…
+                </div>
+                <div *ngIf="!historicalAmountPerformanceLoading && !historicalAmountPerformanceError">
+                  {{ historicalAmountMonthCount }} mois en performance actuelle ·
+                  {{ historicalLegacyFallbackMonthCount }} mois avec la formule habituelle
+                </div>
+                <div *ngIf="!historicalAmountPerformanceLoading && historicalAmountPerformanceError">
+                  {{ historicalAmountPerformanceError }}
+                  <button
+                    type="button"
+                    class="ml-1 font-semibold text-indigo-700 underline dark:text-indigo-300"
+                    (click)="retryAmountPerformancePreview()"
+                  >
+                    Réessayer
+                  </button>
+                </div>
+              </div>
+
             <div
               class="flex flex-wrap items-center justify-center gap-2 px-4 mb-4"
             >

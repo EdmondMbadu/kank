@@ -35,6 +35,20 @@ describe('EmployeePageComponent', () => {
 
     const time = {
       yearsList: [2026],
+      monthFrenchNames: [
+        'Janvier',
+        'Février',
+        'Mars',
+        'Avril',
+        'Mai',
+        'Juin',
+        'Juillet',
+        'Août',
+        'Septembre',
+        'Octobre',
+        'Novembre',
+        'Décembre',
+      ],
       todaysDateMonthDayYear: () => '3-28-2026',
       convertDateToDayMonthYear: () => '28 Mars 2026',
       getTodaysDateYearMonthDay: () => '2026-03-28',
@@ -110,6 +124,11 @@ describe('EmployeePageComponent', () => {
             bonusPerBandUsd: 1,
           }
         ),
+      getGradientColor: () => '#22c55e',
+      findColor: () => '#22c55e',
+      colorPositive: '#22c55e',
+      convertCongoleseFrancToUsDollars: (value: string) =>
+        Math.ceil(Number(value || 0) / 2900),
     } as any;
 
     return new EmployeePageComponent(
@@ -132,6 +151,27 @@ describe('EmployeePageComponent', () => {
     );
   }
 
+  function completeOperatingDayRecords(
+    month: number,
+    year: number,
+    throughDay: number,
+    employeeUid = 'employee-1'
+  ): any[] {
+    const records: any[] = [];
+    for (let day = 1; day <= throughDay; day++) {
+      if (new Date(year, month - 1, day).getDay() === 0) continue;
+      records.push({
+        dayKey: `${month}-${day}-${year}`,
+        total: 50,
+        expected: 100,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid,
+      });
+    }
+    return records;
+  }
+
   beforeEach(() => {
     jasmine.clock().install();
     jasmine.clock().mockDate(new Date(2026, 2, 28));
@@ -144,11 +184,16 @@ describe('EmployeePageComponent', () => {
   it('does not activate amount performance for a non-admin', async () => {
     const component = createComponent({ isAdmninistrator: false });
     const loadSpy = spyOn<any>(component as any, 'loadAmountPerformancePreview');
+    const historySpy = spyOn<any>(
+      component as any,
+      'loadHistoricalAmountPerformance'
+    );
 
     await component.setPerformanceMetricMode('amount');
 
     expect(component.performanceMetricMode).toBe('legacy');
     expect(loadSpy).not.toHaveBeenCalled();
+    expect(historySpy).not.toHaveBeenCalled();
   });
 
   it('computes an individual amount preview from the already loaded month data', async () => {
@@ -185,6 +230,10 @@ describe('EmployeePageComponent', () => {
         employeeUid: 'employee-1',
       },
     };
+    spyOn<any>(
+      component as any,
+      'loadHistoricalAmountPerformance'
+    ).and.resolveTo();
 
     await component.setPerformanceMetricMode('amount');
 
@@ -242,6 +291,10 @@ describe('EmployeePageComponent', () => {
         employeeUid: 'employee-2',
       },
     ]);
+    spyOn<any>(
+      component as any,
+      'loadHistoricalAmountPerformance'
+    ).and.resolveTo();
 
     await component.setPerformanceMetricMode('amount');
 
@@ -255,6 +308,170 @@ describe('EmployeePageComponent', () => {
       })
     );
     expect(component.amountPerformanceScopeLabel).toBe('Total du site');
+  });
+
+  it('uses sparse expected records because zero-expected days are not persisted', () => {
+    const component = createComponent({
+      isAdmninistrator: true,
+      currentUser: { uid: 'owner-1', dailyReimbursement: {} },
+    });
+    component.employee = {
+      uid: 'employee-1',
+      role: 'Agent Marketing',
+    };
+    const sparseRecords = [
+      {
+        dayKey: '3-27-2026',
+        total: 500,
+        expected: 1000,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'employee-1',
+      },
+    ];
+    const oldPaymentOnlyRecords = [
+      {
+        dayKey: '2-27-2026',
+        total: 500,
+        expected: 0,
+        expectedPresent: false,
+        totalPresent: true,
+        employeeUid: 'employee-1',
+      },
+    ];
+
+    const sparse = (component as any).historicalAmountMonth(
+      sparseRecords,
+      3,
+      2026,
+      new Date(2026, 2, 28)
+    );
+    const unavailable = (component as any).historicalAmountMonth(
+      oldPaymentOnlyRecords,
+      2,
+      2026,
+      new Date(2026, 2, 28)
+    );
+
+    expect(sparse.eligible).toBeTrue();
+    expect(sparse.summary.percent).toBe(50);
+    expect(unavailable.eligible).toBeFalse();
+    expect(unavailable.summary.percent).toBeNull();
+  });
+
+  it('builds a mixed histogram with amount bars and legacy fallback bars', () => {
+    const component = createComponent({ isAdmninistrator: true });
+    component.employee = {
+      uid: 'employee-1',
+      role: 'Agent Marketing',
+      dailyPoints: {
+        '1-10-2026': '10',
+        '2-10-2026': '20',
+        '3-10-2026': '30',
+        '4-10-2026': '40',
+      },
+      totalDailyPoints: {
+        '1-10-2026': '100',
+        '2-10-2026': '100',
+        '3-10-2026': '100',
+        '4-10-2026': '100',
+      },
+    };
+    component.performanceMetricMode = 'amount';
+    (component as any).historicalAmountPerformanceByMonth = {
+      '1-2026': {
+        eligible: true,
+        summary: {
+          percent: 60,
+          collectedFc: 600,
+          expectedFc: 1000,
+          visualPercent: 60,
+        },
+      },
+      '2-2026': {
+        eligible: false,
+        summary: {
+          percent: 70,
+          collectedFc: 700,
+          expectedFc: 1000,
+          visualPercent: 70,
+        },
+      },
+      '3-2026': {
+        eligible: true,
+        summary: {
+          percent: 80,
+          collectedFc: 800,
+          expectedFc: 1000,
+          visualPercent: 80,
+        },
+      },
+      '4-2026': {
+        eligible: true,
+        summary: {
+          percent: 90,
+          collectedFc: 900,
+          expectedFc: 1000,
+          visualPercent: 90,
+        },
+      },
+    };
+
+    component.updatePerformanceGraphics(3);
+
+    expect(component.recentPerformanceDates).toEqual([
+      '2-2026',
+      '3-2026',
+      '4-2026',
+    ]);
+    const amountTrace = component.graphPerformance.data.find(
+      (trace) => trace.name === 'Performance actuelle'
+    );
+    const fallbackTrace = component.graphPerformance.data.find(
+      (trace) => trace.name === 'Performance habituelle (repli)'
+    );
+    expect(amountTrace?.y).toEqual([null, 80, 90]);
+    expect(fallbackTrace?.y).toEqual([20, null, null]);
+    expect(component.historicalAmountMonthCount).toBe(3);
+    expect(component.historicalLegacyFallbackMonthCount).toBe(1);
+  });
+
+  it('uses the authoritative site total even when employee attribution needs review', () => {
+    const records = completeOperatingDayRecords(3, 2026, 28);
+    const siteCollected = records.reduce(
+      (sum, record) => sum + record.total,
+      0
+    );
+    const dailyReimbursement = Object.fromEntries(
+      records.map((record) => [record.dayKey, record.total])
+    );
+    const component = createComponent({
+      isAdmninistrator: true,
+      currentUser: { uid: 'owner-1', dailyReimbursement },
+    });
+    component.employee = { uid: 'manager-1', role: 'Manager' };
+
+    const reconciled = (component as any).historicalAmountMonth(
+      records,
+      3,
+      2026,
+      new Date(2026, 2, 28)
+    );
+    component.auth.currentUser.dailyReimbursement['3-28-2026'] =
+      (component.auth.currentUser.dailyReimbursement['3-28-2026'] || 0) +
+      100;
+    const mismatched = (component as any).historicalAmountMonth(
+      records,
+      3,
+      2026,
+      new Date(2026, 2, 28)
+    );
+
+    expect(reconciled.summary.collectedFc).toBe(siteCollected);
+    expect(reconciled.eligible).toBeTrue();
+    expect(mismatched.summary.reconciliationDifferenceFc).toBe(100);
+    expect(mismatched.summary.status).toBe('partial');
+    expect(mismatched.eligible).toBeTrue();
   });
 
   it('returns to the legacy metric when an admin switches to employee view', () => {
