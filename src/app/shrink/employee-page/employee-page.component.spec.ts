@@ -432,6 +432,10 @@ describe('EmployeePageComponent', () => {
     );
     expect(amountTrace?.y).toEqual([null, 80, 90]);
     expect(fallbackTrace?.y).toEqual([20, null, null]);
+    expect(amountTrace?.hovertemplate).toBe(
+      '<b>%{y:.1f}%</b><extra></extra>'
+    );
+    expect(amountTrace?.text).toBeUndefined();
     expect(component.historicalAmountMonthCount).toBe(3);
     expect(component.historicalLegacyFallbackMonthCount).toBe(1);
   });

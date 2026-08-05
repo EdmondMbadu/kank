@@ -5316,20 +5316,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           ? this.colorForPerf(point.value)
           : 'rgba(0,0,0,0)'
       );
-      const amountText = selected.map((point) =>
-        point.source === 'amount' && point.summary
-          ? `Performance actuelle<br>Collecté : ${point.summary.collectedFc.toLocaleString(
-              'fr-FR'
-            )} FC<br>Attendu : ${point.summary.expectedFc.toLocaleString(
-              'fr-FR'
-            )} FC`
-          : ''
-      );
-      const legacyText = selected.map((point) =>
-        point.source === 'legacy'
-          ? 'Performance habituelle<br>Données montant absentes ou incomplètes'
-          : ''
-      );
       const traces: PerformanceBarTrace[] = [];
       if (amountValues.some((value) => value !== null)) {
         traces.push({
@@ -5337,9 +5323,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           y: amountValues,
           type: 'bar',
           name: 'Performance actuelle',
-          text: amountText,
-          hovertemplate:
-            '%{x}<br><b>%{y:.1f}%</b><br>%{text}<extra></extra>',
+          hovertemplate: '<b>%{y:.1f}%</b><extra></extra>',
           marker: {
             color: amountColors,
             line: { color: amountColors, width: 1 },
@@ -5352,9 +5336,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           y: legacyValues,
           type: 'bar',
           name: 'Performance habituelle (repli)',
-          text: legacyText,
-          hovertemplate:
-            '%{x}<br><b>%{y:.1f}%</b><br>%{text}<extra></extra>',
+          hovertemplate: '<b>%{y:.1f}%</b><extra></extra>',
           marker: {
             color: '#94a3b8',
             line: { color: '#64748b', width: 1 },
