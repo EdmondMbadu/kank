@@ -49,6 +49,7 @@ import {
   parseAmountPerformanceDayKey,
   sumAmountMapThroughDate,
 } from 'src/app/utils/amount-performance.util';
+import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
 
 // at the top, with other imports
 import exifr from 'exifr'; // if TS complains, use: import * as exifr from 'exifr';
@@ -2721,7 +2722,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const effectiveMode = this.isAdminUi
       ? this.performanceMetricMode
       : this.publishedEmployeePerformanceMode;
-    return effectiveMode === 'amount';
+    return (
+      effectiveMode === 'amount' &&
+      isAmountPerformanceRoleEligible(this.employee?.role)
+    );
   }
 
   get amountPerformanceScopeLabel(): string {
@@ -2792,7 +2796,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (mode === 'amount' && !this.isAdminUi) return;
 
     this.performanceMetricMode = mode;
-    if (mode === 'amount') {
+    if (this.isAmountPerformanceMode) {
       await Promise.all([
         this.loadAmountPerformancePreview(),
         this.loadHistoricalAmountPerformance(),

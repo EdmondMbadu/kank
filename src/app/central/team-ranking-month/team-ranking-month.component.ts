@@ -54,6 +54,7 @@ import {
   buildAmountPerformanceSummary,
   sumAmountMapThroughDate,
 } from 'src/app/utils/amount-performance.util';
+import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -5009,7 +5010,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   employeePerformancePercent(employee: Employee): number | null {
-    if (this.isAmountPerformanceMode) {
+    if (this.employeeUsesAmountPerformance(employee)) {
       const amountPercent =
         this.employeeAmountPerformanceSummary(employee)?.percent;
       if (amountPercent !== null && amountPercent !== undefined) {
@@ -5022,7 +5023,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   employeePerformanceVisualPercent(employee: Employee): number {
-    if (this.isAmountPerformanceMode) {
+    if (this.employeeUsesAmountPerformance(employee)) {
       const amountSummary = this.employeeAmountPerformanceSummary(employee);
       if (amountSummary?.percent !== null && amountSummary?.percent !== undefined) {
         return amountSummary.visualPercent;
@@ -5037,6 +5038,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.usesSiteAmountPerformanceScope(employee)
       ? 'Total du site'
       : 'Individuel';
+  }
+
+  employeeUsesAmountPerformance(employee: Employee): boolean {
+    return (
+      this.isAmountPerformanceMode &&
+      isAmountPerformanceRoleEligible(employee?.role)
+    );
   }
 
   get amountPerformanceThroughLabel(): string {

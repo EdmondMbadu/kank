@@ -122,7 +122,11 @@ describe('TeamRankingMonthComponent', () => {
       percent: 62.5,
       visualPercent: 62.5,
     } as any;
-    const employee = { uid: 'employee-1', performancePercentageMonth: '35' } as any;
+    const employee = {
+      uid: 'employee-1',
+      role: 'Agent Marketing',
+      performancePercentageMonth: '35',
+    } as any;
     (component as any).amountPerformanceByEmployee = {
       '|employee-1': { percent: 70, visualPercent: 70 },
     };
@@ -179,6 +183,27 @@ describe('TeamRankingMonthComponent', () => {
     expect(component.currentPerformancePercent).toBe(41);
     expect(component.employeePerformancePercent(employee)).toBe(35);
     expect(component.employeePerformanceVisualPercent(employee)).toBe(35);
+  });
+
+  it('keeps verifier rows on habitual performance in amount mode', () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.performanceMetricMode = 'amount';
+    const verifier = {
+      uid: 'verifier-1',
+      role: 'Vérificateur',
+      performancePercentageMonth: '46',
+    } as any;
+    (component as any).amountPerformanceByEmployee = {
+      '|verifier-1': {
+        percent: 91,
+        visualPercent: 91,
+      },
+    };
+
+    expect(component.employeeUsesAmountPerformance(verifier)).toBeFalse();
+    expect(component.employeePerformancePercent(verifier)).toBe(46);
+    expect(component.employeePerformanceVisualPercent(verifier)).toBe(46);
   });
 
   it('publishes the global employee mode and mirrors it in the admin preview', async () => {

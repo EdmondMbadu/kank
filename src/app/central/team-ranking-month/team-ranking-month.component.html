@@ -2057,10 +2057,10 @@
                 <ng-template #employeePerformanceUnavailable>—</ng-template>
               </div>
               <div class="text-[10px] text-gray-500">
-                {{ isAmountPerformanceMode ? employeeAmountPerformanceScopeLabel(em) : "Performance" }}
+                {{ employeeUsesAmountPerformance(em) ? employeeAmountPerformanceScopeLabel(em) : "Performance habituelle" }}
               </div>
               <div
-                *ngIf="isAmountPerformanceMode && employeeAmountPerformanceSummary(em) as employeeAmountSummary"
+                *ngIf="employeeUsesAmountPerformance(em) && employeeAmountPerformanceSummary(em) as employeeAmountSummary"
                 class="mt-0.5 whitespace-nowrap text-[10px] text-slate-500"
               >
                 {{ employeeAmountSummary.collectedFc | number : "1.0-0" }} /

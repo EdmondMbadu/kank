@@ -205,6 +205,10 @@ describe('EmployeePageComponent', () => {
 
   it('uses the published amount percentage for an employee without admin mode', () => {
     const component = createComponent({ isAdmninistrator: false });
+    component.employee = {
+      uid: 'employee-1',
+      role: 'Agent Marketing',
+    };
     component.publishedEmployeePerformanceMode = 'amount';
     component.performancePercentageMonth = '40';
     component.amountPerformanceSummary = {
@@ -216,6 +220,36 @@ describe('EmployeePageComponent', () => {
     expect(component.isAdminUi).toBeFalse();
     expect(component.currentPerformancePercent).toBe(64.5);
     expect(component.currentPerformanceVisualPercent).toBe(64.5);
+  });
+
+  it('keeps verifier performance habitual when amount mode is selected', async () => {
+    const component = createComponent({ isAdmninistrator: true });
+    component.employee = {
+      uid: 'verifier-1',
+      role: 'Vérificateur',
+    };
+    component.performancePercentageMonth = '46';
+    component.amountPerformanceSummary = {
+      percent: 91,
+      visualPercent: 91,
+    } as any;
+    const loadSpy = spyOn<any>(
+      component as any,
+      'loadAmountPerformancePreview'
+    );
+    const historySpy = spyOn<any>(
+      component as any,
+      'loadHistoricalAmountPerformance'
+    );
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.performanceMetricMode).toBe('amount');
+    expect(component.isAmountPerformanceMode).toBeFalse();
+    expect(component.currentPerformancePercent).toBe(46);
+    expect(component.currentPerformanceVisualPercent).toBe(46);
+    expect(loadSpy).not.toHaveBeenCalled();
+    expect(historySpy).not.toHaveBeenCalled();
   });
 
   it('falls back to the habitual employee percentage when amount data is unavailable', () => {
