@@ -281,6 +281,74 @@ describe('EmployeePageComponent', () => {
     );
   });
 
+  it('uses the full site expectation for the sole active agent after a manager leaves', async () => {
+    const component = createComponent({
+      isAdmninistrator: true,
+      currentUser: {
+        uid: 'owner-1',
+        dailyReimbursement: { '3-27-2026': 412500 },
+      },
+    });
+    component.employee = {
+      uid: 'beverly',
+      firstName: 'Beverly',
+      lastName: 'Nzuzi',
+      role: 'Agent Marketing',
+      status: 'Travaille',
+    };
+    component.employees = [
+      component.employee,
+      {
+        uid: 'former-manager',
+        role: 'Manager',
+        status: 'Ne travaille plus',
+      },
+    ];
+    component.givenMonth = 3;
+    component.givenYear = 2026;
+    component.monthlyDayTotals = {
+      '3-27-2026': {
+        dayKey: '3-27-2026',
+        total: 412500,
+        expected: 280000,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'beverly',
+      },
+    };
+    (component as any).monthlyDayTotalsLoadedKey = '2026-03';
+    spyOn<any>(
+      component as any,
+      'fetchEmployeeAmountRecordsForMonth'
+    ).and.resolveTo([
+      {
+        dayKey: '3-27-2026',
+        total: 0,
+        expected: 280000,
+        expectedPresent: true,
+        totalPresent: true,
+        employeeUid: 'former-manager',
+      },
+    ]);
+    spyOn<any>(
+      component as any,
+      'loadHistoricalAmountPerformance'
+    ).and.resolveTo();
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.amountPerformanceSummary).toEqual(
+      jasmine.objectContaining({
+        collectedFc: 412500,
+        expectedFc: 560000,
+        percent: 73.66071428571429,
+        reconciliationDifferenceFc: 0,
+        status: 'ready',
+      })
+    );
+    expect(component.amountPerformanceScopeLabel).toBe('Total du site');
+  });
+
   it('computes manager performance from site totals instead of averaging employees', async () => {
     const component = createComponent({
       isAdmninistrator: true,

@@ -2725,11 +2725,42 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get amountPerformanceScopeLabel(): string {
-    return this.employee?.role === 'Manager'
+    return this.usesSiteAmountPerformanceScope()
       ? 'Total du site'
       : `${this.employee?.firstName || 'Employé'} ${
           this.employee?.lastName || ''
         }`.trim();
+  }
+
+  private isActiveAmountPerformanceEmployee(employee: Employee): boolean {
+    const status = String(employee?.status || '').trim().toLowerCase();
+    // Missing legacy statuses are treated as active conservatively. This
+    // prevents expanding an employee to site scope when coworker state is
+    // unknown.
+    return (
+      !status ||
+      status === 'travaille' ||
+      status === 'transféré' ||
+      status === 'transfere'
+    );
+  }
+
+  private usesSiteAmountPerformanceScope(): boolean {
+    if (
+      String(this.employee?.role || '').trim().toLowerCase() === 'manager'
+    ) {
+      return true;
+    }
+
+    const employeeUid = this.employee?.uid || '';
+    if (!employeeUid) return false;
+
+    const activeEmployees = (this.employees || []).filter((employee) =>
+      this.isActiveAmountPerformanceEmployee(employee)
+    );
+    return (
+      activeEmployees.length === 1 && activeEmployees[0]?.uid === employeeUid
+    );
   }
 
   get amountPerformanceThroughLabel(): string {
@@ -2802,7 +2833,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const ownerUid = this.auth.currentUser?.uid || '';
     const employeeUid = this.employee?.uid || '';
     const employeeSet =
-      this.employee?.role === 'Manager'
+      this.usesSiteAmountPerformanceScope()
         ? (this.employees || [])
             .map((employee) => employee.uid || '')
             .filter(Boolean)
@@ -2861,7 +2892,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       let collectedOverrideFc: number | undefined;
       let reconciliationDifferenceFc = 0;
 
-      if (this.employee.role === 'Manager') {
+      if (this.usesSiteAmountPerformanceScope()) {
         const employeeIds = Array.from(
           new Set(
             (this.employees || [])
@@ -2922,7 +2953,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   private historicalAmountScopeEmployees(): Employee[] {
     const candidates =
-      this.employee?.role === 'Manager'
+      this.usesSiteAmountPerformanceScope()
         ? this.employees || []
         : this.employee?.uid
         ? [this.employee]
@@ -2982,7 +3013,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   ): HistoricalAmountPerformanceMonth {
     let collectedOverrideFc: number | undefined;
     let reconciliationDifferenceFc = 0;
-    if (this.employee?.role === 'Manager') {
+    if (this.usesSiteAmountPerformanceScope()) {
       const employeeTotals = buildAmountPerformanceSummary({
         records,
         month,

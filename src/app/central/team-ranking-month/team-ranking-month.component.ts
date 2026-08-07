@@ -5034,7 +5034,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   employeeAmountPerformanceScopeLabel(employee: Employee): string {
-    return this.isManagerEmployee(employee) ? 'Total du site' : 'Individuel';
+    return this.usesSiteAmountPerformanceScope(employee)
+      ? 'Total du site'
+      : 'Individuel';
   }
 
   get amountPerformanceThroughLabel(): string {
@@ -5196,9 +5198,45 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return String(employee?.role || '').trim().toLowerCase() === 'manager';
   }
 
+  /**
+   * Managers always represent their whole site. The same site scope is needed
+   * when a non-manager is the site's only active employee: all collections are
+   * attributed to that employee, so comparing them with only that employee's
+   * expected records would mix a site numerator with an individual denominator.
+   *
+   * allEmployees is already the status-filtered active ranking list. Scope it
+   * by owner so an employee who is alone at one location is not affected by
+   * employees at another location.
+   */
+  private usesSiteAmountPerformanceScope(employee: Employee): boolean {
+    if (this.isManagerEmployee(employee)) return true;
+
+    const ownerUid = employee?.tempUser?.uid || '';
+    const employeeUid = employee?.uid || '';
+    if (!ownerUid || !employeeUid) return false;
+
+    const activeAtSite = (this.allEmployees || []).filter(
+      (candidate) => candidate?.tempUser?.uid === ownerUid
+    );
+    return (
+      activeAtSite.length === 1 && activeAtSite[0]?.uid === employeeUid
+    );
+  }
+
   private amountPerformanceCacheKey(): string {
     const employeeKey = this.amountPerformanceEmployeePairs()
       .map(({ ownerUid, employeeUid }) => `${ownerUid}:${employeeUid}`)
+      .sort()
+      .join(',');
+    // Active membership determines whether a non-manager uses individual or
+    // site scope, so it must invalidate the cache even when the underlying
+    // employee documents (and therefore employeeKey) have not changed.
+    const activeScopeKey = (this.allEmployees || [])
+      .map(
+        (employee) =>
+          `${employee?.tempUser?.uid || ''}:${employee?.uid || ''}`
+      )
+      .filter((key) => key !== ':')
       .sort()
       .join(',');
     const ownerKey = (this.allUsers || [])
@@ -5206,7 +5244,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
       .filter(Boolean)
       .sort()
       .join(',');
-    return [ownerKey, employeeKey, this.givenYear, this.givenMonth].join('|');
+    return [
+      ownerKey,
+      employeeKey,
+      activeScopeKey,
+      this.givenYear,
+      this.givenMonth,
+    ].join('|');
   }
 
   private async fetchEmployeeAmountRecordsForMonth(
@@ -5364,7 +5408,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       for (const employee of this.allEmployees || []) {
         const employeeKey = this.amountPerformanceEmployeeKey(employee);
         const ownerUid = employee?.tempUser?.uid || '';
-        const employeeSummary = this.isManagerEmployee(employee)
+        const employeeSummary = this.usesSiteAmountPerformanceScope(employee)
           ? siteSummaries.get(ownerUid)
           : buildAmountPerformanceSummary({
               records: recordsByEmployeeKey.get(employeeKey) || [],

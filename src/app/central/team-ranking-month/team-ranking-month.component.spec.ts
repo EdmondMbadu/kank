@@ -397,6 +397,87 @@ describe('TeamRankingMonthComponent', () => {
     ]);
   });
 
+  it('uses site totals for the sole active agent when their manager has left', async () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    const site = {
+      uid: 'site-beverly',
+      dailyReimbursement: { '7-1-2026': 412500 },
+    } as any;
+    const beverly = {
+      uid: 'beverly',
+      firstName: 'Beverly',
+      lastName: 'Nzuzi',
+      role: 'Agent Marketing',
+      status: 'Travaille',
+      tempUser: site,
+    } as any;
+    const formerManager = {
+      uid: 'former-manager',
+      role: 'Manager',
+      status: 'Ne travaille plus',
+      tempUser: site,
+    } as any;
+    component.allUsers = [site];
+    component.allEmployees = [beverly];
+    component.allEmployeesAll = [beverly, formerManager];
+    spyOn<any>(
+      component as any,
+      'fetchEmployeeAmountRecordsForMonth'
+    ).and.callFake((_ownerUid: string, employeeUid: string) =>
+      Promise.resolve([
+        {
+          dayKey: '7-1-2026',
+          expected: 280000,
+          total: employeeUid === 'beverly' ? 412500 : 0,
+          expectedPresent: true,
+          totalPresent: true,
+          employeeUid,
+        },
+      ])
+    );
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.employeeAmountPerformanceSummary(beverly)).toEqual(
+      jasmine.objectContaining({
+        collectedFc: 412500,
+        expectedFc: 560000,
+        percent: 73.66071428571429,
+      })
+    );
+    expect(component.employeeAmountPerformanceScopeLabel(beverly)).toBe(
+      'Total du site'
+    );
+  });
+
+  it('invalidates amount performance when active site membership changes', () => {
+    const { component } = createComponent();
+    const site = { uid: 'site-a' } as any;
+    const employee = {
+      uid: 'employee-a',
+      role: 'Agent Marketing',
+      tempUser: site,
+    } as any;
+    const manager = {
+      uid: 'manager-a',
+      role: 'Manager',
+      tempUser: site,
+    } as any;
+    component.allUsers = [site];
+    component.allEmployeesAll = [employee, manager];
+    component.allEmployees = [employee, manager];
+    const teamCacheKey = (component as any).amountPerformanceCacheKey();
+
+    component.allEmployees = [employee];
+    const soleEmployeeCacheKey = (component as any)
+      .amountPerformanceCacheKey();
+
+    expect(soleEmployeeCacheKey).not.toBe(teamCacheKey);
+  });
+
   it('includes former and vacationing employees only in the trophy history map', () => {
     const { component } = createComponent();
     const activeEmployee = {
