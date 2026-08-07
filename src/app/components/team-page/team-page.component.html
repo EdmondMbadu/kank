@@ -129,7 +129,7 @@
 
   <ng-template #employeeGrid let-employeeList>
     <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <ng-container *ngFor="let em of employeeList">
+      <ng-container *ngFor="let em of employeeList; trackBy: trackEmployeeByUid">
       <div
         class="overflow-hidden rounded-3xl bg-white/70 shadow-xl ring-1 ring-gray-200 backdrop-blur transition hover:shadow-2xl dark:bg-slate-700 dark:ring-gray-700"
       >
@@ -491,7 +491,7 @@
 </div>
 
 <!-- === EDIT EMPLOYEE MODALS === -->
-<ng-container *ngFor="let em of employees; let i = index">
+<ng-container *ngFor="let em of employees; let i = index; trackBy: trackEmployeeByUid">
   <div
     *ngIf="displayEditEmployees[i]"
     class="fixed inset-0 z-50 bg-black/50"

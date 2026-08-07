@@ -29,6 +29,7 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { Router } from '@angular/router';
 import { recoverOrRetryClientPhotoUpload } from '../utils/client-photo-recovery.util';
+import { isActivelyFollowedClient } from '../utils/active-followed-client.util';
 import firebase from 'firebase/compat/app'; // ① NEW
 import 'firebase/compat/firestore'; // ②
 
@@ -3941,17 +3942,7 @@ export class DataService {
       return [];
     }
 
-    return clients.filter((data) => {
-      const isAlive =
-        data.vitalStatus === undefined ||
-        data.vitalStatus === '' ||
-        data.vitalStatus?.toLowerCase() === 'vivant';
-
-      const debt = Number(data.debtLeft);
-      const hasDebt = !isNaN(debt) && debt > 0;
-
-      return isAlive && hasDebt;
-    });
+    return clients.filter(isActivelyFollowedClient);
   }
 
   findClientsWithDebtsIncludingThoseWhoLeft(clients: Client[]) {

@@ -96,7 +96,7 @@ export class UpdateClientInfoComponent {
     return null;
   }
 
-  updateClientInfo() {
+  async updateClientInfo(): Promise<void> {
     console.log('🔵 [UPDATE CLIENT INFO] Method called');
     console.log('🔵 [UPDATE CLIENT INFO] Client ID:', this.id);
     console.log('🔵 [UPDATE CLIENT INFO] Client object:', this.client);
@@ -178,21 +178,25 @@ export class UpdateClientInfoComponent {
       this.updatePreviousClientAgentInfo();
       
       console.log('🔵 [UPDATE CLIENT INFO] Calling data.updateClientInfo');
-      this.data.updateClientInfo(this.client).then(() => {
+      try {
+        await this.data.updateClientInfo(this.client);
         console.log('✅ [UPDATE CLIENT INFO] Client info updated successfully');
         console.log('🔵 [UPDATE CLIENT INFO] Updating employee info for agent assignment');
-        this.data.updateEmployeeInfoForClientAgentAssignment(this.agent!).then(() => {
-          console.log('✅ [UPDATE CLIENT INFO] Employee info updated successfully');
-        }).catch((err) => {
-          console.error('❌ [UPDATE CLIENT INFO] Error updating employee info:', err);
-        });
-      }).catch((err) => {
+        void this.data
+          .updateEmployeeInfoForClientAgentAssignment(this.agent!)
+          .then(() => {
+            console.log('✅ [UPDATE CLIENT INFO] Employee info updated successfully');
+          })
+          .catch((err) => {
+            console.error('❌ [UPDATE CLIENT INFO] Error updating employee info:', err);
+          });
+
+        console.log('🔵 [UPDATE CLIENT INFO] Navigating to client portal');
+        await this.router.navigate(['/client-portal/' + this.id]);
+      } catch (err) {
         console.error('❌ [UPDATE CLIENT INFO] Error updating client info:', err);
         alert('Erreur lors de la mise à jour des informations du client');
-      });
-      
-      console.log('🔵 [UPDATE CLIENT INFO] Navigating to client portal');
-      this.router.navigate(['/client-portal/' + this.id]);
+      }
     }
   }
   updateAgentClients() {

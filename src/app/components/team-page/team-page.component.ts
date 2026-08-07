@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import {
   AngularFireStorage,
   AngularFireUploadTask,
@@ -11,13 +11,14 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { combineLatest, Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-team-page',
   templateUrl: './team-page.component.html',
   styleUrls: ['./team-page.component.css'],
 })
-export class TeamPageComponent implements OnInit {
+export class TeamPageComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -67,9 +68,18 @@ export class TeamPageComponent implements OnInit {
     duplicatesLoading: false,
   };
   private clientDictionary: Record<string, Client> = {};
+  private currentClientIdsByAgent = new Map<string, string[]>();
+  private allClientIdsByAgent = new Map<string, string[]>();
+  private readonly destroy$ = new Subject<void>();
+  private teamDataInitialized = false;
 
   ngOnInit(): void {
-    this.retreiveClients();
+    this.initializeTeamData();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
   readonly DEFAULT_VACATION_DAYS = 7;
   today = this.time.todaysDateMonthDayYear();
@@ -107,11 +117,7 @@ export class TeamPageComponent implements OnInit {
     this.displayEditEmployees[index] = !this.displayEditEmployees[index];
   }
   retrieveEmployees(): void {
-    this.auth.getAllEmployees().subscribe((data: any) => {
-      this.allEmployees = Array.isArray(data) ? data : [];
-      this.prepareEmployees(this.allEmployees);
-      this.applyEmployeeScope();
-    });
+    this.initializeTeamData();
   }
 
   setEmployeeScope(scope: 'current' | 'all'): void {
@@ -157,12 +163,26 @@ export class TeamPageComponent implements OnInit {
   }
 
   retreiveClients(): void {
-    this.auth.getAllClients().subscribe((data: any) => {
-      this.allClients = Array.isArray(data) ? data : [];
-      this.buildClientDictionary();
-      this.findClientsWithDebts();
-      this.retrieveEmployees();
-    });
+    this.initializeTeamData();
+  }
+
+  private initializeTeamData(): void {
+    if (this.teamDataInitialized) return;
+    this.teamDataInitialized = true;
+
+    combineLatest([this.auth.getAllClients(), this.auth.getAllEmployees()])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([clientData, employeeData]) => {
+        this.allClients = Array.isArray(clientData) ? clientData : [];
+        this.allEmployees = Array.isArray(employeeData) ? employeeData : [];
+        this.buildClientDictionary();
+        this.findClientsWithDebts();
+        this.prepareEmployees(this.allEmployees);
+        this.applyEmployeeScope();
+        if (this.transferModalVisible) {
+          this.refreshTransferCounts();
+        }
+      });
   }
 
   private buildClientDictionary(): void {
@@ -349,7 +369,10 @@ export class TeamPageComponent implements OnInit {
     employee: Employee,
     scope: 'current' | 'all' = this.employeeScope
   ): number {
-    return this.getClientIdsForEmployee(employee.uid, scope).length;
+    if (!employee?.uid) return 0;
+    const index =
+      scope === 'all' ? this.allClientIdsByAgent : this.currentClientIdsByAgent;
+    return index.get(employee.uid)?.length || 0;
   }
 
   getTransferClientCount(employee: Employee): number {
@@ -451,12 +474,9 @@ export class TeamPageComponent implements OnInit {
     scope: 'current' | 'all'
   ): string[] {
     if (!employeeId) return [];
-    const sourceClients =
-      scope === 'all' ? this.allClients ?? [] : this.clientsWithDebts ?? [];
-
-    return sourceClients
-      .filter((client) => client.agent === employeeId && !!client.uid)
-      .map((client) => client.uid!);
+    const index =
+      scope === 'all' ? this.allClientIdsByAgent : this.currentClientIdsByAgent;
+    return [...(index.get(employeeId) || [])];
   }
 
   private getStoredClientIdsForEmployee(
@@ -475,10 +495,33 @@ export class TeamPageComponent implements OnInit {
   }
 
   findClientsWithDebts() {
-    if (this.allClients) {
-      this.clientsWithDebts = this.data.findClientsWithDebts(this.allClients);
-      this.agentClientMap = this.getAgentsWithClients();
+    this.clientsWithDebts = this.data.findClientsWithDebts(this.allClients);
+    this.allClientIdsByAgent = this.buildClientIdsByAgent(this.allClients);
+    this.currentClientIdsByAgent = this.buildClientIdsByAgent(
+      this.clientsWithDebts
+    );
+    this.agentClientMap = this.getAgentsWithClients();
+  }
+
+  private buildClientIdsByAgent(clients: Client[]): Map<string, string[]> {
+    const idsByAgent = new Map<string, Set<string>>();
+
+    for (const client of clients || []) {
+      const agentId = client?.agent || '';
+      const clientId = client?.uid || '';
+      if (!agentId || !clientId) continue;
+
+      const ids = idsByAgent.get(agentId) || new Set<string>();
+      ids.add(clientId);
+      idsByAgent.set(agentId, ids);
     }
+
+    return new Map(
+      Array.from(idsByAgent.entries()).map(([agentId, ids]) => [
+        agentId,
+        Array.from(ids),
+      ])
+    );
   }
 
   async resetClientsAndEmployees() {
@@ -502,22 +545,20 @@ export class TeamPageComponent implements OnInit {
   }
 
   getAgentsWithClients() {
-    const agentClientMap: any = {};
+    const agentClientMap: Record<string, string[]> = {};
 
-    this.clientsWithDebts.forEach((client) => {
-      const agent = client.agent;
-      const uid = client.uid;
-
-      // If the agent is not in the dictionary, add it with an empty array
-      if (!agentClientMap[agent!]) {
-        agentClientMap[agent!] = [];
-      }
-
-      // Add the client's UID to the agent's list
-      agentClientMap[agent!].push(uid);
-    });
+    for (const employee of this.allEmployees || []) {
+      if (employee?.uid) agentClientMap[employee.uid] = [];
+    }
+    for (const [agentId, clientIds] of this.currentClientIdsByAgent.entries()) {
+      agentClientMap[agentId] = [...clientIds];
+    }
 
     return agentClientMap;
+  }
+
+  trackEmployeeByUid(index: number, employee: Employee): string | number {
+    return employee?.uid || index;
   }
 
   onImageClick(index: number): void {
