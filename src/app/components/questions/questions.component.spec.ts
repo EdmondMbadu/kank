@@ -43,8 +43,8 @@ describe('QuestionsComponent', () => {
         {
           provide: DataService,
           useValue: {
-            updateAuditPendingClients: jasmine
-              .createSpy('updateAuditPendingClients')
+            removePendingClientFromAudit: jasmine
+              .createSpy('removePendingClientFromAudit')
               .and.resolveTo(),
           },
         },
@@ -125,5 +125,35 @@ describe('QuestionsComponent', () => {
       'Plus tard',
       'Date manquante',
     ]);
+  });
+
+  it('keeps unverified clients visible and excludes verified clients', () => {
+    const audit = Object.assign(new Audit(), {
+      pendingClients: [
+        {
+          clientId: 'unverified-client',
+          clientName: 'Client en attente',
+          __matchedClient: {
+            uid: 'unverified-client',
+            agentSubmittedVerification: '',
+          },
+        },
+        {
+          clientId: 'verified-client',
+          clientName: 'Client vérifié',
+          __matchedClient: {
+            uid: 'verified-client',
+            agentSubmittedVerification: 'true',
+          },
+        },
+      ],
+    });
+
+    expect(
+      component
+        .pendingClientsForAudit(audit)
+        .map((client) => client.clientName)
+    ).toEqual(['Client en attente']);
+    expect(component.pendingClientCount(audit)).toBe(1);
   });
 });

@@ -903,8 +903,8 @@ export class RegiserPortalComponent {
 
     // 2) Call your DataService method to filter out this client
     try {
-      await this.data.removePendingClientByFilter(
-        matchingAudit,
+      await this.data.removePendingClientFromAudit(
+        matchingAudit.id!,
         this.client.uid!
       );
       console.log('Client removed from pendingClients successfully!');

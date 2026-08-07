@@ -139,17 +139,12 @@ export class QuestionsComponent implements OnInit, OnDestroy {
   removePendingClient(audit: Audit, client: any) {
     if (!confirm(`Supprimer ${client.clientName} ?`)) return;
 
-    // build the trimmed array
-    const updatedPending = audit.pendingClients!.filter(
-      (pc) => pc.clientId !== client.clientId
-    );
-
-    // persist only the pendingClients field
     this.data
-      .updateAuditPendingClients(audit.id!, updatedPending)
+      .removePendingClientFromAudit(audit.id!, client.clientId)
       .then(() => {
-        // reflect the change immediately in the UI
-        audit.pendingClients = updatedPending;
+        audit.pendingClients = (audit.pendingClients || []).filter(
+          (pc) => pc.clientId !== client.clientId
+        );
       })
       .catch((err) => {
         console.error('Erreur suppression client :', err);
@@ -312,22 +307,40 @@ export class QuestionsComponent implements OnInit, OnDestroy {
   }
 
   pendingClientsForAudit(audit: Audit): PendingClient[] {
-    return [...(audit.pendingClients || [])].sort((left, right) => {
-      const leftValue = auditVerificationSortValue(
-        this.pendingClientTiming(left)
-      );
-      const rightValue = auditVerificationSortValue(
-        this.pendingClientTiming(right)
-      );
-      return leftValue - rightValue;
-    });
+    return (audit.pendingClients || [])
+      .filter((client) => !this.pendingClientIsVerified(client))
+      .sort((left, right) => {
+        const leftValue = auditVerificationSortValue(
+          this.pendingClientTiming(left)
+        );
+        const rightValue = auditVerificationSortValue(
+          this.pendingClientTiming(right)
+        );
+        return leftValue - rightValue;
+      });
+  }
+
+  pendingClientCount(audit: Audit): number {
+    return (audit.pendingClients || []).filter(
+      (client) => !this.pendingClientIsVerified(client)
+    ).length;
   }
 
   pendingClientUrgentCount(audit: Audit): number {
     return (audit.pendingClients || []).filter((client) => {
+      if (this.pendingClientIsVerified(client)) return false;
       const status = this.pendingClientTiming(client).status;
       return status === 'overdue' || status === 'today';
     }).length;
+  }
+
+  private pendingClientIsVerified(client: PendingClient): boolean {
+    const matchedClient = this.pendingClientMatchedRecord(client);
+    return (
+      String(matchedClient?.agentSubmittedVerification || '')
+        .trim()
+        .toLowerCase() === 'true'
+    );
   }
 
   pendingClientTierLabel(pc: PendingClient): string {

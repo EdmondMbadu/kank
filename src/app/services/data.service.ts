@@ -1137,18 +1137,6 @@ export class DataService {
 
     return auditRef.set(data, { merge: true });
   }
-  /**
-   * Replace the audit’s pendingClients with a new array
-   */
-  updateAuditPendingClients(
-    auditId: string,
-    pendingClients: any[]
-  ): Promise<void> {
-    // note the path here is `audit/${auditId}`—match whatever you use elsewhere
-    return this.afs
-      .doc(`audit/${auditId}`)
-      .set({ pendingClients }, { merge: true });
-  }
   createAudit(audit: Partial<Audit>) {
     const docRef = this.afs.collection('audit').doc();
 
@@ -1182,22 +1170,36 @@ export class DataService {
 
     return employeeRef.set(data, { merge: true });
   }
-  removePendingClientByFilter(audit: Audit, clientIdToRemove: string) {
-    // 1) Filter out the client from the local array
-    const newPendingClients = audit.pendingClients
-      ? audit.pendingClients.filter((pc) => pc.clientId !== clientIdToRemove)
-      : [];
+  removePendingClientFromAudit(
+    auditId: string,
+    clientIdToRemove: string
+  ): Promise<void> {
+    if (!auditId || !clientIdToRemove) {
+      return Promise.reject(new Error('Audit and client IDs are required.'));
+    }
 
-    // 2) Build the new object to save
-    const updatedAuditData = {
-      pendingClients: newPendingClients,
-    };
+    const auditRef = this.afs.doc<Audit>(`audit/${auditId}`).ref;
 
-    // 3) Use set(..., { merge: true }) to overwrite pendingClients
-    const auditDocRef: AngularFirestoreDocument<Audit> = this.afs.doc(
-      `audit/${audit.id}`
-    );
-    return auditDocRef.set(updatedAuditData, { merge: true });
+    return this.afs.firestore.runTransaction(async (transaction) => {
+      // Always filter the latest server value. Firestore retries this callback
+      // if another assignment changes the audit document concurrently.
+      const snapshot = await transaction.get(auditRef);
+      if (!snapshot.exists) return;
+
+      const latestAudit = snapshot.data() as Audit | undefined;
+      const pendingClients = Array.isArray(latestAudit?.pendingClients)
+        ? latestAudit!.pendingClients!
+        : [];
+      const updatedPendingClients = pendingClients.filter(
+        (client) => client?.clientId !== clientIdToRemove
+      );
+
+      if (updatedPendingClients.length === pendingClients.length) return;
+
+      transaction.update(auditRef, {
+        pendingClients: updatedPendingClients,
+      });
+    });
   }
   updateEmployeePaymentInfo(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
