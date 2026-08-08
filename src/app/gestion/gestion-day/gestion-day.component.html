@@ -1207,7 +1207,7 @@
   class="container mx-auto flex flex-col items-center gap-4 mb-6 px-4"
 >
   <div
-    class="w-full max-w-5xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-5"
+    class="w-full max-w-6xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-5"
   >
     <div
       class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
@@ -1579,10 +1579,10 @@
     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
       <div>
         <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          Évolution des Paiements de la Semaine
+          {{ weeklyPaymentHistoryHeading }}
         </h2>
         <p class="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-300">
-          Total de toutes les équipes, regroupé du lundi au dimanche.
+          {{ weeklyPaymentHistoryDescription }}
           L’échelle verticale s’ajuste aux valeurs de la période pour mieux
           distinguer les variations.
           <span
@@ -1623,6 +1623,30 @@
           {{ range.label }}
         </button>
       </div>
+    </div>
+
+    <div
+      class="mt-4 inline-flex max-w-full flex-wrap rounded-lg shadow-sm"
+      role="group"
+      aria-label="Données affichées dans l'historique hebdomadaire"
+    >
+      <button
+        *ngFor="let mode of weeklyPaymentHistoryModes; let first = first; let last = last"
+        type="button"
+        [attr.data-testid]="'weekly-payment-history-mode-' + mode.value"
+        (click)="setWeeklyPaymentHistoryMode(mode.value)"
+        class="border border-sky-100 px-4 py-2 text-sm font-semibold transition focus:z-10 focus:ring-2 focus:ring-sky-500 dark:border-slate-700"
+        [class.rounded-s-lg]="first"
+        [class.rounded-e-lg]="last"
+        [ngClass]="
+          weeklyPaymentHistoryMode === mode.value
+            ? 'bg-sky-600 text-white hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400'
+            : 'bg-white text-slate-700 hover:bg-sky-50 hover:text-sky-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
+        "
+        [attr.aria-pressed]="weeklyPaymentHistoryMode === mode.value"
+      >
+        {{ mode.label }}
+      </button>
     </div>
 
     <div

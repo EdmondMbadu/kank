@@ -220,6 +220,50 @@ describe('GestionDayComponent weekly payment history', () => {
     ]);
   });
 
+  it('defaults to payment and toggles between combined and reserve-only history', () => {
+    const component = createComponent();
+    component.weeklyPaymentDateCorrectFormat = '7-26-2026';
+    component.allUsers = [
+      {
+        firstName: 'Pumbu',
+        dailyReimbursement: {
+          '7-20-2026': '600000',
+        },
+        reserve: {
+          '7-20-2026-9-15-0': '300000',
+        },
+      } as any,
+    ];
+
+    component.updateWeeklyPaymentHistory('1M');
+
+    expect(component.weeklyPaymentHistoryMode).toBe('payment');
+    expect(component.graphWeeklyPayments.data).toHaveSize(1);
+    expect(component.graphWeeklyPayments.data[0].name).toBe('Paiements');
+
+    component.setWeeklyPaymentHistoryMode('combined');
+
+    expect(component.weeklyPaymentHistoryHeading).toContain(
+      'Paiements et de la Réserve'
+    );
+    expect(component.graphWeeklyPayments.data).toHaveSize(2);
+    expect(
+      component.graphWeeklyPayments.data.map((trace: any) => trace.name)
+    ).toEqual(['Paiements', 'Réserve']);
+    expect(component.graphWeeklyPayments.data[0].y.slice(-1)).toEqual([200]);
+    expect(component.graphWeeklyPayments.data[1].y.slice(-1)).toEqual([100]);
+    expect(component.graphWeeklyPayments.layout.showlegend).toBeTrue();
+
+    component.setWeeklyPaymentHistoryMode('reserve');
+
+    expect(component.weeklyPaymentHistoryHeading).toBe(
+      'Évolution de la Réserve de la Semaine'
+    );
+    expect(component.graphWeeklyPayments.data).toHaveSize(1);
+    expect(component.graphWeeklyPayments.data[0].name).toBe('Réserve');
+    expect(component.graphWeeklyPayments.data[0].y.slice(-1)).toEqual([100]);
+  });
+
   it('focuses the y-axis on positive weekly values without forcing a zero baseline', () => {
     const component = createComponent();
     component.allUsers = [

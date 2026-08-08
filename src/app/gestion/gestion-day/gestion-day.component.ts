@@ -15,6 +15,7 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 type WeeklyPaymentHistoryPreset = '1M' | '3M' | '6M' | '1A' | 'MAX';
 type WeeklyPaymentHistoryRange = WeeklyPaymentHistoryPreset | 'CUSTOM';
+type WeeklyPaymentHistoryMode = 'payment' | 'combined' | 'reserve';
 type GestionHeatmapMode =
   | 'paymentToday'
   | 'reserveToday'
@@ -30,6 +31,7 @@ interface WeeklyProgressMarker {
 interface WeeklyPaymentHistoryPoint {
   weekStart: Date;
   totalFc: number;
+  reserveFc: number;
   boundaryNote: string;
 }
 
@@ -303,6 +305,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   weeklyPaymentDateCorrectFormat: string = this.time.todaysDateMonthDayYear();
   weeklyPaymentRangeLabel: string = '';
   weeklyPaymentHistoryRange: WeeklyPaymentHistoryRange = '1M';
+  weeklyPaymentHistoryMode: WeeklyPaymentHistoryMode = 'payment';
   weeklyPaymentHistoryIncludesCurrentWeek = false;
   weeklyPaymentHistoryStartDate = '';
   weeklyPaymentHistoryEndDate = '';
@@ -319,6 +322,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     { value: '1A', label: '1A' },
     { value: 'MAX', label: 'Max' },
   ];
+  readonly weeklyPaymentHistoryModes: Array<{
+    value: WeeklyPaymentHistoryMode;
+    label: string;
+  }> = [
+    { value: 'payment', label: 'Paiement' },
+    { value: 'combined', label: 'Paiement + Réserve' },
+    { value: 'reserve', label: 'Réserve' },
+  ];
   public graphWeeklyPayments: any = {
     data: [],
     layout: {},
@@ -334,6 +345,26 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     const end = this.parseIsoDateKey(this.weeklyPaymentHistoryEndDate);
     if (!start || !end) return '';
     return `${this.formatNumericDate(start)} – ${this.formatNumericDate(end)}`;
+  }
+
+  get weeklyPaymentHistoryHeading(): string {
+    if (this.weeklyPaymentHistoryMode === 'combined') {
+      return 'Évolution des Paiements et de la Réserve de la Semaine';
+    }
+    if (this.weeklyPaymentHistoryMode === 'reserve') {
+      return 'Évolution de la Réserve de la Semaine';
+    }
+    return 'Évolution des Paiements de la Semaine';
+  }
+
+  get weeklyPaymentHistoryDescription(): string {
+    if (this.weeklyPaymentHistoryMode === 'combined') {
+      return 'Paiements et réserves de toutes les équipes, regroupés du lundi au dimanche.';
+    }
+    if (this.weeklyPaymentHistoryMode === 'reserve') {
+      return 'Réserves de toutes les équipes, regroupées du lundi au dimanche.';
+    }
+    return 'Paiements de toutes les équipes, regroupés du lundi au dimanche.';
   }
 
   weeklyPaymentTotals: Array<{
@@ -1263,54 +1294,49 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     const today = this.parsePaymentDateKey(
       this.time.todaysDateMonthDayYear()
     )!;
-    const currentWeekStart = this.getWeekBounds(
-      this.time.todaysDateMonthDayYear()
-    ).start;
     this.weeklyPaymentHistoryIncludesCurrentWeek =
       bounds.start <= today && bounds.end >= today;
-    const hasPayments = points.some((point) => point.totalFc !== 0);
+    const hasSelectedData = points.some((point) => {
+      if (this.weeklyPaymentHistoryMode === 'reserve') {
+        return point.reserveFc !== 0;
+      }
+      if (this.weeklyPaymentHistoryMode === 'combined') {
+        return point.totalFc !== 0 || point.reserveFc !== 0;
+      }
+      return point.totalFc !== 0;
+    });
+    const chartTitle = this.weeklyPaymentHistoryChartTitle();
 
-    if (!hasPayments) {
-      this.graphWeeklyPayments = this.createEmptyStockGraph(
-        'Paiements par semaine (en $)'
-      );
+    if (!hasSelectedData) {
+      this.graphWeeklyPayments = this.createEmptyStockGraph(chartTitle);
       return;
     }
 
-    const totalsDollar = points.map((point) =>
+    const paymentDollars = points.map((point) =>
       this.convertFcToDollar(point.totalFc)
     );
-    const latestPoint = points[points.length - 1];
-    const previousPoint =
-      points.length > 1 ? points[points.length - 2] : undefined;
-    const latestDollar = totalsDollar[totalsDollar.length - 1] || 0;
-    const previousDollar =
-      totalsDollar.length > 1 ? totalsDollar[totalsDollar.length - 2] : 0;
-    const changeDollar = previousPoint ? latestDollar - previousDollar : 0;
-    const changePercent =
-      previousPoint && previousDollar > 0
-        ? (changeDollar / previousDollar) * 100
-        : null;
-    const trendColor =
-      changeDollar > 0
-        ? '#059669'
-        : changeDollar < 0
-        ? '#e11d48'
-        : '#64748b';
-    const layout: any = this.buildStockChartLayout(
-      'Paiements par semaine (en $)',
-      {
-        annotations: [
-          this.buildWeeklyPaymentSummaryAnnotation(
-            latestPoint.totalFc,
-            latestDollar,
-            changeDollar,
-            changePercent,
-            trendColor
-          ),
-        ],
-      }
+    const reserveDollars = points.map((point) =>
+      this.convertFcToDollar(point.reserveFc)
     );
+    const displayedValues =
+      this.weeklyPaymentHistoryMode === 'combined'
+        ? [...paymentDollars, ...reserveDollars]
+        : this.weeklyPaymentHistoryMode === 'reserve'
+        ? reserveDollars
+        : paymentDollars;
+    const annotations =
+      this.weeklyPaymentHistoryMode === 'combined'
+        ? []
+        : [
+            this.buildWeeklyHistorySummaryAnnotation(
+              points,
+              this.weeklyPaymentHistoryMode
+            ),
+          ];
+    const layout: any = this.buildStockChartLayout(chartTitle, {
+      annotations,
+      showLegend: this.weeklyPaymentHistoryMode === 'combined',
+    });
     layout.xaxis = {
       ...layout.xaxis,
       type: 'date',
@@ -1318,7 +1344,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       hoverformat: '%d/%m/%Y',
     };
     const focusedYAxisRange =
-      this.buildFocusedWeeklyPaymentYAxisRange(totalsDollar);
+      this.buildFocusedWeeklyPaymentYAxisRange(displayedValues);
     layout.yaxis = {
       ...layout.yaxis,
       autorange: focusedYAxisRange ? false : true,
@@ -1327,37 +1353,18 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     };
 
     this.graphWeeklyPayments = {
-      data: [
-        {
-          x: points.map((point) => this.formatIsoDate(point.weekStart)),
-          y: totalsDollar,
-          customdata: points.map((point) => [
-            point.totalFc,
-            this.formatWeeklyHistoryLabel(point.weekStart),
-            point.boundaryNote ? `<br><i>${point.boundaryNote}</i>` : '',
-          ]),
-          type: 'scatter',
-          mode: 'lines+markers',
-          line: {
-            color: '#4f46e5',
-            width: 2.5,
-            shape: 'spline',
-          },
-          marker: {
-            color: '#4f46e5',
-            size: 7,
-            line: {
-              color: this.isDarkModeEnabled() ? '#0f172a' : '#ffffff',
-              width: 1.5,
-            },
-          },
-          hovertemplate:
-            '<b>%{customdata[1]}</b><br>' +
-            'Paiements: <b>%{customdata[0]:,.0f} FC</b><br>' +
-            'Équivalent: <b>$%{y:,.2f}</b>%{customdata[2]}' +
-            '<extra></extra>',
-        },
-      ],
+      data:
+        this.weeklyPaymentHistoryMode === 'combined'
+          ? [
+              this.buildWeeklyPaymentHistoryTrace(points, 'payment'),
+              this.buildWeeklyPaymentHistoryTrace(points, 'reserve'),
+            ]
+          : [
+              this.buildWeeklyPaymentHistoryTrace(
+                points,
+                this.weeklyPaymentHistoryMode
+              ),
+            ],
       layout,
       config: {
         responsive: true,
@@ -1365,6 +1372,98 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         staticPlot: false,
       },
     };
+  }
+
+  setWeeklyPaymentHistoryMode(mode: WeeklyPaymentHistoryMode): void {
+    if (!this.auth.isAdmin || this.weeklyPaymentHistoryMode === mode) return;
+    this.weeklyPaymentHistoryMode = mode;
+    this.updateWeeklyPaymentHistory(this.weeklyPaymentHistoryRange);
+  }
+
+  private weeklyPaymentHistoryChartTitle(): string {
+    if (this.weeklyPaymentHistoryMode === 'combined') {
+      return 'Paiements et réserve par semaine (en $)';
+    }
+    if (this.weeklyPaymentHistoryMode === 'reserve') {
+      return 'Réserve par semaine (en $)';
+    }
+    return 'Paiements par semaine (en $)';
+  }
+
+  private buildWeeklyPaymentHistoryTrace(
+    points: WeeklyPaymentHistoryPoint[],
+    metric: 'payment' | 'reserve'
+  ): any {
+    const isReserve = metric === 'reserve';
+    const color = isReserve ? '#0284c7' : '#4f46e5';
+    const label = isReserve ? 'Réserve' : 'Paiements';
+
+    return {
+      x: points.map((point) => this.formatIsoDate(point.weekStart)),
+      y: points.map((point) =>
+        this.convertFcToDollar(isReserve ? point.reserveFc : point.totalFc)
+      ),
+      customdata: points.map((point) => [
+        isReserve ? point.reserveFc : point.totalFc,
+        this.formatWeeklyHistoryLabel(point.weekStart),
+        point.boundaryNote ? `<br><i>${point.boundaryNote}</i>` : '',
+      ]),
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: label,
+      line: {
+        color,
+        width: 2.5,
+        shape: 'spline',
+      },
+      marker: {
+        color,
+        size: 7,
+        line: {
+          color: this.isDarkModeEnabled() ? '#0f172a' : '#ffffff',
+          width: 1.5,
+        },
+      },
+      hovertemplate:
+        '<b>%{customdata[1]}</b><br>' +
+        `${label}: <b>%{customdata[0]:,.0f} FC</b><br>` +
+        'Équivalent: <b>$%{y:,.2f}</b>%{customdata[2]}' +
+        '<extra></extra>',
+    };
+  }
+
+  private buildWeeklyHistorySummaryAnnotation(
+    points: WeeklyPaymentHistoryPoint[],
+    mode: 'payment' | 'reserve'
+  ): any {
+    const valuesFc = points.map((point) =>
+      mode === 'reserve' ? point.reserveFc : point.totalFc
+    );
+    const valuesDollar = valuesFc.map((value) => this.convertFcToDollar(value));
+    const latestFc = valuesFc[valuesFc.length - 1] || 0;
+    const latestDollar = valuesDollar[valuesDollar.length - 1] || 0;
+    const previousDollar =
+      valuesDollar.length > 1 ? valuesDollar[valuesDollar.length - 2] : 0;
+    const hasPrevious = valuesDollar.length > 1;
+    const changeDollar = hasPrevious ? latestDollar - previousDollar : 0;
+    const changePercent =
+      hasPrevious && previousDollar > 0
+        ? (changeDollar / previousDollar) * 100
+        : null;
+    const trendColor =
+      changeDollar > 0
+        ? '#059669'
+        : changeDollar < 0
+        ? '#e11d48'
+        : '#64748b';
+
+    return this.buildWeeklyPaymentSummaryAnnotation(
+      latestFc,
+      latestDollar,
+      changeDollar,
+      changePercent,
+      trendColor
+    );
   }
 
   private buildFocusedWeeklyPaymentYAxisRange(
@@ -1410,7 +1509,20 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.formatDateKey(rangeEnd)
     ).start;
 
-    const totalsByWeek = new Map<number, number>();
+    const paymentsByWeek = new Map<number, number>();
+    const reservesByWeek = new Map<number, number>();
+
+    const addToWeek = (
+      totals: Map<number, number>,
+      entryDate: Date,
+      amount: number
+    ) => {
+      const weekStart = this.getWeekBounds(
+        this.formatDateKey(entryDate)
+      ).start;
+      const weekStamp = weekStart.getTime();
+      totals.set(weekStamp, (totals.get(weekStamp) || 0) + amount);
+    };
 
     (this.allUsers || []).forEach((user) => {
       Object.entries(user.dailyReimbursement || {}).forEach(
@@ -1427,16 +1539,25 @@ export class GestionDayComponent implements OnInit, OnDestroy {
             return;
           }
 
-          const weekStart = this.getWeekBounds(
-            this.formatDateKey(paymentDate)
-          ).start;
-          const weekStamp = weekStart.getTime();
-          totalsByWeek.set(
-            weekStamp,
-            (totalsByWeek.get(weekStamp) || 0) + amount
-          );
+          addToWeek(paymentsByWeek, paymentDate, amount);
         }
       );
+
+      Object.entries(user.reserve || {}).forEach(([dateKey, rawAmount]) => {
+        const reserveDate = this.parseReserveDateKey(dateKey);
+        const amount = Number(rawAmount);
+
+        if (
+          !reserveDate ||
+          reserveDate < rangeStart ||
+          reserveDate > rangeEnd ||
+          !Number.isFinite(amount)
+        ) {
+          return;
+        }
+
+        addToWeek(reservesByWeek, reserveDate, amount);
+      });
     });
 
     const points: WeeklyPaymentHistoryPoint[] = [];
@@ -1475,7 +1596,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
       points.push({
         weekStart: new Date(cursor),
-        totalFc: totalsByWeek.get(cursor.getTime()) || 0,
+        totalFc: paymentsByWeek.get(cursor.getTime()) || 0,
+        reserveFc: reservesByWeek.get(cursor.getTime()) || 0,
         boundaryNote: boundaryNotes.join(' · '),
       });
       cursor.setDate(cursor.getDate() + 7);
@@ -1501,7 +1623,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     if (range === 'MAX') {
       return {
         start:
-          this.findEarliestWeeklyPaymentDate(end) ||
+          this.findEarliestWeeklyHistoryDate(end) ||
           new Date(selectedWeekStart),
         end,
       };
@@ -1543,28 +1665,37 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     return { start, end };
   }
 
-  private findEarliestWeeklyPaymentDate(end: Date): Date | null {
+  private findEarliestWeeklyHistoryDate(end: Date): Date | null {
     let earliest: Date | null = null;
 
-    (this.allUsers || []).forEach((user) => {
-      Object.entries(user.dailyReimbursement || {}).forEach(
-        ([dateKey, rawAmount]) => {
-          const paymentDate = this.parsePaymentDateKey(dateKey);
-          const amount = Number(rawAmount);
-          if (
-            !paymentDate ||
-            paymentDate > end ||
-            !Number.isFinite(amount) ||
-            amount === 0
-          ) {
-            return;
-          }
+    const consider = (entryDate: Date | null, rawAmount: unknown) => {
+      const amount = Number(rawAmount);
+      if (
+        !entryDate ||
+        entryDate > end ||
+        !Number.isFinite(amount) ||
+        amount === 0
+      ) {
+        return;
+      }
 
-          if (!earliest || paymentDate < earliest) {
-            earliest = paymentDate;
-          }
-        }
-      );
+      if (!earliest || entryDate < earliest) {
+        earliest = entryDate;
+      }
+    };
+
+    (this.allUsers || []).forEach((user) => {
+      if (this.weeklyPaymentHistoryMode !== 'reserve') {
+        Object.entries(user.dailyReimbursement || {}).forEach(
+          ([dateKey, rawAmount]) =>
+            consider(this.parsePaymentDateKey(dateKey), rawAmount)
+        );
+      }
+      if (this.weeklyPaymentHistoryMode !== 'payment') {
+        Object.entries(user.reserve || {}).forEach(([dateKey, rawAmount]) =>
+          consider(this.parseReserveDateKey(dateKey), rawAmount)
+        );
+      }
     });
 
     return earliest ? new Date(earliest) : null;
@@ -1582,6 +1713,16 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
   private parsePaymentDateKey(dateKey: string): Date | null {
     const match = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(dateKey || '');
+    if (!match) return null;
+    return this.createValidatedDate(
+      Number(match[3]),
+      Number(match[1]),
+      Number(match[2])
+    );
+  }
+
+  private parseReserveDateKey(dateKey: string): Date | null {
+    const match = /^(\d{1,2})-(\d{1,2})-(\d{4})(?:-|$)/.exec(dateKey || '');
     if (!match) return null;
     return this.createValidatedDate(
       Number(match[3]),
