@@ -340,6 +340,11 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     firstName: string;
     total: number;
     totalInDollar: number;
+    weeklyReserveFc: number;
+    weeklyReserveDollar: number;
+    weeklyReserveProgressPercent: number;
+    weeklyReserveProgressTone: WeeklyProgressTone;
+    weeklyReserveProgressStatusLabel: string;
     weeklyExpectedFc: number;
     weeklyExpectedDollar: number;
     weeklyExpectedProgressPercent: number;
@@ -354,6 +359,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }> = [];
   overallWeeklyPaymentTotal: number = 0;
   overallWeeklyPaymentTotalDollar: number = 0;
+  overallWeeklyReserveTotal: number = 0;
+  overallWeeklyReserveTotalDollar: number = 0;
+  overallWeeklyReserveProgressPercent: number = 0;
+  overallWeeklyReserveProgressTone: WeeklyProgressTone = 'red';
   overallWeeklyExpectedTotal: number = 0;
   overallWeeklyExpectedTotalDollar: number = 0;
   overallWeeklyExpectedProgressPercent: number = 0;
@@ -1625,6 +1634,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     if (!this.allUsers || this.allUsers.length === 0) return;
 
     this.overallWeeklyPaymentTotal = 0;
+    this.overallWeeklyReserveTotal = 0;
     this.overallWeeklyExpectedTotal = 0;
     this.weeklyPaymentTotals = this.allUsers.map((user) => {
       const weeklyTargetFc = this.resolveWeeklyTargetFcForUser(
@@ -1639,8 +1649,17 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         user,
         this.weeklyPaymentDateCorrectFormat
       );
+      const weeklyReserveFc = this.computeWeeklyReserveTotalForUser(
+        user,
+        this.weeklyPaymentDateCorrectFormat
+      );
       const totalInDollar = Number(
         this.compute.convertCongoleseFrancToUsDollars(total.toString())
+      );
+      const weeklyReserveDollar = Number(
+        this.compute.convertCongoleseFrancToUsDollars(
+          weeklyReserveFc.toString()
+        )
       );
       const weeklyExpectedDollar = Number(
         this.compute.convertCongoleseFrancToUsDollars(
@@ -1662,14 +1681,34 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         total,
         weeklyTargetFc
       );
+      const weeklyReserveProgressPercent =
+        weeklyExpectedFc === 0
+          ? weeklyReserveFc > 0
+            ? 100
+            : 0
+          : Math.min(
+              100,
+              Math.max(0, (weeklyReserveFc / weeklyExpectedFc) * 100)
+            );
+      const weeklyReserveProgressTone = this.resolveExpectedProgressTone(
+        weeklyReserveProgressPercent
+      );
 
       this.overallWeeklyPaymentTotal += total;
+      this.overallWeeklyReserveTotal += weeklyReserveFc;
       this.overallWeeklyExpectedTotal += weeklyExpectedFc;
 
       return {
         firstName: user.firstName!,
         total,
         totalInDollar,
+        weeklyReserveFc,
+        weeklyReserveDollar,
+        weeklyReserveProgressPercent,
+        weeklyReserveProgressTone,
+        weeklyReserveProgressStatusLabel: this.resolveExpectedStatusLabel(
+          weeklyReserveProgressPercent
+        ),
         weeklyExpectedFc,
         weeklyExpectedDollar,
         weeklyExpectedProgressPercent,
@@ -1690,6 +1729,11 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         this.overallWeeklyPaymentTotal.toString()
       )
     );
+    this.overallWeeklyReserveTotalDollar = Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        this.overallWeeklyReserveTotal.toString()
+      )
+    );
     this.overallWeeklyExpectedTotalDollar = Number(
       this.compute.convertCongoleseFrancToUsDollars(
         this.overallWeeklyExpectedTotal.toString()
@@ -1707,6 +1751,23 @@ export class GestionDayComponent implements OnInit, OnDestroy {
           );
     this.overallWeeklyExpectedProgressTone = this.resolveExpectedProgressTone(
       this.overallWeeklyExpectedProgressPercent
+    );
+    this.overallWeeklyReserveProgressPercent =
+      this.overallWeeklyExpectedTotal === 0
+        ? this.overallWeeklyReserveTotal > 0
+          ? 100
+          : 0
+        : Math.min(
+            100,
+            Math.max(
+              0,
+              (this.overallWeeklyReserveTotal /
+                this.overallWeeklyExpectedTotal) *
+                100
+            )
+          );
+    this.overallWeeklyReserveProgressTone = this.resolveExpectedProgressTone(
+      this.overallWeeklyReserveProgressPercent
     );
   }
 
@@ -1831,14 +1892,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     }
 
     return this.weeklyPaymentTotals.map((row) => {
-      const user = this.allUsers.find((item) => item.uid === row.trackingId);
       const valueFc =
         this.gestionHeatmapMode === 'paymentWeek'
           ? Number(row.total || 0)
-          : this.computeWeeklyReserveTotalForUser(
-              user,
-              this.weeklyPaymentDateCorrectFormat
-            );
+          : Number(row.weeklyReserveFc || 0);
 
       return {
         label: row.firstName,

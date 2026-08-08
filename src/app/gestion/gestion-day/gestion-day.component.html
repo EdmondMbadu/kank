@@ -1233,7 +1233,7 @@
 
     <div class="mt-4 w-full overflow-x-auto">
       <table
-        class="min-w-[760px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 lg:min-w-full"
+        class="min-w-[940px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 lg:min-w-full"
       >
       <thead
         class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
@@ -1244,6 +1244,7 @@
           </th>
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Attendu semaine</th>
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Total semaine</th>
+          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Réserve semaine</th>
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Minimum</th>
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Avancement</th>
         </tr>
@@ -1300,6 +1301,43 @@
                   {{ s.weeklyExpectedProgressPercent || 0 | number : "1.0-0" }}% réalisé
                 </div>
               </div>
+
+              <div class="mt-3 w-36">
+                <div class="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold">
+                  <span class="text-slate-500 dark:text-slate-400">Réserve</span>
+                  <span
+                    [ngClass]="{
+                      'text-red-600': s.weeklyReserveProgressTone === 'red',
+                      'text-amber-600': s.weeklyReserveProgressTone === 'yellow',
+                      'text-orange-600': s.weeklyReserveProgressTone === 'orange',
+                      'text-emerald-600': s.weeklyReserveProgressTone === 'green'
+                    }"
+                  >
+                    {{ s.weeklyReserveProgressPercent || 0 | number : "1.0-0" }}%
+                  </span>
+                </div>
+                <div
+                  class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                  title="Progression de la réserve par rapport à l'attendu semaine"
+                  [attr.aria-label]="
+                    'Réserve: ' +
+                    (s.weeklyReserveProgressPercent || 0 | number : '1.0-0') +
+                    '% — ' +
+                    s.weeklyReserveProgressStatusLabel
+                  "
+                >
+                  <div
+                    class="h-1.5 rounded-full transition-all duration-300"
+                    [ngClass]="{
+                      'bg-red-500': s.weeklyReserveProgressTone === 'red',
+                      'bg-amber-400': s.weeklyReserveProgressTone === 'yellow',
+                      'bg-orange-500': s.weeklyReserveProgressTone === 'orange',
+                      'bg-emerald-500': s.weeklyReserveProgressTone === 'green'
+                    }"
+                    [style.width.%]="s.weeklyReserveProgressPercent || 0"
+                  ></div>
+                </div>
+              </div>
             </div>
           </td>
 
@@ -1310,6 +1348,17 @@
               </span>
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +s.total || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
+          </td>
+
+          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-sky-700 dark:text-sky-300">
+                ${{ +s.weeklyReserveDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.weeklyReserveFc || 0 | number : "1.0-0" }} FC
               </span>
             </div>
           </td>
@@ -1334,9 +1383,23 @@
           </td>
 
           <td class="px-4 md:px-8 py-4 md:py-5">
-            <div class="w-40">
+            <div class="w-44">
+              <div class="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold">
+                <span class="text-slate-500 dark:text-slate-400">Paiement</span>
+                <span
+                  [ngClass]="{
+                    'text-red-600': s.weeklyProgressTone === 'red',
+                    'text-amber-600': s.weeklyProgressTone === 'yellow',
+                    'text-orange-600': s.weeklyProgressTone === 'orange',
+                    'text-emerald-600': s.weeklyProgressTone === 'green'
+                  }"
+                >
+                  {{ s.weeklyProgressPercent || 0 | number : "1.0-0" }}%
+                </span>
+              </div>
               <div
                 class="relative h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                title="Progression du paiement par rapport au minimum semaine"
               >
                 <ng-container *ngFor="let marker of s.weeklyProgressMarkers">
                   <div
@@ -1355,6 +1418,7 @@
                   [style.width.%]="s.weeklyProgressPercent || 0"
                 ></div>
               </div>
+
               <div
                 *ngIf="s.weeklyProgressMarkers.length > 0"
                 class="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold"
@@ -1378,9 +1442,6 @@
                   ></span>
                   {{ marker.label }}
                 </span>
-              </div>
-              <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                {{ s.weeklyProgressPercent || 0 | number : "1.0-0" }}%
               </div>
             </div>
           </td>
@@ -1427,6 +1488,50 @@
                 >
                   {{ overallWeeklyExpectedProgressPercent || 0 | number : "1.0-0" }}% réalisé au total
                 </div>
+
+                <div class="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+                  <div class="mb-1 flex items-center justify-between gap-2 text-xs font-bold">
+                    <span class="text-slate-500 dark:text-slate-400">
+                      Réserve totale
+                    </span>
+                    <span
+                      [ngClass]="{
+                        'text-red-600': overallWeeklyReserveProgressTone === 'red',
+                        'text-amber-600': overallWeeklyReserveProgressTone === 'yellow',
+                        'text-orange-600': overallWeeklyReserveProgressTone === 'orange',
+                        'text-emerald-600': overallWeeklyReserveProgressTone === 'green'
+                      }"
+                    >
+                      {{ overallWeeklyReserveProgressPercent || 0 | number : "1.0-0" }}%
+                    </span>
+                  </div>
+                  <div
+                    class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+                    title="Progression de la réserve totale par rapport à l'attendu semaine total"
+                  >
+                    <div
+                      class="h-2.5 rounded-full transition-all duration-300"
+                      [ngClass]="{
+                        'bg-red-500': overallWeeklyReserveProgressTone === 'red',
+                        'bg-amber-400': overallWeeklyReserveProgressTone === 'yellow',
+                        'bg-orange-500': overallWeeklyReserveProgressTone === 'orange',
+                        'bg-emerald-500': overallWeeklyReserveProgressTone === 'green'
+                      }"
+                      [style.width.%]="overallWeeklyReserveProgressPercent || 0"
+                    ></div>
+                  </div>
+                  <div
+                    class="mt-1.5 text-xs font-bold"
+                    [ngClass]="{
+                      'text-red-600': overallWeeklyReserveProgressTone === 'red',
+                      'text-amber-600': overallWeeklyReserveProgressTone === 'yellow',
+                      'text-orange-600': overallWeeklyReserveProgressTone === 'orange',
+                      'text-emerald-600': overallWeeklyReserveProgressTone === 'green'
+                    }"
+                  >
+                    {{ overallWeeklyReserveProgressPercent || 0 | number : "1.0-0" }}% réserve au total
+                  </div>
+                </div>
               </div>
             </div>
           </td>
@@ -1437,6 +1542,16 @@
               </span>
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +overallWeeklyPaymentTotal || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
+          </td>
+          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-sky-700 dark:text-sky-300">
+                ${{ +overallWeeklyReserveTotalDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +overallWeeklyReserveTotal || 0 | number : "1.0-0" }} FC
               </span>
             </div>
           </td>

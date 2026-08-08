@@ -90,6 +90,7 @@ describe('GestionDayComponent weekly payment history', () => {
       isAdmin,
       currentUser: { firstName: 'Admin' },
       managementInfo: { id: 'management-1' },
+      resolveWeeklyPaymentTargetForDate: () => 1200000,
     };
     const time = {
       getTodaysDateYearMonthDay: () => '2026-07-26',
@@ -292,5 +293,48 @@ describe('GestionDayComponent weekly payment history', () => {
     expect(component.weeklyPaymentHistoryDateError).toBe(
       'La date de début doit précéder ou être égale à la date de fin.'
     );
+  });
+
+  it('adds Monday-to-Sunday reserve totals and progress without another data request', () => {
+    const component = createComponent();
+    component.weeklyPaymentDateCorrectFormat = '8-7-2026';
+    component.allUsers = [
+      {
+        uid: 'pumbu',
+        firstName: 'Pumbu',
+        dailyReimbursement: {
+          '8-3-2026': '300000',
+          '8-7-2026': '300000',
+          '8-10-2026': '999999',
+        },
+        reserve: {
+          '8-3-2026-9-0-0': '100000',
+          '8-7-2026-10-0-0': '200000',
+          '8-9-2026-11-0-0': '300000',
+          '8-10-2026-9-0-0': '999999',
+        },
+      } as any,
+    ];
+    (component as any).weeklyClientsByUser.set('pumbu', []);
+    spyOn<any>(component, 'computeWeeklyExpectedTotalForUser').and.returnValue(
+      1200000
+    );
+
+    (component as any).computeWeeklyPaymentTotals();
+
+    expect(component.weeklyPaymentTotals).toHaveSize(1);
+    expect(component.weeklyPaymentTotals[0]).toEqual(
+      jasmine.objectContaining({
+        weeklyReserveFc: 600000,
+        weeklyReserveDollar: 200,
+        weeklyReserveProgressPercent: 50,
+        weeklyReserveProgressTone: 'yellow',
+        weeklyReserveProgressStatusLabel: '50%+',
+      })
+    );
+    expect(component.overallWeeklyReserveTotal).toBe(600000);
+    expect(component.overallWeeklyReserveTotalDollar).toBe(200);
+    expect(component.overallWeeklyReserveProgressPercent).toBe(50);
+    expect(component.overallWeeklyReserveProgressTone).toBe('yellow');
   });
 });
