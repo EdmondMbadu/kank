@@ -8,6 +8,7 @@ import { Audit, PendingClient } from 'src/app/models/management';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import {
   AuditVerificationTiming,
   auditVerificationSortValue,
@@ -30,7 +31,8 @@ export class QuestionsComponent implements OnInit, OnDestroy {
     public auth: AuthService,
     private data: DataService,
     private storage: AngularFireStorage,
-    private router: Router
+    private router: Router,
+    private compute: ComputationService
   ) {}
   audits: Audit[] = [];
   url: string = '';
@@ -332,6 +334,72 @@ export class QuestionsComponent implements OnInit, OnDestroy {
       const status = this.pendingClientTiming(client).status;
       return status === 'overdue' || status === 'today';
     }).length;
+  }
+
+  pendingClientTotalCount(): number {
+    return this.pendingClientsInQueue().length;
+  }
+
+  pendingClientKnownAmountCount(): number {
+    return this.pendingClientsInQueue().filter(
+      (client) => this.pendingClientRequestedAmount(client) !== null
+    ).length;
+  }
+
+  pendingClientMissingAmountCount(): number {
+    return this.pendingClientTotalCount() - this.pendingClientKnownAmountCount();
+  }
+
+  pendingClientTotalRequestedFc(): number {
+    return this.pendingClientsInQueue().reduce(
+      (total, client) => total + (this.pendingClientRequestedAmount(client) || 0),
+      0
+    );
+  }
+
+  pendingClientTotalRequestedUsd(): number {
+    const totalFc = this.pendingClientTotalRequestedFc();
+    return totalFc > 0 ? Math.ceil(totalFc / this.requestEstimateRate()) : 0;
+  }
+
+  requestEstimateRate(): number {
+    const activeRate = Number(this.compute.rateDollar);
+    return Number.isFinite(activeRate) && activeRate > 0 ? activeRate : 2900;
+  }
+
+  pendingClientRequestedAmount(pc: PendingClient): number | null {
+    const matchedClient = this.pendingClientMatchedRecord(pc);
+    const candidates = [
+      pc.requestAmount,
+      matchedClient?.requestAmount,
+      matchedClient?.loanAmountPending,
+    ];
+
+    for (const candidate of candidates) {
+      const amount = this.parsePendingRequestAmount(candidate);
+      if (amount !== null) return amount;
+    }
+
+    return null;
+  }
+
+  private pendingClientsInQueue(): PendingClient[] {
+    return this.audits.reduce<PendingClient[]>(
+      (clients, audit) => clients.concat(this.pendingClientsForAudit(audit)),
+      []
+    );
+  }
+
+  private parsePendingRequestAmount(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') return null;
+
+    const normalized = String(value)
+      .trim()
+      .replace(/\s+/g, '')
+      .replace(/,/g, '')
+      .replace(/[^0-9.-]/g, '');
+    const amount = Number(normalized);
+    return Number.isFinite(amount) && amount > 0 ? amount : null;
   }
 
   private pendingClientIsVerified(client: PendingClient): boolean {

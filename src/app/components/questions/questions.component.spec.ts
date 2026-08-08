@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import { Audit } from 'src/app/models/management';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { QuestionsComponent } from './questions.component';
 
 describe('QuestionsComponent', () => {
@@ -62,6 +63,12 @@ describe('QuestionsComponent', () => {
             navigate: jasmine.createSpy('navigate'),
           },
         },
+        {
+          provide: ComputationService,
+          useValue: {
+            rateDollar: 2900,
+          },
+        },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -103,7 +110,7 @@ describe('QuestionsComponent', () => {
     fixture.detectChanges();
 
     expect(normalizedText()).toContain('🏆 Meilleur client');
-    expect(normalizedText()).toContain('Demandé');
+    expect(normalizedText()).toContain('Date de demande');
     expect(normalizedText()).toContain('Remise');
     expect(normalizedText()).toContain('Jean Mukendi');
     expect(normalizedText()).not.toContain('frustration client');
@@ -155,5 +162,68 @@ describe('QuestionsComponent', () => {
         .map((client) => client.clientName)
     ).toEqual(['Client en attente']);
     expect(component.pendingClientCount(audit)).toBe(1);
+  });
+
+  it('shows each requested amount and estimates the queue total in FC and USD', () => {
+    component.audits = [
+      Object.assign(new Audit(), {
+        id: 'audit-1',
+        name: 'Marie',
+        pendingClients: [
+          {
+            clientId: 'client-1',
+            clientName: 'Client Snapshot',
+            requestAmount: '300,000',
+          },
+          {
+            clientId: 'client-2',
+            clientName: 'Client Matched',
+            __matchedClient: {
+              uid: 'client-2',
+              requestAmount: '580000',
+            },
+          },
+          {
+            clientId: 'client-verified',
+            clientName: 'Client Already Verified',
+            requestAmount: '999000',
+            __matchedClient: {
+              uid: 'client-verified',
+              agentSubmittedVerification: 'true',
+            },
+          },
+        ],
+      }),
+    ];
+
+    fixture.detectChanges();
+
+    expect(component.pendingClientTotalCount()).toBe(2);
+    expect(component.pendingClientKnownAmountCount()).toBe(2);
+    expect(component.pendingClientTotalRequestedFc()).toBe(880000);
+    expect(component.pendingClientTotalRequestedUsd()).toBe(304);
+    expect(normalizedText()).toContain('300,000 FC');
+    expect(normalizedText()).toContain('580,000 FC');
+    expect(normalizedText()).toContain('880,000 FC');
+    expect(normalizedText()).toContain('≈ $304');
+    expect(normalizedText()).toContain('1 $ = 2,900 FC');
+  });
+
+  it('marks the estimate as partial when a requested amount is unavailable', () => {
+    component.audits = [
+      Object.assign(new Audit(), {
+        pendingClients: [
+          { clientName: 'Montant connu', requestAmount: '250000' },
+          { clientName: 'Montant manquant' },
+        ],
+      }),
+    ];
+
+    fixture.detectChanges();
+
+    expect(component.pendingClientMissingAmountCount()).toBe(1);
+    expect(component.pendingClientTotalRequestedFc()).toBe(250000);
+    expect(normalizedText()).toContain('Total partiel : 1 montant(s) introuvable(s)');
+    expect(normalizedText()).toContain('Non trouvé');
   });
 });

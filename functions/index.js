@@ -2760,6 +2760,7 @@ Merci pona confiance na FONDATION GERVAIS`;
                 clientId: context.params.clientId,
                 clientProfilePicture: afterData.profilePicture.downloadURL || "",
                 creditScore: afterData.creditScore || "50",
+                requestAmount: afterData.requestAmount || "",
                 dateOfRequest: afterData.dateOfRequest || "",
                 requestDate: afterData.requestDate || "",
               }),

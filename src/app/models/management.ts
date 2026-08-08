@@ -120,6 +120,7 @@ export class PendingClient {
   clientProfilePicture?: string;
   pendingId?: string;
   creditScore?: string;
+  requestAmount?: string;
   dateOfRequest?: string;
   requestDate?: string;
   requestedAt?: string;
