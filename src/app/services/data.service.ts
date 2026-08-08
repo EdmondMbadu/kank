@@ -2877,6 +2877,99 @@ export class DataService {
       .doc(); // autoId
     return ref.set(attachment);
   }
+
+  /**
+   * Finalize every Firestore representation of photo attendance in one atomic
+   * commit. The Storage upload must already have completed before this method
+   * is called. A failed commit therefore cannot leave a visible attendance
+   * status without its attachment document.
+   */
+  async finalizeAttendanceWithAttachment(
+    userId: string,
+    employeeId: string,
+    dateISO: string,
+    status: 'P' | 'A' | 'L' | 'N' | 'F',
+    dateLabel: string,
+    createdBy: string,
+    attachment: AttendanceAttachment & Record<string, any>,
+    retryDelaysMs: number[] = [350, 1000]
+  ): Promise<void> {
+    const storageName =
+      attachment.path.split('/').pop() || `${dateISO}-attendance-proof`;
+    const attachmentId = storageName
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 500);
+
+    const commit = async () => {
+      const employeeRef = this.afs.firestore.doc(
+        `users/${userId}/employees/${employeeId}`
+      );
+      const dayRef = this.afs.firestore.doc(
+        `users/${userId}/employees/${employeeId}/attendance/${dateISO}`
+      );
+      const attachmentRef = this.afs.firestore.doc(
+        `users/${userId}/employees/${employeeId}/attendance/${dateISO}/attachments/${attachmentId}`
+      );
+      const batch = this.afs.firestore.batch();
+
+      batch.set(
+        employeeRef,
+        {
+          attendance: { [dateLabel]: status },
+          attendanceAttachments: { [dateLabel]: attachment },
+        },
+        { merge: true }
+      );
+      batch.set(
+        dayRef,
+        {
+          status,
+          dateISO,
+          dateLabel,
+          createdAt: new Date(),
+          createdBy,
+          proofState: 'ready',
+          attachmentId,
+          proof: attachment,
+        },
+        { merge: true }
+      );
+      batch.set(attachmentRef, attachment, { merge: true });
+
+      await batch.commit();
+    };
+
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        await commit();
+        return;
+      } catch (error) {
+        if (
+          attempt >= retryDelaysMs.length ||
+          !this.isRetryableAttendanceCommitError(error)
+        ) {
+          throw error;
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelaysMs[attempt])
+        );
+      }
+    }
+  }
+
+  private isRetryableAttendanceCommitError(error: unknown): boolean {
+    const rawCode = String((error as { code?: unknown } | null)?.code || '');
+    const code = rawCode.replace(/^firestore\//, '');
+    return new Set([
+      'aborted',
+      'cancelled',
+      'deadline-exceeded',
+      'internal',
+      'resource-exhausted',
+      'unavailable',
+      'unknown',
+    ]).has(code);
+  }
   // DataService
   updateAttendanceKey(
     userId: string,

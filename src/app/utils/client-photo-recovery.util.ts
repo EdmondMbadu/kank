@@ -42,6 +42,25 @@ export function isUnknownStorageError(error: unknown): boolean {
   return (error as { code?: unknown } | null)?.code === 'storage/unknown';
 }
 
+/**
+ * Errors that can be caused by an interrupted or ambiguous mobile transfer.
+ * Authentication, authorization, quota, invalid-file and user-cancel errors
+ * are intentionally excluded because retransmitting cannot fix them.
+ */
+export function isRetryableStorageError(error: unknown): boolean {
+  const code = String(
+    (error as { code?: unknown } | null)?.code || ''
+  ).toLowerCase();
+  return new Set([
+    'storage/unknown',
+    'storage/retry-limit-exceeded',
+    'storage/network-request-failed',
+    'storage/server-file-wrong-size',
+    'storage/invalid-checksum',
+    'storage/internal-error',
+  ]).has(code);
+}
+
 function storageErrorDiagnostics(error: unknown): StorageErrorDiagnostics {
   const value = (error || {}) as {
     code?: unknown;
@@ -61,16 +80,17 @@ function storageErrorDiagnostics(error: unknown): StorageErrorDiagnostics {
 }
 
 /**
- * Firebase can commit an iPhone upload and still reject the resumable task's
- * final response. Ask the trusted backend for the real server token only for
- * that exact ambiguous error. Normal uploads never call this fallback.
+ * Firebase can commit a mobile upload and still lose or reject the resumable
+ * task's final response. Ask the trusted backend whether the exact object is
+ * already present before sending the bytes again. Normal successful uploads
+ * never call this fallback.
  */
 export async function recoverClientPhotoUpload(
   functions: AngularFireFunctions,
   error: unknown,
   path: string
 ): Promise<RecoveredClientPhoto | null> {
-  if (!isUnknownStorageError(error)) {
+  if (!isRetryableStorageError(error)) {
     return null;
   }
 
@@ -218,7 +238,7 @@ export async function recoverOrRetryClientPhotoUpload(
   oneShotUploader: ClientPhotoOneShotUploader = uploadClientPhotoOneShot,
   serverUploader: ClientPhotoServerUploader = uploadClientPhotoThroughServer
 ): Promise<RecoveredClientPhoto | null> {
-  if (!isUnknownStorageError(error)) {
+  if (!isRetryableStorageError(error)) {
     return null;
   }
 

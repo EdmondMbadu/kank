@@ -1,6 +1,7 @@
 import { of, throwError } from 'rxjs';
 import {
   isUnknownStorageError,
+  isRetryableStorageError,
   recoverOrRetryClientPhotoUpload,
   recoverClientPhotoUpload,
   uploadClientPhotoThroughServer,
@@ -43,6 +44,7 @@ describe('client photo recovery', () => {
     );
 
     expect(isUnknownStorageError({ code: 'storage/unknown' })).toBeTrue();
+    expect(isRetryableStorageError({ code: 'storage/unknown' })).toBeTrue();
     expect(functions.httpsCallable).toHaveBeenCalledWith(
       'recoverClientPhotoUpload'
     );
@@ -58,6 +60,37 @@ describe('client photo recovery', () => {
       downloadURL: 'https://firebase.test/real-token',
       size: '63812',
     });
+  });
+
+  it('checks the backend before retransmitting after a mobile network timeout', async () => {
+    const callable = jasmine.createSpy('callable').and.returnValue(
+      of({
+        exists: true,
+        downloadURL: 'https://firebase.test/already-committed',
+        size: '1024',
+      })
+    );
+    const functions = {
+      httpsCallable: jasmine
+        .createSpy('httpsCallable')
+        .and.returnValue(callable),
+    } as any;
+    const oneShotUploader = jasmine.createSpy('oneShotUploader');
+
+    const recovered = await recoverOrRetryClientPhotoUpload(
+      functions,
+      {} as any,
+      { code: 'storage/retry-limit-exceeded' },
+      'attendance_proofs/site/employee/2026-08-07/photo.jpg',
+      new File(['photo'], 'photo.jpg', { type: 'image/jpeg' }),
+      oneShotUploader
+    );
+
+    expect(recovered).toEqual({
+      downloadURL: 'https://firebase.test/already-committed',
+      size: '1024',
+    });
+    expect(oneShotUploader).not.toHaveBeenCalled();
   });
 
   it('keeps a genuine missing upload as a failure', async () => {

@@ -42,4 +42,139 @@ describe('DataService', () => {
       pendingClients: [{ clientId: 'marie' }, { clientId: 'richard' }],
     });
   });
+
+  it('finalizes attendance and its photo in one atomic batch', async () => {
+    const refs = new Map<string, { path: string }>();
+    const doc = (path: string) => {
+      if (!refs.has(path)) refs.set(path, { path });
+      return refs.get(path)!;
+    };
+    const batch = {
+      set: jasmine.createSpy('set'),
+      commit: jasmine.createSpy('commit').and.resolveTo(undefined),
+    };
+    const afs = {
+      firestore: {
+        doc: jasmine.createSpy('doc').and.callFake(doc),
+        batch: jasmine.createSpy('batch').and.returnValue(batch),
+      },
+    };
+    const service = new DataService(
+      afs as any,
+      {} as any,
+      {} as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-8-2026',
+        todaysDate: () => '8-7-2026',
+      } as any,
+      {} as any,
+      {} as any
+    );
+    const attachment = {
+      url: 'https://firebase.test/presence',
+      path: 'attendance_proofs/site/employee/2026-08-07/123.jpeg',
+      size: 12345,
+      contentType: 'image/jpeg',
+      uploadedAt: 1786099353292,
+      uploaderId: 'site',
+      takenAt: 1786099350000,
+    };
+
+    await service.finalizeAttendanceWithAttachment(
+      'site',
+      'employee',
+      '2026-08-07',
+      'L',
+      '8-7-2026-12-9-19',
+      'site',
+      attachment
+    );
+
+    expect(afs.firestore.batch).toHaveBeenCalledTimes(1);
+    expect(batch.set).toHaveBeenCalledTimes(3);
+    expect(batch.set).toHaveBeenCalledWith(
+      doc('users/site/employees/employee'),
+      {
+        attendance: { '8-7-2026-12-9-19': 'L' },
+        attendanceAttachments: {
+          '8-7-2026-12-9-19': attachment,
+        },
+      },
+      { merge: true }
+    );
+    expect(batch.set).toHaveBeenCalledWith(
+      doc('users/site/employees/employee/attendance/2026-08-07'),
+      jasmine.objectContaining({
+        status: 'L',
+        proofState: 'ready',
+        proof: attachment,
+        attachmentId: '123_jpeg',
+      }),
+      { merge: true }
+    );
+    expect(batch.set).toHaveBeenCalledWith(
+      doc(
+        'users/site/employees/employee/attendance/2026-08-07/attachments/123_jpeg'
+      ),
+      attachment,
+      { merge: true }
+    );
+    expect(batch.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries an atomic attendance commit without creating partial writes', async () => {
+    const firstBatch = {
+      set: jasmine.createSpy('firstSet'),
+      commit: jasmine
+        .createSpy('firstCommit')
+        .and.rejectWith({ code: 'firestore/unavailable' }),
+    };
+    const secondBatch = {
+      set: jasmine.createSpy('secondSet'),
+      commit: jasmine.createSpy('secondCommit').and.resolveTo(undefined),
+    };
+    const afs = {
+      firestore: {
+        doc: (path: string) => ({ path }),
+        batch: jasmine
+          .createSpy('batch')
+          .and.returnValues(firstBatch, secondBatch),
+      },
+    };
+    const service = new DataService(
+      afs as any,
+      {} as any,
+      {} as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-8-2026',
+        todaysDate: () => '8-7-2026',
+      } as any,
+      {} as any,
+      {} as any
+    );
+
+    await service.finalizeAttendanceWithAttachment(
+      'site',
+      'employee',
+      '2026-08-07',
+      'P',
+      '8-7-2026-8-0-0',
+      'site',
+      {
+        url: 'https://firebase.test/presence',
+        path: 'attendance_proofs/site/employee/2026-08-07/456.jpg',
+        size: 100,
+        contentType: 'image/jpeg',
+        uploadedAt: 1786099353292,
+        uploaderId: 'site',
+      },
+      [0]
+    );
+
+    expect(afs.firestore.batch).toHaveBeenCalledTimes(2);
+    expect(firstBatch.commit).toHaveBeenCalledTimes(1);
+    expect(secondBatch.commit).toHaveBeenCalledTimes(1);
+    expect(firstBatch.set).toHaveBeenCalledTimes(3);
+    expect(secondBatch.set).toHaveBeenCalledTimes(3);
+  });
 });

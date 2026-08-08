@@ -50,6 +50,10 @@ import {
   sumAmountMapThroughDate,
 } from 'src/app/utils/amount-performance.util';
 import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
+import {
+  attendanceFileFingerprint,
+  uploadFirstThenFinalizeAttendance,
+} from 'src/app/utils/attendance-photo-finalization.util';
 
 // at the top, with other imports
 import exifr from 'exifr'; // if TS complains, use: import * as exifr from 'exifr';
@@ -7633,6 +7637,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     em._attachmentUA = null;
     em._attachmentSoftId = null;
     em._attachmentHash = null;
+    em._attachmentTakenAtPromise = null;
+    em._attachmentMetadataPromise = null;
+    em._uploadedAttendanceAttachment = null;
     em._uploading = false;
   }
 
@@ -7657,80 +7664,79 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         : target.toISOString().slice(0, 10);
       const plainLabel = this.normalizeLabel(label, dateISO);
 
-      // 1) legacy + day-doc writes (existing code) ...
-      await this.data.updateEmployeeAttendanceForUser(
-        { [label]: attendanceValue },
-        employee.uid!,
-        this.auth.currentUser.uid
-      );
-      await this.data.setAttendanceEntry(
-        this.auth.currentUser.uid,
-        employee.uid!,
-        dateISO,
-        attendanceValue as any,
-        label,
-        this.auth.currentUser?.uid || 'unknown'
-      );
-
-      // 2) optional attachment (ENRICH WITH takenAt)
-      let attMeta: any = null;
-      if (employee._attachmentFile) {
-        employee._uploading = true;
-
-        // read the “first created” date BEFORE uploading
-        const when = await this.readFirstCreated(employee._attachmentFile);
-
-        attMeta = await this.data.uploadAttendanceAttachment(
-          employee._attachmentFile,
-          employee.uid!,
-          this.auth.currentUser.uid,
-          dateISO,
-          this.auth.currentUser?.uid || 'unknown',
-          label,
-          this.fns
-        );
-
-        // persist takenAt + source with the attachment document
-        if (when.date) {
-          attMeta = {
-            ...attMeta,
-            takenAt: when.date.getTime(),
-            takenAtSource: when.source,
-          };
-        }
-        attMeta = {
-          ...attMeta,
-          device: employee._attachmentDeviceInfo || null,
-          ua: employee._attachmentUA || this.getUaInfo(),
-          softDeviceId: employee._attachmentSoftId || this.ensureSoftDeviceId(),
-          photoHash:
-            employee._attachmentHash ||
-            (employee._attachmentFile
-              ? await this.hashFile(employee._attachmentFile)
-              : null),
-        };
-        await this.data.addAttendanceAttachmentDoc(
-          this.auth.currentUser.uid,
-          employee.uid!,
-          dateISO,
-          attMeta
-        );
-
-        await this.data.updateEmployeeAttendanceAttachment(
-          employee.uid!,
-          this.auth.currentUser.uid,
-          label,
-          attMeta
-        );
-
-        employee.attendanceAttachments = {
-          ...(employee.attendanceAttachments ?? {}),
-          [label]: attMeta,
-        };
-
-        employee._uploading = false;
-        this.clearAttachment(employee);
+      const file = employee._attachmentFile as File | null;
+      if (!file) {
+        alert("Ajoutez d'abord une photo (obligatoire).");
+        return;
       }
+
+      employee._uploading = true;
+
+      const fingerprint = attendanceFileFingerprint(file);
+      const reusable = employee._uploadedAttendanceAttachment;
+      let attMeta: any = null;
+
+      attMeta = await uploadFirstThenFinalizeAttendance(
+        async () => {
+          if (
+            reusable?.dateISO === dateISO &&
+            reusable?.dateLabel === label &&
+            reusable?.fingerprint === fingerprint &&
+            reusable?.attachment
+          ) {
+            return reusable.attachment;
+          }
+
+          const uploaded = await this.data.uploadAttendanceAttachment(
+            file,
+            employee.uid!,
+            this.auth.currentUser.uid,
+            dateISO,
+            this.auth.currentUser?.uid || 'unknown',
+            label,
+            this.fns
+          );
+          const enriched = {
+            ...uploaded,
+            ...(employee._attachmentTakenAt
+              ? { takenAt: employee._attachmentTakenAt.getTime() }
+              : {}),
+            ...(employee._attachmentTakenAtSource
+              ? { takenAtSource: employee._attachmentTakenAtSource }
+              : {}),
+            device: employee._attachmentDeviceInfo || null,
+            ua: employee._attachmentUA || this.getUaInfo(),
+            softDeviceId:
+              employee._attachmentSoftId || this.ensureSoftDeviceId(),
+            photoHash: employee._attachmentHash || null,
+          };
+
+          // Keep the successful upload available if Firestore is temporarily
+          // unavailable. A second click retries only the atomic commit.
+          employee._uploadedAttendanceAttachment = {
+            dateISO,
+            dateLabel: label,
+            fingerprint,
+            attachment: enriched,
+          };
+          return enriched;
+        },
+        (uploaded) =>
+          this.data.finalizeAttendanceWithAttachment(
+            this.auth.currentUser.uid,
+            employee.uid!,
+            dateISO,
+            attendanceValue as 'P' | 'A' | 'L' | 'N' | 'F',
+            label,
+            this.auth.currentUser?.uid || 'unknown',
+            uploaded
+          )
+      );
+
+      employee.attendanceAttachments = {
+        ...(employee.attendanceAttachments ?? {}),
+        [label]: attMeta,
+      };
 
       // local refresh (existing) ...
       this.employee.attendance = this.employee.attendance || {};
@@ -7746,6 +7752,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
       await this.sleep(350);
       this.displayAttendance = false;
+      this.clearAttachment(employee);
       alert('Présence ajoutée avec succès');
     } catch (e) {
       console.error(e);
@@ -8823,6 +8830,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     em._attachmentSize = null;
     em._attachmentTakenAt = null;
     em._attachmentTakenAtSource = '';
+    em._attachmentDeviceInfo = null;
+    em._attachmentHash = null;
+    em._attachmentUA = this.getUaInfo();
+    em._attachmentSoftId = this.ensureSoftDeviceId();
+    em._attachmentTakenAtPromise = null;
+    em._attachmentMetadataPromise = null;
+    em._uploadedAttendanceAttachment = null;
 
     if (!file) return;
 
@@ -8848,11 +8862,37 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     reader.onload = () => (em._attachmentPreview = reader.result as string);
     reader.readAsDataURL(file);
 
-    // NEW: read original capture date for preview
-    this.readFirstCreated(file).then((info) => {
-      em._attachmentTakenAt = info.date;
-      em._attachmentTakenAtSource = info.source;
-    });
+    // Extract optional audit metadata in parallel while the employee reviews
+    // the preview. Metadata failures must never prevent a valid photo upload.
+    em._attachmentTakenAtPromise = this.readFirstCreated(file)
+      .catch(() => ({
+        date: file.lastModified ? new Date(file.lastModified) : null,
+        source: file.lastModified ? 'fileLastModified' : 'unknown',
+      }))
+      .then((info) => {
+        if (em._attachmentFile !== file) return;
+        em._attachmentTakenAt = info.date;
+        em._attachmentTakenAtSource = info.source;
+      });
+    const devicePromise = this.readExifDeviceInfo(file)
+      .catch(() => null)
+      .then((device) => {
+        if (em._attachmentFile === file) {
+          em._attachmentDeviceInfo = device;
+        }
+      });
+    const hashPromise = this.hashFile(file)
+      .catch(() => null)
+      .then((hash) => {
+        if (em._attachmentFile === file) {
+          em._attachmentHash = hash;
+        }
+      });
+    em._attachmentMetadataPromise = Promise.all([
+      em._attachmentTakenAtPromise,
+      devicePromise,
+      hashPromise,
+    ]).then(() => undefined);
   }
 
   /** Try to read the original capture/creation date from EXIF/QuickTime.
@@ -9132,6 +9172,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (!employee._attachmentFile) {
       alert("Ajoutez d'abord une photo (obligatoire).");
       return;
+    }
+
+    if (employee._attachmentTakenAtPromise) {
+      await employee._attachmentTakenAtPromise;
     }
 
     const when: Date | null = employee._attachmentTakenAt || null;

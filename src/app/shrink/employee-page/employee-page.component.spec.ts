@@ -50,6 +50,7 @@ describe('EmployeePageComponent', () => {
         'Décembre',
       ],
       todaysDateMonthDayYear: () => '3-28-2026',
+      todaysDate: () => '3-28-2026-9-0-0',
       convertDateToDayMonthYear: () => '28 Mars 2026',
       getTodaysDateYearMonthDay: () => '2026-03-28',
       toDate: (dateKey: string) => {
@@ -1228,5 +1229,87 @@ describe('EmployeePageComponent', () => {
     expect(component.foundationMonthsEarned).toBe(12);
     expect(component.foundationMonthlyContributionTotalUsd).toBe(120);
     expect(component.foundationWithdrawalEligible).toBeTrue();
+  });
+
+  it('does not write attendance when the required photo upload fails', async () => {
+    const data = {
+      uploadAttendanceAttachment: jasmine
+        .createSpy('uploadAttendanceAttachment')
+        .and.rejectWith(new Error('offline')),
+      finalizeAttendanceWithAttachment: jasmine.createSpy(
+        'finalizeAttendanceWithAttachment'
+      ),
+      updateEmployeeAttendanceForUser: jasmine.createSpy(
+        'updateEmployeeAttendanceForUser'
+      ),
+      setAttendanceEntry: jasmine.createSpy('setAttendanceEntry'),
+    };
+    const component = createComponent({ currentUser: { uid: 'site-1' } });
+    (component as any).data = data;
+    const employee = {
+      uid: 'employee-1',
+      _attachmentFile: new File(['photo'], 'presence.jpg', {
+        type: 'image/jpeg',
+        lastModified: 1774688400000,
+      }),
+    };
+    component.employee = employee as any;
+    spyOn(window, 'alert');
+    spyOn(console, 'error');
+
+    await component.addAttendanceForEmployee(employee, 'P');
+
+    expect(data.uploadAttendanceAttachment).toHaveBeenCalledTimes(1);
+    expect(data.finalizeAttendanceWithAttachment).not.toHaveBeenCalled();
+    expect(data.updateEmployeeAttendanceForUser).not.toHaveBeenCalled();
+    expect(data.setAttendanceEntry).not.toHaveBeenCalled();
+    expect(employee._attachmentFile).toBeTruthy();
+  });
+
+  it('reuses a completed upload when only attendance finalization must be retried', async () => {
+    const attachment = {
+      url: 'https://firebase.test/presence',
+      path: 'attendance_proofs/site-1/employee-1/2026-03-28/photo.jpg',
+      size: 5,
+      contentType: 'image/jpeg',
+      uploadedAt: 1774688400000,
+      uploaderId: 'site-1',
+    };
+    const data = {
+      uploadAttendanceAttachment: jasmine
+        .createSpy('uploadAttendanceAttachment')
+        .and.resolveTo(attachment),
+      finalizeAttendanceWithAttachment: jasmine
+        .createSpy('finalizeAttendanceWithAttachment')
+        .and.returnValues(
+          Promise.reject(new Error('firestore unavailable')),
+          Promise.resolve()
+        ),
+    };
+    const component = createComponent({ currentUser: { uid: 'site-1' } });
+    (component as any).data = data;
+    const employee: any = {
+      uid: 'employee-1',
+      attendance: {},
+      attendanceAttachments: {},
+      _attachmentFile: new File(['photo'], 'presence.jpg', {
+        type: 'image/jpeg',
+        lastModified: 1774688400000,
+      }),
+    };
+    component.employee = employee;
+    spyOn<any>(component, 'sleep').and.resolveTo();
+    spyOn<any>(component, 'invalidateAttendanceRuleCaches').and.stub();
+    spyOn(component, 'generateAttendanceTable').and.stub();
+    spyOn(window, 'alert');
+    spyOn(console, 'error');
+
+    await component.addAttendanceForEmployee(employee, 'P');
+    await component.addAttendanceForEmployee(employee, 'P');
+
+    expect(data.uploadAttendanceAttachment).toHaveBeenCalledTimes(1);
+    expect(data.finalizeAttendanceWithAttachment).toHaveBeenCalledTimes(2);
+    expect(employee.attendance['3-28-2026-9-0-0']).toBe('P');
+    expect(employee._attachmentFile).toBeNull();
   });
 });
