@@ -224,6 +224,18 @@ service cloud.firestore {
       allow write: if isAppAdmin();
     }
 
+    // Migration controls are readable for diagnostics, but only an app admin
+    // may change a rollout or activate a rollback. Backend migration tools use
+    // the Admin SDK and are not governed by these client rules.
+    match /migrationControls/{controlId} {
+      allow read: if signedIn() && !isPortalClient();
+      allow write: if isAppAdmin();
+    }
+
+    match /firestoreMigrationRuns/{runId} {
+      allow read, write: if false;
+    }
+
     match /{topCollection}/{docId} {
       allow read, write: if signedIn() &&
         !isPortalClient() &&

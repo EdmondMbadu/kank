@@ -1,0 +1,53 @@
+{
+  "projectId": "kank-4bbbc",
+  "capturedAt": "2026-08-09T23:07:47.645971Z",
+  "backup": {
+    "uri": "gs://kank-4bbbc.appspot.com/firestore-migrations/pre-v2-20260809T230737Z",
+    "operationState": "SUCCESSFUL",
+    "completedDocuments": 25870,
+    "storedBytes": 28269815
+  },
+  "schemaVersion": 2,
+  "controlPath": "migrationControls/firestoreV2",
+  "productionControl": {
+    "mirrorLegacyWrites": true,
+    "enabledKinds": [],
+    "shadowReads": false,
+    "readFromV2": false,
+    "writeDirectlyToV2": false,
+    "killSwitch": false
+  },
+  "mirrorRuntime": {
+    "retryEnabled": true,
+    "maxInstances": 50,
+    "timeoutSeconds": 120,
+    "status": "ACTIVE"
+  },
+  "reconciliation": {
+    "sourceDocuments": 2007,
+    "expectedEntries": 165133,
+    "matchingEntries": 165133,
+    "missingEntries": 0,
+    "mismatchedEntries": 0,
+    "orphanEntries": 0
+  },
+  "smokeTest": {
+    "sourcePath": "gallery/codex_firestore_v2_smoke_20260809",
+    "createMirrored": true,
+    "updateMirrored": true,
+    "deleteTombstoned": true,
+    "cleanupVerified": true
+  },
+  "performanceP95Ms": {
+    "managementLegacy": 497.834084,
+    "managementReserveV2": 198.002333,
+    "managementActivityV2": 200.83325,
+    "largestUserLegacy": 304.996,
+    "largestUserReimbursementV2": 236.08375,
+    "largestEmployeeLegacy": 429.811333,
+    "largestEmployeeAttachmentsV2": 202.390667
+  },
+  "legacyDataDeleted": false,
+  "legacyReadsChanged": false,
+  "legacyWritesChanged": false
+}

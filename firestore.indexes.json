@@ -13,6 +13,42 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "firestoreV2Entries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "field",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "monthKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "legacyKey",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "firestoreV2Entries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "field",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "monthKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "ordinal",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
@@ -29,6 +65,406 @@
           "queryScope": "COLLECTION_GROUP"
         }
       ]
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "phoneNumber",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "prise_contact",
+      "fieldPath": "createdAt",
+      "indexes": [
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "firestoreV2Entries",
+      "fieldPath": "value",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "firestoreV2PayloadChunks",
+      "fieldPath": "data",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "moneyInHandsActivities",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "expenses",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "otherExpenses",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "fraudes",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "reserve",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "investment",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "moneyGiven",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "exchangeLoss",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "dollarTransferLoss",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "bankDepositDollars",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "bankDepositFrancs",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "budgetedExpenses",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "moneyInHandsTracking",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "monthlyPaymentSnapshots",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailyReimbursement",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailyLending",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailySaving",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailySavingReturns",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailyFeesReturns",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailyMobileMoneyPayment",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailyCardPayments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailyCardReturns",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailyCardBenefits",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "investments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "investmentsDollar",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "performances",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "expenses",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "losses",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "reserve",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "reserveinDollar",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "feesData",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "dailyMoneyRequests",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "attendanceAttachments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "attendance",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "dailyStatus",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "dailyPoints",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "payments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "totalDailyPoints",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "comments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "payments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "previousPayments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "savingsPayments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "previousSavingsPayments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "galleryPictures",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "bonusHistory",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "trophyAwards",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "reviews",
+      "fieldPath": "reviews",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "certificate",
+      "fieldPath": "certificate",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "gallery",
+      "fieldPath": "galleryPictures",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "weeklyPaymentTargetPeriods",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "management",
+      "fieldPath": "weeklyDeductionTargetVersions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "reviews",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "weeklyPaymentTargetPeriods",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "investigationPerformanceMonthly",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "paymentsPicturePath",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "receipts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "paymentObjectiveWeekDeductions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "paymentObjectiveWeekBonuses",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "bestTeamTrophies",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "bestEmployeeTrophies",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "foundationRequests",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "foundationMonthDeductions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "employees",
+      "fieldPath": "foundationManualBonuses",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "membershipFeePayments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "applicationFeePayments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "paymentSources",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "previousPaymentSources",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "previousHomePictures",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "auditConversationAudios",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "clients",
+      "fieldPath": "recoveredAwayDebts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "cards",
+      "fieldPath": "payments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "cards",
+      "fieldPath": "withdrawal",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "cards",
+      "fieldPath": "galleryPictures",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "audit",
+      "fieldPath": "pendingClients",
+      "indexes": []
     }
   ]
 }

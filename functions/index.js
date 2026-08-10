@@ -7,6 +7,7 @@ const admin = require("firebase-admin");
 const {randomUUID} = require("crypto");
 const AfricasTalking = require("africastalking");
 const twilio = require("twilio");
+const {mirrorLegacyWrite} = require("./firestore-v2-mirror");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -25,6 +26,42 @@ const atConfig = legacyRuntimeConfig.africastalking || {};
 const apiKey = atConfig.api_key || process.env.AFRICASTALKING_API_KEY || "";
 const username = atConfig.username || process.env.AFRICASTALKING_USERNAME || "";
 const db = admin.firestore();
+
+// Additive, kill-switch-controlled shadow migration. These triggers never
+// mutate a legacy source document; they only maintain deterministic v2 entry
+// documents underneath it. An absent control document means "off".
+const firestoreV2MirrorRuntime = functions.runWith({
+  failurePolicy: true,
+  maxInstances: 50,
+  timeoutSeconds: 120,
+});
+exports.mirrorManagementFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("management/{documentId}")
+    .onWrite(mirrorLegacyWrite);
+exports.mirrorUserFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("users/{ownerUid}")
+    .onWrite(mirrorLegacyWrite);
+exports.mirrorEmployeeFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("users/{ownerUid}/employees/{documentId}")
+    .onWrite(mirrorLegacyWrite);
+exports.mirrorClientFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("users/{ownerUid}/clients/{documentId}")
+    .onWrite(mirrorLegacyWrite);
+exports.mirrorCardFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("users/{ownerUid}/cards/{documentId}")
+    .onWrite(mirrorLegacyWrite);
+exports.mirrorReviewFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("users/{ownerUid}/reviews/{documentId}")
+    .onWrite(mirrorLegacyWrite);
+exports.mirrorCertificateFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("certificate/{documentId}")
+    .onWrite(mirrorLegacyWrite);
+exports.mirrorGalleryFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("gallery/{documentId}")
+    .onWrite(mirrorLegacyWrite);
+exports.mirrorAuditFirestoreV2 = firestoreV2MirrorRuntime.firestore
+    .document("audit/{documentId}")
+    .onWrite(mirrorLegacyWrite);
 
 exports.recoverClientPhotoUpload = functions.https.onCall(async (data, context) => {
   if (!context.auth) {

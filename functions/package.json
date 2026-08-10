@@ -3,6 +3,11 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "lint": "eslint .",
+    "test": "node --test test/*.test.js",
+    "firestore-v2:dry-run": "node scripts/firestore-v2-migrate.js",
+    "firestore-v2:control": "node scripts/firestore-v2-control.js",
+    "firestore-v2:smoke": "node scripts/firestore-v2-smoke.js",
+    "firestore-v2:benchmark": "node scripts/firestore-v2-benchmark.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
