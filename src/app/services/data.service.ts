@@ -1491,6 +1491,7 @@ export class DataService {
       lastName: client.lastName,
       middleName: client.middleName,
       phoneNumber: client.phoneNumber,
+      previousPhoneNumbers: client.previousPhoneNumbers || [],
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
       homeAvenue: client.homeAvenue,

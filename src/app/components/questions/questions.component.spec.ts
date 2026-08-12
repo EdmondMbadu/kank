@@ -226,4 +226,60 @@ describe('QuestionsComponent', () => {
     expect(normalizedText()).toContain('Total partiel : 1 montant(s) introuvable(s)');
     expect(normalizedText()).toContain('Non trouvé');
   });
+
+  it('shows the latest client phone instead of the pending audit snapshot', () => {
+    component.audits = [
+      Object.assign(new Audit(), {
+        id: 'audit-1',
+        name: 'Marie',
+        phoneNumber: '0811111111',
+        pendingClients: [
+          {
+            clientId: 'client-1',
+            clientName: 'Jean Mukendi',
+            clientLocation: 'Gombe',
+            clientPhoneNumber: '0822222222',
+            __matchedClient: {
+              uid: 'client-1',
+              phoneNumber: '0999999999',
+            },
+          },
+        ],
+      }),
+    ];
+
+    fixture.detectChanges();
+
+    expect(normalizedText()).toContain('Gombe · 0999999999');
+    expect(normalizedText()).not.toContain('Gombe · 0822222222');
+  });
+
+  it('can match a pending audit snapshot through the phone history', () => {
+    const pendingClient: any = {
+      clientName: 'Ancien nom',
+      clientLocation: 'Gombe',
+      clientPhoneNumber: '0822222222',
+    };
+    component.audits = [
+      Object.assign(new Audit(), { pendingClients: [pendingClient] }),
+    ];
+
+    (component as any).replaceOwnerClients(
+      { uid: 'owner-1', firstName: 'Gombe' },
+      [
+        {
+          uid: 'client-1',
+          firstName: 'Jean',
+          lastName: 'Mukendi',
+          phoneNumber: '0999999999',
+          previousPhoneNumbers: ['0822222222'],
+        },
+      ]
+    );
+    (component as any).matchPendingClients();
+
+    expect(component.pendingClientPhoneNumber(pendingClient)).toBe(
+      '0999999999'
+    );
+  });
 });

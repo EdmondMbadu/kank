@@ -237,7 +237,8 @@
                 {{ client.clientName }}
               </h4>
               <p class="mt-0.5 text-sm text-gray-600">
-                {{ client.clientLocation }} · {{ client.clientPhoneNumber }}
+                {{ client.clientLocation }} ·
+                {{ pendingClientPhoneNumber(client) }}
               </p>
 
               <div

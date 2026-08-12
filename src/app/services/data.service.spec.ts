@@ -1,6 +1,44 @@
 import { DataService } from './data.service';
 
 describe('DataService', () => {
+  it('persists phone history with a register request update', async () => {
+    const clientRef = {
+      set: jasmine.createSpy('set').and.resolveTo(undefined),
+      update: jasmine.createSpy('update').and.resolveTo(undefined),
+    };
+    const afs = {
+      doc: jasmine.createSpy('doc').and.returnValue(clientRef),
+    };
+    const service = new DataService(
+      afs as any,
+      {} as any,
+      { currentUser: { uid: 'owner-1' } } as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-13-2026',
+        todaysDate: () => '8-12-2026',
+      } as any,
+      {} as any,
+      {} as any
+    );
+
+    await service.registerClientRequestUpdate({
+      uid: 'client-1',
+      phoneNumber: '0999999999',
+      previousPhoneNumbers: ['0811111111'],
+    });
+
+    expect(afs.doc).toHaveBeenCalledWith(
+      'users/owner-1/clients/client-1'
+    );
+    expect(clientRef.set).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        phoneNumber: '0999999999',
+        previousPhoneNumbers: ['0811111111'],
+      }),
+      { merge: true }
+    );
+  });
+
   it('removes from the latest queue without losing a concurrent assignment', async () => {
     const auditRef = {};
     const transaction = {

@@ -244,6 +244,9 @@ export class QuestionsComponent implements OnInit, OnDestroy {
         client.uid,
         client.trackingId,
         this.normalizePhone(client.phoneNumber),
+        ...(client.previousPhoneNumbers || []).map((phone) =>
+          this.normalizePhone(phone)
+        ),
       ].filter(Boolean) as string[];
 
       keys.forEach((key) => {
@@ -276,9 +279,6 @@ export class QuestionsComponent implements OnInit, OnDestroy {
   }
 
   private findPendingClientMatch(pc: any): Client | undefined {
-    const indexed = this.clientFromPendingIndex(pc);
-    if (indexed) return indexed;
-
     const keys = [
       pc?.clientId,
       pc?.trackingId,
@@ -289,6 +289,9 @@ export class QuestionsComponent implements OnInit, OnDestroy {
       const match = this.globalClientIndex.get(String(key));
       if (match) return match;
     }
+
+    const indexed = this.clientFromPendingIndex(pc);
+    if (indexed) return indexed;
 
     const pendingName = (pc?.clientName || '').trim().toLowerCase();
     const pendingLocation = (pc?.clientLocation || '').trim().toLowerCase();
@@ -381,6 +384,13 @@ export class QuestionsComponent implements OnInit, OnDestroy {
     }
 
     return null;
+  }
+
+  pendingClientPhoneNumber(pc: PendingClient): string {
+    const currentPhone = (
+      this.pendingClientMatchedRecord(pc)?.phoneNumber || ''
+    ).trim();
+    return currentPhone || (pc.clientPhoneNumber || '').trim();
   }
 
   private pendingClientsInQueue(): PendingClient[] {

@@ -32,6 +32,8 @@ export class RequestUpdateComponent implements OnInit {
   loanAmountOtherDisplay: boolean = false;
   private originalLoanAmount: string = '';
   private originalRequestDate: string = '';
+  private originalPhoneNumber: string = '';
+  private originalPhoneNumberCaptured = false;
 
   constructor(
     public auth: AuthService,
@@ -51,6 +53,10 @@ export class RequestUpdateComponent implements OnInit {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      if (!this.originalPhoneNumberCaptured) {
+        this.originalPhoneNumber = this.client?.phoneNumber || '';
+        this.originalPhoneNumberCaptured = true;
+      }
       this.previousFieldReset();
     });
   }
@@ -132,6 +138,7 @@ export class RequestUpdateComponent implements OnInit {
       if (!conf) {
         return;
       }
+      this.ensurePhoneHistoryIfChanged();
       this.setClientNewDebtCycleValues();
       const shouldUpdateDailyMoneyRequests =
         this.hasValue(this.client.requestAmount) &&
@@ -218,6 +225,30 @@ export class RequestUpdateComponent implements OnInit {
     this.client.requestAmount = this.loanAmount;
     this.client.requestDate = this.requestDate;
     this.client.dateOfRequest = this.time.todaysDate();
+  }
+
+  private ensurePhoneHistoryIfChanged(): void {
+    const oldPhone = this.originalPhoneNumber;
+    const oldNormalized = this.normalizePhone(oldPhone);
+    const newNormalized = this.normalizePhone(this.client?.phoneNumber);
+
+    if (!oldNormalized || !newNormalized || oldNormalized === newNormalized) {
+      return;
+    }
+
+    const history = Array.isArray(this.client.previousPhoneNumbers)
+      ? [...this.client.previousPhoneNumbers]
+      : [];
+
+    if (!history.some((phone) => this.normalizePhone(phone) === oldNormalized)) {
+      history.push(oldPhone);
+    }
+
+    this.client.previousPhoneNumbers = history;
+  }
+
+  private normalizePhone(value?: string): string {
+    return (value || '').replace(/\D+/g, '');
   }
 
   private hasValue(value: any): boolean {
