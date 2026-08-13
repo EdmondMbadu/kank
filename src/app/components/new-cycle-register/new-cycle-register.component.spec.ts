@@ -14,6 +14,7 @@ import { MoneyAvailabilityPolicyService } from 'src/app/services/money-availabil
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { NewCycleRegisterComponent } from './new-cycle-register.component';
+import { toAppDate } from 'src/app/utils/date-util';
 import {
   DEFAULT_MONEY_AVAILABILITY_POLICY,
   ResolvedMoneyAvailabilityPolicy,
@@ -164,6 +165,15 @@ describe('NewCycleRegisterComponent', () => {
             findClientsWithDebts: jasmine
               .createSpy('findClientsWithDebts')
               .and.returnValue([cycleClient]),
+            saveCurrentCycle: jasmine
+              .createSpy('saveCurrentCycle')
+              .and.resolveTo(),
+            registerNewDebtCycle: jasmine
+              .createSpy('registerNewDebtCycle')
+              .and.resolveTo(),
+            updateUserInfoForRegisterClientNewDebtCycleOfflineSafe: jasmine
+              .createSpy('updateUserInfoForRegisterClientNewDebtCycleOfflineSafe')
+              .and.resolveTo(),
           },
         },
         {
@@ -239,7 +249,7 @@ describe('NewCycleRegisterComponent', () => {
     expect(component.moneyAvailability.tier).toBe('best');
     expect(component.moneyAvailability.bestClientLevel).toBe('Silver');
     expect(component.requestDate).toBe(component.moneyAvailability.earliestDateIso);
-    expect(dateInput.min).toBe(component.moneyAvailability.earliestDateIso);
+    expect(dateInput.readOnly).toBeTrue();
     expect(normalizedText()).toContain(
       "Date de remise de l'argent au client"
     );
@@ -248,7 +258,7 @@ describe('NewCycleRegisterComponent', () => {
     expect(normalizedText()).toContain('🏆');
   });
 
-  it('corrects an earlier money date and preserves a later one', () => {
+  it('keeps the exact policy date when an earlier or later date is attempted', () => {
     const earliest = component.moneyAvailability.earliestDateIso;
     const laterDate = new Date(component.moneyAvailability.earliestDate);
     laterDate.setDate(laterDate.getDate() + 4);
@@ -262,7 +272,7 @@ describe('NewCycleRegisterComponent', () => {
     expect(component.requestDate).toBe(earliest);
 
     component.onRequestDateChange(laterIso);
-    expect(component.requestDate).toBe(laterIso);
+    expect(component.requestDate).toBe(earliest);
   });
 
   it('uses a live location override for the current client score', () => {
@@ -283,6 +293,9 @@ describe('NewCycleRegisterComponent', () => {
     expect(component.moneyAvailability.score).toBe(72);
     expect(component.moneyAvailability.openDays).toBe(2);
     expect(component.moneyAvailability.policyVersion).toBe(8);
+    expect(component.requestDate).toBe(
+      component.moneyAvailability.earliestDateIso
+    );
     expect(normalizedText()).toContain('2 jours ouvrables');
     expect(normalizedText()).toContain('Exception de cette localisation');
   });
@@ -474,7 +487,7 @@ describe('NewCycleRegisterComponent', () => {
     expect(component.loanAmount).toBe('50000');
   });
 
-  it('defensively blocks an earlier money date during submission', () => {
+  it('defensively replaces a changed date with the exact policy date during submission', () => {
     populateValidSubmissionFields('50 000');
     component.requestDate = '2000-01-01';
     const alertSpy = spyOn(window, 'alert');
@@ -482,9 +495,96 @@ describe('NewCycleRegisterComponent', () => {
 
     component.registerClientNewDebtCycle();
 
+    expect(component.requestDate).toBe(
+      component.moneyAvailability.earliestDateIso
+    );
+    expect(proceedSpy).toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+
+  it('replaces the six-day fallback for score 45 when the live policy loads or changes', () => {
+    jasmine.clock().install();
+    try {
+      jasmine.clock().mockDate(new Date(2026, 7, 10, 9));
+      component.client.creditScore = '45';
+      component.resolvedMoneyPolicy = {
+        policy: DEFAULT_MONEY_AVAILABILITY_POLICY,
+        source: 'fallback',
+        locationId: 'location-1',
+      };
+      (component as any).syncMoneyAvailability();
+
+      expect(component.moneyAvailability.openDays).toBe(6);
+      expect(component.requestDate).toBe('2026-08-17');
+
+      resolvedPolicySubject.next({
+        source: 'global',
+        locationId: 'location-1',
+        policy: {
+          version: 2,
+          rules: [
+            { id: 'low', minScore: null, maxScore: 49, openDays: 4 },
+            { id: '50s', minScore: 50, maxScore: 59, openDays: 3 },
+            { id: '60s', minScore: 60, maxScore: 69, openDays: 3 },
+            { id: 'best', minScore: 70, maxScore: null, openDays: 1 },
+          ],
+        },
+      });
+
+      expect(component.moneyAvailability.openDays).toBe(4);
+      expect(component.requestDate).toBe('2026-08-14');
+
+      resolvedPolicySubject.next({
+        source: 'global',
+        locationId: 'location-1',
+        policy: {
+          version: 3,
+          rules: [
+            { id: 'low', minScore: null, maxScore: 49, openDays: 5 },
+            { id: '50s', minScore: 50, maxScore: 59, openDays: 3 },
+            { id: '60s', minScore: 60, maxScore: 69, openDays: 3 },
+            { id: 'best', minScore: 70, maxScore: null, openDays: 1 },
+          ],
+        },
+      });
+
+      expect(component.moneyAvailability.openDays).toBe(5);
+      expect(component.requestDate).toBe('2026-08-15');
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('does not allow a new cycle before the active policy has loaded', () => {
+    populateValidSubmissionFields('50 000');
+    component.moneyPolicyLoaded = false;
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.registerClientNewDebtCycle();
+
     expect(proceedSpy).not.toHaveBeenCalled();
     expect(String(alertSpy.calls.mostRecent().args[0])).toContain(
-      'La date de remise ne peut pas être antérieure'
+      'règle de disponibilité'
     );
+  });
+
+  it('reapplies the exact policy date at final confirmation before saving', async () => {
+    populateValidSubmissionFields('50 000');
+    const expectedDate = component.moneyAvailability.earliestDateIso;
+    component.requestDate = '2099-12-31';
+    component.isConfirmed = true;
+
+    await component.submitNewCycleRegistration();
+
+    const data = TestBed.inject(DataService) as any;
+    expect(data.registerNewDebtCycle).toHaveBeenCalled();
+    expect(
+      data.registerNewDebtCycle.calls.mostRecent().args[0].requestDate
+    ).toBe(toAppDate(expectedDate));
+    expect(
+      data.registerNewDebtCycle.calls.mostRecent().args[0]
+        .moneyAvailabilityPolicySnapshot.openDays
+    ).toBe(component.moneyAvailability.openDays);
   });
 });

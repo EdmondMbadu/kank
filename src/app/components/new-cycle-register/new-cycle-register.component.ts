@@ -17,11 +17,9 @@ import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
 import {
   createMoneyAvailabilityPolicySnapshot,
   DEFAULT_MONEY_AVAILABILITY_POLICY,
-  enforceEarliestMoneyDeliveryDate,
   formatOpenDaysLabel,
   formatMoneyAvailabilityDate,
   getMoneyAvailability,
-  isMoneyDeliveryDateAllowed,
   MoneyAvailability,
   ResolvedMoneyAvailabilityPolicy,
 } from 'src/app/utils/money-availability.util';
@@ -52,8 +50,8 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
     locationId: '',
   };
   requestDate: string = this.moneyAvailability.earliestDateIso;
-  private moneyAvailabilityInitialized = false;
   private moneyPolicySubscription?: Subscription;
+  moneyPolicyLoaded = false;
   maxLoanAmount: number = 0;
   lastPaymentDate: Date | null = null;
   nextEligibleCreditDate: Date | null = null;
@@ -118,6 +116,7 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
       )
       .subscribe((resolvedPolicy) => {
         this.resolvedMoneyPolicy = resolvedPolicy;
+        this.moneyPolicyLoaded = true;
         if (this.client?.uid) {
           this.syncMoneyAvailability();
         }
@@ -263,7 +262,14 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
   }
 
   registerClientNewDebtCycle() {
-    this.syncMoneyAvailability(false);
+    if (!this.moneyPolicyLoaded) {
+      alert(
+        'La règle de disponibilité est encore en cours de chargement. Réessayez dans un instant.'
+      );
+      return;
+    }
+
+    this.syncMoneyAvailability();
     const normalizedLoanAmount = coerceToNumber(this.loanAmount);
     let inputValid = this.data.numbersValid(
       normalizedLoanAmount?.toString() ?? this.loanAmount,
@@ -511,11 +517,8 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
       : 'Règle générale';
   }
 
-  onRequestDateChange(value: string): void {
-    this.requestDate = enforceEarliestMoneyDeliveryDate(
-      value,
-      this.moneyAvailability.earliestDateIso
-    );
+  onRequestDateChange(_value: string): void {
+    this.requestDate = this.moneyAvailability.earliestDateIso;
   }
 
   onRequestDateInput(input: HTMLInputElement): void {
@@ -524,13 +527,10 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
   }
 
   isRequestDateAllowed(): boolean {
-    return isMoneyDeliveryDateAllowed(
-      this.requestDate,
-      this.moneyAvailability.earliestDateIso
-    );
+    return this.requestDate === this.moneyAvailability.earliestDateIso;
   }
 
-  private syncMoneyAvailability(correctSelection = true): void {
+  private syncMoneyAvailability(): void {
     const score = Number(this.client?.creditScore);
     this.moneyAvailability = getMoneyAvailability(
       Number.isFinite(score) ? score : 50,
@@ -538,16 +538,7 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
       this.resolvedMoneyPolicy.policy
     );
 
-    if (
-      correctSelection &&
-      (!this.moneyAvailabilityInitialized ||
-        !this.requestDate ||
-        !this.isRequestDateAllowed())
-    ) {
-      this.requestDate = this.moneyAvailability.earliestDateIso;
-    }
-
-    this.moneyAvailabilityInitialized = true;
+    this.requestDate = this.moneyAvailability.earliestDateIso;
   }
 
   resetFields() {
@@ -624,6 +615,14 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
       alert('Veuillez confirmer que vous avez respecté toutes les règles.');
       return;
     }
+    if (!this.moneyPolicyLoaded) {
+      alert(
+        'La règle de disponibilité est encore en cours de chargement. Réessayez dans un instant.'
+      );
+      return;
+    }
+
+    this.syncMoneyAvailability();
 
     this.toggle('isLoading');
 

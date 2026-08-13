@@ -122,6 +122,9 @@ describe('RegisterClientComponent', () => {
             getAllClients: jasmine
               .createSpy('getAllClients')
               .and.returnValue(of([existingClient])),
+            registerNewClient: jasmine
+              .createSpy('registerNewClient')
+              .and.resolveTo(),
           },
         },
         {
@@ -137,6 +140,9 @@ describe('RegisterClientComponent', () => {
             findClientsWithDebts: jasmine
               .createSpy('findClientsWithDebts')
               .and.returnValue([existingClient]),
+            updateUserInfoForRegisterClient: jasmine
+              .createSpy('updateUserInfoForRegisterClient')
+              .and.resolveTo(),
           },
         },
         {
@@ -212,16 +218,16 @@ describe('RegisterClientComponent', () => {
     expect(component.moneyAvailability.score).toBe(50);
     expect(component.moneyAvailability.tier).toBe('standard');
     expect(component.requestDate).toBe(component.moneyAvailability.earliestDateIso);
-    expect(dateInput.min).toBe(component.moneyAvailability.earliestDateIso);
+    expect(dateInput.readOnly).toBeTrue();
     expect(normalizedText()).toContain(
       "Date de remise de l'argent au client"
     );
     expect(normalizedText()).toContain('Score de crédit 50');
     expect(normalizedText()).toContain('3 jours ouvrables');
-    expect(normalizedText()).toContain('Choisir une date plus tardive');
+    expect(normalizedText()).toContain('Date appliquée automatiquement');
   });
 
-  it('corrects an earlier money date and preserves a later one', () => {
+  it('keeps the exact policy date when an earlier or later date is attempted', () => {
     const earliest = component.moneyAvailability.earliestDateIso;
     const laterDate = new Date(component.moneyAvailability.earliestDate);
     laterDate.setDate(laterDate.getDate() + 4);
@@ -235,7 +241,7 @@ describe('RegisterClientComponent', () => {
     expect(component.requestDate).toBe(earliest);
 
     component.onRequestDateChange(laterIso);
-    expect(component.requestDate).toBe(laterIso);
+    expect(component.requestDate).toBe(earliest);
   });
 
   it('recalculates a new-client date when the active location policy changes', () => {
@@ -256,6 +262,9 @@ describe('RegisterClientComponent', () => {
 
     expect(component.moneyAvailability.openDays).toBe(2);
     expect(component.moneyAvailability.policyVersion).toBe(4);
+    expect(component.requestDate).toBe(
+      component.moneyAvailability.earliestDateIso
+    );
     expect(component.moneyAvailabilityPolicyLabel).toContain('Exception');
     expect(normalizedText()).toContain('2 jours ouvrables');
   });
@@ -403,7 +412,7 @@ describe('RegisterClientComponent', () => {
     expect(component.loanAmount).toBe('50000');
   });
 
-  it('defensively blocks an earlier money date during submission', () => {
+  it('defensively replaces a changed date with the exact policy date during submission', () => {
     populateValidSubmissionFields('50 000');
     component.requestDate = '2000-01-01';
     const alertSpy = spyOn(window, 'alert');
@@ -411,9 +420,43 @@ describe('RegisterClientComponent', () => {
 
     component.addNewClient();
 
+    expect(component.requestDate).toBe(
+      component.moneyAvailability.earliestDateIso
+    );
+    expect(proceedSpy).toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not allow registration before the active policy has loaded', () => {
+    populateValidSubmissionFields('50 000');
+    component.moneyPolicyLoaded = false;
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.addNewClient();
+
     expect(proceedSpy).not.toHaveBeenCalled();
     expect(String(alertSpy.calls.mostRecent().args[0])).toContain(
-      'La date de remise ne peut pas être antérieure'
+      'règle de disponibilité'
     );
+  });
+
+  it('reapplies the exact policy date at final confirmation before saving', async () => {
+    populateValidSubmissionFields('50 000');
+    const expectedDate = component.moneyAvailability.earliestDateIso;
+    component.requestDate = '2099-12-31';
+    component.isConfirmed = true;
+
+    await component.submitRegistration();
+
+    const auth = TestBed.inject(AuthService) as any;
+    expect(auth.registerNewClient).toHaveBeenCalled();
+    expect(auth.registerNewClient.calls.mostRecent().args[0].requestDate).toBe(
+      expectedDate
+    );
+    expect(
+      auth.registerNewClient.calls.mostRecent().args[0]
+        .moneyAvailabilityPolicySnapshot.openDays
+    ).toBe(component.moneyAvailability.openDays);
   });
 });

@@ -696,15 +696,15 @@
                 </div>
 
                 <label class="money-availability-picker">
-                  <span>Choisir une date plus tardive</span>
+                  <span>Date appliquée automatiquement</span>
                   <input
-                    [(ngModel)]="requestDate"
-                    (input)="onRequestDateInput($any($event.target))"
-                    [min]="moneyAvailability.earliestDateIso"
+                    [value]="requestDate"
                     type="date"
                     id="requestDate"
                     class="register-input"
                     aria-describedby="requestDateRule"
+                    aria-readonly="true"
+                    readonly
                   />
                 </label>
               </div>
@@ -778,9 +778,10 @@
             </a>
             <button
               class="register-danger-button"
+              [disabled]="!moneyPolicyLoaded"
               (click)="addNewClient()"
             >
-              Soumettre
+              {{ moneyPolicyLoaded ? "Soumettre" : "Chargement de la règle…" }}
             </button>
           </div>
         </div>
@@ -926,7 +927,7 @@
       </button>
       <button
         class="register-primary-button justify-center disabled:cursor-not-allowed disabled:opacity-50"
-        [disabled]="isLoading || !isConfirmed"
+        [disabled]="isLoading || !isConfirmed || !moneyPolicyLoaded"
         (click)="submitRegistration()"
       >
         {{ isLoading ? 'Enregistrement…' : 'Enregistrer le nouveau cycle' }}

@@ -15,11 +15,9 @@ import { recoverOrRetryClientPhotoUpload } from 'src/app/utils/client-photo-reco
 import {
   createMoneyAvailabilityPolicySnapshot,
   DEFAULT_MONEY_AVAILABILITY_POLICY,
-  enforceEarliestMoneyDeliveryDate,
   formatOpenDaysLabel,
   formatMoneyAvailabilityDate,
   getMoneyAvailability,
-  isMoneyDeliveryDateAllowed,
   MoneyAvailability,
   ResolvedMoneyAvailabilityPolicy,
 } from 'src/app/utils/money-availability.util';
@@ -91,6 +89,7 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
       )
       .subscribe((resolvedPolicy) => {
         this.resolvedMoneyPolicy = resolvedPolicy;
+        this.moneyPolicyLoaded = true;
         this.refreshMoneyAvailability();
       });
 
@@ -154,6 +153,7 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
     locationId: '',
   };
   private moneyPolicySubscription?: Subscription;
+  moneyPolicyLoaded = false;
   requestDate: string = this.moneyAvailability.earliestDateIso;
   timeInBusiness: string = '';
   dailyIncome: string = '';
@@ -201,11 +201,18 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
   }
 
   addNewClient() {
+    if (!this.moneyPolicyLoaded) {
+      alert(
+        'La règle de disponibilité est encore en cours de chargement. Réessayez dans un instant.'
+      );
+      return;
+    }
+
     let date = this.time.todaysDateMonthDayYear();
     const today = new Date(); // current computer date
     // only for testing.
     this.creditworthinessScore = this.calculateCreditworthiness();
-    this.refreshMoneyAvailability(false);
+    this.refreshMoneyAvailability();
     const normalizedLoanAmount = coerceToNumber(this.loanAmount);
     const checkDate = this.isRequestDateAllowed();
     let inputValid = this.data.numbersValid(
@@ -379,6 +386,14 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
       alert('Veuillez confirmer que vous avez respecté toutes les règles.');
       return;
     }
+    if (!this.moneyPolicyLoaded) {
+      alert(
+        'La règle de disponibilité est encore en cours de chargement. Réessayez dans un instant.'
+      );
+      return;
+    }
+
+    this.refreshMoneyAvailability();
     this.toggle('isLoading');
 
     this.setNewClientValues();
@@ -456,11 +471,8 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
       : 'Règle générale';
   }
 
-  onRequestDateChange(value: string): void {
-    this.requestDate = enforceEarliestMoneyDeliveryDate(
-      value,
-      this.moneyAvailability.earliestDateIso
-    );
+  onRequestDateChange(_value: string): void {
+    this.requestDate = this.moneyAvailability.earliestDateIso;
   }
 
   onRequestDateInput(input: HTMLInputElement): void {
@@ -469,24 +481,16 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
   }
 
   isRequestDateAllowed(): boolean {
-    return isMoneyDeliveryDateAllowed(
-      this.requestDate,
-      this.moneyAvailability.earliestDateIso
-    );
+    return this.requestDate === this.moneyAvailability.earliestDateIso;
   }
 
-  private refreshMoneyAvailability(correctSelection = true): void {
+  private refreshMoneyAvailability(): void {
     this.moneyAvailability = getMoneyAvailability(
       this.registrationCreditScore,
       new Date(),
       this.resolvedMoneyPolicy.policy
     );
-    if (
-      correctSelection &&
-      (!this.requestDate || !this.isRequestDateAllowed())
-    ) {
-      this.requestDate = this.moneyAvailability.earliestDateIso;
-    }
+    this.requestDate = this.moneyAvailability.earliestDateIso;
   }
 
   resetFields() {
