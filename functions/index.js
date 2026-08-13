@@ -63,6 +63,85 @@ exports.mirrorAuditFirestoreV2 = firestoreV2MirrorRuntime.firestore
     .document("audit/{documentId}")
     .onWrite(mirrorLegacyWrite);
 
+function pendingClientSyncFields(clientData) {
+  const fullName = [
+    clientData.firstName,
+    clientData.middleName,
+    clientData.lastName,
+  ].map((value) => String(value || "").trim()).filter(Boolean).join(" ");
+
+  return {
+    clientName: fullName,
+    clientPhoneNumber: String(clientData.phoneNumber || ""),
+    clientProfilePicture: String(
+        (clientData.profilePicture && clientData.profilePicture.downloadURL) ||
+        "",
+    ),
+    creditScore: String(clientData.creditScore || ""),
+    requestAmount: String(clientData.requestAmount || ""),
+    dateOfRequest: String(clientData.dateOfRequest || ""),
+    requestDate: String(clientData.requestDate || ""),
+  };
+}
+
+exports.syncAuditPendingClient = functions.firestore
+    .document("users/{ownerUid}/clients/{clientId}")
+    .onUpdate(async (change, context) => {
+      const beforeFields = pendingClientSyncFields(change.before.data() || {});
+      const afterFields = pendingClientSyncFields(change.after.data() || {});
+      if (JSON.stringify(beforeFields) === JSON.stringify(afterFields)) {
+        return null;
+      }
+
+      const clientId = context.params.clientId;
+      const auditsSnapshot = await db.collection("audit").get();
+      const matchingAuditRefs = auditsSnapshot.docs
+          .filter((auditDoc) => {
+            const pendingClients = auditDoc.get("pendingClients");
+            return Array.isArray(pendingClients) && pendingClients.some(
+                (pendingClient) =>
+                  String((pendingClient && pendingClient.clientId) || "") ===
+                  clientId,
+            );
+          })
+          .map((auditDoc) => auditDoc.ref);
+
+      await Promise.all(matchingAuditRefs.map((auditRef) =>
+        db.runTransaction(async (transaction) => {
+          const latestAudit = await transaction.get(auditRef);
+          if (!latestAudit.exists) return;
+
+          const pendingClients = latestAudit.get("pendingClients");
+          if (!Array.isArray(pendingClients)) return;
+
+          let changed = false;
+          const updatedPendingClients = pendingClients.map((pendingClient) => {
+            if (
+              String((pendingClient && pendingClient.clientId) || "") !==
+              clientId
+            ) {
+              return pendingClient;
+            }
+
+            changed = true;
+            return {...pendingClient, ...afterFields};
+          });
+
+          if (changed) {
+            transaction.update(auditRef, {
+              pendingClients: updatedPendingClients,
+            });
+          }
+        }),
+      ));
+
+      console.log("Synchronized client fields in pending audit queues", {
+        clientId,
+        auditCount: matchingAuditRefs.length,
+      });
+      return null;
+    });
+
 exports.recoverClientPhotoUpload = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(

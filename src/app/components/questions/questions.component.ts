@@ -527,7 +527,7 @@ export class QuestionsComponent implements OnInit, OnDestroy {
 
   private pendingClientMoneyDate(pc: PendingClient): Date | null {
     const matchedClient = this.pendingClientMatchedRecord(pc);
-    return this.firstPendingDate([pc.requestDate, matchedClient?.requestDate]);
+    return this.firstPendingDate([matchedClient?.requestDate, pc.requestDate]);
   }
 
   private pendingClientMatchedRecord(pc: PendingClient): Client | undefined {

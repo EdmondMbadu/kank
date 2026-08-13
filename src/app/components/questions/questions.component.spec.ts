@@ -282,4 +282,42 @@ describe('QuestionsComponent', () => {
       '0999999999'
     );
   });
+
+  it('prefers the current client money date over a stale audit snapshot', () => {
+    const pendingClient: any = {
+      clientId: 'client-1',
+      requestDate: '8-14-2026',
+      __matchedClient: {
+        uid: 'client-1',
+        requestDate: '8-15-2026',
+      },
+    };
+
+    expect(component.pendingClientMoneyDateLabel(pendingClient)).toContain(
+      '15 août 2026'
+    );
+  });
+
+  it('keeps every existing audit snapshot visible while live clients load', () => {
+    component.audits = [
+      Object.assign(new Audit(), {
+        id: 'audit-helene',
+        pendingClients: Array.from({ length: 5 }, (_, index) => ({
+          clientId: `helene-${index}`,
+          clientName: `Client Helene ${index}`,
+        })),
+      }),
+      Object.assign(new Audit(), {
+        id: 'audit-rebecca',
+        pendingClients: Array.from({ length: 3 }, (_, index) => ({
+          clientId: `rebecca-${index}`,
+          clientName: `Client Rebecca ${index}`,
+        })),
+      }),
+    ];
+
+    expect(component.pendingClientTotalCount()).toBe(8);
+    expect(component.pendingClientCount(component.audits[0])).toBe(5);
+    expect(component.pendingClientCount(component.audits[1])).toBe(3);
+  });
 });
