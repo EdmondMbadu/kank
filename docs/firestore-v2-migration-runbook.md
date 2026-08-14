@@ -1,19 +1,22 @@
 # Firestore v2 migration runbook
 
-## Production state (2026-08-13)
+## Production state (2026-08-14)
 
 - Project: `kank-4bbbc`
 - Region: `us-central1`
-- Verified pre-change export:
-  `gs://kank-4bbbc.appspot.com/firestore-migrations/pre-v2-20260809T230737Z`
-- Export result: `SUCCESSFUL`, 25,870 documents, 28,269,815 stored bytes.
+- Verified immediate pre-compaction export:
+  `gs://kank-4bbbc.appspot.com/firestore-migrations/pre-compaction-20260814T041800Z`
+- Export result: `SUCCESSFUL`, 218,253 documents, 285,389,662 stored bytes.
 - Shadow mirror: enabled for all supported entity kinds.
 - Integrity projection writes: enabled (`projectionWrites=true`).
 - Compact month projection writes: enabled (`compactProjectionWrites=true`).
-- Application reads: legacy only (`readFromV2=false`).
+- Application reads: v2 for management only (`readFromV2=true`,
+  `readKinds=[management]`).
 - Direct application v2 writes: disabled (`writeDirectlyToV2=false`).
 - Legacy writes: unchanged.
-- Legacy deletes/pruning: not authorized and not performed.
+- The management source retains the current and previous calendar months for
+  five append/upsert histories. Entries through `2026-06` are reconstructed
+  from v2; editable historical maps remain in the source.
 - Reconciliation: 166,008 immutable entries and 166,008 compact projection
   values match exactly; 0 missing, 0 mismatched, 0 orphaned, 0 chunked.
 - Bounded read projections: 12,853 compact month documents; largest is
@@ -21,6 +24,12 @@
 - Synthetic production smoke: create, update, and delete/tombstone passed in
   the immutable, integrity-projection, and compact-projection layers;
   the synthetic source and descendants were verified removed.
+- Post-compaction source: 214,172 JSON proxy bytes, down from 539,381; complete
+  logical history is 539,714 bytes and reconstructs exactly.
+- Daily retention: deployed, enabled, manually invoked, exact, and confirmed
+  as a no-op (`changed=false`) when the cutoff is already current.
+- Post-compaction full reconciliation: 2,012 sources, 166,008 exact entries,
+  zero missing/mismatched/orphaned/oversized values, and zero scheduled writes.
 
 The latest management benchmark (five measured iterations after one warm-up)
 was:
@@ -33,14 +42,14 @@ was:
 | Current-month reserve query | 179.1 ms | 227.6 ms | selected month |
 | Current-month activity query | 209.7 ms | 284.9 ms | selected month |
 
-The compact format removed most projection overhead, but full-history hydration
-is still slower than legacy. Therefore `readFromV2` remains false. Month/range
-queries are faster and are the required route for screen-by-screen cutover.
+The compact format removed most projection overhead. Full-history hydration is
+shared once across all management consumers, while month/range queries remain
+the preferred route for future page-specific performance improvements.
 
-This is a safe shadow stage, not permission to remove or freeze legacy fields.
-It removes the immediate automatic-index-entry danger and establishes a fully
-reconciled bounded copy. The legacy document byte-growth risk remains until a
-separately verified read cutover allows legacy growth to be stopped.
+The urgent management growth path is now bounded automatically. Other audited
+source kinds remain far below the guardrail: employee 162,366 bytes, user
+158,402, client 16,517, certificate 21,019, review 10,107, gallery 7,505,
+card 3,085, and audit 1,558 at their observed maxima.
 
 ## Safety invariants
 

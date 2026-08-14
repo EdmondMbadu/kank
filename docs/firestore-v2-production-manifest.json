@@ -1,11 +1,11 @@
 {
   "projectId": "kank-4bbbc",
-  "capturedAt": "2026-08-14T03:34:00Z",
+  "capturedAt": "2026-08-14T05:00:00Z",
   "backup": {
-    "uri": "gs://kank-4bbbc.appspot.com/firestore-migrations/pre-v2-20260809T230737Z",
+    "uri": "gs://kank-4bbbc.appspot.com/firestore-migrations/pre-compaction-20260814T041800Z",
     "operationState": "SUCCESSFUL",
-    "completedDocuments": 25870,
-    "storedBytes": 28269815
+    "completedDocuments": 218253,
+    "storedBytes": 285389662
   },
   "schemaVersion": 2,
   "controlPath": "migrationControls/firestoreV2",
@@ -15,9 +15,25 @@
     "compactProjectionWrites": true,
     "enabledKinds": [],
     "shadowReads": false,
-    "readFromV2": false,
+    "readFromV2": true,
+    "readKinds": ["management"],
     "writeDirectlyToV2": false,
-    "killSwitch": false
+    "killSwitch": false,
+    "legacyCompactionEnabled": true,
+    "compactionSources": [
+      {
+        "source": "management/CWGXCLYchpm95b3KjoDJ",
+        "retentionMonths": 2,
+        "through": "2026-06",
+        "fields": [
+          "moneyGiven",
+          "moneyInHandsActivities",
+          "moneyInHandsTracking",
+          "monthlyPaymentSnapshots",
+          "reserve"
+        ]
+      }
+    ]
   },
   "mirrorRuntime": {
     "retryEnabled": true,
@@ -47,6 +63,23 @@
     "largestCompactProjectionJsonBytes": 115311,
     "chunkedEntries": 0
   },
+  "sourceSizeAudit": {
+    "largestSourceJsonBytesBefore": 539381,
+    "largestSourceJsonBytesAfter": 214172,
+    "largestLogicalJsonBytesAfter": 539714,
+    "sourceDocumentsAbove500KiB": 0,
+    "sourceDocumentsAbove700KiB": 0,
+    "largestOtherSourceKindJsonBytes": {
+      "employee": 162366,
+      "user": 158402,
+      "client": 16517,
+      "certificate": 21019,
+      "review": 10107,
+      "gallery": 7505,
+      "card": 3085,
+      "audit": 1558
+    }
+  },
   "smokeTest": {
     "sourcePath": "gallery/codex_firestore_v2_smoke_20260809",
     "createMirrored": true,
@@ -61,18 +94,35 @@
     "cleanupVerified": true
   },
   "performanceP95Ms": {
-    "managementLegacy": 468.526791,
-    "managementIntegrityProjectionFull": 5002.726541,
-    "managementCompactProjectionFull": 760.777917,
-    "managementReserveV2": 227.625625,
-    "managementActivityV2": 284.935917,
+    "managementLegacy": 522.311458,
+    "managementIntegrityProjectionFull": 4872.886916,
+    "managementCompactProjectionFull": 824.000042,
+    "managementReserveV2": 220.833375,
+    "managementActivityV2": 301.830083,
     "largestUserLegacy": 304.996,
     "largestUserReimbursementV2": 236.08375,
     "largestEmployeeLegacy": 429.811333,
     "largestEmployeeAttachmentsV2": 202.390667
   },
-  "legacyDataDeleted": false,
-  "legacyReadsChanged": false,
+  "retentionJob": {
+    "name": "compactFirestoreV2LegacyDaily",
+    "schedule": "every 24 hours",
+    "timeZone": "Etc/UTC",
+    "status": "ACTIVE",
+    "manualProductionProof": {
+      "exactLogicalMatch": true,
+      "changed": false,
+      "sourceJsonBytes": 214172
+    }
+  },
+  "rollback": {
+    "command": "node scripts/firestore-v2-cutover.js --project kank-4bbbc --action rollback --source management/CWGXCLYchpm95b3KjoDJ --ack I_UNDERSTAND_THIS_RESTORES_LEGACY_FIELDS",
+    "currentLogicalJsonBytes": 539714,
+    "safetyLimitBytes": 819200,
+    "emulatorExact": true
+  },
+  "legacyDataDeleted": true,
+  "legacyReadsChanged": true,
   "legacyWritesChanged": false,
-  "readCutoverBlockedByPerformanceGate": true
+  "readCutoverBlockedByPerformanceGate": false
 }
