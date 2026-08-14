@@ -177,6 +177,7 @@ export class AuthService {
   weeklyObjectiveDeductionConfig$ =
     this.weeklyObjectiveDeductionConfigSubject.asObservable();
   private managementDocId: string = '';
+  private managementInfo$?: Observable<Management[]>;
   private lastRoleWord = '';
 
   constructor(
@@ -370,7 +371,12 @@ export class AuthService {
     return this.hydrateCollection('certificate', false);
   }
   getManagementInfo() {
-    return this.hydrateCollection('management', false) as Observable<Management[]>;
+    if (!this.managementInfo$) {
+      this.managementInfo$ = (
+        this.hydrateCollection('management', false) as Observable<Management[]>
+      ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    }
+    return this.managementInfo$;
   }
   getAuditInfo() {
     return this.hydrateCollection('audit', false) as Observable<Audit[]>;

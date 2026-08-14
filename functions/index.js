@@ -8,6 +8,7 @@ const {randomUUID} = require("crypto");
 const AfricasTalking = require("africastalking");
 const twilio = require("twilio");
 const {mirrorLegacyWrite} = require("./firestore-v2-mirror");
+const {runRetentionCycle} = require("./firestore-v2-retention");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -62,6 +63,19 @@ exports.mirrorGalleryFirestoreV2 = firestoreV2MirrorRuntime.firestore
 exports.mirrorAuditFirestoreV2 = firestoreV2MirrorRuntime.firestore
     .document("audit/{documentId}")
     .onWrite(mirrorLegacyWrite);
+
+// This job is inert until an exact, rollback-capable cutover writes an
+// explicit compactionSources allowlist into migrationControls/firestoreV2.
+// It keeps opted-in legacy maps bounded to a rolling window indefinitely.
+exports.compactFirestoreV2LegacyDaily = functions
+    .runWith({timeoutSeconds: 540, memory: "512MB"})
+    .pubsub.schedule("every 24 hours")
+    .timeZone("Etc/UTC")
+    .onRun(async () => {
+      const result = await runRetentionCycle(db, new Date());
+      console.info("Firestore v2 retention cycle completed", result);
+      return result;
+    });
 
 function pendingClientSyncFields(clientData) {
   const fullName = [

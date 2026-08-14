@@ -46,9 +46,10 @@ separately verified read cutover allows legacy growth to be stopped.
 
 1. The control document is `migrationControls/firestoreV2`.
 2. A missing control or `killSwitch=true` makes every mirror Function inert.
-3. Mirror Functions never write the source document. They write only beneath
-   the source in `firestoreV2Entries`, `firestoreV2Months`, and
-   `firestoreV2ReadMonths`.
+3. Mirror Functions write only beneath the source until an explicit cutover
+   adds `_firestoreV2Archive` and enables `legacyCompactionEnabled`. After that,
+   the mirror may transactionally remove only allowlisted, already-archived
+   keys from the source after their v2 update commits.
 4. Entry IDs are deterministic per legacy field/key, so backfills and retries
    are idempotent.
 5. Each entry stores a fingerprint. Reconciliation requires exact fingerprints,
@@ -66,8 +67,45 @@ separately verified read cutover allows legacy growth to be stopped.
     read-equivalence tests, performance gates, and explicit approval.
 12. Background failures retry safely for up to the platform retry window;
     Functions are capped at 50 instances and 120 seconds per execution.
+13. The daily retention job is inert unless `compactionSources` explicitly
+    names a source, its fields, and its retention window. It refuses to run
+    without exact projections, active mirrors, active v2 reads, and a clear
+    kill switch.
+14. Retention cutoffs only move forward and archived field allowlists never
+    shrink automatically. Only the verified rollback command restores fields.
 
 ## Immediate rollback
+
+If no source has `_firestoreV2Archive`, return reads to legacy immediately:
+
+```bash
+node scripts/firestore-v2-control.js \
+  --project kank-4bbbc \
+  --action rollback-read \
+  --ack I_UNDERSTAND_THIS_CHANGES_MIGRATION_CONTROL
+```
+
+If a source has been compacted, **do not use `disable-all` first**. Restore the
+complete legacy document, verify every restored field, and only then disable
+v2 reads:
+
+```bash
+cd functions
+node scripts/firestore-v2-cutover.js \
+  --project kank-4bbbc \
+  --action rollback \
+  --source management/CWGXCLYchpm95b3KjoDJ \
+  --ack I_UNDERSTAND_THIS_RESTORES_LEGACY_FIELDS
+```
+
+The command first stops automatic compaction, reconstructs the full document
+from the compact projections, refuses a restore above the 800 KiB safety
+guard, writes it in one transaction, verifies every supported map and array,
+and only then sets `readFromV2=false`. Mirror writers stay on so no writes are
+lost during incident diagnosis.
+
+`disable-all` is the emergency stop for the shadow system before source
+compaction, or after the restore command above has completed:
 
 From `functions/`:
 
@@ -93,6 +131,43 @@ killSwitch=true
 This rollback is immediate and does not require a hosting deploy. Existing v2
 documents stay available for investigation and do not affect the legacy app.
 Do not delete v2 documents during incident response.
+
+## Exact source compaction and rolling retention
+
+Read-only candidate measurement:
+
+```bash
+cd functions
+node scripts/firestore-v2-cutover.js \
+  --project kank-4bbbc \
+  --action verify \
+  --source management/CWGXCLYchpm95b3KjoDJ \
+  --through 2026-06 \
+  --fields moneyInHandsActivities,reserve,moneyGiven,moneyInHandsTracking,monthlyPaymentSnapshots
+```
+
+Current measured result: 539,381 JSON proxy bytes before and 213,991 after,
+with an exact independent projection reconstruction. These five fields are
+append/upsert histories; the historical edit/delete maps remain in the legacy
+document.
+
+The destructive command requires its acknowledgement, active management v2
+reads, and a fresh verified backup:
+
+```bash
+node scripts/firestore-v2-cutover.js \
+  --project kank-4bbbc \
+  --action compact \
+  --source management/CWGXCLYchpm95b3KjoDJ \
+  --through 2026-06 \
+  --retention-months 2 \
+  --fields moneyInHandsActivities,reserve,moneyGiven,moneyInHandsTracking,monthlyPaymentSnapshots \
+  --ack I_UNDERSTAND_THIS_COMPACTS_LEGACY_FIELDS
+```
+
+The command prints the exact rollback command. The deployed daily job keeps
+the current and previous calendar months in the source and advances the cutoff
+automatically. Logical history remains complete in monthly v2 documents.
 
 ## Status and reconciliation
 
@@ -236,11 +311,23 @@ firebase deploy --project kank-4bbbc \
   --dry-run
 ```
 
-The repository's broad Angular suite had 70 pre-existing failures before this
-work. The production build, Functions lint, and focused v2 tests are the
-reliable migration regression gates until that unrelated baseline is repaired.
+The focused page suite covers the compatibility reconstruction plus every
+management page with existing behavioral tests:
 
-## Read cutover gate (blocked; not enabled)
+```bash
+npm test -- --watch=false --browsers=ChromeHeadless \
+  --include='src/app/utils/firestore-v2-compat.util.spec.ts' \
+  --include='src/app/central/today-central/today-central.component.spec.ts' \
+  --include='src/app/components/not-paid/not-paid.component.spec.ts' \
+  --include='src/app/gestion/gestion-*/gestion-*.component.spec.ts'
+```
+
+The current focused result is 36/36 passing. The repository's broad Angular
+suite still has unrelated historical failures, so Functions lint/unit tests,
+the focused page suite, the production build, and emulator cutover smoke are
+the migration gates.
+
+## Read cutover gate
 
 Do not set `readFromV2=true` or stop legacy growth until all of these are true:
 
@@ -257,6 +344,9 @@ Do not set `readFromV2=true` or stop legacy growth until all of these are true:
 Until then, keep reads legacy-only. That preserves current behavior and speed
 while the v2 copy continues to stay current.
 
-The 2026-08-13 full-history benchmark failed criterion 3, so no legacy field
-was removed and no read flag was enabled. This is a deliberate safety stop,
-not a completed source-document compaction.
+The full-history compact projection is slower as a raw isolated read, but the
+management stream is now shared with `shareReplay(1)`, eliminating the prior
+duplicate full-document reads from page state, role configuration, and global
+management state. A live cutover still requires a fresh backup, deployed
+compatibility build, exact reconciliation, production smoke, authenticated
+page checks, and an empty error-log gate immediately before compaction.

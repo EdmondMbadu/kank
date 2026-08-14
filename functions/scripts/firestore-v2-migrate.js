@@ -13,6 +13,9 @@ const {
   buildCompactMonthProjections,
   buildMonthProjections,
   materializeEntries,
+  normalizeArchiveConfig,
+  describeSourcePath,
+  reconstructCompactLegacyFields,
   stableStringify,
 } = require("../firestore-v2-core");
 
@@ -136,18 +139,63 @@ function compactItemCount(projection) {
 }
 
 async function reconcileDocument(doc, apply, bulkWriter, stats) {
-  const expected = materializeEntries(doc.ref.path, doc.data());
+  const compactSnapshot = await doc.ref.collection(READ_PROJECTION_COLLECTION)
+      .get();
+  const compactDocuments = compactSnapshot.docs.map((compactDoc) =>
+    compactDoc.data());
+  const archive = normalizeArchiveConfig(doc.ref.path, doc.data());
+  const logicalData = archive ? reconstructCompactLegacyFields(
+      doc.ref.path,
+      compactDocuments,
+      doc.data(),
+  ) : doc.data();
+  const sourceJsonBytes = Buffer.byteLength(stableStringify(doc.data()), "utf8");
+  const logicalJsonBytes = Buffer.byteLength(stableStringify(logicalData), "utf8");
+  const descriptor = describeSourcePath(doc.ref.path);
+  const kind = descriptor ? descriptor.kind : "unknown";
+  stats.largestSourceJsonBytes = Math.max(
+      stats.largestSourceJsonBytes,
+      sourceJsonBytes,
+  );
+  stats.largestLogicalJsonBytes = Math.max(
+      stats.largestLogicalJsonBytes,
+      logicalJsonBytes,
+  );
+  if (sourceJsonBytes >= 700 * 1024) stats.sourceDocumentsAbove700KiB += 1;
+  if (sourceJsonBytes >= 500 * 1024) stats.sourceDocumentsAbove500KiB += 1;
+  const kindStats = stats.sourceBytesByKind[kind] || {
+    documents: 0,
+    largestSourceJsonBytes: 0,
+    largestLogicalJsonBytes: 0,
+  };
+  kindStats.documents += 1;
+  kindStats.largestSourceJsonBytes = Math.max(
+      kindStats.largestSourceJsonBytes,
+      sourceJsonBytes,
+  );
+  kindStats.largestLogicalJsonBytes = Math.max(
+      kindStats.largestLogicalJsonBytes,
+      logicalJsonBytes,
+  );
+  stats.sourceBytesByKind[kind] = kindStats;
+  stats.largestSourceDocuments.push({
+    path: doc.ref.path,
+    kind,
+    sourceJsonBytes,
+    logicalJsonBytes,
+  });
+  const expected = materializeEntries(doc.ref.path, logicalData);
   const sourceUpdateTimeMs = doc.updateTime &&
     typeof doc.updateTime.toMillis === "function" ?
     doc.updateTime.toMillis() : 0;
   const expectedProjections = buildMonthProjections(
       doc.ref.path,
-      doc.data(),
+      logicalData,
       sourceUpdateTimeMs,
   );
   const expectedCompactProjections = buildCompactMonthProjections(
       doc.ref.path,
-      doc.data(),
+      logicalData,
   );
   stats.sourceDocuments += 1;
   stats.expectedEntries += expected.length;
@@ -253,8 +301,6 @@ async function reconcileDocument(doc, apply, bulkWriter, stats) {
     }
   });
 
-  const compactSnapshot = await doc.ref.collection(READ_PROJECTION_COLLECTION)
-      .get();
   const actualCompact = new Map(
       compactSnapshot.docs.map((compactDoc) => [compactDoc.id, compactDoc.data()]),
   );
@@ -349,6 +395,12 @@ async function main(argv = process.argv.slice(2)) {
     largestCompactProjectionJsonBytes: 0,
     skippedNewerCompactProjectionWrites: 0,
     scheduledWrites: 0,
+    largestSourceJsonBytes: 0,
+    largestLogicalJsonBytes: 0,
+    sourceDocumentsAbove500KiB: 0,
+    sourceDocumentsAbove700KiB: 0,
+    sourceBytesByKind: {},
+    largestSourceDocuments: [],
   };
   const bulkWriter = args.apply ? db.bulkWriter() : null;
   if (bulkWriter) {
@@ -362,6 +414,10 @@ async function main(argv = process.argv.slice(2)) {
         .map((doc) => reconcileDocument(doc, args.apply, bulkWriter, stats)));
   }
   if (bulkWriter) await bulkWriter.close();
+
+  stats.largestSourceDocuments = stats.largestSourceDocuments
+      .sort((left, right) => right.sourceJsonBytes - left.sourceJsonBytes)
+      .slice(0, 20);
 
   console.log(JSON.stringify(stats, null, 2));
   if (!args.apply && (stats.missingEntries || stats.mismatchedEntries ||

@@ -101,6 +101,7 @@ async function main() {
       mirrorLegacyWrites: false,
       projectionWrites: false,
       compactProjectionWrites: false,
+      legacyCompactionEnabled: false,
       shadowReads: false,
       readFromV2: false,
       readKinds: [],

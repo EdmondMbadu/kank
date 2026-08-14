@@ -415,6 +415,50 @@ function reconstructCompactLegacyFields(sourcePath, projectionDocuments, baseDat
   return result;
 }
 
+function normalizeArchiveConfig(sourcePath, data) {
+  const descriptor = describeSourcePath(sourcePath);
+  const raw = data && data._firestoreV2Archive;
+  if (!descriptor || !raw || typeof raw !== "object" ||
+      !/^\d{4}-\d{2}$/.test(String(raw.through || ""))) return null;
+  const allowed = new Set(layouts[descriptor.kind].mapFields);
+  const fields = Array.isArray(raw.fields) ?
+    raw.fields.map(String).filter((field) => allowed.has(field)) : [];
+  if (!fields.length) return null;
+  return {through: String(raw.through), fields};
+}
+
+function compactLegacyFields(sourcePath, data, archiveConfig) {
+  const descriptor = describeSourcePath(sourcePath);
+  if (!descriptor || !data) return {};
+  const allowed = new Set(layouts[descriptor.kind].mapFields);
+  const through = String(archiveConfig && archiveConfig.through || "");
+  const fields = Array.isArray(archiveConfig && archiveConfig.fields) ?
+    archiveConfig.fields.filter((field) => allowed.has(field)) : [];
+  if (!/^\d{4}-\d{2}$/.test(through) || !fields.length) return {};
+  const updates = {};
+  for (const field of fields) {
+    const values = data[field];
+    if (!values || typeof values !== "object" || Array.isArray(values)) {
+      updates[field] = {};
+      continue;
+    }
+    updates[field] = Object.fromEntries(Object.entries(values).filter(
+        ([legacyKey, value]) => {
+          const monthKey = monthKeyFromLegacyKey(legacyKey, value);
+          return monthKey === "unknown" || monthKey > through;
+        },
+    ));
+  }
+  return updates;
+}
+
+function isArchivedEntry(entry, archiveConfig) {
+  return Boolean(entry && archiveConfig &&
+    archiveConfig.fields.includes(entry.field) &&
+    entry.monthKey !== "unknown" &&
+    entry.monthKey <= archiveConfig.through);
+}
+
 function flattenLatestProjectionItems(sourcePath, projectionDocuments) {
   const latest = new Map();
   for (const document of projectionDocuments) {
@@ -445,14 +489,18 @@ module.exports = {
   describeSourcePath,
   buildMonthProjections,
   buildCompactMonthProjections,
+  compactLegacyFields,
   diffEntries,
   flattenLatestProjectionItems,
   layouts,
   materializeEntries,
   monthKeyFromLegacyKey,
+  normalizeArchiveConfig,
   projectionItemFromEntry,
   reconstructCompactLegacyFields,
+  isArchivedEntry,
   reconstructLegacyFields,
   splitUtf8,
   stableStringify,
+  sha256,
 };

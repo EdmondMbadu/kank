@@ -8,9 +8,13 @@ const {
   ENTRY_COLLECTION,
   PROJECTION_COLLECTION,
   READ_PROJECTION_COLLECTION,
+  compactLegacyFields,
   describeSourcePath,
   diffEntries,
+  isArchivedEntry,
+  normalizeArchiveConfig,
   projectionItemFromEntry,
+  stableStringify,
 } = require("./firestore-v2-core");
 
 const MAX_CONCURRENT_ENTRY_TRANSACTIONS = 20;
@@ -137,6 +141,29 @@ async function processWithConcurrency(items, callback) {
   }
 }
 
+async function maybeCompactLegacySource(db, sourceRef, control) {
+  if (control.legacyCompactionEnabled !== true) return false;
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(sourceRef);
+    if (!snapshot.exists) return false;
+    const data = snapshot.data() || {};
+    const archive = normalizeArchiveConfig(sourceRef.path, data);
+    if (!archive) return false;
+    const compacted = compactLegacyFields(sourceRef.path, data, archive);
+    const changed = Object.entries(compacted).some(([field, value]) =>
+      stableStringify(data[field] || {}) !== stableStringify(value));
+    if (!changed) return false;
+    transaction.update(sourceRef, {
+      ...compacted,
+      _firestoreV2Archive: {
+        ...archive,
+        lastCompactedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+    });
+    return true;
+  });
+}
+
 async function mirrorLegacyWriteWithDb(db, change, context, now) {
   const beforeData = change.before.exists ? change.before.data() : null;
   const afterData = change.after.exists ? change.after.data() : null;
@@ -144,8 +171,19 @@ async function mirrorLegacyWriteWithDb(db, change, context, now) {
   const control = await getMirrorControl(db);
   if (!shouldMirror(control, sourcePath)) return null;
   const sourceRef = change.after.exists ? change.after.ref : change.before.ref;
-  const {upserts, tombstones} = diffEntries(sourcePath, beforeData, afterData);
-  if (!upserts.length && !tombstones.length) return null;
+  const diff = diffEntries(sourcePath, beforeData, afterData);
+  const archive = normalizeArchiveConfig(sourcePath, afterData);
+  const upserts = diff.upserts;
+  const tombstones = diff.tombstones.filter((entry) =>
+    !(control.legacyCompactionEnabled === true &&
+      isArchivedEntry(entry, archive)));
+  const preservedArchivedEntries = diff.tombstones.length - tombstones.length;
+  if (!upserts.length && !tombstones.length) {
+    if (change.after.exists) {
+      await maybeCompactLegacySource(db, sourceRef, control);
+    }
+    return null;
+  }
 
   // Delete snapshots expose the last update time of the document that was
   // removed, not a distinct delete version. Use the event time for deletes so
@@ -172,9 +210,13 @@ async function mirrorLegacyWriteWithDb(db, change, context, now) {
     };
     if (await writeVersionedEntry(db, sourceRef, item, metadata, now)) committed += 1;
   });
+  if (change.after.exists) {
+    await maybeCompactLegacySource(db, sourceRef, control);
+  }
   console.info("Firestore v2 shadow mirror committed", {
     sourcePath, eventId: context.eventId, upserts: upserts.length,
-    tombstones: tombstones.length, committed, sourceUpdateTimeMs,
+    tombstones: tombstones.length, preservedArchivedEntries,
+    committed, sourceUpdateTimeMs,
   });
   return null;
 }
@@ -195,4 +237,5 @@ module.exports = {
   mirrorLegacyWriteWithDb,
   writeVersionedEntry,
   shouldMirror,
+  maybeCompactLegacySource,
 };

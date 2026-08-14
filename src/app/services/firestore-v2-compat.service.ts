@@ -1,15 +1,19 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import {
   catchError,
   map,
+  retry,
   shareReplay,
   switchMap,
 } from 'rxjs/operators';
 import {
   FirestoreV2CompactProjectionDocument,
+  FirestoreV2ProjectionDocument,
+  hasChunkedProjection,
   reconstructCompactLegacyDocument,
+  reconstructLegacyDocument,
 } from '../utils/firestore-v2-compat.util';
 
 type MigrationControl = {
@@ -33,6 +37,36 @@ export class FirestoreV2CompatService {
     );
 
   constructor(private afs: AngularFirestore) {}
+
+  private hydrateFromIntegrityProjection<T extends Record<string, any>>(
+    sourcePath: string,
+    baseData: T,
+    compactError?: unknown
+  ): Observable<T> {
+    return this.afs
+      .collection<FirestoreV2ProjectionDocument>(
+        `${sourcePath}/firestoreV2Months`
+      )
+      .valueChanges()
+      .pipe(
+        retry({ count: 3, delay: 1000 }),
+        switchMap((documents) => {
+          if (!documents.length || hasChunkedProjection(sourcePath, documents)) {
+            return throwError(() => new Error(
+              `No complete Firestore v2 fallback exists for ${sourcePath}.`
+            ));
+          }
+          return of(reconstructLegacyDocument(sourcePath, documents, baseData));
+        }),
+        catchError((fallbackError) => {
+          console.error(
+            `Firestore v2 fallback failed for ${sourcePath}; refusing partial history.`,
+            { compactError, fallbackError }
+          );
+          return throwError(() => fallbackError);
+        })
+      );
+  }
 
   private kindForPath(sourcePath: string): string | null {
     const parts = sourcePath.split('/').filter(Boolean);
@@ -61,28 +95,36 @@ export class FirestoreV2CompatService {
           control?.killSwitch !== true && Boolean(kind) &&
           Array.isArray(control?.readKinds) && control.readKinds.includes(kind!);
         if (!enabled) return of(baseData);
+        const archived = Boolean(baseData?.['_firestoreV2Archive']);
         return this.afs
           .collection<FirestoreV2CompactProjectionDocument>(
             `${sourcePath}/firestoreV2ReadMonths`
           )
           .valueChanges()
           .pipe(
-            map((documents) => {
+            retry({ count: 3, delay: 1000 }),
+            switchMap((documents) => {
               if (!documents.length) {
-                return baseData;
+                return archived
+                  ? this.hydrateFromIntegrityProjection(sourcePath, baseData)
+                  : of(baseData);
               }
-              return reconstructCompactLegacyDocument(
-                sourcePath,
-                documents,
-                baseData
+              return of(
+                reconstructCompactLegacyDocument(
+                  sourcePath,
+                  documents,
+                  baseData
+                )
               );
             }),
             catchError((error) => {
               console.error(
-                `Firestore v2 projection read failed for ${sourcePath}; using legacy data.`,
+                `Firestore v2 compact projection read failed for ${sourcePath}.`,
                 error
               );
-              return of(baseData);
+              return archived
+                ? this.hydrateFromIntegrityProjection(sourcePath, baseData, error)
+                : of(baseData);
             })
           );
       })

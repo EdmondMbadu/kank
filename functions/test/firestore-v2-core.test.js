@@ -7,14 +7,17 @@ const {
   MAX_INLINE_PAYLOAD_BYTES,
   buildCompactMonthProjections,
   buildMonthProjections,
+  compactLegacyFields,
   describeSourcePath,
   diffEntries,
   flattenLatestProjectionItems,
   materializeEntries,
   monthKeyFromLegacyKey,
+  normalizeArchiveConfig,
   projectionItemFromEntry,
   reconstructLegacyFields,
   reconstructCompactLegacyFields,
+  isArchivedEntry,
   splitUtf8,
   stableStringify,
 } = require("../firestore-v2-core");
@@ -116,6 +119,23 @@ test("compact month projections preserve exact maps and ordered arrays", () => {
       {id: "main"},
   );
   assert.deepEqual(reconstructed, source);
+});
+
+test("legacy compaction retains recent and unknown keys and archives only configured fields", () => {
+  const sourcePath = "management/main";
+  const source = {
+    reserve: {"12-31-2025": "old", "08-13-2026": "new", "custom": "keep"},
+    expenses: {"12-31-2025": "editable"},
+    _firestoreV2Archive: {through: "2025-12", fields: ["reserve"]},
+  };
+  const archive = normalizeArchiveConfig(sourcePath, source);
+  assert.deepEqual(archive, {through: "2025-12", fields: ["reserve"]});
+  assert.deepEqual(compactLegacyFields(sourcePath, source, archive), {
+    reserve: {"08-13-2026": "new", "custom": "keep"},
+  });
+  assert.equal(isArchivedEntry({field: "reserve", monthKey: "2025-12"}, archive), true);
+  assert.equal(isArchivedEntry({field: "expenses", monthKey: "2025-12"}, archive), false);
+  assert.equal(isArchivedEntry({field: "reserve", monthKey: "unknown"}, archive), false);
 });
 
 test("tombstones clear arrays and never place delete sentinels in projections", () => {

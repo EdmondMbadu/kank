@@ -7,6 +7,8 @@
     "firestore-v2:dry-run": "node scripts/firestore-v2-migrate.js",
     "firestore-v2:control": "node scripts/firestore-v2-control.js",
     "firestore-v2:smoke": "node scripts/firestore-v2-smoke.js",
+    "firestore-v2:cutover-smoke": "node scripts/firestore-v2-cutover-smoke.js",
+    "firestore-v2:cutover": "node scripts/firestore-v2-cutover.js",
     "firestore-v2:benchmark": "node scripts/firestore-v2-benchmark.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",

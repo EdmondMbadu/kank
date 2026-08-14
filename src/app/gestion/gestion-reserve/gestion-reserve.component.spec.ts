@@ -1,21 +1,23 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { Subject } from 'rxjs';
 import { GestionReserveComponent } from './gestion-reserve.component';
 
-describe('GestionReserveComponent', () => {
-  let component: GestionReserveComponent;
-  let fixture: ComponentFixture<GestionReserveComponent>;
+describe('GestionReserveComponent management hydration', () => {
+  it('keeps historical reserve entries available to the page', () => {
+    const management$ = new Subject<any[]>();
+    const auth = { getManagementInfo: () => management$ };
+    const management = { id: 'management-1', reserve: { old: '10' } };
+    const component = new GestionReserveComponent(
+      auth as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+    spyOn(component, 'getCurrentReserve');
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      declarations: [GestionReserveComponent]
-    });
-    fixture = TestBed.createComponent(GestionReserveComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+    management$.next([management]);
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+    expect(component.managementInfo).toBe(management as any);
+    expect(component.getCurrentReserve).toHaveBeenCalled();
   });
 });

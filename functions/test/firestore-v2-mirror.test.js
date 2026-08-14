@@ -277,3 +277,30 @@ test("compact read projections upsert and remove raw compatibility values", asyn
     operation.type === "update" &&
     operation.path === `${path}/firestoreV2ReadMonths/2026-08`));
 });
+
+test("source compaction removals preserve archived v2 entries", async () => {
+  const db = fakeDb({
+    mirrorLegacyWrites: true,
+    projectionWrites: true,
+    compactProjectionWrites: true,
+    legacyCompactionEnabled: true,
+    killSwitch: false,
+  });
+  const path = "management/main";
+  await mirrorLegacyWriteWithDb(
+      db,
+      changeFor(
+          path,
+          {reserve: {"12-31-2025": "old"}},
+          {
+            reserve: {},
+            _firestoreV2Archive: {through: "2025-12", fields: ["reserve"]},
+          },
+          700,
+      ),
+      {eventId: "source-compaction"},
+      "server-time",
+  );
+  assert.equal(db.commits.flat().filter((operation) =>
+    operation.path.includes("/firestoreV2Entries/")).length, 0);
+});
