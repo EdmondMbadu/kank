@@ -62,6 +62,13 @@ interface GestionHeatmapRect {
   height: number;
 }
 
+interface UpcomingRequestDateTotal {
+  dateKey: string;
+  displayDate: string;
+  totalFc: number;
+  totalDollar: number;
+}
+
 @Component({
   selector: 'app-gestion-day',
   templateUrl: './gestion-day.component.html',
@@ -294,6 +301,12 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   overallTotal: number = 0;
   overallTotalReserve: number = 0;
   overallTotalInDollars: number = 0;
+  upcomingRequestTotals: UpcomingRequestDateTotal[] = [];
+  overallUpcomingRequestTotal = 0;
+  overallUpcomingRequestTotalInDollars = 0;
+  isUpcomingRequestsExpanded = false;
+  upcomingRequestsReady = false;
+  private upcomingRequestsByDate = new Map<string, number>();
   paymentTotal: number = 0;
   overallTotalReserveInDollars: number = 0;
   overallTransportAmount: number = 0;
@@ -530,6 +543,78 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.isSavingReserveRevealTime = false;
     }
   }
+
+  toggleUpcomingRequests(): void {
+    if (!this.auth.isAdmin || this.upcomingRequestTotals.length === 0) return;
+    this.isUpcomingRequestsExpanded = !this.isUpcomingRequestsExpanded;
+  }
+
+  private resetUpcomingRequestSummary(): void {
+    if (!this.auth.isAdmin) return;
+
+    this.upcomingRequestsByDate.clear();
+    this.upcomingRequestTotals = [];
+    this.overallUpcomingRequestTotal = 0;
+    this.overallUpcomingRequestTotalInDollars = 0;
+    this.upcomingRequestsReady = false;
+  }
+
+  private addUpcomingRequest(requestDate?: string, rawAmount?: string): void {
+    if (!this.auth.isAdmin) return;
+
+    const requestedFor = this.parsePaymentDateKey(requestDate || '');
+    const today = this.parsePaymentDateKey(this.today);
+    const amount = Number(rawAmount);
+
+    if (
+      !requestedFor ||
+      !today ||
+      requestedFor <= today ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      return;
+    }
+
+    const dateKey = this.formatDateKey(requestedFor);
+    this.upcomingRequestsByDate.set(
+      dateKey,
+      (this.upcomingRequestsByDate.get(dateKey) || 0) + amount
+    );
+  }
+
+  private finalizeUpcomingRequestSummary(): void {
+    if (!this.auth.isAdmin) return;
+
+    this.upcomingRequestTotals = Array.from(
+      this.upcomingRequestsByDate.entries()
+    )
+      .map(([dateKey, totalFc]) => {
+        const date = this.parsePaymentDateKey(dateKey)!;
+        return {
+          dateKey,
+          displayDate: this.formatWeekDate(date),
+          totalFc,
+          totalDollar: this.convertFcToDollar(totalFc),
+        };
+      })
+      .filter((row) => row.totalFc > 0)
+      .sort((a, b) => {
+        const first = this.parsePaymentDateKey(a.dateKey)!.getTime();
+        const second = this.parsePaymentDateKey(b.dateKey)!.getTime();
+        return first - second;
+      });
+
+    this.overallUpcomingRequestTotal = this.upcomingRequestTotals.reduce(
+      (sum, row) => sum + row.totalFc,
+      0
+    );
+    this.overallUpcomingRequestTotalInDollars = this.convertFcToDollar(
+      this.overallUpcomingRequestTotal
+    );
+    this.upcomingRequestsReady = true;
+  }
+
   getAllClients() {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
@@ -548,6 +633,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.overallTotalReasons = 0;
     this.overallPaidClientsToday = 0;
     this.overallUnpaidClientsToday = 0;
+    this.resetUpcomingRequestSummary();
 
     // NEW: reset today's structures
     this.userServeTodayTotals = [];
@@ -610,6 +696,13 @@ export class GestionDayComponent implements OnInit, OnDestroy {
                 client.requestType === 'rejection');
 
             if (meetsTypeGate) {
+              if (this.auth.isAdmin) {
+                this.addUpcomingRequest(
+                  client.requestDate,
+                  client.requestAmount
+                );
+              }
+
               // existing target date (tomorrow / requestDateRigthFormat)
               if (client.requestDate === targetDate) {
                 userTotal += Number(client.requestAmount);
@@ -662,6 +755,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
               card.requestStatus !== undefined &&
               card.requestType === 'card'
             ) {
+              if (this.auth.isAdmin) {
+                this.addUpcomingRequest(card.requestDate, card.requestAmount);
+              }
+
               // Use effective date for cards too (skip Sunday if tomorrow is Sunday)
               const cardTargetDate = this.requestDateRigthFormat === this.tomorrow 
                 ? this.effectiveTomorrowDate 
@@ -873,6 +970,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
                 this.overallTotalReserve.toString()
               )
             );
+            this.finalizeUpcomingRequestSummary();
             // ─── after overallTotalReserveInDollars computation ─────────
             this.overallMoneyInHandsDollar = Number(
               this.compute.convertCongoleseFrancToUsDollars(
@@ -894,6 +992,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
           console.error('Error fetching data for user:', user.firstName, error);
           completedRequests++;
           if (completedRequests === this.allUsers.length) {
+            this.finalizeUpcomingRequestSummary();
             this.isFetchingClients = false;
           }
         }

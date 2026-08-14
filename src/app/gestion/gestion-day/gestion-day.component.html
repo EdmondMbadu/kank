@@ -616,6 +616,101 @@
     </div>
   </div>
 
+  <!-- ===================== DEMANDES À VENIR (ADMIN UNIQUEMENT) ===================== -->
+  <section
+    *ngIf="auth.isAdmin"
+    class="mt-6 overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800"
+    aria-labelledby="upcomingRequestsHeading"
+  >
+    <div
+      class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <p
+          class="text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-300"
+        >
+          Vue administrateur
+        </p>
+        <h2
+          id="upcomingRequestsHeading"
+          class="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100 md:text-2xl"
+        >
+          Total des demandes à venir
+        </h2>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Toutes les dates futures, sans détail par équipe.
+        </p>
+      </div>
+
+      <div *ngIf="upcomingRequestsReady; else upcomingRequestsLoading" class="text-left sm:text-right">
+        <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          {{ overallUpcomingRequestTotal | number : "1.0-0" }} FC
+        </p>
+        <p class="text-sm font-semibold text-violet-600 dark:text-violet-300">
+          ≈ ${{ overallUpcomingRequestTotalInDollars | number : "1.0-0" }}
+        </p>
+      </div>
+
+      <ng-template #upcomingRequestsLoading>
+        <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
+          Calcul en cours…
+        </p>
+      </ng-template>
+    </div>
+
+    <div
+      *ngIf="upcomingRequestsReady"
+      class="border-t border-slate-100 dark:border-slate-700"
+    >
+      <button
+        *ngIf="upcomingRequestTotals.length > 0"
+        type="button"
+        class="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-sm font-semibold text-slate-700 transition hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-violet-500 dark:text-slate-200 dark:hover:bg-slate-700/60"
+        [attr.aria-expanded]="isUpcomingRequestsExpanded"
+        aria-controls="upcomingRequestsBreakdown"
+        (click)="toggleUpcomingRequests()"
+      >
+        <span>
+          {{ isUpcomingRequestsExpanded ? "Masquer" : "Afficher" }} le détail
+          par date ({{ upcomingRequestTotals.length }})
+        </span>
+        <span aria-hidden="true" class="text-lg">
+          {{ isUpcomingRequestsExpanded ? "−" : "+" }}
+        </span>
+      </button>
+
+      <p
+        *ngIf="upcomingRequestTotals.length === 0"
+        class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400"
+      >
+        Aucune demande future enregistrée.
+      </p>
+
+      <div
+        *ngIf="isUpcomingRequestsExpanded"
+        id="upcomingRequestsBreakdown"
+        class="border-t border-slate-100 dark:border-slate-700"
+      >
+        <div
+          *ngFor="let row of upcomingRequestTotals"
+          class="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-4 last:border-b-0 dark:border-slate-700"
+        >
+          <span class="font-medium text-slate-800 dark:text-slate-200">
+            {{ row.displayDate }}
+          </span>
+          <span class="flex flex-col items-end">
+            <strong class="text-slate-900 dark:text-slate-100">
+              {{ row.totalFc | number : "1.0-0" }} FC
+            </strong>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              ≈ ${{ row.totalDollar | number : "1.0-0" }}
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===================== RÉSERVE ATTENDUE AUJOURD’HUI ===================== -->
   <div
     class="relative mt-6 flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:text-white"

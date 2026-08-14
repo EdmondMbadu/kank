@@ -382,3 +382,99 @@ describe('GestionDayComponent weekly payment history', () => {
     expect(component.overallWeeklyReserveProgressTone).toBe('yellow');
   });
 });
+
+describe('GestionDayComponent upcoming request summary', () => {
+  function createComponent(isAdmin = true): {
+    component: GestionDayComponent;
+    compute: jasmine.SpyObj<any>;
+  } {
+    const router = jasmine.createSpyObj('Router', ['navigate']);
+    const auth = { isAdmin };
+    const time = {
+      getTodaysDateYearMonthDay: () => '2026-08-13',
+      todaysDateMonthDayYear: () => '8-13-2026',
+      yesterdaysDateMonthDayYear: () => '8-12-2026',
+      getTomorrowsDateMonthDayYear: () => '8-14-2026',
+      convertDateToDayMonthYear: (date: string) => date,
+    };
+    const compute = jasmine.createSpyObj('ComputationService', [
+      'convertCongoleseFrancToUsDollars',
+    ]);
+    compute.convertCongoleseFrancToUsDollars.and.callFake(
+      (amount: string) => (Number(amount) / 2900).toString()
+    );
+
+    return {
+      component: new GestionDayComponent(
+        router,
+        auth as any,
+        time as any,
+        compute,
+        {} as any,
+        {} as any
+      ),
+      compute,
+    };
+  }
+
+  it('groups valid future request amounts by date and sorts them', () => {
+    const { component } = createComponent();
+
+    (component as any).resetUpcomingRequestSummary();
+    (component as any).addUpcomingRequest('8-15-2026', '300000');
+    (component as any).addUpcomingRequest('8-14-2026', '75000');
+    (component as any).addUpcomingRequest('08-15-2026', '125000');
+    (component as any).addUpcomingRequest('8-13-2026', '999999');
+    (component as any).addUpcomingRequest('8-12-2026', '999999');
+    (component as any).addUpcomingRequest('invalid', '999999');
+    (component as any).addUpcomingRequest('8-16-2026', '0');
+    (component as any).finalizeUpcomingRequestSummary();
+
+    expect(component.upcomingRequestTotals).toEqual([
+      jasmine.objectContaining({
+        dateKey: '8-14-2026',
+        displayDate: 'Vendredi 14 Août 2026',
+        totalFc: 75000,
+      }),
+      jasmine.objectContaining({
+        dateKey: '8-15-2026',
+        displayDate: 'Samedi 15 Août 2026',
+        totalFc: 425000,
+      }),
+    ]);
+    expect(component.overallUpcomingRequestTotal).toBe(500000);
+    expect(component.overallUpcomingRequestTotalInDollars).toBe(
+      500000 / 2900
+    );
+    expect(component.upcomingRequestsReady).toBeTrue();
+
+    component.toggleUpcomingRequests();
+    expect(component.isUpcomingRequestsExpanded).toBeTrue();
+    component.toggleUpcomingRequests();
+    expect(component.isUpcomingRequestsExpanded).toBeFalse();
+  });
+
+  it('does not aggregate or convert anything for a non-admin viewer', () => {
+    const { component, compute } = createComponent(false);
+
+    (component as any).resetUpcomingRequestSummary();
+    (component as any).addUpcomingRequest('8-14-2026', '300000');
+    (component as any).finalizeUpcomingRequestSummary();
+
+    expect(component.upcomingRequestTotals).toEqual([]);
+    expect(component.overallUpcomingRequestTotal).toBe(0);
+    expect(component.upcomingRequestsReady).toBeFalse();
+    expect(compute.convertCongoleseFrancToUsDollars).not.toHaveBeenCalled();
+
+    component.upcomingRequestTotals = [
+      {
+        dateKey: '8-14-2026',
+        displayDate: 'Vendredi 14 Août 2026',
+        totalFc: 300000,
+        totalDollar: 300000 / 2900,
+      },
+    ];
+    component.toggleUpcomingRequests();
+    expect(component.isUpcomingRequestsExpanded).toBeFalse();
+  });
+});
