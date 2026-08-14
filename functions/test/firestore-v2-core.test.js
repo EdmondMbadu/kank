@@ -5,11 +5,16 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   MAX_INLINE_PAYLOAD_BYTES,
+  buildCompactMonthProjections,
+  buildMonthProjections,
   describeSourcePath,
   diffEntries,
+  flattenLatestProjectionItems,
   materializeEntries,
   monthKeyFromLegacyKey,
+  projectionItemFromEntry,
   reconstructLegacyFields,
+  reconstructCompactLegacyFields,
   splitUtf8,
   stableStringify,
 } = require("../firestore-v2-core");
@@ -78,6 +83,78 @@ test("supported maps and arrays make an exact compatibility round trip", () => {
   const entries = materializeEntries(sourcePath, legacy).map((item) => item.entry);
   const reconstructed = reconstructLegacyFields(sourcePath, entries);
   assert.deepEqual(reconstructed, legacy);
+});
+
+test("month projections preserve exact compatibility values", () => {
+  const sourcePath = "management/main";
+  const legacy = {
+    reserve: {"08-13-2026": "25", "07-31-2026": "10"},
+    moneyInHandsActivities: {
+      "08-13-2026-1": {createdAt: "2026-08-13T10:00:00Z", newAmount: "25"},
+    },
+  };
+  const projections = buildMonthProjections(sourcePath, legacy, 500);
+  assert.deepEqual([...projections.keys()].sort(), ["2026-07", "2026-08"]);
+  const augustEntries = Object.values(projections.get("2026-08"));
+  const reconstructed = reconstructLegacyFields(sourcePath, augustEntries);
+  assert.equal(reconstructed.reserve["08-13-2026"], "25");
+  assert.equal(reconstructed.moneyInHandsActivities["08-13-2026-1"].newAmount, "25");
+  assert.ok(augustEntries.every((entry) => entry.sourceUpdateTimeMs === 500));
+});
+
+test("compact month projections preserve exact maps and ordered arrays", () => {
+  const sourcePath = "management/main";
+  const source = {
+    id: "main",
+    reserve: {"08-01-2026": "5", "08-02-2026": "7"},
+    weeklyPaymentTargetPeriods: [{id: "a"}, {id: "b"}],
+  };
+  const projections = buildCompactMonthProjections(sourcePath, source);
+  const reconstructed = reconstructCompactLegacyFields(
+      sourcePath,
+      [...projections.values()],
+      {id: "main"},
+  );
+  assert.deepEqual(reconstructed, source);
+});
+
+test("tombstones clear arrays and never place delete sentinels in projections", () => {
+  const sourcePath = "users/u1/reviews/r1";
+  const result = reconstructLegacyFields(sourcePath, [{
+    sourcePath,
+    field: "reviews",
+    legacyKey: "old",
+    ordinal: 0,
+    deleted: true,
+  }], {reviews: [{id: "stale"}]});
+  assert.deepEqual(result.reviews, []);
+  const projection = projectionItemFromEntry({
+    id: "old",
+    sourcePath,
+    field: "reviews",
+    legacyKey: "old",
+    monthKey: "2026-08",
+    fingerprint: "x",
+    deleted: true,
+    value: {deleteSentinel: true},
+  }, 10);
+  assert.equal(Object.prototype.hasOwnProperty.call(projection, "value"), false);
+});
+
+test("projection flattening chooses the latest item across month moves", () => {
+  const sourcePath = "management/main";
+  const entries = flattenLatestProjectionItems(sourcePath, [
+    {items: {same: {
+      id: "same", sourcePath, field: "reserve", legacyKey: "day",
+      fingerprint: "old", sourceUpdateTimeMs: 10, value: "old",
+    }}},
+    {items: {same: {
+      id: "same", sourcePath, field: "reserve", legacyKey: "day",
+      fingerprint: "new", sourceUpdateTimeMs: 20, value: "new",
+    }}},
+  ]);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].value, "new");
 });
 
 test("oversized values are bounded into UTF-8 safe chunks", () => {

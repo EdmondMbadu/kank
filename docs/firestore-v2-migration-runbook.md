@@ -1,6 +1,6 @@
 # Firestore v2 migration runbook
 
-## Production state (2026-08-09)
+## Production state (2026-08-13)
 
 - Project: `kank-4bbbc`
 - Region: `us-central1`
@@ -8,27 +8,34 @@
   `gs://kank-4bbbc.appspot.com/firestore-migrations/pre-v2-20260809T230737Z`
 - Export result: `SUCCESSFUL`, 25,870 documents, 28,269,815 stored bytes.
 - Shadow mirror: enabled for all supported entity kinds.
+- Integrity projection writes: enabled (`projectionWrites=true`).
+- Compact month projection writes: enabled (`compactProjectionWrites=true`).
 - Application reads: legacy only (`readFromV2=false`).
 - Direct application v2 writes: disabled (`writeDirectlyToV2=false`).
 - Legacy writes: unchanged.
 - Legacy deletes/pruning: not authorized and not performed.
-- Reconciliation: 165,133 expected, 165,133 matching, 0 missing,
-  0 mismatched, 0 orphaned.
-- Synthetic production smoke: create, update, and delete/tombstone passed;
+- Reconciliation: 166,008 immutable entries and 166,008 compact projection
+  values match exactly; 0 missing, 0 mismatched, 0 orphaned, 0 chunked.
+- Bounded read projections: 12,853 compact month documents; largest is
+  115,311 JSON bytes against a conservative 700 KiB migration guard.
+- Synthetic production smoke: create, update, and delete/tombstone passed in
+  the immutable, integrity-projection, and compact-projection layers;
   the synthetic source and descendants were verified removed.
 
-Representative warm-cache Admin SDK read baselines (five measured iterations
-after one warm-up) were:
+The latest management benchmark (five measured iterations after one warm-up)
+was:
 
-| Source | Legacy full-document P95 | v2 field/month P95 |
-| --- | ---: | ---: |
-| Management (523,432 bytes) | 497.8 ms | reserve 198.0 ms; activity 200.8 ms |
-| Largest user (157,422 bytes) | 305.0 ms | reimbursement 236.1 ms; expenses 184.9 ms |
-| Largest employee (157,586 bytes) | 429.8 ms | attendance 183.4 ms; attachments 202.4 ms |
-| Largest client (16,392 bytes) | 192.1 ms | empty current-month query 164.0 ms |
+| Read | P50 | P95 | Exact legacy match |
+| --- | ---: | ---: | --- |
+| Legacy management (539,381 bytes) | 436.3 ms | 468.5 ms | baseline |
+| Metadata-heavy full projection | 4,692.2 ms | 5,002.7 ms | yes |
+| Compact full projection | 687.9 ms | 760.8 ms | yes |
+| Current-month reserve query | 179.1 ms | 227.6 ms | selected month |
+| Current-month activity query | 209.7 ms | 284.9 ms | selected month |
 
-These results establish a promising backend baseline. They do not replace
-browser, screen-level, and cold-cache performance gates before read cutover.
+The compact format removed most projection overhead, but full-history hydration
+is still slower than legacy. Therefore `readFromV2` remains false. Month/range
+queries are faster and are the required route for screen-by-screen cutover.
 
 This is a safe shadow stage, not permission to remove or freeze legacy fields.
 It removes the immediate automatic-index-entry danger and establishes a fully
@@ -39,8 +46,9 @@ separately verified read cutover allows legacy growth to be stopped.
 
 1. The control document is `migrationControls/firestoreV2`.
 2. A missing control or `killSwitch=true` makes every mirror Function inert.
-3. Mirror Functions never write the source document. They only write beneath
-   `{sourcePath}/firestoreV2Entries/{entryId}`.
+3. Mirror Functions never write the source document. They write only beneath
+   the source in `firestoreV2Entries`, `firestoreV2Months`, and
+   `firestoreV2ReadMonths`.
 4. Entry IDs are deterministic per legacy field/key, so backfills and retries
    are idempotent.
 5. Each entry stores a fingerprint. Reconciliation requires exact fingerprints,
@@ -52,9 +60,11 @@ separately verified read cutover allows legacy growth to be stopped.
    chunks of at most 96 KiB in `firestoreV2PayloadChunks`.
 9. Payload fields are excluded from automatic indexing. Month/field query
    indexes contain metadata only.
-10. No legacy field may be pruned without a new backup, exact reconciliation,
+10. Compact month documents have their `maps` and `arrays` fields excluded
+    from indexing and are rejected by migration tooling above 700 KiB.
+11. No legacy field may be pruned without a new backup, exact reconciliation,
     read-equivalence tests, performance gates, and explicit approval.
-11. Background failures retry safely for up to the platform retry window;
+12. Background failures retry safely for up to the platform retry window;
     Functions are capped at 50 instances and 120 seconds per execution.
 
 ## Immediate rollback
@@ -72,6 +82,8 @@ Expected control state:
 
 ```text
 mirrorLegacyWrites=false
+projectionWrites=false
+compactProjectionWrites=false
 shadowReads=false
 readFromV2=false
 writeDirectlyToV2=false
@@ -111,6 +123,14 @@ missingEntries=0
 mismatchedEntries=0
 orphanEntries=0
 expectedEntries=matchingEntries
+missingProjectionItems=0
+mismatchedProjectionItems=0
+orphanProjectionItems=0
+matchingCompactProjectionItems=expectedCompactProjectionItems
+missingCompactProjectionDocuments=0
+mismatchedCompactProjectionDocuments=0
+orphanCompactProjectionDocuments=0
+oversizedCompactProjectionDocuments=0
 scheduledWrites=0
 ```
 
@@ -131,6 +151,10 @@ node scripts/firestore-v2-migrate.js \
 The command only adds or repairs v2 entries. It does not delete source data.
 Always follow it with repeated zero-write reconciliation until exact.
 
+Apply mode requires all three writer controls to be enabled so racing writes
+cannot create a gap. Compact projection backfills use source-version guarded
+transactions and report any skipped newer write explicitly.
+
 ## Canary controls
 
 Enable only management mirroring:
@@ -143,7 +167,26 @@ node scripts/firestore-v2-control.js \
   --ack I_UNDERSTAND_THIS_CHANGES_MIGRATION_CONTROL
 ```
 
-Enable all supported kinds by omitting `--kinds`.
+Enable all supported mirror kinds by omitting `--kinds`. Read cutover always
+requires an explicit non-empty `--kinds` list:
+
+```bash
+node scripts/firestore-v2-control.js \
+  --project kank-4bbbc \
+  --action enable-read \
+  --kinds management \
+  --ack I_UNDERSTAND_THIS_CHANGES_MIGRATION_CONTROL
+```
+
+Immediate read rollback keeps all writers running and returns clients to
+legacy data:
+
+```bash
+node scripts/firestore-v2-control.js \
+  --project kank-4bbbc \
+  --action rollback-read \
+  --ack I_UNDERSTAND_THIS_CHANGES_MIGRATION_CONTROL
+```
 
 ## Production smoke test
 
@@ -197,7 +240,7 @@ The repository's broad Angular suite had 70 pre-existing failures before this
 work. The production build, Functions lint, and focused v2 tests are the
 reliable migration regression gates until that unrelated baseline is repaired.
 
-## Read cutover gate (not yet enabled)
+## Read cutover gate (blocked; not enabled)
 
 Do not set `readFromV2=true` or stop legacy growth until all of these are true:
 
@@ -213,3 +256,7 @@ Do not set `readFromV2=true` or stop legacy growth until all of these are true:
 
 Until then, keep reads legacy-only. That preserves current behavior and speed
 while the v2 copy continues to stay current.
+
+The 2026-08-13 full-history benchmark failed criterion 3, so no legacy field
+was removed and no read flag was enabled. This is a deliberate safety stop,
+not a completed source-document compaction.

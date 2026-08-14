@@ -5,7 +5,12 @@
 "use strict";
 
 const admin = require("firebase-admin");
-const {ENTRY_COLLECTION, materializeEntries} = require("../firestore-v2-core");
+const {
+  ENTRY_COLLECTION,
+  PROJECTION_COLLECTION,
+  READ_PROJECTION_COLLECTION,
+  materializeEntries,
+} = require("../firestore-v2-core");
 
 const ACK = "I_UNDERSTAND_THIS_CREATES_AND_REMOVES_SYNTHETIC_DATA";
 const SOURCE_PATH = "gallery/codex_firestore_v2_smoke_20260809";
@@ -62,6 +67,22 @@ async function main() {
       const snapshot = await sourceRef.collection(ENTRY_COLLECTION).doc(firstEntry.id).get();
       return snapshot.exists && snapshot.get("fingerprint") === firstEntry.fingerprint;
     });
+    await waitFor("create projection", async () => {
+      const snapshot = await sourceRef.collection(PROJECTION_COLLECTION)
+          .doc(firstEntry.monthKey).get();
+      const item = snapshot.get(`items.${firstEntry.id}`);
+      return snapshot.exists && item && item.fingerprint === firstEntry.fingerprint &&
+        item.value.url === "https://invalid.example/first";
+    });
+    await waitFor("create compact projection", async () => {
+      const snapshot = await sourceRef.collection(READ_PROJECTION_COLLECTION)
+          .doc(firstEntry.monthKey).get();
+      const value = snapshot.get(new admin.firestore.FieldPath(
+          "maps", "galleryPictures", "smoke",
+      ));
+      return snapshot.exists && value &&
+        value.url === "https://invalid.example/first";
+    });
 
     await sourceRef.set(secondData);
     await waitFor("update mirror", async () => {
@@ -69,11 +90,42 @@ async function main() {
       return snapshot.exists && snapshot.get("fingerprint") === secondEntry.fingerprint &&
         snapshot.get("value.url") === "https://invalid.example/second";
     });
+    await waitFor("update projection", async () => {
+      const snapshot = await sourceRef.collection(PROJECTION_COLLECTION)
+          .doc(secondEntry.monthKey).get();
+      const item = snapshot.get(`items.${secondEntry.id}`);
+      return snapshot.exists && item && item.fingerprint === secondEntry.fingerprint &&
+        item.value.url === "https://invalid.example/second";
+    });
+    await waitFor("update compact projection", async () => {
+      const snapshot = await sourceRef.collection(READ_PROJECTION_COLLECTION)
+          .doc(secondEntry.monthKey).get();
+      const value = snapshot.get(new admin.firestore.FieldPath(
+          "maps", "galleryPictures", "smoke",
+      ));
+      return snapshot.exists && value &&
+        value.url === "https://invalid.example/second";
+    });
 
     await sourceRef.delete();
     await waitFor("delete tombstone", async () => {
       const snapshot = await sourceRef.collection(ENTRY_COLLECTION).doc(secondEntry.id).get();
       return snapshot.exists && snapshot.get("deleted") === true;
+    });
+    await waitFor("projection tombstone", async () => {
+      const snapshot = await sourceRef.collection(PROJECTION_COLLECTION)
+          .doc(secondEntry.monthKey).get();
+      const item = snapshot.get(`items.${secondEntry.id}`);
+      return snapshot.exists && item && item.deleted === true &&
+        !Object.prototype.hasOwnProperty.call(item, "value");
+    });
+    await waitFor("compact projection delete", async () => {
+      const snapshot = await sourceRef.collection(READ_PROJECTION_COLLECTION)
+          .doc(secondEntry.monthKey).get();
+      const value = snapshot.get(new admin.firestore.FieldPath(
+          "maps", "galleryPictures", "smoke",
+      ));
+      return snapshot.exists && value === undefined;
     });
     console.log(JSON.stringify({
       success: true,
@@ -81,6 +133,12 @@ async function main() {
       createMirrored: true,
       updateMirrored: true,
       deleteTombstoned: true,
+      projectionCreateMirrored: true,
+      projectionUpdateMirrored: true,
+      projectionDeleteTombstoned: true,
+      compactProjectionCreateMirrored: true,
+      compactProjectionUpdateMirrored: true,
+      compactProjectionDeleteMirrored: true,
     }, null, 2));
   } finally {
     await db.recursiveDelete(sourceRef);

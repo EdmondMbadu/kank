@@ -8,7 +8,13 @@ import {
   AngularFirestoreCollection,
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
-import { BehaviorSubject, firstValueFrom, Observable, of } from 'rxjs';
+import {
+  BehaviorSubject,
+  combineLatest,
+  firstValueFrom,
+  Observable,
+  of,
+} from 'rxjs';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { filter, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
@@ -36,6 +42,7 @@ import {
   DEFAULT_WEEKLY_OBJECTIVE_ADJUSTMENT_CONFIG,
   WeeklyObjectiveAdjustmentConfig,
 } from '../utils/weekly-objective-adjustment.util';
+import { FirestoreV2CompatService } from './firestore-v2-compat.service';
 
 const ADMIN_FLAG_KEY = 'kank-admin-flag';
 const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
@@ -178,7 +185,8 @@ export class AuthService {
     private router: Router,
     private time: TimeService,
     private compute: ComputationService,
-    private storage: AngularFireStorage
+    private storage: AngularFireStorage,
+    private firestoreV2: FirestoreV2CompatService
   ) {
     this.clientsRef$ = of(null);
     this.user$ = this.fireauth.authState.pipe(
@@ -194,7 +202,12 @@ export class AuthService {
         return this.afs
           .doc<User>(`users/${user.uid}`)
           .valueChanges()
-          .pipe(map((doc) => doc ?? null));
+          .pipe(
+            switchMap((doc) => doc ?
+              this.firestoreV2.hydrateDocument(`users/${user.uid}`, doc) :
+              of(null)
+            )
+          );
       }),
       shareReplay({ bufferSize: 1, refCount: true })
     );
@@ -202,9 +215,10 @@ export class AuthService {
     this.clientsRef$ = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
-          return this.afs
-            .collection(`users/${user.uid}/clients/`)
-            .valueChanges();
+          return this.hydrateCollection(
+            `users/${user.uid}/clients`,
+            false
+          );
         } else {
           return of(null);
         }
@@ -215,9 +229,10 @@ export class AuthService {
     this.cardsRefs = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
-          return this.afs
-            .collection(`users/${user.uid}/cards/`)
-            .valueChanges({ idField: 'uid' });
+          return this.hydrateCollection(
+            `users/${user.uid}/cards`,
+            true
+          );
         } else {
           return of(null);
         }
@@ -227,9 +242,10 @@ export class AuthService {
     this.employeesRef$ = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
-          return this.afs
-            .collection(`users/${user.uid}/employees/`)
-            .valueChanges({ idField: 'uid' });
+          return this.hydrateCollection(
+            `users/${user.uid}/employees`,
+            true
+          );
         } else {
           return of(null);
         }
@@ -252,6 +268,26 @@ export class AuthService {
     this.loadRolePasswords();
   }
   ngOnInit() {}
+  private hydrateCollection(
+    collectionPath: string,
+    addUid: boolean
+  ): Observable<any[]> {
+    return this.afs.collection(collectionPath).snapshotChanges().pipe(
+      switchMap((actions) => {
+        if (!actions.length) return of([]);
+        return combineLatest(actions.map((action) => {
+          const id = action.payload.doc.id;
+          const source = action.payload.doc.data() as Record<string, any>;
+          const base = addUid ? { ...source, uid: source?.['uid'] || id } : source;
+          return this.firestoreV2.hydrateDocument(
+            `${collectionPath}/${id}`,
+            base
+          );
+        }));
+      })
+    );
+  }
+
   getAllClients(): Observable<Client> {
     return this.clientsRef$;
   }
@@ -259,32 +295,40 @@ export class AuthService {
     const clieintref: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.currentUser.uid}/clients/${clientId}`
     );
-    return clieintref.valueChanges();
+    return clieintref.valueChanges().pipe(
+      switchMap((client) => client ? this.firestoreV2.hydrateDocument(
+        `users/${this.currentUser.uid}/clients/${clientId}`,
+        client
+      ) : of(undefined))
+    );
   }
   getClientsOfAUser(userId: string) {
     return this.afs
       .collection<Client>(`users/${userId}/clients/`)
       .snapshotChanges()
       .pipe(
-        map((actions) =>
-          actions.map((a) => {
+        switchMap((actions) => {
+          if (!actions.length) return of([]);
+          return combineLatest(actions.map((a) => {
             const data = a.payload.doc.data() as Client;
             const id = a.payload.doc.id;
-            return {
+            const base = {
               ...data,
               uid: data.uid || id,
             };
-          })
-        )
+            return this.firestoreV2.hydrateDocument(
+              `users/${userId}/clients/${id}`,
+              base
+            );
+          }));
+        })
       );
   }
   getReviews(): Observable<any[]> {
     return this.user$.pipe(
       switchMap((user) => {
         if (user && user.uid) {
-          return this.afs
-            .collection<Client>(`users/${user.uid}/reviews/`)
-            .valueChanges();
+          return this.hydrateCollection(`users/${user.uid}/reviews`, false);
         } else {
           return of([]); // Return an empty array if no user is authenticated
         }
@@ -301,32 +345,38 @@ export class AuthService {
       .collection<{ reviews: Comment[] }>(`users/${targetUid}/reviews/`)
       .snapshotChanges()
       .pipe(
-        map((actions) => {
+        switchMap((actions) => {
           if (!actions || !actions.length) {
-            return { reviewDocId: null, reviews: [] };
+            return of({ reviewDocId: null, reviews: [] });
           }
           const action = actions[0];
           const data = action.payload.doc.data() || {};
-          const aggregate = (data.reviews ?? []) as Comment[];
-          return {
-            reviewDocId: action.payload.doc.id,
-            reviews: Array.isArray(aggregate) ? aggregate : [],
-          };
+          const id = action.payload.doc.id;
+          return this.firestoreV2.hydrateDocument(
+            `users/${targetUid}/reviews/${id}`,
+            data
+          ).pipe(map((hydrated) => {
+            const aggregate = (hydrated.reviews ?? []) as Comment[];
+            return {
+              reviewDocId: id,
+              reviews: Array.isArray(aggregate) ? aggregate : [],
+            };
+          }));
         })
       );
   }
 
   getCertificateInfo() {
-    return this.afs.collection<Client>(`certificate/`).valueChanges();
+    return this.hydrateCollection('certificate', false);
   }
   getManagementInfo() {
-    return this.afs.collection<Management>(`management/`).valueChanges();
+    return this.hydrateCollection('management', false) as Observable<Management[]>;
   }
   getAuditInfo() {
-    return this.afs.collection<Audit>(`audit/`).valueChanges();
+    return this.hydrateCollection('audit', false) as Observable<Audit[]>;
   }
   getClientsCardOfAUser(userId: string) {
-    return this.afs.collection<Client>(`users/${userId}/cards/`).valueChanges();
+    return this.hydrateCollection(`users/${userId}/cards`, false);
   }
   getManagementInfoData() {
     this.fireauth.authState
@@ -346,9 +396,10 @@ export class AuthService {
     let employeesRef$: Observable<any> = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (myuser) {
-          return this.afs
-            .collection(`users/${myuser.uid}/employees/`)
-            .valueChanges({ idField: 'uid' });
+          return this.hydrateCollection(
+            `users/${myuser.uid}/employees`,
+            true
+          );
         } else {
           return of(null);
         }
@@ -1862,11 +1913,11 @@ export class AuthService {
     this.fireauth.authState
       .pipe(
         switchMap((user) =>
-          user ? this.afs.collection('management').snapshotChanges() : of([])
+          user ? this.getManagementInfo() : of([])
         )
       )
-      .subscribe((actions: any) => {
-        if (!actions.length) {
+      .subscribe((managementDocuments: any[]) => {
+        if (!managementDocuments.length) {
           this.managementDocId = '';
           this.rolePasswordsState = { ...this.defaultRolePasswords };
           this.rolePasswordsSubject.next(this.rolePasswordsState);
@@ -1904,9 +1955,8 @@ export class AuthService {
           );
           return;
         }
-        const action = actions[0];
-        const data: any = action.payload.doc.data() || {};
-        this.managementDocId = action.payload.doc.id;
+        const data: any = managementDocuments[0] || {};
+        this.managementDocId = String(data.id || '');
         const stored = data.rolePasswords || {};
         this.rolePasswordsState = {
           ...this.defaultRolePasswords,

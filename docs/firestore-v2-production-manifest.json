@@ -1,6 +1,6 @@
 {
   "projectId": "kank-4bbbc",
-  "capturedAt": "2026-08-09T23:07:47.645971Z",
+  "capturedAt": "2026-08-14T03:34:00Z",
   "backup": {
     "uri": "gs://kank-4bbbc.appspot.com/firestore-migrations/pre-v2-20260809T230737Z",
     "operationState": "SUCCESSFUL",
@@ -11,6 +11,8 @@
   "controlPath": "migrationControls/firestoreV2",
   "productionControl": {
     "mirrorLegacyWrites": true,
+    "projectionWrites": true,
+    "compactProjectionWrites": true,
     "enabledKinds": [],
     "shadowReads": false,
     "readFromV2": false,
@@ -24,24 +26,46 @@
     "status": "ACTIVE"
   },
   "reconciliation": {
-    "sourceDocuments": 2007,
-    "expectedEntries": 165133,
-    "matchingEntries": 165133,
+    "sourceDocuments": 2012,
+    "expectedEntries": 166008,
+    "matchingEntries": 166008,
     "missingEntries": 0,
     "mismatchedEntries": 0,
-    "orphanEntries": 0
+    "orphanEntries": 0,
+    "expectedProjectionDocuments": 12853,
+    "matchingProjectionItems": 166008,
+    "missingProjectionItems": 0,
+    "mismatchedProjectionItems": 0,
+    "orphanProjectionItems": 0,
+    "largestProjectionJsonBytes": 394272,
+    "expectedCompactProjectionDocuments": 12853,
+    "matchingCompactProjectionDocuments": 12853,
+    "matchingCompactProjectionItems": 166008,
+    "missingCompactProjectionDocuments": 0,
+    "mismatchedCompactProjectionDocuments": 0,
+    "orphanCompactProjectionDocuments": 0,
+    "largestCompactProjectionJsonBytes": 115311,
+    "chunkedEntries": 0
   },
   "smokeTest": {
     "sourcePath": "gallery/codex_firestore_v2_smoke_20260809",
     "createMirrored": true,
     "updateMirrored": true,
     "deleteTombstoned": true,
+    "projectionCreateMirrored": true,
+    "projectionUpdateMirrored": true,
+    "projectionDeleteTombstoned": true,
+    "compactProjectionCreateMirrored": true,
+    "compactProjectionUpdateMirrored": true,
+    "compactProjectionDeleteMirrored": true,
     "cleanupVerified": true
   },
   "performanceP95Ms": {
-    "managementLegacy": 497.834084,
-    "managementReserveV2": 198.002333,
-    "managementActivityV2": 200.83325,
+    "managementLegacy": 468.526791,
+    "managementIntegrityProjectionFull": 5002.726541,
+    "managementCompactProjectionFull": 760.777917,
+    "managementReserveV2": 227.625625,
+    "managementActivityV2": 284.935917,
     "largestUserLegacy": 304.996,
     "largestUserReimbursementV2": 236.08375,
     "largestEmployeeLegacy": 429.811333,
@@ -49,5 +73,6 @@
   },
   "legacyDataDeleted": false,
   "legacyReadsChanged": false,
-  "legacyWritesChanged": false
+  "legacyWritesChanged": false,
+  "readCutoverBlockedByPerformanceGate": true
 }

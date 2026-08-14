@@ -27,8 +27,12 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.project) throw new Error("--project is required.");
-  if (!["status", "enable-mirror", "disable-all"].includes(args.action)) {
-    throw new Error("--action must be status, enable-mirror, or disable-all.");
+  const actions = [
+    "status", "enable-mirror", "enable-projections", "enable-compact-projections",
+    "enable-read", "rollback-read", "disable-all",
+  ];
+  if (!actions.includes(args.action)) {
+    throw new Error(`--action must be one of: ${actions.join(", ")}.`);
   }
   if (args.action !== "status" && args.ack !== ACK) {
     throw new Error(`Control writes require --ack ${ACK}`);
@@ -48,11 +52,58 @@ async function main() {
       enabledKinds: args.kinds,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, {merge: true});
+  } else if (args.action === "enable-projections") {
+    const current = await ref.get();
+    const data = current.exists ? current.data() : {};
+    if (data.killSwitch === true || data.mirrorLegacyWrites !== true) {
+      throw new Error("Enable mirror writes and clear killSwitch before projections.");
+    }
+    await ref.set({
+      projectionWrites: true,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  } else if (args.action === "enable-compact-projections") {
+    const current = await ref.get();
+    const data = current.exists ? current.data() : {};
+    if (data.killSwitch === true || data.mirrorLegacyWrites !== true ||
+        data.projectionWrites !== true) {
+      throw new Error("Enable mirror and integrity projection writes before compact projections.");
+    }
+    await ref.set({
+      compactProjectionWrites: true,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  } else if (args.action === "enable-read") {
+    const current = await ref.get();
+    const data = current.exists ? current.data() : {};
+    if (data.killSwitch === true || data.mirrorLegacyWrites !== true ||
+        data.projectionWrites !== true || data.compactProjectionWrites !== true) {
+      throw new Error("Enable mirror, integrity projection, and compact projection writes before v2 reads.");
+    }
+    if (!args.kinds.length) {
+      throw new Error("Enable read requires an explicit non-empty --kinds canary list.");
+    }
+    await ref.set({
+      readFromV2: true,
+      readKinds: args.kinds,
+      readEnabledAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  } else if (args.action === "rollback-read") {
+    await ref.set({
+      readFromV2: false,
+      readKinds: [],
+      readRolledBackAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
   } else if (args.action === "disable-all") {
     await ref.set({
       mirrorLegacyWrites: false,
+      projectionWrites: false,
+      compactProjectionWrites: false,
       shadowReads: false,
       readFromV2: false,
+      readKinds: [],
       writeDirectlyToV2: false,
       killSwitch: true,
       rollbackAt: admin.firestore.FieldValue.serverTimestamp(),

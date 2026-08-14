@@ -6,6 +6,8 @@ const {createHash} = require("crypto");
 
 const SCHEMA_VERSION = 2;
 const ENTRY_COLLECTION = "firestoreV2Entries";
+const PROJECTION_COLLECTION = "firestoreV2Months";
+const READ_PROJECTION_COLLECTION = "firestoreV2ReadMonths";
 const CONTROL_PATH = "migrationControls/firestoreV2";
 const MAX_INLINE_PAYLOAD_BYTES = 128 * 1024;
 const MAX_CHUNK_BYTES = 96 * 1024;
@@ -277,6 +279,7 @@ function reconstructLegacyFields(sourcePath, entries, baseData = {}) {
   const mapFields = new Set(layout.mapFields);
   const arrayFields = new Set(layout.arrayFields);
   const arrays = new Map();
+  const touchedArrays = new Set();
 
   for (const rawEntry of entries) {
     const entry = rawEntry.entry || rawEntry;
@@ -288,31 +291,167 @@ function reconstructLegacyFields(sourcePath, entries, baseData = {}) {
         current[entry.legacyKey] = entry.value;
       }
       result[entry.field] = current;
-    } else if (arrayFields.has(entry.field) && entry.deleted !== true &&
-        Object.prototype.hasOwnProperty.call(entry, "value")) {
-      const current = arrays.get(entry.field) || [];
-      current.push({ordinal: Number(entry.ordinal || 0), value: entry.value});
-      arrays.set(entry.field, current);
+    } else if (arrayFields.has(entry.field)) {
+      touchedArrays.add(entry.field);
+      if (entry.deleted !== true &&
+          Object.prototype.hasOwnProperty.call(entry, "value")) {
+        const current = arrays.get(entry.field) || [];
+        current.push({ordinal: Number(entry.ordinal || 0), value: entry.value});
+        arrays.set(entry.field, current);
+      }
     }
   }
 
-  arrays.forEach((items, field) => {
-    result[field] = items.sort((left, right) => left.ordinal - right.ordinal)
+  touchedArrays.forEach((field) => {
+    result[field] = (arrays.get(field) || [])
+        .sort((left, right) => left.ordinal - right.ordinal)
         .map((item) => item.value);
   });
   return result;
 }
 
+function projectionItemFromEntry(entry, sourceUpdateTimeMs = 0) {
+  const result = {
+    id: entry.id,
+    sourcePath: entry.sourcePath,
+    entityKind: entry.entityKind,
+    entityId: entry.entityId,
+    ownerUid: entry.ownerUid,
+    field: entry.field,
+    legacyKey: entry.legacyKey,
+    monthKey: entry.monthKey,
+    fingerprint: entry.fingerprint,
+    deleted: entry.deleted === true,
+    sourceUpdateTimeMs,
+  };
+  if (entry.ordinal !== undefined) result.ordinal = entry.ordinal;
+  if (entry.payloadEncoding) {
+    result.payloadEncoding = entry.payloadEncoding;
+    result.chunkCount = entry.chunkCount;
+  } else if (entry.deleted !== true &&
+      Object.prototype.hasOwnProperty.call(entry, "value")) {
+    result.value = entry.value;
+  }
+  return result;
+}
+
+function buildMonthProjections(sourcePath, data, sourceUpdateTimeMs = 0) {
+  const projections = new Map();
+  for (const item of materializeEntries(sourcePath, data)) {
+    const monthKey = item.entry.monthKey || "unknown";
+    if (!projections.has(monthKey)) projections.set(monthKey, {});
+    projections.get(monthKey)[item.entry.id] =
+      projectionItemFromEntry(item.entry, sourceUpdateTimeMs);
+  }
+  return projections;
+}
+
+function buildCompactMonthProjections(sourcePath, data) {
+  const projections = new Map();
+  for (const item of materializeEntries(sourcePath, data)) {
+    if (item.chunks.length) {
+      throw new Error(`Compact projection cannot inline chunked entry ${item.entry.id}`);
+    }
+    const entry = item.entry;
+    const monthKey = entry.monthKey || "unknown";
+    if (!projections.has(monthKey)) {
+      projections.set(monthKey, {maps: {}, arrays: {}});
+    }
+    const projection = projections.get(monthKey);
+    if (entry.ordinal === undefined) {
+      if (!projection.maps[entry.field]) projection.maps[entry.field] = {};
+      projection.maps[entry.field][entry.legacyKey] = entry.value;
+    } else {
+      if (!projection.arrays[entry.field]) projection.arrays[entry.field] = {};
+      projection.arrays[entry.field][entry.id] = {
+        ordinal: entry.ordinal,
+        value: entry.value,
+      };
+    }
+  }
+  return projections;
+}
+
+function reconstructCompactLegacyFields(sourcePath, projectionDocuments, baseData = {}) {
+  const descriptor = describeSourcePath(sourcePath);
+  if (!descriptor) return {...baseData};
+  const layout = layouts[descriptor.kind];
+  const result = {...baseData};
+  const mapFields = new Set(layout.mapFields);
+  const arrayFields = new Set(layout.arrayFields);
+  const arrays = new Map();
+  const touchedArrays = new Set();
+
+  for (const document of projectionDocuments) {
+    const maps = document && document.maps;
+    if (maps && typeof maps === "object" && !Array.isArray(maps)) {
+      for (const [field, values] of Object.entries(maps)) {
+        if (!mapFields.has(field) || !values || typeof values !== "object" ||
+            Array.isArray(values)) continue;
+        result[field] = {...(result[field] || {}), ...values};
+      }
+    }
+    const documentArrays = document && document.arrays;
+    if (!documentArrays || typeof documentArrays !== "object" ||
+        Array.isArray(documentArrays)) continue;
+    for (const [field, values] of Object.entries(documentArrays)) {
+      if (!arrayFields.has(field) || !values || typeof values !== "object" ||
+          Array.isArray(values)) continue;
+      touchedArrays.add(field);
+      const current = arrays.get(field) || [];
+      Object.values(values).forEach((item) => {
+        if (item && Object.prototype.hasOwnProperty.call(item, "value")) {
+          current.push({ordinal: Number(item.ordinal || 0), value: item.value});
+        }
+      });
+      arrays.set(field, current);
+    }
+  }
+  touchedArrays.forEach((field) => {
+    result[field] = (arrays.get(field) || [])
+        .sort((left, right) => left.ordinal - right.ordinal)
+        .map((item) => item.value);
+  });
+  return result;
+}
+
+function flattenLatestProjectionItems(sourcePath, projectionDocuments) {
+  const latest = new Map();
+  for (const document of projectionDocuments) {
+    const items = document && document.items;
+    if (!items || typeof items !== "object" || Array.isArray(items)) continue;
+    for (const item of Object.values(items)) {
+      if (!item || item.sourcePath !== sourcePath || !item.id) continue;
+      const current = latest.get(item.id);
+      const currentVersion = Number(current && current.sourceUpdateTimeMs || 0);
+      const candidateVersion = Number(item.sourceUpdateTimeMs || 0);
+      if (!current || candidateVersion > currentVersion ||
+          (candidateVersion === currentVersion && item.deleted === true &&
+            current.deleted !== true)) {
+        latest.set(item.id, item);
+      }
+    }
+  }
+  return [...latest.values()];
+}
+
 module.exports = {
   CONTROL_PATH,
   ENTRY_COLLECTION,
+  PROJECTION_COLLECTION,
+  READ_PROJECTION_COLLECTION,
   MAX_INLINE_PAYLOAD_BYTES,
   SCHEMA_VERSION,
   describeSourcePath,
+  buildMonthProjections,
+  buildCompactMonthProjections,
   diffEntries,
+  flattenLatestProjectionItems,
   layouts,
   materializeEntries,
   monthKeyFromLegacyKey,
+  projectionItemFromEntry,
+  reconstructCompactLegacyFields,
   reconstructLegacyFields,
   splitUtf8,
   stableStringify,

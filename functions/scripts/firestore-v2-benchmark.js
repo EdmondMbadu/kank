@@ -5,7 +5,17 @@
 "use strict";
 
 const admin = require("firebase-admin");
-const {ENTRY_COLLECTION, stableStringify} = require("../firestore-v2-core");
+const {
+  ENTRY_COLLECTION,
+  PROJECTION_COLLECTION,
+  READ_PROJECTION_COLLECTION,
+  describeSourcePath,
+  flattenLatestProjectionItems,
+  layouts,
+  reconstructLegacyFields,
+  reconstructCompactLegacyFields,
+  stableStringify,
+} = require("../firestore-v2-core");
 
 function parseArgs(argv) {
   const result = {
@@ -70,6 +80,67 @@ async function main() {
     };
   });
 
+  const compatibleProjection = await measure(args.iterations, async () => {
+    const [sourceSnapshot, projectionSnapshot] = await Promise.all([
+      sourceRef.get(),
+      sourceRef.collection(PROJECTION_COLLECTION).get(),
+    ]);
+    if (!sourceSnapshot.exists) return {exists: false};
+    const sourceData = sourceSnapshot.data();
+    const descriptor = describeSourcePath(args.source);
+    const baseData = {...sourceData};
+    if (descriptor) {
+      const layout = layouts[descriptor.kind];
+      [...layout.mapFields, ...layout.arrayFields].forEach((field) => {
+        delete baseData[field];
+      });
+    }
+    const entries = flattenLatestProjectionItems(
+        args.source,
+        projectionSnapshot.docs.map((doc) => doc.data()),
+    );
+    const reconstructed = reconstructLegacyFields(
+        args.source,
+        entries,
+        baseData,
+    );
+    return {
+      exists: true,
+      projectionDocuments: projectionSnapshot.size,
+      projectionItems: entries.length,
+      exactLegacyMatch: stableStringify(reconstructed) === stableStringify(sourceData),
+      bytes: Buffer.byteLength(stableStringify(reconstructed), "utf8"),
+    };
+  });
+
+  const compactProjection = await measure(args.iterations, async () => {
+    const [sourceSnapshot, projectionSnapshot] = await Promise.all([
+      sourceRef.get(),
+      sourceRef.collection(READ_PROJECTION_COLLECTION).get(),
+    ]);
+    if (!sourceSnapshot.exists) return {exists: false};
+    const sourceData = sourceSnapshot.data();
+    const descriptor = describeSourcePath(args.source);
+    const baseData = {...sourceData};
+    if (descriptor) {
+      const layout = layouts[descriptor.kind];
+      [...layout.mapFields, ...layout.arrayFields].forEach((field) => {
+        delete baseData[field];
+      });
+    }
+    const reconstructed = reconstructCompactLegacyFields(
+        args.source,
+        projectionSnapshot.docs.map((doc) => doc.data()),
+        baseData,
+    );
+    return {
+      exists: true,
+      projectionDocuments: projectionSnapshot.size,
+      exactLegacyMatch: stableStringify(reconstructed) === stableStringify(sourceData),
+      bytes: Buffer.byteLength(stableStringify(reconstructed), "utf8"),
+    };
+  });
+
   const v2 = {};
   for (const field of args.fields) {
     v2[field] = await measure(args.iterations, async () => {
@@ -90,6 +161,8 @@ async function main() {
     source: args.source,
     month: args.month,
     legacy,
+    compatibleProjection,
+    compactProjection,
     v2,
     note: "Warm-cache Admin SDK measurements; v2 queries read only the selected field/month.",
   }, null, 2));

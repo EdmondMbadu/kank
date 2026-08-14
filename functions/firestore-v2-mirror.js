@@ -6,22 +6,33 @@ const admin = require("firebase-admin");
 const {
   CONTROL_PATH,
   ENTRY_COLLECTION,
+  PROJECTION_COLLECTION,
+  READ_PROJECTION_COLLECTION,
   describeSourcePath,
   diffEntries,
+  projectionItemFromEntry,
 } = require("./firestore-v2-core");
 
 const MAX_CONCURRENT_ENTRY_TRANSACTIONS = 20;
 
-async function isMirrorEnabled(db, sourcePath = "") {
+async function getMirrorControl(db) {
   const snapshot = await db.doc(CONTROL_PATH).get();
-  if (!snapshot.exists || snapshot.get("mirrorLegacyWrites") !== true ||
-      snapshot.get("killSwitch") === true) return false;
-  const enabledKinds = snapshot.get("enabledKinds");
+  return snapshot.exists ? snapshot.data() : null;
+}
+
+function shouldMirror(control, sourcePath = "") {
+  if (!control || control.mirrorLegacyWrites !== true ||
+      control.killSwitch === true) return false;
+  const enabledKinds = control.enabledKinds;
   if (!Array.isArray(enabledKinds) || !enabledKinds.length || !sourcePath) {
     return true;
   }
   const descriptor = describeSourcePath(sourcePath);
   return Boolean(descriptor && enabledKinds.includes(descriptor.kind));
+}
+
+async function isMirrorEnabled(db, sourcePath = "") {
+  return shouldMirror(await getMirrorControl(db), sourcePath);
 }
 
 async function writeVersionedEntry(db, sourceRef, item, metadata, now) {
@@ -33,6 +44,8 @@ async function writeVersionedEntry(db, sourceRef, item, metadata, now) {
     const currentVersion = current.exists ?
       Number(current.get("sourceUpdateTimeMs") || 0) : 0;
     if (currentVersion > metadata.sourceUpdateTimeMs) return false;
+    const previousEntry = current.exists && typeof current.data === "function" ?
+      current.data() : null;
     transaction.set(entryRef, {
       ...entry,
       ...metadata,
@@ -45,6 +58,73 @@ async function writeVersionedEntry(db, sourceRef, item, metadata, now) {
           {merge: true},
       );
     });
+    if (metadata.projectionWrites === true) {
+      const monthRef = sourceRef.collection(PROJECTION_COLLECTION)
+          .doc(entry.monthKey || "unknown");
+      const projection = projectionItemFromEntry(
+          entry,
+          metadata.sourceUpdateTimeMs,
+      );
+      const projectionData = {
+        schemaVersion: 2,
+        sourcePath: sourceRef.path,
+        monthKey: entry.monthKey || "unknown",
+        items: {[entry.id]: projection},
+        updatedAt: now,
+      };
+      // Replace the complete item map rather than recursively merging it.
+      // Otherwise a tombstone would retain the previous item's `value` leaf.
+      transaction.set(monthRef, projectionData, {mergeFields: [
+        "schemaVersion", "sourcePath", "monthKey", "updatedAt",
+        new admin.firestore.FieldPath("items", entry.id),
+      ]});
+    }
+    if (metadata.compactProjectionWrites === true) {
+      const leafPath = (value) => value.ordinal === undefined ?
+        ["maps", value.field, value.legacyKey] :
+        ["arrays", value.field, value.id];
+      const sameLocation = previousEntry &&
+        previousEntry.monthKey === entry.monthKey &&
+        previousEntry.field === entry.field &&
+        previousEntry.legacyKey === entry.legacyKey &&
+        (previousEntry.ordinal === undefined) === (entry.ordinal === undefined);
+      if (previousEntry && previousEntry.deleted !== true &&
+          (entry.deleted === true || !sameLocation)) {
+        const oldMonthRef = sourceRef.collection(READ_PROJECTION_COLLECTION)
+            .doc(previousEntry.monthKey || "unknown");
+        transaction.update(
+            oldMonthRef,
+            new admin.firestore.FieldPath(...leafPath(previousEntry)),
+            admin.firestore.FieldValue.delete(),
+            "sourceUpdateTimeMs",
+            metadata.sourceUpdateTimeMs,
+            "updatedAt",
+            now,
+        );
+      }
+      if (entry.deleted !== true) {
+        const monthRef = sourceRef.collection(READ_PROJECTION_COLLECTION)
+            .doc(entry.monthKey || "unknown");
+        const path = leafPath(entry);
+        const leafValue = entry.ordinal === undefined ? entry.value : {
+          ordinal: entry.ordinal,
+          value: entry.value,
+        };
+        const data = {
+          schemaVersion: 2,
+          sourcePath: sourceRef.path,
+          monthKey: entry.monthKey || "unknown",
+          sourceUpdateTimeMs: metadata.sourceUpdateTimeMs,
+          updatedAt: now,
+          [path[0]]: {[path[1]]: {[path[2]]: leafValue}},
+        };
+        transaction.set(monthRef, data, {mergeFields: [
+          "schemaVersion", "sourcePath", "monthKey", "sourceUpdateTimeMs",
+          "updatedAt",
+          new admin.firestore.FieldPath(...path),
+        ]});
+      }
+    }
     return true;
   });
 }
@@ -61,7 +141,8 @@ async function mirrorLegacyWriteWithDb(db, change, context, now) {
   const beforeData = change.before.exists ? change.before.data() : null;
   const afterData = change.after.exists ? change.after.data() : null;
   const sourcePath = change.after.exists ? change.after.ref.path : change.before.ref.path;
-  if (!(await isMirrorEnabled(db, sourcePath))) return null;
+  const control = await getMirrorControl(db);
+  if (!shouldMirror(control, sourcePath)) return null;
   const sourceRef = change.after.exists ? change.after.ref : change.before.ref;
   const {upserts, tombstones} = diffEntries(sourcePath, beforeData, afterData);
   if (!upserts.length && !tombstones.length) return null;
@@ -77,6 +158,8 @@ async function mirrorLegacyWriteWithDb(db, change, context, now) {
   const metadata = {
     mirrorEventId: context.eventId,
     sourceUpdateTimeMs,
+    projectionWrites: control.projectionWrites === true,
+    compactProjectionWrites: control.compactProjectionWrites === true,
   };
   let committed = 0;
   await processWithConcurrency(upserts, async (item) => {
@@ -107,7 +190,9 @@ async function mirrorLegacyWrite(change, context) {
 
 module.exports = {
   isMirrorEnabled,
+  getMirrorControl,
   mirrorLegacyWrite,
   mirrorLegacyWriteWithDb,
   writeVersionedEntry,
+  shouldMirror,
 };

@@ -31,6 +31,9 @@ function fakeDb(control) {
         async get() {
           return {
             exists: control !== null,
+            data() {
+              return control;
+            },
             get(field) {
               return control && control[field];
             },
@@ -59,6 +62,9 @@ function fakeDb(control) {
           const data = store.get(ref.path);
           return {
             exists: data !== undefined,
+            data() {
+              return data;
+            },
             get(field) {
               return data && data[field];
             },
@@ -67,10 +73,14 @@ function fakeDb(control) {
         set(ref, data, options) {
           operations.push({type: "set", path: ref.path, data, options});
         },
+        update(ref, ...args) {
+          operations.push({type: "update", path: ref.path, args});
+        },
       };
       const result = await callback(transaction);
       if (operations.length) {
         operations.forEach((operation) => {
+          if (operation.type !== "set") return;
           store.set(operation.path, {
             ...(store.get(operation.path) || {}),
             ...operation.data,
@@ -211,4 +221,59 @@ test("a delayed update cannot resurrect an entry after a delete tombstone", asyn
   assert.equal(entry[1].deleted, true);
   assert.equal(entry[1].mirrorEventId, "delete");
   assert.equal(entry[1].sourceUpdateTimeMs, 300);
+});
+
+test("projection writes are independently controlled and month bounded", async () => {
+  const db = fakeDb({
+    mirrorLegacyWrites: true,
+    killSwitch: false,
+    projectionWrites: true,
+  });
+  await mirrorLegacyWriteWithDb(
+      db,
+      changeFor("management/main", {}, {reserve: {"08-13-2026": "25"}}, 400),
+      {eventId: "projection"},
+      "server-time",
+  );
+  const operations = db.commits.flat();
+  assert.equal(operations.length, 2);
+  const monthWrite = operations.find((operation) =>
+    operation.path === "management/main/firestoreV2Months/2026-08");
+  assert.ok(monthWrite);
+  const item = Object.values(monthWrite.data.items)[0];
+  assert.equal(item.field, "reserve");
+  assert.equal(item.value, "25");
+  assert.equal(item.sourceUpdateTimeMs, 400);
+});
+
+test("compact read projections upsert and remove raw compatibility values", async () => {
+  const db = fakeDb({
+    mirrorLegacyWrites: true,
+    killSwitch: false,
+    projectionWrites: true,
+    compactProjectionWrites: true,
+  });
+  const path = "management/main";
+  await mirrorLegacyWriteWithDb(
+      db,
+      changeFor(path, {}, {reserve: {"08-13-2026": "25"}}, 500),
+      {eventId: "compact-create"},
+      "server-time",
+  );
+  let operations = db.commits.flat();
+  const compactWrite = operations.find((operation) =>
+    operation.path === `${path}/firestoreV2ReadMonths/2026-08`);
+  assert.ok(compactWrite);
+  assert.equal(compactWrite.data.maps.reserve["08-13-2026"], "25");
+
+  await mirrorLegacyWriteWithDb(
+      db,
+      changeFor(path, {reserve: {"08-13-2026": "25"}}, {reserve: {}}, 600),
+      {eventId: "compact-delete"},
+      "server-time",
+  );
+  operations = db.commits.flat();
+  assert.ok(operations.some((operation) =>
+    operation.type === "update" &&
+    operation.path === `${path}/firestoreV2ReadMonths/2026-08`));
 });

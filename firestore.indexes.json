@@ -97,6 +97,21 @@
       "indexes": []
     },
     {
+      "collectionGroup": "firestoreV2Months",
+      "fieldPath": "items",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "firestoreV2ReadMonths",
+      "fieldPath": "maps",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "firestoreV2ReadMonths",
+      "fieldPath": "arrays",
+      "indexes": []
+    },
+    {
       "collectionGroup": "management",
       "fieldPath": "moneyInHandsActivities",
       "indexes": []
