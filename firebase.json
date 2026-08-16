@@ -7,7 +7,10 @@
     "indexes": "firestore.indexes.json"
   },
   "storage": {
-    "rules": "storage.rules"
+    "rules": "storage.rules",
+    "predeploy": [
+      "npm run test:storage-rules"
+    ]
   },
   "hosting": {
     "site": "kank-4bbbc",
