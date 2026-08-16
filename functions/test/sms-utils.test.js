@@ -136,11 +136,6 @@ test("customer templates retain the full brand and three numbers", () => {
       paymentCount: 8,
       minimumPayment: 12500,
     }),
-    buildEmployeeSummaryMessage({
-      firstName: "Jean",
-      lastName: "Agent",
-      clientCount: 6,
-    }),
   ];
 
   for (const result of builders) {
@@ -152,6 +147,100 @@ test("customer templates retain the full brand and three numbers", () => {
     assert.equal(result.measurement.encoding, "GSM-7");
     assert.equal(result.measurement.segments, 1);
   }
+});
+
+test("employee follow-up keeps the offline list and debt when compact", () => {
+  const result = buildEmployeeSummaryMessage({
+    firstName: "Gaston",
+    lastName: "Mazenzi",
+    clients: [
+      {
+        firstName: "Mado",
+        lastName: "Kanku",
+        phoneNumber: "0812345678",
+        minPayment: 10000,
+        debtLeft: 250000,
+      },
+      {
+        firstName: "Paul",
+        lastName: "Lelo",
+        phoneNumber: "0823456789",
+        minPayment: 15000,
+        debtLeft: 180000,
+      },
+      {
+        firstName: "Aline",
+        lastName: "Mputu",
+        phoneNumber: "0894567890",
+        minPayment: 5000,
+        debtLeft: 95000,
+      },
+    ],
+  });
+
+  assert.equal(result.includedDebt, true);
+  assert.equal(result.measurement.encoding, "GSM-7");
+  assert.ok(result.measurement.segments <= 3);
+  assert.match(result.message, /Mado Kanku 0812345678 min FC10000 n FC250000/);
+  assert.match(result.message, /Fondation Gervais\.$/);
+});
+
+test("employee follow-up drops debt before omitting required clients", () => {
+  const clients = Array.from({length: 9}, (_, index) => ({
+    firstName: `Client${index + 1}`,
+    lastName: "Makengo",
+    phoneNumber: `08123456${String(index).padStart(2, "0")}`,
+    minPayment: 10000 + index,
+    debtLeft: 250000 + index,
+  }));
+  const result = buildEmployeeSummaryMessage({
+    firstName: "Gaston",
+    lastName: "Mazenzi",
+    clients,
+  });
+
+  assert.equal(result.includedDebt, false);
+  assert.ok(result.measurement.segments <= 3);
+  clients.forEach((client) => {
+    assert.match(result.message, new RegExp(client.phoneNumber));
+    assert.match(result.message, new RegExp(`min FC${client.minPayment}`));
+  });
+});
+
+test("employee follow-up never removes clients to meet its target", () => {
+  const clients = Array.from({length: 20}, (_, index) => ({
+    firstName: `Client${index + 1}`,
+    lastName: "Makengo",
+    phoneNumber: `08123456${String(index).padStart(2, "0")}`,
+    minPayment: 10000 + index,
+    debtLeft: 250000 + index,
+  }));
+  const result = buildEmployeeSummaryMessage({
+    firstName: "Gaston",
+    lastName: "Mazenzi",
+    clients,
+  });
+
+  clients.forEach((client) => {
+    assert.match(result.message, new RegExp(client.phoneNumber));
+    assert.match(result.message, new RegExp(`min FC${client.minPayment}`));
+  });
+});
+
+test("employee no-client message remains useful and one segment", () => {
+  const result = buildEmployeeSummaryMessage({
+    firstName: "Gaston",
+    lastName: "Mazenzi",
+    clients: [],
+  });
+
+  assert.equal(result.measurement.encoding, "GSM-7");
+  assert.equal(result.measurement.segments, 1);
+  assert.equal(
+      result.message,
+      "Gaston Mazenzi: Client programme te lelo. Luka clients ya sika pe " +
+      "landela oyo bafutaki te lobi. Fondation Gervais.",
+  );
 });
 
 test("unicode punctuation is normalized without forcing UCS-2", () => {

@@ -268,19 +268,70 @@ function buildLoanActivationMessage({
   ]);
 }
 
-function buildEmployeeSummaryMessage({firstName, lastName, clientCount}) {
-  const names = clientNames(firstName, lastName);
-  const count = Math.max(0, Number(clientCount) || 0);
-  const makeMessage = (name) => count ?
-    `${name}: Ozali na ${count} clients ya kolandela lelo. ` +
-      `Tala liste na application. ${SUPPORT_LINE} ${BRAND_LINE}` :
-    `${name}: Client programme azali te lelo. Tala liste na application. ` +
-      `${SUPPORT_LINE} ${BRAND_LINE}`;
+function employeeClientName(client, firstOnly) {
+  const names = clientNames(client.firstName, client.lastName);
+  return firstOnly ? names.firstName : names.fullName;
+}
 
-  return selectCriticalMessage([
-    makeMessage(names.fullName),
-    makeMessage(names.firstName),
-  ]);
+function employeeClientPhone(client) {
+  const digits = String(client.phoneNumber || "").replace(/\D/g, "");
+  return digits || "sans-tel";
+}
+
+function employeeClientEntry(client, {includeDebt, firstOnly}) {
+  const name = employeeClientName(client, firstOnly);
+  const phone = employeeClientPhone(client);
+  const minimum = formatAmount(client.minPayment);
+  const debt = formatAmount(client.debtLeft);
+  return `${name} ${phone} min FC${minimum}` +
+    (includeDebt ? ` n FC${debt}` : "");
+}
+
+function buildEmployeeSummaryMessage({firstName, lastName, clients = []}) {
+  const names = clientNames(firstName, lastName);
+  const safeClients = Array.isArray(clients) ? clients : [];
+  if (!safeClients.length) {
+    const message = toGsmSafe(
+        `${names.fullName}: Client programme te lelo. Luka clients ya sika ` +
+        `pe landela oyo bafutaki te lobi. ${BRAND_LINE}`,
+    );
+    return {
+      message,
+      measurement: measureSms(message),
+      usedCompactFallback: false,
+      includedDebt: false,
+    };
+  }
+
+  const makeMessage = ({employeeName, includeDebt, firstOnly}) => {
+    const entries = safeClients.map((client) => employeeClientEntry(client, {
+      includeDebt,
+      firstOnly,
+    }));
+    return toGsmSafe(
+        `${employeeName}: ${entries.length} clients lelo: ` +
+        `${entries.join("; ")}. ${BRAND_LINE}`,
+    );
+  };
+  const candidates = [
+    {employeeName: names.fullName, includeDebt: true, firstOnly: false},
+    {employeeName: names.fullName, includeDebt: false, firstOnly: false},
+    {employeeName: names.fullName, includeDebt: false, firstOnly: true},
+    {employeeName: names.firstName, includeDebt: false, firstOnly: true},
+  ].map((options) => {
+    const message = makeMessage(options);
+    return {message, measurement: measureSms(message), options};
+  });
+  const selected = candidates.find((candidate) =>
+    candidate.measurement.segments <= 3,
+  ) || candidates[candidates.length - 1];
+
+  return {
+    message: selected.message,
+    measurement: selected.measurement,
+    usedCompactFallback: selected !== candidates[0],
+    includedDebt: selected.options.includeDebt,
+  };
 }
 
 function extractProviderCost(response) {

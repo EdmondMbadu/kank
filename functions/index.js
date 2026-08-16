@@ -536,6 +536,7 @@ async function sendOperationalSms({
   clientId,
   executionId,
   critical = true,
+  segmentTarget = 2,
   usedCompactFallback = false,
 }) {
   if (!sms) throw new Error("Africa's Talking SMS client is not configured.");
@@ -570,10 +571,12 @@ async function sendOperationalSms({
     };
   }
 
-  if (measurement.segments > 2) {
-    console.error("Critical SMS exceeds the two-segment target; sending it", {
+  if (measurement.segments > segmentTarget) {
+    console.error("SMS exceeds its segment target; sending it", {
       messageType,
       recipientKey,
+      critical,
+      segmentTarget,
       ...measurement,
     });
   }
@@ -4519,11 +4522,31 @@ exports.scheduledSendAgentFollowups = functions.pubsub
               const mergedCurrent = shouldGetAggregated ? [...base.current, ...agg.current] : base.current;
 
               // Defensive filter
-              const effCurrent = mergedCurrent.filter((c) => !isLeftQuitte(c));
+              const uniqueCurrent = new Map();
+              mergedCurrent.filter((c) => !isLeftQuitte(c)).forEach((client) => {
+                const fallbackKey = stableHash([
+                  client.firstName,
+                  client.lastName,
+                  client.phoneNumber,
+                  client.debtLeft,
+                ].join("|"));
+                const key = client.id || client.uid || fallbackKey;
+                if (!uniqueCurrent.has(key)) uniqueCurrent.set(key, client);
+              });
+              const effCurrent = [...uniqueCurrent.values()];
               const builtMessage = buildEmployeeSummaryMessage({
                 firstName: e.firstName,
                 lastName: e.lastName,
-                clientCount: effCurrent.length,
+                clients: effCurrent.map((client) => {
+                  const minPayment = minimumPayment(client);
+                  return {
+                    firstName: client.firstName,
+                    lastName: client.lastName,
+                    phoneNumber: client.phoneNumber,
+                    minPayment: Number.isFinite(minPayment) ? minPayment : "N/A",
+                    debtLeft: client.debtLeft,
+                  };
+                }),
               });
 
               sendJobs.push(
@@ -4537,6 +4560,7 @@ exports.scheduledSendAgentFollowups = functions.pubsub
                     clientId: e.id,
                     executionId: context.eventId,
                     critical: false,
+                    segmentTarget: 3,
                     usedCompactFallback: builtMessage.usedCompactFallback,
                   })
                       .then((result) => {
