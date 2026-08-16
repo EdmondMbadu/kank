@@ -11,6 +11,7 @@ import {
   Client,
   Comment,
   ClientBonusEvent,
+  ClientGalleryPicture,
   ClientTrophyAward,
 } from 'src/app/models/client';
 import { Avatar, Employee } from 'src/app/models/employee';
@@ -23,6 +24,11 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import exifr from 'exifr';
 import MediaInfo from 'mediainfo.js';
 import { commentImageToGalleryPicture } from 'src/app/utils/client-comment-gallery.util';
+import {
+  formatPaymentResponsibilityDate,
+  latestPaymentResponsibilityDocument,
+  paymentResponsibilityDocuments,
+} from 'src/app/utils/payment-responsibility-document.util';
 
 type ImageAttachment = {
   id: string;
@@ -208,6 +214,8 @@ export class ClientPortalComponent {
   videoCaptureTimeSource?: 'mediainfo' | 'fileLastModified' | 'uploadTime';
   videoMeta?: { width?: number; height?: number; durationSec?: number } | null;
 
+  showPaymentResponsibilityDetails = false;
+
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
@@ -255,6 +263,7 @@ export class ClientPortalComponent {
 
     this.retrieveEmployees();
   }
+
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
@@ -1059,6 +1068,23 @@ export class ClientPortalComponent {
     if (input) {
       input.value = '';
     }
+  }
+
+  get paymentResponsibilityDocumentList(): ClientGalleryPicture[] {
+    return paymentResponsibilityDocuments(this.client);
+  }
+
+  get latestPaymentResponsibilityDocument(): ClientGalleryPicture | undefined {
+    return latestPaymentResponsibilityDocument(this.client);
+  }
+
+  formatPaymentResponsibilityDate(iso?: string): string {
+    return formatPaymentResponsibilityDate(iso);
+  }
+
+  openPaymentResponsibilityDocument(picture: ClientGalleryPicture): void {
+    this.showPaymentResponsibilityDetails = false;
+    this.toggleHomePicture(picture.url);
   }
   setComments() {
     this.comments = [];

@@ -456,6 +456,19 @@ export class DataService {
     return userRef.update({ galleryPictures: galleryPictures ?? {} });
   }
 
+  addClientGalleryPictureForUser(
+    userId: string,
+    clientId: string,
+    picture: ClientGalleryPicture
+  ) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${userId}/clients/${clientId}`
+    );
+    return clientRef.update({
+      [`galleryPictures.${picture.id}`]: picture,
+    });
+  }
+
   setCardField(field: string, value: any, cardId: string) {
     const cardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/cards/${cardId}`
@@ -2770,6 +2783,10 @@ export class DataService {
         console.error('File upload failed:', error);
         throw error;
       });
+  }
+
+  deleteUploadedFile(path: string): Promise<void> {
+    return firstValueFrom(this.storage.ref(path).delete()).then(() => undefined);
   }
   updateEmployeeAttendance(attendance: any, employeeId: string) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(

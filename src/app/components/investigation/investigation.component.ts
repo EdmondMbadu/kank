@@ -14,6 +14,17 @@ import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
+import {
+  cleanPaymentResponsibilityFileName,
+  currentDateTimeLocal,
+  dateTimeLocalToISO,
+  formatPaymentResponsibilityDate,
+  isPaymentResponsibilityDocument,
+  latestPaymentResponsibilityDocument,
+  PAYMENT_RESPONSIBILITY_DOCUMENT_TYPE,
+  PAYMENT_RESPONSIBILITY_MAX_FILE_SIZE,
+  paymentResponsibilityDocuments,
+} from 'src/app/utils/payment-responsibility-document.util';
 
 type InvestigationDayComment = {
   name?: string;
@@ -199,6 +210,16 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   showClientModal = false;
   showActiveClientHomePicture = false;
   selectedActiveClientGalleryPicture?: ClientGalleryPicture;
+  showPaymentResponsibilityForm = false;
+  paymentResponsibleName = '';
+  paymentResponsibleRelationship = '';
+  paymentResponsiblePhone = '';
+  paymentResponsibilityEffectiveLocal = '';
+  paymentResponsibilityNote = '';
+  paymentResponsibilityFile?: File;
+  paymentResponsibilityPreviewUrl = '';
+  paymentResponsibilityUploading = false;
+  paymentResponsibilityError = '';
   clientCommentName = '';
   clientCommentText = '';
   activeClientCommentPresetGroupId = '';
@@ -470,6 +491,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.clearPaymentResponsibilityFile();
     this.subs.unsubscribe();
     this.tfSubs.forEach((s) => s.unsubscribe());
     this.recoveredAwayBonusSub?.unsubscribe();
@@ -2463,6 +2485,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.showRecentSavingsExpanded = false;
     this.showActiveClientHomePicture = false;
     this.selectedActiveClientGalleryPicture = undefined;
+    this.resetPaymentResponsibilityDraft();
     this.showClientModal = true;
   }
 
@@ -2471,6 +2494,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.activeClient = undefined;
     this.showActiveClientHomePicture = false;
     this.selectedActiveClientGalleryPicture = undefined;
+    this.resetPaymentResponsibilityDraft();
     this.phoneEditOpen = false;
     this.showPhoneHistory = false;
     this.showRecentPaymentsExpanded = false;
@@ -2616,6 +2640,192 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return pictures.sort(
       (a, b) => this.galleryPictureDateValue(b) - this.galleryPictureDateValue(a)
     );
+  }
+
+  paymentResponsibilityDocumentList(
+    client?: Client | null
+  ): ClientGalleryPicture[] {
+    return paymentResponsibilityDocuments(client);
+  }
+
+  latestPaymentResponsibilityDocument(
+    client?: Client | null
+  ): ClientGalleryPicture | undefined {
+    return latestPaymentResponsibilityDocument(client);
+  }
+
+  isPaymentResponsibilityPicture(
+    picture?: ClientGalleryPicture | null
+  ): boolean {
+    return isPaymentResponsibilityDocument(picture);
+  }
+
+  formatPaymentResponsibilityDate(iso?: string): string {
+    return formatPaymentResponsibilityDate(iso);
+  }
+
+  openPaymentResponsibilityForm(): void {
+    this.showPaymentResponsibilityForm = true;
+    this.paymentResponsibilityError = '';
+    if (!this.paymentResponsibilityEffectiveLocal) {
+      this.paymentResponsibilityEffectiveLocal = currentDateTimeLocal();
+    }
+  }
+
+  closePaymentResponsibilityForm(): void {
+    if (this.paymentResponsibilityUploading) return;
+    this.resetPaymentResponsibilityDraft();
+  }
+
+  onPaymentResponsibilityFileSelected(fileList: FileList | null): void {
+    const file = fileList?.item(0);
+    if (!file) return;
+    this.paymentResponsibilityError = '';
+    this.clearPaymentResponsibilityFile();
+    if (!file.type.startsWith('image/')) {
+      this.paymentResponsibilityError = 'Veuillez sélectionner une image.';
+      return;
+    }
+    if (file.size > PAYMENT_RESPONSIBILITY_MAX_FILE_SIZE) {
+      this.paymentResponsibilityError = "L'image dépasse la limite de 20MB.";
+      return;
+    }
+    this.paymentResponsibilityFile = file;
+    this.paymentResponsibilityPreviewUrl = URL.createObjectURL(file);
+  }
+
+  clearPaymentResponsibilityFile(): void {
+    if (this.paymentResponsibilityPreviewUrl) {
+      URL.revokeObjectURL(this.paymentResponsibilityPreviewUrl);
+    }
+    this.paymentResponsibilityFile = undefined;
+    this.paymentResponsibilityPreviewUrl = '';
+  }
+
+  async submitPaymentResponsibilityDocument(): Promise<void> {
+    const client = this.activeClient;
+    const clientId = client?.uid;
+    const ownerId =
+      client?.locationOwnerId || this.selectedLocationId || this.currentUserId;
+    const file = this.paymentResponsibilityFile;
+    const responsibleName = this.paymentResponsibleName.trim();
+    const effectiveAt = dateTimeLocalToISO(
+      this.paymentResponsibilityEffectiveLocal
+    );
+
+    if (!client || !clientId || !ownerId) {
+      this.paymentResponsibilityError = 'Client introuvable.';
+      return;
+    }
+    if (!responsibleName) {
+      this.paymentResponsibilityError = 'Indiquez le responsable du paiement.';
+      return;
+    }
+    if (!effectiveAt) {
+      this.paymentResponsibilityError = 'Indiquez une date de prise en charge valide.';
+      return;
+    }
+    if (!file) {
+      this.paymentResponsibilityError = "Ajoutez la photo de l'attestation.";
+      return;
+    }
+
+    this.paymentResponsibilityUploading = true;
+    this.paymentResponsibilityError = '';
+    const id = `payment-responsibility-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    const path = `client-gallery/client/${ownerId}/${clientId}/payment-responsibility/${id}-${cleanPaymentResponsibilityFileName(
+      file.name
+    )}`;
+
+    try {
+      const url = await this.data.uploadCommentFile(file, path);
+      const uploadedAt = new Date().toISOString();
+      const picture: ClientGalleryPicture = {
+        id,
+        category: 'other',
+        mediaType: 'image',
+        mimeType: file.type || 'image/jpeg',
+        url,
+        path,
+        size: file.size,
+        name: file.name,
+        uploadedAt,
+        captureTimeOriginalISO: new Date(file.lastModified).toISOString(),
+        captureTimeSource: 'fileLastModified',
+        ...(this.currentUserId ? { uploadedBy: this.currentUserId } : {}),
+        ...(this.auth.currentUser
+          ? {
+              uploadedByName: [
+                this.auth.currentUser.firstName,
+                this.auth.currentUser.lastName,
+              ]
+                .filter(Boolean)
+                .join(' '),
+            }
+          : {}),
+        source: 'gallery',
+        documentType: PAYMENT_RESPONSIBILITY_DOCUMENT_TYPE,
+        paymentResponsibleName: responsibleName,
+        paymentResponsibleRelationship:
+          this.paymentResponsibleRelationship.trim(),
+        paymentResponsiblePhone: this.paymentResponsiblePhone.trim(),
+        paymentResponsibilityEffectiveAt: effectiveAt,
+        paymentResponsibilityNote: this.paymentResponsibilityNote.trim(),
+        ...(client.debtCycle ? { debtCycle: client.debtCycle } : {}),
+        ...(client.cycleId ? { cycleId: client.cycleId } : {}),
+      };
+
+      try {
+        await this.data.addClientGalleryPictureForUser(ownerId, clientId, picture);
+      } catch (error) {
+        await this.data.deleteUploadedFile(path).catch(() => undefined);
+        throw error;
+      }
+
+      this.applyPaymentResponsibilityDocumentLocal(ownerId, clientId, picture);
+      this.resetPaymentResponsibilityDraft();
+      this.showPaymentResponsibilityForm = false;
+    } catch (error) {
+      console.error('Payment responsibility document upload failed:', error);
+      this.paymentResponsibilityError =
+        "Impossible d'enregistrer l'attestation. Réessayez.";
+    } finally {
+      this.paymentResponsibilityUploading = false;
+    }
+  }
+
+  private applyPaymentResponsibilityDocumentLocal(
+    ownerId: string,
+    clientId: string,
+    picture: ClientGalleryPicture
+  ): void {
+    const update = (candidate?: Client) => {
+      if (
+        candidate?.uid === clientId &&
+        (!candidate.locationOwnerId || candidate.locationOwnerId === ownerId)
+      ) {
+        candidate.galleryPictures = {
+          ...(candidate.galleryPictures ?? {}),
+          [picture.id]: picture,
+        };
+      }
+    };
+    this.clients.forEach(update);
+    this.allClients.forEach(update);
+    update(this.activeClient);
+  }
+
+  private resetPaymentResponsibilityDraft(): void {
+    this.paymentResponsibleName = '';
+    this.paymentResponsibleRelationship = '';
+    this.paymentResponsiblePhone = '';
+    this.paymentResponsibilityEffectiveLocal = '';
+    this.paymentResponsibilityNote = '';
+    this.paymentResponsibilityError = '';
+    this.showPaymentResponsibilityForm = false;
+    this.clearPaymentResponsibilityFile();
   }
 
   hasMoreClientModalGalleryPictures(client?: Client | null): boolean {

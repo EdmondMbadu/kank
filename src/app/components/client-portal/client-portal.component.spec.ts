@@ -252,4 +252,51 @@ describe('ClientPortalComponent', () => {
       'https://example.com/comment-image.jpg'
     );
   });
+
+  it('should expose a responsibility indicator only when a document exists', () => {
+    const component = createComponent();
+    expect(component.latestPaymentResponsibilityDocument).toBeUndefined();
+
+    component.client.galleryPictures = {
+      responsibility: {
+        id: 'responsibility',
+        category: 'other',
+        mediaType: 'image',
+        documentType: 'payment_responsibility',
+        paymentResponsibleName: 'Marie Kavanda',
+        paymentResponsibilityEffectiveAt: '2026-08-15T16:07:06.045Z',
+        url: 'https://example.com/responsibility.jpg',
+        path: 'client-gallery/client/site/client/payment-responsibility/image.jpg',
+        size: 1024,
+        uploadedAt: '2026-08-15T16:07:06.045Z',
+      },
+    };
+
+    expect(component.latestPaymentResponsibilityDocument).toEqual(
+      jasmine.objectContaining({
+        id: 'responsibility',
+        paymentResponsibleName: 'Marie Kavanda',
+      })
+    );
+  });
+
+  it('should close the compact details before opening the attestation', () => {
+    const component = createComponent();
+    const picture = {
+      id: 'responsibility',
+      category: 'other',
+      documentType: 'payment_responsibility',
+      url: 'https://example.com/responsibility.jpg',
+      path: 'responsibility.jpg',
+      size: 1024,
+      uploadedAt: '2026-08-15T16:07:06.045Z',
+    } as const;
+    component.showPaymentResponsibilityDetails = true;
+    spyOn(component, 'toggleHomePicture');
+
+    component.openPaymentResponsibilityDocument(picture);
+
+    expect(component.showPaymentResponsibilityDetails).toBeFalse();
+    expect(component.toggleHomePicture).toHaveBeenCalledWith(picture.url);
+  });
 });

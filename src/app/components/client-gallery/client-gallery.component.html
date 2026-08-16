@@ -313,6 +313,12 @@
               />
             </ng-template>
           </button>
+          <span
+            *ngIf="isPaymentResponsibilityPicture(picture)"
+            class="pointer-events-none absolute left-2 top-2 rounded-full bg-indigo-700/95 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow"
+          >
+            Prise en charge
+          </span>
           <div class="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] rounded-lg bg-slate-900/75 px-2 py-1 text-[10px] font-bold leading-tight text-white">
             <p>Ajout: {{ formatPictureDate(picture.uploadedAt) }}</p>
             <p>Capture: {{ formatPictureDate(picture.captureTimeOriginalISO) }}</p>
@@ -584,7 +590,7 @@
           <select
             class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-extrabold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-emerald-900/30"
             [(ngModel)]="editDraftCategory"
-            [disabled]="savingPictureId === picture.id"
+            [disabled]="savingPictureId === picture.id || isPaymentResponsibilityPicture(picture)"
           >
             <option
               *ngFor="let category of visibleCategories"
@@ -707,6 +713,18 @@
       (click)="$event.stopPropagation()"
     />
   </ng-template>
+
+  <div
+    *ngIf="isPaymentResponsibilityPicture(selectedPicture)"
+    class="absolute left-1/2 top-5 max-w-[70vw] -translate-x-1/2 rounded-2xl bg-indigo-700/95 px-4 py-2 text-center text-white shadow-xl"
+    (click)="$event.stopPropagation()"
+  >
+    <p class="text-[10px] font-black uppercase tracking-wide text-indigo-100">Prise en charge du paiement</p>
+    <p class="text-sm font-extrabold">{{ selectedPicture.paymentResponsibleName }}</p>
+    <p class="text-[11px] text-indigo-100">
+      Depuis le {{ formatPaymentResponsibilityDate(selectedPicture.paymentResponsibilityEffectiveAt) }}
+    </p>
+  </div>
 
   <button
     *ngIf="!isSystemHomePicture(selectedPicture)"

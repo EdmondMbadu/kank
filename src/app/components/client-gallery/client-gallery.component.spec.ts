@@ -96,4 +96,32 @@ describe('ClientGalleryComponent comment pictures', () => {
 
     expect(storage.ref).not.toHaveBeenCalled();
   });
+
+  it('recognizes a responsibility document while keeping it in Autres', () => {
+    const component = createComponent();
+    component.owner = {
+      uid: 'client-23',
+      galleryPictures: {
+        responsibility: {
+          id: 'responsibility',
+          category: 'other',
+          mediaType: 'image',
+          documentType: 'payment_responsibility',
+          paymentResponsibleName: 'Marie Kavanda',
+          paymentResponsibilityEffectiveAt: '2026-08-15T16:07:06.045Z',
+          url: 'https://example.com/responsibility.jpg',
+          path: 'client-gallery/client/site/client/payment-responsibility/image.jpg',
+          size: 1024,
+          uploadedAt: '2026-08-15T16:07:06.045Z',
+        },
+      },
+    } as any;
+    component.activeCategory = 'other';
+
+    expect(component.displayedPictures.length).toBe(1);
+    expect(
+      component.isPaymentResponsibilityPicture(component.displayedPictures[0])
+    ).toBeTrue();
+    expect(component.displayedPictures[0].category).toBe('other');
+  });
 });

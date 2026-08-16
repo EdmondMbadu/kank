@@ -18,6 +18,7 @@ export interface ClientTrophyAward {
 
 export type ClientGalleryCategory = 'domicile' | 'trophy' | 'other';
 export type ClientGalleryMediaType = 'image' | 'video';
+export type ClientGalleryDocumentType = 'payment_responsibility';
 
 export interface ClientGalleryPicture {
   id: string;
@@ -45,6 +46,14 @@ export interface ClientGalleryPicture {
   source?: 'gallery' | 'comment';
   sourceCommentAttachmentId?: string;
   derivedFromComment?: boolean;
+  documentType?: ClientGalleryDocumentType;
+  paymentResponsibleName?: string;
+  paymentResponsibleRelationship?: string;
+  paymentResponsiblePhone?: string;
+  paymentResponsibilityEffectiveAt?: string;
+  paymentResponsibilityNote?: string;
+  debtCycle?: string;
+  cycleId?: string;
 }
 
 export interface ClientHomePictureHistoryEntry extends Avatar {

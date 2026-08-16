@@ -122,12 +122,15 @@ service cloud.firestore {
           resource != null &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'comments',
+            'galleryPictures',
             'recoveredAwayDebts',
             'debtRecognized',
             'notifiedForPolice'
           ]) &&
           (!('comments' in request.resource.data) ||
             request.resource.data.comments is list) &&
+          (!('galleryPictures' in request.resource.data) ||
+            request.resource.data.galleryPictures is map) &&
           (!('debtRecognized' in request.resource.data) ||
             request.resource.data.debtRecognized is string) &&
           (!('notifiedForPolice' in request.resource.data) ||

@@ -17,6 +17,10 @@ import {
   commentsReferenceGalleryPicture,
   legacyCommentImageGalleryPictures,
 } from 'src/app/utils/client-comment-gallery.util';
+import {
+  formatPaymentResponsibilityDate,
+  isPaymentResponsibilityDocument,
+} from 'src/app/utils/payment-responsibility-document.util';
 
 type GalleryOwnerType = 'client' | 'card' | 'trophy';
 type GalleryOwner = Client | Card;
@@ -464,6 +468,16 @@ export class ClientGalleryComponent implements OnDestroy {
     return this.resolveMediaType(picture) === 'video';
   }
 
+  isPaymentResponsibilityPicture(
+    picture?: ClientGalleryPicture | null
+  ): boolean {
+    return isPaymentResponsibilityDocument(picture);
+  }
+
+  formatPaymentResponsibilityDate(iso?: string): string {
+    return formatPaymentResponsibilityDate(iso);
+  }
+
   formatPictureDate(iso?: string): string {
     if (!iso) {
       return 'Non renseignée';
@@ -818,7 +832,9 @@ export class ClientGalleryComponent implements OnDestroy {
 
     const updatedPicture: ClientGalleryPicture = this.normalizeTrophyPicture({
       ...picture,
-      category: this.editDraftCategory,
+      category: this.isPaymentResponsibilityPicture(picture)
+        ? 'other'
+        : this.editDraftCategory,
     });
 
     if (this.auth.isAdmin) {
@@ -856,7 +872,11 @@ export class ClientGalleryComponent implements OnDestroy {
       return;
     }
 
-    const confirmed = confirm('Supprimer ce média définitivement ?');
+    const confirmed = confirm(
+      this.isPaymentResponsibilityPicture(picture)
+        ? "Supprimer définitivement cette attestation de prise en charge ? Cette action ne peut pas être annulée."
+        : 'Supprimer ce média définitivement ?'
+    );
     if (!confirmed) {
       return;
     }

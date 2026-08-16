@@ -1,6 +1,45 @@
 import { DataService } from './data.service';
 
 describe('DataService', () => {
+  it('appends a gallery picture to the selected site owner without replacing the gallery', async () => {
+    const clientRef = {
+      update: jasmine.createSpy('update').and.resolveTo(undefined),
+    };
+    const afs = {
+      doc: jasmine.createSpy('doc').and.returnValue(clientRef),
+    };
+    const service = new DataService(
+      afs as any,
+      {} as any,
+      { currentUser: { uid: 'investigator-account' } } as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-16-2026',
+        todaysDate: () => '8-15-2026',
+      } as any,
+      {} as any,
+      {} as any
+    );
+    const picture = {
+      id: 'payment-responsibility-1',
+      category: 'other',
+      mediaType: 'image',
+      url: 'https://example.com/document.jpg',
+      path: 'client-gallery/client/site-2/client-9/payment-responsibility/document.jpg',
+      size: 2048,
+      uploadedAt: '2026-08-15T16:07:06.045Z',
+      documentType: 'payment_responsibility',
+      paymentResponsibleName: 'Marie Kavanda',
+      paymentResponsibilityEffectiveAt: '2026-08-15T16:07:06.045Z',
+    } as const;
+
+    await service.addClientGalleryPictureForUser('site-2', 'client-9', picture);
+
+    expect(afs.doc).toHaveBeenCalledWith('users/site-2/clients/client-9');
+    expect(clientRef.update).toHaveBeenCalledWith({
+      'galleryPictures.payment-responsibility-1': picture,
+    });
+  });
+
   it('persists phone history with a register request update', async () => {
     const clientRef = {
       set: jasmine.createSpy('set').and.resolveTo(undefined),
