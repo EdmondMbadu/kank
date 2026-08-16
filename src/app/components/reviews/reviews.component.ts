@@ -49,7 +49,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     { value: '1y', label: '1 an' },
     { value: 'max', label: 'Max' },
   ];
-  selectedRange: '3m' | '6m' | '1y' | 'max' = 'max';
+  selectedRange: '3m' | '6m' | '1y' | 'max' = '3m';
   latestPerformance: number | null = null;
   performanceDelta: number | null = null;
   toggleForm() {

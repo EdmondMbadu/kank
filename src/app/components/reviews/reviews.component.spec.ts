@@ -120,12 +120,41 @@ describe('ReviewsComponent team performance', () => {
       }),
     ]);
 
-    (component as any).buildPerformanceGraph();
+    component.setPerformanceRange('max');
 
     expect(component.selectedRange).toBe('max');
     expect(component.graphPerf.data[0].x.length).toBe(15);
     expect(component.graphPerf.data[0].x[0]).toContain('janvier 2025');
     expect(component.graphPerf.data[0].x[14]).toContain('mars 2026');
+  });
+
+  it('uses the latest three months by default', () => {
+    const dailyPoints = {
+      '1-1-2026': '5',
+      '2-1-2026': '6',
+      '3-1-2026': '7',
+      '4-1-2026': '8',
+    };
+    const totalDailyPoints = {
+      '1-1-2026': '10',
+      '2-1-2026': '10',
+      '3-1-2026': '10',
+      '4-1-2026': '10',
+    };
+    setTeam([
+      Object.assign(new Employee(), {
+        role: 'Manager',
+        dailyPoints,
+        totalDailyPoints,
+      }),
+    ]);
+
+    (component as any).buildPerformanceGraph();
+
+    expect(component.selectedRange).toBe('3m');
+    expect(component.graphPerf.data[0].x.length).toBe(3);
+    expect(component.graphPerf.data[0].x[0]).toContain('février 2026');
+    expect(component.graphPerf.data[0].x[2]).toContain('avril 2026');
   });
 
   it('does not write a manual performance value into a team review', () => {
