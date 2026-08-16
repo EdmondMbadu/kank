@@ -164,6 +164,7 @@ export class RegiserPortalComponent {
   paymentDate = '';
   debtStart = '';
   requestDate = '';
+  requestDeliveryDateLabel = '';
   requestSubmittedDateLabel = '';
   debtEnd = '';
   worhty? = '';
@@ -532,6 +533,9 @@ export class RegiserPortalComponent {
       this.requestDate = this.time.convertDateToDayMonthYear(
         this.client.requestDate!
       );
+      this.requestDeliveryDateLabel = this.formatFrenchLongDate(
+        this.client.requestDate
+      );
     });
   }
 
@@ -548,14 +552,20 @@ export class RegiserPortalComponent {
       this.client?.dateJoined,
     ]);
 
-    if (!requestedDate) return '';
+    return requestedDate ? this.formatFrenchLongDate(requestedDate) : '';
+  }
+
+  private formatFrenchLongDate(value: unknown): string {
+    const parsed =
+      value instanceof Date ? value : this.parseRequestSubmittedDate(value);
+    if (!parsed || Number.isNaN(parsed.getTime())) return '';
 
     return new Intl.DateTimeFormat('fr-FR', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    }).format(requestedDate);
+    }).format(parsed);
   }
 
   private firstValidRequestDate(candidates: unknown[]): Date | null {

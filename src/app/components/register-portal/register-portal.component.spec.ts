@@ -31,6 +31,17 @@ describe('RegiserPortalComponent', () => {
     expect(label).toBe('mardi 11 août 2026');
   });
 
+  it('formats the planned delivery date while preserving its compact value', () => {
+    component.requestDate = '14/3/2026';
+
+    component.requestDeliveryDateLabel = (component as any).formatFrenchLongDate(
+      '3-14-2026'
+    );
+
+    expect(component.requestDeliveryDateLabel).toBe('samedi 14 mars 2026');
+    expect(component.requestDate).toBe('14/3/2026');
+  });
+
   it('prefers the matching audit request date over the client fallback', () => {
     component.client.dateOfRequest = '8-10-2026';
 

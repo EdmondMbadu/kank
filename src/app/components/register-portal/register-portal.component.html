@@ -715,10 +715,42 @@
 
     <!-- RETURN DATE -->
     <div
-      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+      class="flex flex-col items-center rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-sky-50/70 px-4 py-6 text-center dark:border-indigo-900/40 dark:from-indigo-950/30 dark:to-sky-950/20"
     >
-      <dt class="text-lg font-semibold">Date De Remettre L'argent Au Client</dt>
-      <dd class="mt-1 text-xl font-bold">{{ requestDate }}</dd>
+      <div
+        class="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white text-indigo-600 ring-1 ring-indigo-100 dark:bg-slate-900/70 dark:text-indigo-300 dark:ring-indigo-900/60"
+        aria-hidden="true"
+      >
+        <svg
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M8 3v3m8-3v3M4.5 9.5h15M6.5 5h11a2 2 0 012 2v11a2 2 0 01-2 2h-11a2 2 0 01-2-2V7a2 2 0 012-2z"
+          />
+        </svg>
+      </div>
+      <dt
+        class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
+      >
+        Date de remise au client
+      </dt>
+      <dd
+        class="mt-2 text-xl font-extrabold capitalize tracking-tight text-indigo-700 dark:text-indigo-300"
+      >
+        {{ requestDeliveryDateLabel || requestDate }}
+      </dd>
+      <dd
+        *ngIf="requestDeliveryDateLabel && requestDate"
+        class="mt-2 inline-flex rounded-full border border-slate-200 bg-white/80 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400"
+      >
+        {{ requestDate }}
+      </dd>
     </div>
 
     <!-- REFERENCES -->
