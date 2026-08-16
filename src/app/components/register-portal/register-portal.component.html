@@ -666,6 +666,35 @@
       <dd class="mt-1 text-3xl font-extrabold">
         {{ client.requestAmount | number : "1.0-0" }}
       </dd>
+      <div
+        class="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"
+      >
+        <svg
+          class="h-4 w-4 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M8 3v3m8-3v3M4.5 9.5h15M6.5 5h11a2 2 0 012 2v11a2 2 0 01-2 2h-11a2 2 0 01-2-2V7a2 2 0 012-2z"
+          />
+        </svg>
+        <ng-container *ngIf="requestSubmittedDateLabel; else missingRequestSubmittedDate">
+          <span>Demandé le</span>
+          <span class="font-semibold text-slate-600 dark:text-slate-300">
+            {{ requestSubmittedDateLabel }}
+          </span>
+        </ng-container>
+        <ng-template #missingRequestSubmittedDate>
+          <span class="text-amber-700 dark:text-amber-400">
+            Date de demande non trouvée
+          </span>
+        </ng-template>
+      </div>
     </div>
 
     <!-- DEBT CYCLE -->

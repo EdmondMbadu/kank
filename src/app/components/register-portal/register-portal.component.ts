@@ -11,7 +11,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
-import { Audit } from 'src/app/models/management';
+import { Audit, PendingClient } from 'src/app/models/management';
 
 type AuditClientCommentType = 'no_answer' | 'fraud' | 'other';
 type AuditClientCommentAttachmentKind = 'image' | 'audio' | 'video';
@@ -164,6 +164,7 @@ export class RegiserPortalComponent {
   paymentDate = '';
   debtStart = '';
   requestDate = '';
+  requestSubmittedDateLabel = '';
   debtEnd = '';
   worhty? = '';
   savings: string = '0';
@@ -484,6 +485,8 @@ export class RegiserPortalComponent {
       this.client = data[idx];
       this.age = this.compute.computeAge(this.client.birthDate);
       this.birthDateDisplay = this.formatBirthDate(this.client.birthDate);
+      this.requestSubmittedDateLabel =
+        this.resolveRequestSubmittedDateLabel();
       // … (votre logique existante) …
       this.detectSuspicious(idx, data);
       console.log('the client', this.client);
@@ -501,6 +504,12 @@ export class RegiserPortalComponent {
             (pc) => pc.clientId === this.client.uid
           );
         });
+
+        const matchingPendingClient = matchingAudit?.pendingClients?.find(
+          (pc) => pc.clientId === this.client.uid
+        );
+        this.requestSubmittedDateLabel =
+          this.resolveRequestSubmittedDateLabel(matchingPendingClient);
 
         // 4) If found, store that audit's name in agentVerifyingName
         if (matchingAudit) {
@@ -524,6 +533,104 @@ export class RegiserPortalComponent {
         this.client.requestDate!
       );
     });
+  }
+
+  private resolveRequestSubmittedDateLabel(
+    pendingClient?: PendingClient
+  ): string {
+    const requestedDate = this.firstValidRequestDate([
+      pendingClient?.dateOfRequest,
+      this.client?.dateOfRequest,
+      pendingClient?.requestedAt,
+      pendingClient?.requestCreatedAt,
+      pendingClient?.assignedAt,
+      pendingClient?.createdAt,
+      this.client?.dateJoined,
+    ]);
+
+    if (!requestedDate) return '';
+
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(requestedDate);
+  }
+
+  private firstValidRequestDate(candidates: unknown[]): Date | null {
+    for (const candidate of candidates) {
+      const parsed = this.parseRequestSubmittedDate(candidate);
+      if (parsed) return parsed;
+    }
+    return null;
+  }
+
+  private parseRequestSubmittedDate(value: unknown): Date | null {
+    if (!value) return null;
+
+    if (typeof (value as any)?.toDate === 'function') {
+      const timestampDate = (value as any).toDate();
+      return timestampDate instanceof Date &&
+        !Number.isNaN(timestampDate.getTime())
+        ? timestampDate
+        : null;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    const isoDateOnly = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (isoDateOnly) {
+      return this.createValidatedLocalDate(
+        Number(isoDateOnly[1]),
+        Number(isoDateOnly[2]),
+        Number(isoDateOnly[3])
+      );
+    }
+
+    const appDate = raw.match(
+      /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:[-/](\d{1,2})[-/](\d{1,2})[-/](\d{1,2}))?$/
+    );
+    if (appDate) {
+      return this.createValidatedLocalDate(
+        Number(appDate[3]),
+        Number(appDate[1]),
+        Number(appDate[2]),
+        Number(appDate[4] || 0),
+        Number(appDate[5] || 0),
+        Number(appDate[6] || 0)
+      );
+    }
+
+    const direct = new Date(raw);
+    return Number.isNaN(direct.getTime()) ? null : direct;
+  }
+
+  private createValidatedLocalDate(
+    year: number,
+    month: number,
+    day: number,
+    hours = 0,
+    minutes = 0,
+    seconds = 0
+  ): Date | null {
+    const parsed = new Date(year, month - 1, day, hours, minutes, seconds);
+    if (
+      parsed.getFullYear() !== year ||
+      parsed.getMonth() + 1 !== month ||
+      parsed.getDate() !== day ||
+      parsed.getHours() !== hours ||
+      parsed.getMinutes() !== minutes ||
+      parsed.getSeconds() !== seconds
+    ) {
+      return null;
+    }
+    return parsed;
   }
 
   private formatBirthDate(birth?: string | null): string {
