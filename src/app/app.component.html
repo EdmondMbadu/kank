@@ -1,1 +1,37 @@
 <router-outlet></router-outlet>
+
+<div
+  *ngIf="updateNotice$ | async as notice"
+  class="app-reliability-notice"
+  [class.app-reliability-notice--urgent]="notice.urgent"
+  role="status"
+  aria-live="polite"
+>
+  <span>{{ notice.message }}</span>
+  <div class="app-reliability-notice__actions">
+    <button type="button" (click)="appUpdates.reload()">Actualiser</button>
+    <button type="button" class="secondary" (click)="appUpdates.dismiss()">
+      Plus tard
+    </button>
+  </div>
+</div>
+
+<div
+  *ngIf="chunkFailure$ | async as failure"
+  class="app-reliability-notice app-reliability-notice--urgent"
+  role="alert"
+>
+  <span>{{ failure }}</span>
+  <div class="app-reliability-notice__actions">
+    <button type="button" (click)="chunkRecovery.retryManually()">
+      Reessayer
+    </button>
+    <button
+      type="button"
+      class="secondary"
+      (click)="chunkRecovery.dismiss()"
+    >
+      Fermer
+    </button>
+  </div>
+</div>

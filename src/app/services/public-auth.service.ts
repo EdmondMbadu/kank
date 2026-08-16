@@ -5,6 +5,35 @@ import type { FirebaseApp } from 'firebase/app';
 import { environment } from '../../../environments/environments';
 import { AuthService } from './auth.service';
 
+const NETWORK_RETRY_DELAY_MS = 800;
+
+export function isFirebaseNetworkError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'auth/network-request-failed'
+  );
+}
+
+export async function withSingleFirebaseNetworkRetry<T>(
+  operation: () => Promise<T>,
+  isOffline: () => boolean = () =>
+    typeof navigator !== 'undefined' && navigator.onLine === false,
+  wait: () => Promise<void> = () =>
+    new Promise<void>((resolve) => setTimeout(resolve, NETWORK_RETRY_DELAY_MS))
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isFirebaseNetworkError(error) || isOffline()) {
+      throw error;
+    }
+
+    await wait();
+    return operation();
+  }
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -22,20 +51,24 @@ export class PublicAuthService {
     const { getAuth, signInWithEmailAndPassword } = await import(
       'firebase/auth'
     );
+    const auth = getAuth(app);
+    let result: Awaited<ReturnType<typeof signInWithEmailAndPassword>>;
 
     try {
-      const auth = getAuth(app);
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      this.authService.applyRoleWord(word);
-
-      if (result.user?.emailVerified) {
-        await this.router.navigate(['/home']);
-      } else {
-        await this.router.navigate(['/verify-email']);
-      }
+      result = await withSingleFirebaseNetworkRetry(() =>
+        signInWithEmailAndPassword(auth, email, password)
+      );
     } catch (error) {
       this.authService.clearPersistedRoleFlags();
       throw error;
+    }
+
+    this.authService.applyRoleWord(word);
+
+    if (result.user?.emailVerified) {
+      await this.router.navigate(['/home']);
+    } else {
+      await this.router.navigate(['/verify-email']);
     }
   }
 

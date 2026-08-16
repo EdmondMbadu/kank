@@ -8,9 +8,56 @@
   },
   "hosting": {
     "site": "kank-4bbbc",
+    "headers": [
+      {
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/ngsw.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/ngsw-worker.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "!**/*.@(js|mjs|css|json|map|png|jpg|jpeg|webp|svg|ico|woff|woff2|ttf|eot|pdf|mp3|mp4|webm)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      }
+    ],
     "rewrites": [
       {
-        "source": "**",
+        "source": "!**/*.@(js|mjs|css|json|map|png|jpg|jpeg|webp|svg|ico|woff|woff2|ttf|eot|pdf|mp3|mp4|webm)",
         "destination": "/index.html"
       }
     ],

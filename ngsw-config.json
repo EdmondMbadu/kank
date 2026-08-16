@@ -20,7 +20,7 @@
     {
       "name": "lazy-code",
       "installMode": "lazy",
-      "updateMode": "lazy",
+      "updateMode": "prefetch",
       "resources": {
         "files": [
           "/*.js"

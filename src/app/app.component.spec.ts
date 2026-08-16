@@ -26,10 +26,10 @@ describe('AppComponent', () => {
     expect(app.title).toEqual('kank');
   });
 
-  it('should render title', () => {
+  it('should render the application router outlet', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.content span')?.textContent).toContain('kank app is running!');
+    expect(compiled.querySelector('router-outlet')).not.toBeNull();
   });
 });

@@ -1,0 +1,63 @@
+.app-reliability-notice {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10000;
+  display: flex;
+  max-width: min(32rem, calc(100vw - 2rem));
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #166534;
+  border-radius: 0.75rem;
+  background: #f0fdf4;
+  padding: 0.85rem 1rem;
+  color: #14532d;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 22%);
+  font-size: 0.9rem;
+}
+
+.app-reliability-notice--urgent {
+  border-color: #b45309;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.app-reliability-notice__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.app-reliability-notice button {
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  background: #166534;
+  padding: 0.4rem 0.75rem;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.app-reliability-notice--urgent button {
+  background: #92400e;
+}
+
+.app-reliability-notice button.secondary {
+  background: transparent;
+  color: inherit;
+}
+
+@media (max-width: 640px) {
+  .app-reliability-notice {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    max-width: none;
+  }
+
+  .app-reliability-notice__actions {
+    justify-content: flex-end;
+  }
+}
