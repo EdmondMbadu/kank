@@ -200,7 +200,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   problematicClients: Client[] = [];
   policeNotifiedSectionOpen = false;
   riskSectionView: 'problematic' | 'police' = 'problematic';
-  feedbackSectionView: 'team' | 'clients' = 'team';
+  feedbackSectionView: 'team' | 'clients' = 'clients';
   locations: User[] = [];
   selectedLocationId = '';
   selectedLocationLabel = '';
