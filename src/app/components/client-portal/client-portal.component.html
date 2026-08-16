@@ -502,70 +502,76 @@
       </p>
       <div
         *ngIf="latestPaymentResponsibilityDocument as document"
-        class="relative mt-3 flex max-w-full flex-col items-center"
+        class="relative mt-4 flex w-full max-w-md flex-col items-center"
       >
         <div
-          class="inline-flex max-w-full flex-wrap items-center justify-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-xs text-indigo-900 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-100"
+          class="flex w-full items-center rounded-xl border border-slate-200 bg-white p-1.5 text-left shadow-sm ring-1 ring-indigo-100/80 transition hover:border-indigo-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:ring-indigo-900/50"
         >
           <span
-            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/70 dark:text-indigo-200"
-            title="Paiement transféré"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:bg-indigo-500 dark:shadow-none"
+            title="Paiement pris en charge"
           >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.5 11a3 3 0 100-6 3 3 0 000 6zM15.5 19a3 3 0 100-6 3 3 0 000 6zM3.5 19a5 5 0 015-5h1M14.5 5h4l-1.5-1.5M18.5 5L17 6.5M9.5 19h-4L7 17.5M5.5 19L7 20.5" />
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="8.5" cy="7" r="3.5" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 20a6 6 0 0112 0M15.5 11.5l2 2 4-5" />
             </svg>
           </span>
-          <span class="whitespace-nowrap font-semibold">Paiement confié à</span>
-          <button
-            *ngIf="canOpenPaymentResponsibleClient(document); else unlinkedPaymentResponsibleName"
-            type="button"
-            class="inline-flex min-w-0 items-center gap-1 rounded-full px-1.5 py-1 font-extrabold text-indigo-800 transition hover:bg-indigo-100 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:text-indigo-100 dark:hover:bg-indigo-900/60"
-            [title]="'Ouvrir le profil de ' + (document.paymentResponsibleName || 'ce client')"
-            (click)="openPaymentResponsibleClient(document)"
-          >
-            <span class="max-w-[14rem] truncate">{{ document.paymentResponsibleName || 'Client associé' }}</span>
-            <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5M10 14L19 5M19 13v6H5V5h6" />
-            </svg>
-          </button>
-          <ng-template #unlinkedPaymentResponsibleName>
-            <strong class="max-w-[14rem] truncate px-1.5 py-1">
-              {{ document.paymentResponsibleName || 'Responsable identifié' }}
-            </strong>
-          </ng-template>
-          <span class="mx-0.5 h-5 w-px bg-indigo-200 dark:bg-indigo-700" aria-hidden="true"></span>
-          <button
-            type="button"
-            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-indigo-700 transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:text-indigo-200 dark:hover:bg-indigo-900/60"
-            aria-label="Voir l'attestation de prise en charge"
-            title="Voir l'attestation"
-            (click)="openPaymentResponsibilityDocument(document)"
-          >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l4 4v14H7zM14 3v5h5M10 13h5M10 17h3" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.5 16.5l1.2 1.2 2.3-2.7" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-indigo-700 transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:text-indigo-200 dark:hover:bg-indigo-900/60"
-            [attr.aria-expanded]="showPaymentResponsibilityDetails"
-            aria-label="Afficher les détails de la prise en charge"
-            title="Afficher les détails"
-            (click)="showPaymentResponsibilityDetails = !showPaymentResponsibilityDetails"
-          >
-            <svg
-              class="h-4 w-4 transition-transform"
-              [ngClass]="showPaymentResponsibilityDetails ? 'rotate-180' : ''"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+          <div class="min-w-0 flex-1 px-3">
+            <p class="text-[10px] font-bold uppercase leading-4 tracking-[0.1em] text-slate-500 dark:text-slate-400">
+              Paiement pris en charge par
+            </p>
+            <button
+              *ngIf="canOpenPaymentResponsibleClient(document); else unlinkedPaymentResponsibleName"
+              type="button"
+              class="group mt-0.5 inline-flex max-w-full items-center gap-1 text-sm font-extrabold leading-5 text-slate-950 transition hover:text-indigo-700 focus:outline-none focus:underline dark:text-white dark:hover:text-indigo-300"
+              [title]="'Ouvrir le profil de ' + (document.paymentResponsibleName || 'ce client')"
+              (click)="openPaymentResponsibleClient(document)"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
+              <span class="truncate">{{ document.paymentResponsibleName || 'Client associé' }}</span>
+              <svg class="h-3.5 w-3.5 shrink-0 text-indigo-500 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5M10 14L19 5M19 13v6H5V5h6" />
+              </svg>
+            </button>
+            <ng-template #unlinkedPaymentResponsibleName>
+              <strong class="mt-0.5 block truncate text-sm font-extrabold leading-5 text-slate-950 dark:text-white">
+                {{ document.paymentResponsibleName || 'Responsable identifié' }}
+              </strong>
+            </ng-template>
+          </div>
+          <div class="flex shrink-0 items-center gap-0.5 border-l border-slate-200 pl-1.5 dark:border-slate-700">
+            <button
+              type="button"
+              class="flex h-9 w-9 items-center justify-center rounded-lg text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:text-indigo-300 dark:hover:bg-indigo-950/70"
+              aria-label="Voir l'attestation de prise en charge"
+              title="Voir l'attestation"
+              (click)="openPaymentResponsibilityDocument(document)"
+            >
+              <svg class="h-[19px] w-[19px]" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 2.75h8l4 4V21.25H6zM14 2.75v5h5" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 14.5l2 2 4-4" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:text-slate-300 dark:hover:bg-slate-800"
+              [attr.aria-expanded]="showPaymentResponsibilityDetails"
+              aria-label="Afficher les détails de la prise en charge"
+              title="Afficher les détails"
+              (click)="showPaymentResponsibilityDetails = !showPaymentResponsibilityDetails"
+            >
+              <svg
+                class="h-4 w-4 transition-transform"
+                [ngClass]="showPaymentResponsibilityDetails ? 'rotate-180' : ''"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.25"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div
