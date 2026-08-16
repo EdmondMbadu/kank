@@ -11,6 +11,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
+import { buildTeamMonthlyPerformanceSeries } from 'src/app/utils/team-monthly-performance.util';
 
 type MetricDefinition = {
   key: string;
@@ -33,20 +34,22 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   reviews: Comment[] = [];
   showForm = false;
   showCommentDescription = false;
-  // valeur du champ Performance
-  performanceValue = 0;
+  private currentTeamOwnerUid = '';
+  private currentTeamEmployees: Employee[] = [];
+  teamPerformanceManagerName = '';
 
   // objet graphique
   graphPerf: any = { data: [], layout: {}, config: {} };
   readonly performanceRanges: Array<{
-    value: '3m' | '6m' | 'max';
+    value: '3m' | '6m' | '1y' | 'max';
     label: string;
   }> = [
     { value: '3m', label: '3 mois' },
     { value: '6m', label: '6 mois' },
-    { value: 'max', label: 'Max (12 mois)' },
+    { value: '1y', label: '1 an' },
+    { value: 'max', label: 'Max' },
   ];
-  selectedRange: '3m' | '6m' | 'max' = 'max';
+  selectedRange: '3m' | '6m' | '1y' | 'max' = 'max';
   latestPerformance: number | null = null;
   performanceDelta: number | null = null;
   toggleForm() {
@@ -239,6 +242,10 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         this.showForm = true;
       }
 
+      this.currentTeamEmployees = [];
+      this.teamPerformanceManagerName = '';
+      this.currentTeamOwnerUid = user?.uid || '';
+
       if (this.reviewsSub) {
         this.reviewsSub.unsubscribe();
         this.reviewsSub = undefined;
@@ -268,6 +275,10 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         this.reviews = [];
         this.reviewId = '';
         this.setReviews();
+      }
+
+      if (this.allUsers.length) {
+        this.refreshEmployeeOptions();
       }
     });
 
@@ -311,8 +322,6 @@ export class ReviewsComponent implements OnInit, OnDestroy {
           comment.time!
         );
         comment.starsNumber = Number(comment.stars);
-        comment.__editingPerf = false; // ← initialise
-        comment.__perfDraft = comment.performance ?? 0; // ← brouillon
         const resolvedLabel =
           comment.scope === 'individual'
             ? this.getEmployeeLabelById(
@@ -391,7 +400,23 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         .subscribe((employees) => {
           const employeeList: Employee[] = Array.isArray(employees)
             ? (employees as Employee[])
+            : employees
+            ? (Object.values(employees) as Employee[])
             : [];
+
+          if (user.uid === this.currentTeamOwnerUid) {
+            this.currentTeamEmployees = employeeList;
+            const manager = employeeList.find(
+              (employee) => employee?.role === 'Manager'
+            );
+            this.teamPerformanceManagerName = manager
+              ? [manager.firstName, manager.lastName]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim()
+              : '';
+            this.buildPerformanceGraph();
+          }
           employeeList.forEach((employee) => {
             if (!employee?.uid) {
               return;
@@ -1521,11 +1546,8 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     const starsSource = isTeam
       ? this.numberofStars
       : this.individualNumberOfStars;
-    const performanceSource = isTeam
-      ? this.auth.isAdmin && this.performanceValue > 0
-        ? this.performanceValue
-        : undefined
-      : this.auth.isAdmin && this.individualPerformanceValue > 0
+    const performanceSource =
+      !isTeam && this.auth.isAdmin && this.individualPerformanceValue > 0
       ? this.individualPerformanceValue
       : undefined;
 
@@ -1691,7 +1713,6 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.comment = '';
     this.numberofStars = '';
     this.metrics.forEach((m) => (m.value = 0));
-    this.performanceValue = 0;
     this.commentAudioUrl = '';
 
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
@@ -1982,86 +2003,44 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     if (input) input.value = '';
   }
 
-  /** Histogramme mensuel coloré – date affichée = 1 mois en arrière */
+  /** Histogramme mensuel basé sur le même calcul que la page du manager. */
   private buildPerformanceGraph() {
-    if (!this.reviews?.length) {
-      this.graphPerf = { data: [], layout: {}, config: {} };
-      this.latestPerformance = null;
-      this.performanceDelta = null;
-      return;
-    }
-
-    /* --- 1. Regrouper par mois (moyenne) --- */
-    interface Bucket {
-      total: number;
-      count: number;
-    }
-    const buckets: Record<string, Bucket> = {};
-
-    this.reviews.forEach((r) => {
-      const [mm, , yyyy] = r.time!.split('-').map(Number);
-      if (r.performance === undefined || r.performance === null) return; // skip
-      /* ↓↓↓  recule d’un mois  ↓↓↓ */
-      const d = new Date(yyyy, mm - 1); // mois réel de la review
-      d.setMonth(d.getMonth() - 1); // mois précédent
-      const key = d.toLocaleDateString('fr-FR', {
-        month: 'long',
-        year: 'numeric',
-      }); // « juin 2025 »
-
-      buckets[key] ??= { total: 0, count: 0 };
-      buckets[key].total += Number(r.performance ?? 0);
-      buckets[key].count += 1;
-    });
-
-    /* --- 2. Trier chronologiquement --- */
-    const monthsFr = [
-      'janvier',
-      'février',
-      'mars',
-      'avril',
-      'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre',
-    ];
-    const parseKey = (s: string) => {
-      const [mFr, y] = s.split(' ');
-      return new Date(+y, monthsFr.indexOf(mFr));
-    };
-    let labels = Object.keys(buckets).sort(
-      (a, b) => +parseKey(a) - +parseKey(b)
+    const hasManager = this.currentTeamEmployees.some(
+      (employee) => employee?.role === 'Manager'
     );
-
-    /* --- 3. Moyenne par mois --- */
-    let values = labels
-      .map((l) => +(buckets[l].total / buckets[l].count).toFixed(1))
-      .map((val) => Math.min(100, Math.max(0, val)));
-
-    if (!values.length) {
+    if (!hasManager) {
       this.graphPerf = { data: [], layout: {}, config: {} };
       this.latestPerformance = null;
       this.performanceDelta = null;
       return;
     }
 
-    let monthsToKeep = 0;
-    if (this.selectedRange === 'max') {
-      monthsToKeep = Math.min(labels.length, 12); // last year, capped to available data
-    } else {
-      const limitMap: Record<'3m' | '6m', number> = { '3m': 3, '6m': 6 };
-      monthsToKeep = limitMap[this.selectedRange];
+    let series = buildTeamMonthlyPerformanceSeries(this.currentTeamEmployees);
+    if (!series.length) {
+      this.graphPerf = { data: [], layout: {}, config: {} };
+      this.latestPerformance = null;
+      this.performanceDelta = null;
+      return;
     }
 
-    if (monthsToKeep > 0 && labels.length > monthsToKeep) {
-      const startIndex = Math.max(labels.length - monthsToKeep, 0);
-      labels = labels.slice(startIndex);
-      values = values.slice(startIndex);
+    const limitMap: Record<'3m' | '6m' | '1y', number> = {
+      '3m': 3,
+      '6m': 6,
+      '1y': 12,
+    };
+    const monthsToKeep =
+      this.selectedRange === 'max' ? 0 : limitMap[this.selectedRange];
+
+    if (monthsToKeep > 0 && series.length > monthsToKeep) {
+      series = series.slice(Math.max(series.length - monthsToKeep, 0));
     }
+
+    const labels = series.map((point) =>
+      this.formatTeamPerformanceMonth(point.key)
+    );
+    const values = series.map(
+      (point) => Math.round(point.percent * 100) / 100
+    );
 
     this.latestPerformance = values.at(-1) ?? null;
     this.performanceDelta =
@@ -2069,7 +2048,6 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         ? Number((values.at(-1)! - values.at(-2)!).toFixed(1))
         : null;
 
-    /* --- 4. Couleur dynamique --- */
     const colors: string[] = values.map((value) =>
       this.compute.getGradientColor(value)
     );
@@ -2080,7 +2058,6 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       colors[colors.length - 1] = trendIsDown ? '#dc2626' : lastColor;
     }
 
-    /* --- 5. Plotly --- */
     this.graphPerf = {
       data: [
         {
@@ -2103,13 +2080,12 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         },
         yaxis: {
           title: '%',
-          range: [0, 100],
+          rangemode: 'tozero',
           tickmode: 'linear',
           dtick: 10,
           ticksuffix: '%',
           gridcolor: 'rgba(148, 163, 184, 0.25)',
           zerolinecolor: 'rgba(148, 163, 184, 0.35)',
-          fixedrange: true,
         },
         xaxis: {
           title: '',
@@ -2127,39 +2103,22 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     };
   }
 
-  setPerformanceRange(range: '3m' | '6m' | 'max') {
+  private formatTeamPerformanceMonth(key: string): string {
+    const [month, year] = key.split('-').map(Number);
+    if (!Number.isFinite(month) || !Number.isFinite(year)) return key;
+
+    return new Date(year, month - 1, 1).toLocaleDateString('fr-FR', {
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  setPerformanceRange(range: '3m' | '6m' | '1y' | 'max') {
     if (this.selectedRange === range) {
       return;
     }
     this.selectedRange = range;
     this.buildPerformanceGraph();
-  }
-
-  savePerformance(c: Comment) {
-    const val = Number(c.__perfDraft);
-    if (isNaN(val) || val < 0 || val > 100) {
-      alert('La performance doit être comprise entre 0 et 100.');
-      return;
-    }
-
-    // 1. Màj locale
-    c.performance = val;
-    c.__editingPerf = false;
-
-    // 2. Construire un tableau sans les champs UI
-    const cleanReviews: Comment[] = this.reviews.map((r) => {
-      const { __editingPerf, __perfDraft, ...rest } = r;
-      return rest as Comment;
-    });
-
-    // 3. Pousser en base
-    this.auth
-      .updateReviewPerformance(this.reviewId, cleanReviews)
-      .then(() => this.buildPerformanceGraph())
-      .catch((err) => {
-        console.error('Update failed:', err);
-        alert('Impossible d’enregistrer la performance.');
-      });
   }
 
   /** ---------- COMMENT inline-edit helpers ---------- */

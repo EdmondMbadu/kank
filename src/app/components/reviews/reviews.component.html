@@ -258,24 +258,6 @@
             </option>
           </select>
         </div>
-        <!-- Performance mensuelle -->
-        <div *ngIf="auth.isAdmin">
-          <label
-            class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200"
-          >
-            Performance du mois (0-100 %)
-          </label>
-          <input
-            type="number"
-            [(ngModel)]="performanceValue"
-            min="0"
-            max="100"
-            step="1"
-            class="w-full p-2.5 rounded-lg border focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="75"
-          />
-        </div>
-
         <!-- ░░░ AUDIO : ENREGISTRER / STOP / DISCARD ░░░ -->
         <div class="flex flex-wrap gap-4 justify-center">
           <!-- start -->
@@ -1372,15 +1354,6 @@
 
         <p
           *ngIf="
-            previewContext === 'team' && auth.isAdmin && performanceValue > 0
-          "
-          class="mt-3"
-        >
-          <span class="font-semibold">Performance :</span>
-          {{ performanceValue }}%
-        </p>
-        <p
-          *ngIf="
             previewContext === 'individual' &&
             auth.isAdmin &&
             individualPerformanceValue > 0
@@ -1455,7 +1428,7 @@
 
 <!-- ░░░ HISTOGRAMME PERFORMANCE ░░░ -->
 <section
-  *ngIf="isAuthenticated && graphPerf.data.length"
+  *ngIf="isAuthenticated"
   class="py-2 bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900/80"
 >
   <div class="max-w-5xl mx-auto px-4">
@@ -1468,7 +1441,10 @@
             Performance mensuelle de l’équipe
           </h2>
           <p class="text-sm text-slate-500 dark:text-slate-300">
-            Moyenne des pourcentages de performance publiés dans les avis.
+            Même calcul mensuel que la page du manager<span
+              *ngIf="teamPerformanceManagerName"
+              >, {{ teamPerformanceManagerName }}</span
+            >.
           </p>
         </div>
 
@@ -1532,7 +1508,7 @@
               class="px-3 py-1.5 text-xs font-semibold rounded-full transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-0"
               [title]="
                 option.value === 'max'
-                  ? 'Affiche les 12 derniers mois'
+                  ? 'Affiche tout l’historique disponible'
                   : 'Affiche les ' + option.label + ' précédents'
               "
               [ngClass]="
@@ -1548,12 +1524,21 @@
       </div>
 
       <div class="px-3 pb-6 pt-2">
-        <plotly-plot
-          [data]="graphPerf.data"
-          [layout]="graphPerf.layout"
-          [config]="graphPerf.config"
-        >
-        </plotly-plot>
+        <ng-container *ngIf="graphPerf.data.length; else noTeamPerformance">
+          <plotly-plot
+            [data]="graphPerf.data"
+            [layout]="graphPerf.layout"
+            [config]="graphPerf.config"
+          >
+          </plotly-plot>
+        </ng-container>
+        <ng-template #noTeamPerformance>
+          <div
+            class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+          >
+            Aucune donnée mensuelle du manager n’est disponible pour le moment.
+          </div>
+        </ng-template>
       </div>
     </div>
   </div>
@@ -1799,67 +1784,6 @@
               d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l2.119 6.569 6.915.505c.97.071 1.371 1.255.588 1.89l-5.283 4.404 1.58 6.78c.224.964-.819 1.722-1.651 1.18L12 18.404l-5.219 3.751c-.832.542-1.875-.216-1.651-1.18l1.58-6.78-5.283-4.404c-.783-.635-.382-1.819.588-1.89l6.915-.505 2.119-6.569z"
             />
           </svg>
-        </ng-container>
-      </div>
-
-      <!-- ░░░ PERFORMANCE (editable par l’admin) ░░░ -->
-      <div class="flex items-center gap-2 text-sm dark:text-white">
-        <!-- Si la performance existe déjà ET que l’admin n’est pas en mode édition -->
-        <ng-container *ngIf="c.performance !== undefined && !c.__editingPerf">
-          <span class="font-semibold w-44">Performance&nbsp;:</span>
-          <span>{{ c.performance }} %</span>
-
-          <!-- petit crayon pour modifier -->
-          <button
-            *ngIf="auth.isAdmin"
-            (click)="c.__editingPerf = true"
-            class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M16.862 3.487a2 2 0 0 1 2.829 2.83l-9.65 9.65-3.182.353a.5.5 0 0 1-.554-.555l.353-3.182 9.65-9.65z"
-              />
-            </svg>
-          </button>
-        </ng-container>
-
-        <!-- Mode saisie (absence ou édition) -->
-        <ng-container
-          *ngIf="
-            (auth.isAdmin && c.performance === undefined) || c.__editingPerf
-          "
-        >
-          <span class="font-semibold w-44">Performance&nbsp;:</span>
-          <input
-            type="number"
-            min="0"
-            max="100"
-            step="1"
-            [(ngModel)]="c.__perfDraft"
-            class="w-24 p-1 rounded border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-
-          <button
-            (click)="savePerformance(c)"
-            class="ml-2 px-2 py-1 text-xs rounded bg-green-600 hover:bg-green-700 text-white"
-          >
-            Enregistrer
-          </button>
-
-          <button
-            (click)="c.__editingPerf = false"
-            class="ml-1 px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-700"
-          >
-            Annuler
-          </button>
         </ng-container>
       </div>
 

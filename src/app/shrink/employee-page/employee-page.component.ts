@@ -50,6 +50,7 @@ import {
   sumAmountMapThroughDate,
 } from 'src/app/utils/amount-performance.util';
 import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
+import { buildTeamMonthlyPerformanceSeries } from 'src/app/utils/team-monthly-performance.util';
 import {
   attendanceFileFingerprint,
   uploadFirstThenFinalizeAttendance,
@@ -4867,73 +4868,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       ];
     }
 
-    const aggregates = new Map<string, { achieved: number; total: number }>();
-
-    const accumulate = (
-      dailyPoints?: { [key: string]: string },
-      totalPoints?: { [key: string]: string }
-    ) => {
-      if (!dailyPoints) {
-        return;
-      }
-
-      Object.entries(dailyPoints).forEach(([rawDate, rawAchieved]) => {
-        // Parse date - format is "M-D-YYYY"
-        const dateParts = rawDate.split('-');
-        if (dateParts.length < 3) {
-          return;
-        }
-        const month = dateParts[0];
-        const year = dateParts[2];
-        if (!month || !year) {
-          return;
-        }
-
-        // Use parseFloat to match the circle calculation (findTotalForMonth uses parseFloat)
-        const achieved = this.sanitizeNumeric(rawAchieved);
-        const total = this.sanitizeNumeric(totalPoints?.[rawDate]);
-
-        // Match circle calculation exactly: only include valid finite numbers, no fallbacks
-        // This matches how findTotalForMonth and findTotalForMonthAllTotalDailyPointsEmployees work
-        const safeAchieved = Number.isFinite(achieved) ? achieved : 0;
-        const safeTotal = Number.isFinite(total) ? total : 0;
-
-        const key = `${month}-${year}`;
-        const previous = aggregates.get(key) ?? { achieved: 0, total: 0 };
-
-        aggregates.set(key, {
-          achieved: previous.achieved + safeAchieved,
-          total: previous.total + safeTotal,
-        });
-      });
-    };
-
-    if (this.employee?.role === 'Manager') {
-      (this.employees ?? []).forEach((member) =>
-        accumulate(member?.dailyPoints, member?.totalDailyPoints)
-      );
-    } else {
-      accumulate(this.employee?.dailyPoints, this.employee?.totalDailyPoints);
-    }
-
-    const sortedEntries = Array.from(aggregates.entries()).sort(
-      ([keyA], [keyB]) => {
-        const [monthA, yearA] = keyA.split('-').map(Number);
-        const [monthB, yearB] = keyB.split('-').map(Number);
-
-        const dateA = new Date(yearA || 0, (monthA || 1) - 1).getTime();
-        const dateB = new Date(yearB || 0, (monthB || 1) - 1).getTime();
-
-        return dateA - dateB;
-      }
-    );
-
-    const labels = sortedEntries.map(([key]) => key);
-    const values = sortedEntries.map(([_, aggregate]) => {
-      const percentage =
-        aggregate.total > 0 ? (aggregate.achieved / aggregate.total) * 100 : 0;
-      return percentage.toString();
-    });
+    const employees =
+      this.employee?.role === 'Manager'
+        ? this.employees ?? []
+        : [this.employee];
+    const series = buildTeamMonthlyPerformanceSeries(employees);
+    const labels = series.map((point) => point.key);
+    const values = series.map((point) => point.percent.toString());
 
     return [labels, values];
   }
@@ -5542,18 +5483,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.time.monthFrenchNames?.[((monthIndex % 12) + 12) % 12] ??
       month;
     return `${monthName} ${year}`.trim();
-  }
-
-  private sanitizeNumeric(value: unknown): number {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      const normalized = value.replace(/[\s,]/g, '');
-      const parsed = Number.parseFloat(normalized);
-      return Number.isFinite(parsed) ? parsed : NaN;
-    }
-    return NaN;
   }
 
   private rangeValueFromPerformanceKey(key: PerformanceRangeKey): number {
