@@ -1302,7 +1302,7 @@
   class="container mx-auto flex flex-col items-center gap-4 mb-6 px-4"
 >
   <div
-    class="w-full max-w-6xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-5"
+    class="w-full max-w-7xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-5"
   >
     <div
       class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
@@ -1328,20 +1328,20 @@
 
     <div class="mt-4 w-full overflow-x-auto">
       <table
-        class="min-w-[940px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 lg:min-w-full"
+        class="w-full min-w-[940px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
       >
       <thead
         class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
       >
         <tr>
-          <th scope="col" class="px-4 md:px-8 py-3 md:py-4 rounded-s-lg">
+          <th scope="col" class="px-3 lg:px-4 py-3 md:py-4 rounded-s-lg">
             Équipe
           </th>
-          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Attendu semaine</th>
-          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Total semaine</th>
-          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Réserve semaine</th>
-          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Minimum</th>
-          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Avancement</th>
+          <th scope="col" class="px-3 lg:px-4 py-3 md:py-4">Attendu semaine</th>
+          <th scope="col" class="px-3 lg:px-4 py-3 md:py-4">Total semaine</th>
+          <th scope="col" class="px-3 lg:px-4 py-3 md:py-4">Réserve semaine</th>
+          <th scope="col" class="px-3 lg:px-4 py-3 md:py-4">Minimum</th>
+          <th scope="col" class="px-3 lg:px-4 py-3 md:py-4">Avancement</th>
         </tr>
       </thead>
 
@@ -1352,18 +1352,30 @@
         >
           <th
             scope="row"
-            class="px-4 md:px-8 py-4 md:py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap"
+            class="px-3 lg:px-4 py-4 md:py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap"
           >
             {{ i + 1 }}.&nbsp;{{ s.firstName }}
           </th>
 
-          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+          <td class="px-3 lg:px-4 py-4 md:py-5 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 ${{ +s.weeklyExpectedDollar || 0 | number : "1.0-0" }}
               </span>
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +s.weeklyExpectedFc || 0 | number : "1.0-0" }} FC
+              </span>
+              <span class="mt-1 flex items-baseline gap-1.5 whitespace-nowrap leading-4">
+                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Moy./j
+                </span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  ${{ weeklyDailyAverage(s.weeklyExpectedDollar) | number : "1.0-0" }}
+                </span>
+                <span class="text-[10px] text-slate-300 dark:text-slate-600">/</span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {{ weeklyDailyAverage(s.weeklyExpectedFc) | number : "1.0-0" }} FC
+                </span>
               </span>
               <span class="text-[11px] text-slate-500 dark:text-slate-400">
                 somme des attendus journaliers
@@ -1436,7 +1448,7 @@
             </div>
           </td>
 
-          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+          <td class="px-3 lg:px-4 py-4 md:py-5 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
@@ -1444,10 +1456,22 @@
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +s.total || 0 | number : "1.0-0" }} FC
               </span>
+              <span class="mt-1 flex items-baseline gap-1.5 whitespace-nowrap leading-4">
+                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Moy./j
+                </span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  ${{ weeklyDailyAverage(s.totalInDollar) | number : "1.0-0" }}
+                </span>
+                <span class="text-[10px] text-slate-300 dark:text-slate-600">/</span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {{ weeklyDailyAverage(s.total) | number : "1.0-0" }} FC
+                </span>
+              </span>
             </div>
           </td>
 
-          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+          <td class="px-3 lg:px-4 py-4 md:py-5 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-sky-700 dark:text-sky-300">
                 ${{ +s.weeklyReserveDollar || 0 | number : "1.0-0" }}
@@ -1455,10 +1479,22 @@
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +s.weeklyReserveFc || 0 | number : "1.0-0" }} FC
               </span>
+              <span class="mt-1 flex items-baseline gap-1.5 whitespace-nowrap leading-4">
+                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Moy./j
+                </span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  ${{ weeklyDailyAverage(s.weeklyReserveDollar) | number : "1.0-0" }}
+                </span>
+                <span class="text-[10px] text-slate-300 dark:text-slate-600">/</span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {{ weeklyDailyAverage(s.weeklyReserveFc) | number : "1.0-0" }} FC
+                </span>
+              </span>
             </div>
           </td>
 
-          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+          <td class="px-3 lg:px-4 py-4 md:py-5 text-right">
             <div class="flex flex-col items-end">
               <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ +s.weeklyTargetFc || 0 | number : "1.0-0" }} FC
@@ -1477,7 +1513,7 @@
             </div>
           </td>
 
-          <td class="px-4 md:px-8 py-4 md:py-5">
+          <td class="px-3 lg:px-4 py-4 md:py-5">
             <div class="w-44">
               <div class="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold">
                 <span class="text-slate-500 dark:text-slate-400">Paiement</span>
@@ -1545,16 +1581,28 @@
 
       <tfoot>
         <tr class="font-semibold">
-          <th scope="row" class="px-4 md:px-8 py-3 md:py-4 text-base">
+          <th scope="row" class="px-3 lg:px-4 py-3 md:py-4 text-base">
             Total semaine
           </th>
-          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+          <td class="px-3 lg:px-4 py-3 md:py-4 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 ${{ +overallWeeklyExpectedTotalDollar || 0 | number : "1.0-0" }}
               </span>
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +overallWeeklyExpectedTotal || 0 | number : "1.0-0" }} FC
+              </span>
+              <span class="mt-1 flex items-baseline gap-1.5 whitespace-nowrap leading-4">
+                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Moy./j
+                </span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  ${{ weeklyDailyAverage(overallWeeklyExpectedTotalDollar) | number : "1.0-0" }}
+                </span>
+                <span class="text-[10px] text-slate-300 dark:text-slate-600">/</span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {{ weeklyDailyAverage(overallWeeklyExpectedTotal) | number : "1.0-0" }} FC
+                </span>
               </span>
               <div class="mt-3 w-48">
                 <div
@@ -1630,7 +1678,7 @@
               </div>
             </div>
           </td>
-          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+          <td class="px-3 lg:px-4 py-3 md:py-4 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 ${{ +overallWeeklyPaymentTotalDollar || 0 | number : "1.0-0" }}
@@ -1638,9 +1686,21 @@
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +overallWeeklyPaymentTotal || 0 | number : "1.0-0" }} FC
               </span>
+              <span class="mt-1 flex items-baseline gap-1.5 whitespace-nowrap leading-4">
+                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Moy./j
+                </span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  ${{ weeklyDailyAverage(overallWeeklyPaymentTotalDollar) | number : "1.0-0" }}
+                </span>
+                <span class="text-[10px] text-slate-300 dark:text-slate-600">/</span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {{ weeklyDailyAverage(overallWeeklyPaymentTotal) | number : "1.0-0" }} FC
+                </span>
+              </span>
             </div>
           </td>
-          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+          <td class="px-3 lg:px-4 py-3 md:py-4 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-sky-700 dark:text-sky-300">
                 ${{ +overallWeeklyReserveTotalDollar || 0 | number : "1.0-0" }}
@@ -1648,12 +1708,24 @@
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +overallWeeklyReserveTotal || 0 | number : "1.0-0" }} FC
               </span>
+              <span class="mt-1 flex items-baseline gap-1.5 whitespace-nowrap leading-4">
+                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Moy./j
+                </span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  ${{ weeklyDailyAverage(overallWeeklyReserveTotalDollar) | number : "1.0-0" }}
+                </span>
+                <span class="text-[10px] text-slate-300 dark:text-slate-600">/</span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {{ weeklyDailyAverage(overallWeeklyReserveTotal) | number : "1.0-0" }} FC
+                </span>
+              </span>
             </div>
           </td>
-          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+          <td class="px-3 lg:px-4 py-3 md:py-4 text-right">
             <span class="text-slate-400">—</span>
           </td>
-          <td class="px-4 md:px-8 py-3 md:py-4">
+          <td class="px-3 lg:px-4 py-3 md:py-4">
             <span class="text-slate-400">—</span>
           </td>
         </tr>

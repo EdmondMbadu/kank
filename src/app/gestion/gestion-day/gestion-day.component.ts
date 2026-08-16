@@ -401,6 +401,12 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     weeklyProgressMarkers: WeeklyProgressMarker[];
     trackingId: string;
   }> = [];
+  readonly weeklyWorkingDays = 6;
+
+  weeklyDailyAverage(value: number | string | null | undefined): number {
+    return (Number(value) || 0) / this.weeklyWorkingDays;
+  }
+
   overallWeeklyPaymentTotal: number = 0;
   overallWeeklyPaymentTotalDollar: number = 0;
   overallWeeklyReserveTotal: number = 0;
