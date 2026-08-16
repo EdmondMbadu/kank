@@ -12,6 +12,14 @@ npm-debug.log
 firebase-debug.log
 yarn-error.log
 
+# Firebase CLI local state and emulator output
+/.firebase/
+/firebase-debug.log*
+/firestore-debug.log*
+/database-debug.log*
+/storage-debug.log*
+/ui-debug.log*
+
 # IDEs and editors
 .idea/
 .project
