@@ -381,6 +381,47 @@ describe('GestionDayComponent weekly payment history', () => {
     expect(component.overallWeeklyReserveProgressPercent).toBe(50);
     expect(component.overallWeeklyReserveProgressTone).toBe('yellow');
   });
+
+  it('refreshes a late weekly minimum without recalculating weekly amounts', () => {
+    const component = createComponent();
+    const targetResolver = spyOn(
+      component.auth,
+      'resolveWeeklyPaymentTargetForDate'
+    ).and.returnValue(600000);
+    component.weeklyPaymentDateCorrectFormat = '8-7-2026';
+    component.allUsers = [
+      {
+        uid: 'pumbu',
+        firstName: 'Pumbu',
+        dailyReimbursement: {
+          '8-7-2026': '900000',
+        },
+      } as any,
+    ];
+    (component as any).weeklyClientsByUser.set('pumbu', []);
+
+    (component as any).computeWeeklyPaymentTotals();
+
+    expect(component.weeklyPaymentTotals[0].weeklyTargetFc).toBe(600000);
+    expect(component.weeklyPaymentTotals[0].weeklyTargetReached).toBeTrue();
+    const originalTotal = component.weeklyPaymentTotals[0].total;
+    const originalReserve = component.weeklyPaymentTotals[0].weeklyReserveFc;
+    const originalExpected = component.weeklyPaymentTotals[0].weeklyExpectedFc;
+
+    targetResolver.and.returnValue(1200000);
+    (component as any).refreshWeeklyPaymentTargetCells();
+
+    expect(component.weeklyPaymentTotals[0]).toEqual(
+      jasmine.objectContaining({
+        weeklyTargetFc: 1200000,
+        weeklyTargetReached: false,
+        weeklyProgressPercent: 75,
+        total: originalTotal,
+        weeklyReserveFc: originalReserve,
+        weeklyExpectedFc: originalExpected,
+      })
+    );
+  });
 });
 
 describe('GestionDayComponent upcoming request summary', () => {

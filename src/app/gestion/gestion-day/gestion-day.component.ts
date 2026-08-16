@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { Management } from 'src/app/models/management';
 import { AuthService } from 'src/app/services/auth.service';
@@ -83,6 +83,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   reserveRevealTimeInput = '22:30';
   isSavingReserveRevealTime = false;
   private darkModeObserver?: MutationObserver;
+  private weeklyPaymentTargetSubscription?: Subscription;
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -93,6 +94,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   ) {}
   ngOnInit(): void {
     this.observeDarkModeChanges();
+    this.weeklyPaymentTargetSubscription =
+      this.auth.weeklyPaymentTarget$.subscribe(() => {
+        this.refreshWeeklyPaymentTargetCells();
+      });
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data?.[0] || {};
       this.reserveRevealTimeInput = this.normalizeRevealTime(
@@ -117,6 +122,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     });
   }
   ngOnDestroy(): void {
+    this.weeklyPaymentTargetSubscription?.unsubscribe();
     this.darkModeObserver?.disconnect();
   }
   percentage: string = '0';
@@ -2015,6 +2021,54 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.overallWeeklyReserveProgressTone = this.resolveExpectedProgressTone(
       this.overallWeeklyReserveProgressPercent
     );
+  }
+
+  /**
+   * Refresh only the fields derived from the configured weekly minimum.
+   * This handles the asynchronous target hydration after a hard refresh
+   * without repeating payment, reserve, client, or currency calculations.
+   */
+  private refreshWeeklyPaymentTargetCells(): void {
+    if (
+      !this.auth.isAdmin ||
+      !this.weeklyPaymentDateCorrectFormat ||
+      this.weeklyPaymentTotals.length === 0
+    ) {
+      return;
+    }
+
+    const usersById = new Map(
+      (this.allUsers || [])
+        .filter((user) => !!user.uid)
+        .map((user) => [user.uid as string, user] as const)
+    );
+
+    this.weeklyPaymentTotals = this.weeklyPaymentTotals.map((row) => {
+      const user = usersById.get(row.trackingId);
+      if (!user) return row;
+
+      const weeklyTargetFc = this.resolveWeeklyTargetFcForUser(
+        user,
+        this.weeklyPaymentDateCorrectFormat
+      );
+      const weeklyProgressState = this.resolveWeeklyProgressState(
+        row.total,
+        weeklyTargetFc
+      );
+
+      return {
+        ...row,
+        weeklyTargetFc,
+        weeklyTargetReached: row.total >= weeklyTargetFc,
+        weeklyProgressPercent:
+          weeklyTargetFc === 0
+            ? 0
+            : Math.min(100, (row.total / weeklyTargetFc) * 100),
+        weeklyProgressTone: weeklyProgressState.tone,
+        weeklyProgressStatusLabel: weeklyProgressState.statusLabel,
+        weeklyProgressMarkers: this.buildWeeklyProgressMarkers(weeklyTargetFc),
+      };
+    });
   }
 
   private computeWeeklyPaymentTotalForUser(user: User, dateKey: string): number {
