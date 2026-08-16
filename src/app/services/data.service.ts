@@ -30,6 +30,8 @@ import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { Router } from '@angular/router';
 import { recoverOrRetryClientPhotoUpload } from '../utils/client-photo-recovery.util';
 import { isActivelyFollowedClient } from '../utils/active-followed-client.util';
+import { coerceToNumber } from '../utils/number-utils';
+import { isLoanBudgetExempt } from '../utils/pending-loan-budget.util';
 import firebase from 'firebase/compat/app'; // ① NEW
 import 'firebase/compat/firestore'; // ②
 
@@ -47,6 +49,22 @@ export class DataService {
     private compute: ComputationService,
     private router: Router
   ) {}
+
+  private finiteNumberOrZero(value: unknown): number {
+    return coerceToNumber(value) ?? 0;
+  }
+
+  private budgetedRequestAmount(client: Client): number {
+    if (isLoanBudgetExempt(client)) {
+      return 0;
+    }
+
+    const amount = coerceToNumber(client.requestAmount);
+    if (amount === null || amount < 0) {
+      throw new Error('Invalid pending loan request amount');
+    }
+    return amount;
+  }
 
   private removeUndefinedFields<T extends Record<string, any>>(
     data: T
@@ -3353,6 +3371,14 @@ export class DataService {
     let totalFees: number =
       Number(client.applicationFee) + Number(client.membershipFee);
     let Total = this.computeDailyFeesReturn(date, totalFees.toString());
+    const requestType = client.requestType?.toLowerCase();
+    const amountToRelease = isLoanBudgetExempt(client)
+      ? 0
+      : this.finiteNumberOrZero(
+          requestType === 'lending'
+            ? client.requestAmount
+            : client.previouslyRequestedAmount
+        );
     const data = {
       moneyInHands: (
         Number(this.auth.currentUser.moneyInHands) - total
@@ -3368,8 +3394,12 @@ export class DataService {
         [date]: `${save}`,
       },
       monthBudgetPending: (
-        Number(this.auth.currentUser.monthBudgetPending) -
-        Number(client.previouslyRequestedAmount)
+        Math.max(
+          0,
+          this.finiteNumberOrZero(
+            this.auth.currentUser.monthBudgetPending
+          ) - amountToRelease
+        )
       ).toString(),
       dailyFeesReturns: {
         [date]: `${Total}`,
@@ -3463,11 +3493,14 @@ export class DataService {
       },
       // ADDED CHECK FOR CREDIT SCORE >= 70
       monthBudgetPending:
-        Number(client.creditScore) >= 70
-          ? this.auth.currentUser.monthBudgetPending // skip updating
+        isLoanBudgetExempt(client)
+          ? this.finiteNumberOrZero(
+              this.auth.currentUser.monthBudgetPending
+            ).toString() // best clients do not change the budget
           : (
-              Number(this.auth.currentUser.monthBudgetPending) +
-              Number(client.requestAmount)
+              this.finiteNumberOrZero(
+                this.auth.currentUser.monthBudgetPending
+              ) + this.budgetedRequestAmount(client)
             ).toString(),
 
       feesData: { [date]: `${dailyFees}` },
@@ -3487,7 +3520,7 @@ export class DataService {
       const snap = await tx.get(doc.ref); // native DocumentReference
       const d = snap.data() as User;
 
-      const toNum = (s?: string) => Number(s || 0);
+      const toNum = (value: unknown) => this.finiteNumberOrZero(value);
 
       const feesInc =
         Number(client.membershipFee) + Number(client.applicationFee);
@@ -3497,7 +3530,7 @@ export class DataService {
       const newMoneyInHands = toNum(d.moneyInHands) + feesInc + addedSavings;
       const newMonthBudgetPending =
         toNum(d.monthBudgetPending) +
-        (Number(client.creditScore) >= 70 ? 0 : Number(client.requestAmount));
+        this.budgetedRequestAmount(client);
 
       /* helper to bump nested‑map strings */
       const bump = (
@@ -3528,7 +3561,8 @@ export class DataService {
   updateUserInfoForRegisterClientRequestUpdate(
     client: Client,
     savings: string,
-    date: string
+    date: string,
+    previousRequestAmount?: unknown
   ) {
     let dailyFees: any = this.computeDailyFees(client, date);
     let save: any = this.computeDailySaving(date, savings);
@@ -3543,6 +3577,18 @@ export class DataService {
       dailyMoneyRequests: {
         [client.requestDate!]: `${request}`,
       },
+      monthBudgetPending: isLoanBudgetExempt(client)
+        ? this.finiteNumberOrZero(
+            this.auth.currentUser.monthBudgetPending
+          ).toString()
+        : Math.max(
+            0,
+            this.finiteNumberOrZero(
+              this.auth.currentUser.monthBudgetPending
+            ) -
+              this.finiteNumberOrZero(previousRequestAmount) +
+              this.budgetedRequestAmount(client)
+          ).toString(),
     };
     return userRef.set(data, { merge: true });
   }
@@ -3577,11 +3623,17 @@ export class DataService {
             ).toString(),
       // ADDED CHECK FOR CREDIT SCORE >= 70
       monthBudgetPending:
-        Number(client.creditScore) >= 70
-          ? this.auth.currentUser.monthBudgetPending // skip updating
+        isLoanBudgetExempt(client)
+          ? this.finiteNumberOrZero(
+              this.auth.currentUser.monthBudgetPending
+            ).toString() // best clients do not change the budget
           : (
-              Number(this.auth.currentUser.monthBudgetPending) -
-              Number(client.requestAmount)
+              Math.max(
+                0,
+                this.finiteNumberOrZero(
+                  this.auth.currentUser.monthBudgetPending
+                ) - this.budgetedRequestAmount(client)
+              )
             ).toString(),
     };
     return userRef.set(data, { merge: true });
@@ -3723,8 +3775,8 @@ export class DataService {
         [client.requestDate!]: `${request}`,
       },
       monthBudgetPending: (
-        Number(this.auth.currentUser.monthBudgetPending) +
-        Number(client.requestAmount)
+        this.finiteNumberOrZero(this.auth.currentUser.monthBudgetPending) +
+        this.budgetedRequestAmount(client)
       ).toString(),
 
       // dailyLending: { [date]: `${dailyLending}` },

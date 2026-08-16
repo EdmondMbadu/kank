@@ -7,6 +7,7 @@ import { TimeService } from 'src/app/services/time.service';
 import { Client } from 'src/app/models/client';
 import { LocationCoordinates } from 'src/app/models/user';
 import { coerceToNumber } from 'src/app/utils/number-utils';
+import { calculatePendingLoanBudget } from 'src/app/utils/pending-loan-budget.util';
 import { of, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import {
@@ -134,7 +135,7 @@ export class TrackingComponent implements OnDestroy {
     'Epargne Clients',
     'Argent en Main',
     'Budget Emprunts Du Mois',
-    'Budget Emprunts Du Mois En Cours',
+    'Budget Réservé Aux Emprunts En Cours',
     'Depenses',
 
     'Reserve',
@@ -162,6 +163,7 @@ export class TrackingComponent implements OnDestroy {
   monthBudget: string = '';
   amountBudget: string = '';
   amountBudgetPending: string = '';
+  pendingLoanBudgetInvalidClientNames: string[] = [];
   summaryContent: number[] = [];
   moneyInHands: string = '';
   maxNumberOfDaysToLend: Number = 0;
@@ -196,10 +198,10 @@ export class TrackingComponent implements OnDestroy {
       user.objectifPerformance === '' || user.objectifPerformance === undefined
         ? '0'
         : user.objectifPerformance!;
-    this.amountBudgetPending =
-      user.monthBudgetPending === '' || user.monthBudgetPending === undefined
-        ? '0'
-        : user.monthBudgetPending!;
+    const pendingLoanBudget = calculatePendingLoanBudget(this.clients);
+    this.amountBudgetPending = pendingLoanBudget.amount.toString();
+    this.pendingLoanBudgetInvalidClientNames =
+      pendingLoanBudget.invalidRequests.map((request) => request.clientName);
     this.housePayment = user.housePayment ? user.housePayment : '0';
     this.moneyInHands = user.moneyInHands ? user.moneyInHands : '0';
     this.teamCode = user.teamCode ? user.teamCode : '';
@@ -214,7 +216,7 @@ export class TrackingComponent implements OnDestroy {
     const moneyInHands = coerceToNumber(user.moneyInHands);
     const enMain = (moneyInHands ?? 0) + (cardsMoney ?? 0);
     const monthBudgetNumber = coerceToNumber(this.monthBudget);
-    const monthBudgetPendingNumber = coerceToNumber(this.amountBudgetPending);
+    const monthBudgetPendingNumber = pendingLoanBudget.amount;
     const expensesAmount = coerceToNumber(user.expensesAmount);
     const reserveDollar = coerceToNumber(user.reserveAmountDollar);
     const reserveCdf = coerceToNumber(
@@ -274,6 +276,7 @@ export class TrackingComponent implements OnDestroy {
     this.monthBudget = '0';
     this.objectifPerformance = '0';
     this.amountBudgetPending = '0';
+    this.pendingLoanBudgetInvalidClientNames = [];
     this.housePayment = '0';
     this.moneyInHands = '0';
     this.teamCode = '';

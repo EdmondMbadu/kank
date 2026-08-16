@@ -22,6 +22,10 @@ import {
   ResolvedMoneyAvailabilityPolicy,
 } from 'src/app/utils/money-availability.util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
+import {
+  calculateLoanBudgetAvailability,
+  isLoanBudgetExempt,
+} from 'src/app/utils/pending-loan-budget.util';
 
 @Component({
   selector: 'app-register-client',
@@ -44,6 +48,7 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
   ) {}
   currentClients: Client[] = [];
   allClients: Client[] = [];
+  private clientsLoaded = false;
   private readonly FIXED_APPLICATION_FEE = '5000'; // 5 000 FC
   private readonly FIXED_MEMBERSHIP_FEE = '10000'; // 0 FC
 
@@ -95,8 +100,9 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
 
     this.auth.getAllClients().subscribe((data: any) => {
       // get current clients directly
-      this.allClients = data;
-      this.currentClients = this.data.findClientsWithDebts(data);
+      this.allClients = Array.isArray(data) ? data.filter(Boolean) : [];
+      this.clientsLoaded = Array.isArray(data);
+      this.currentClients = this.data.findClientsWithDebts(this.allClients);
       this.numberOfCurrentClients = this.currentClients.length;
     });
 
@@ -327,17 +333,7 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
         'Un client portant exactement le même prénom, post‑nom et nom existe déjà.'
       );
       return;
-    } else if (
-      normalizedLoanAmount >
-      Number(this.auth.currentUser.monthBudget) -
-        Number(this.auth.currentUser.monthBudgetPending)
-    ) {
-      let diff =
-        Number(this.auth.currentUser.monthBudget) -
-        Number(this.auth.currentUser.monthBudgetPending);
-      alert(
-        `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${diff} FC`
-      );
+    } else if (!this.validateLoanBudget(normalizedLoanAmount)) {
       return;
     } else if (
       Number(this.applicationFee) < 5000 &&
@@ -393,6 +389,14 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const normalizedLoanAmount = coerceToNumber(this.loanAmount);
+    if (
+      normalizedLoanAmount === null ||
+      !this.validateLoanBudget(normalizedLoanAmount)
+    ) {
+      return;
+    }
+
     this.refreshMoneyAvailability();
     this.toggle('isLoading');
 
@@ -418,6 +422,53 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
       this.isLoading = false;
       this.resetFields(); // safe to reset now
     }
+  }
+
+  private validateLoanBudget(requestedAmount: number): boolean {
+    const registrationClient = Object.assign(new Client(), {
+      creditScore: this.registrationCreditScore.toString(),
+    });
+    if (isLoanBudgetExempt(registrationClient)) {
+      return true;
+    }
+
+    if (!this.clientsLoaded) {
+      alert(
+        'Le budget des emprunts est encore en cours de chargement. Réessayez dans un instant.'
+      );
+      return false;
+    }
+
+    const budget = calculateLoanBudgetAvailability(
+      this.auth.currentUser?.monthBudget,
+      this.allClients
+    );
+    if (budget.monthlyBudget === null || budget.available === null) {
+      alert(
+        "Le budget mensuel des emprunts est invalide. L'enregistrement est bloqué pour éviter un dépassement. Veuillez corriger le budget dans Trésorerie."
+      );
+      return false;
+    }
+
+    if (budget.invalidRequests.length > 0) {
+      const firstClient = budget.invalidRequests[0].clientName;
+      alert(
+        `Impossible de vérifier le budget : le montant demandé de ${firstClient} est invalide. Corrigez cette demande avant de continuer.`
+      );
+      return false;
+    }
+
+    if (requestedAmount > budget.available) {
+      alert(
+        `Vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${Math.max(
+          budget.available,
+          0
+        ).toLocaleString('fr-FR')} FC.`
+      );
+      return false;
+    }
+
+    return true;
   }
   displayApplicationFeeOtherAmount() {
     if (this.applicationFee === 'Autre Montant') {

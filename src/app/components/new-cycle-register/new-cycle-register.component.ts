@@ -24,6 +24,10 @@ import {
   ResolvedMoneyAvailabilityPolicy,
 } from 'src/app/utils/money-availability.util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
+import {
+  calculateLoanBudgetAvailability,
+  isLoanBudgetExempt,
+} from 'src/app/utils/pending-loan-budget.util';
 @Component({
   selector: 'app-new-cycle-register',
   templateUrl: './new-cycle-register.component.html',
@@ -56,6 +60,7 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
   lastPaymentDate: Date | null = null;
   nextEligibleCreditDate: Date | null = null;
   allClients: Client[] = [];
+  private clientsLoaded = false;
   private readonly FIXED_APPLICATION_FEE = '5000'; // 5 000 FC
   private readonly FIXED_MEMBERSHIP_FEE = '0'; // 0 FC
 
@@ -161,8 +166,10 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
 
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.allClients = data;
-      this.client = data[Number(this.id)];
+      const clients = Array.isArray(data) ? data : [];
+      this.allClients = clients.filter(Boolean);
+      this.clientsLoaded = Array.isArray(data);
+      this.client = clients[Number(this.id)];
       this.homePictureUrl = this.client?.homePicture?.downloadURL || '';
       this.originalPhoneNumberAtLoad = this.client?.phoneNumber || '';
       this.originalHomePictureAtLoad = this.client?.homePicture
@@ -176,7 +183,9 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
         this.client.previousHomePictures = [];
       }
       this.updateAge(); // calcule l’âge si birthDate existe déjà
-      this.numberOfCurrentClients = this.data.findClientsWithDebts(data).length; // clients with debt number
+      this.numberOfCurrentClients = this.data.findClientsWithDebts(
+        this.allClients
+      ).length; // clients with debt number
       this.middleName =
         this.client.middleName !== undefined ? this.client.middleName : '';
       this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
@@ -385,18 +394,7 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
         'Un client possédant exactement le même prénom, nom et post‑nom existe déjà.'
       );
       return;
-    } else if (
-      normalizedLoanAmount >
-        Number(this.auth.currentUser.monthBudget) -
-          Number(this.auth.currentUser.monthBudgetPending) &&
-      Number(this.client.creditScore) < 70
-    ) {
-      let diff =
-        Number(this.auth.currentUser.monthBudget) -
-        Number(this.auth.currentUser.monthBudgetPending);
-      alert(
-        `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${diff} FC`
-      );
+    } else if (!this.validateLoanBudget(normalizedLoanAmount)) {
       return;
     } else if (this.maxLoanAmount < normalizedLoanAmount) {
       if (this.shouldShowCreditEligibilityDate) {
@@ -622,6 +620,14 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const normalizedLoanAmount = coerceToNumber(this.loanAmount);
+    if (
+      normalizedLoanAmount === null ||
+      !this.validateLoanBudget(normalizedLoanAmount)
+    ) {
+      return;
+    }
+
     this.syncMoneyAvailability();
 
     this.toggle('isLoading');
@@ -649,6 +655,51 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
       this.toggle('isLoading');
       this.resetFields();
     }
+  }
+
+  private validateLoanBudget(requestedAmount: number): boolean {
+    // Best clients deliberately remain outside the team budget calculation.
+    if (isLoanBudgetExempt(this.client)) {
+      return true;
+    }
+
+    if (!this.clientsLoaded) {
+      alert(
+        'Le budget des emprunts est encore en cours de chargement. Réessayez dans un instant.'
+      );
+      return false;
+    }
+
+    const budget = calculateLoanBudgetAvailability(
+      this.auth.currentUser?.monthBudget,
+      this.allClients
+    );
+    if (budget.monthlyBudget === null || budget.available === null) {
+      alert(
+        "Le budget mensuel des emprunts est invalide. L'enregistrement est bloqué pour éviter un dépassement. Veuillez corriger le budget dans Trésorerie."
+      );
+      return false;
+    }
+
+    if (budget.invalidRequests.length > 0) {
+      const firstClient = budget.invalidRequests[0].clientName;
+      alert(
+        `Impossible de vérifier le budget : le montant demandé de ${firstClient} est invalide. Corrigez cette demande avant de continuer.`
+      );
+      return false;
+    }
+
+    if (requestedAmount > budget.available) {
+      alert(
+        `Vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${Math.max(
+          budget.available,
+          0
+        ).toLocaleString('fr-FR')} FC.`
+      );
+      return false;
+    }
+
+    return true;
   }
   toggle(property: 'isLoading' | 'showConfirmation') {
     this[property] = !this[property];

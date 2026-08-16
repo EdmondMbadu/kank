@@ -63,6 +63,13 @@
             <p class="text-sm text-slate-500 dark:text-slate-400">
               ≈ $ {{ valuesConvertedToDollars[i] | number:'1.0-0' }}
             </p>
+            <p
+              *ngIf="i === 3 && pendingLoanBudgetInvalidClientNames.length"
+              class="text-xs font-semibold text-rose-600 dark:text-rose-300"
+            >
+              Vérification requise pour
+              {{ pendingLoanBudgetInvalidClientNames[0] }}
+            </p>
           </div>
         </div>
       </div>
@@ -410,27 +417,27 @@
       </button>
     </div>
 
-    <!-- Budget en attente -->
+    <!-- Budget réservé aux demandes en cours -->
     <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
       <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
-        Budget en Attente
+        Budget réservé aux emprunts en cours
       </h3>
       <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
-        Valeur actuelle&nbsp;: <strong>{{ amountBudgetPending }}</strong>
+        Valeur calculée&nbsp;:
+        <strong>{{ amountBudgetPending | number:'1.0-0' }} FC</strong>
       </p>
-      <input
-        [(ngModel)]="amountBudgetPending"
-        type="number"
-        placeholder="Entrez le budget en attente"
-        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
-               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
-               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-      <button
-        (click)="setUserField('monthBudgetPending', amountBudgetPending)"
-        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
-               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
-        Confirmer
-      </button>
+      <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
+        Somme automatique des demandes de prêt en attente. Les clients ayant
+        un score de crédit de 70 ou plus restent exclus de ce budget.
+      </p>
+      <p
+        *ngIf="pendingLoanBudgetInvalidClientNames.length"
+        class="mt-3 rounded-lg bg-rose-50 p-3 text-xs font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-200"
+      >
+        Montant demandé invalide pour
+        {{ pendingLoanBudgetInvalidClientNames.join(', ') }}. Les nouveaux
+        prêts soumis au budget sont bloqués jusqu'à correction.
+      </p>
     </div>
 
     <!-- Montant du Loyer -->

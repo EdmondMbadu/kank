@@ -176,7 +176,8 @@ export class RequestUpdateComponent implements OnInit {
           .updateUserInfoForRegisterClientRequestUpdate(
             this.client,
             this.savings,
-            date
+            date,
+            this.originalLoanAmount
           )
           .then(
             (res: any) => {

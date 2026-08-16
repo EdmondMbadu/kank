@@ -1,6 +1,108 @@
+import { Client } from '../models/client';
 import { DataService } from './data.service';
 
 describe('DataService', () => {
+  it('never writes NaN when cancelling a normal pending loan request', async () => {
+    const userRef = {
+      set: jasmine.createSpy('set').and.resolveTo(undefined),
+    };
+    const afs = {
+      doc: jasmine.createSpy('doc').and.returnValue(userRef),
+    };
+    const auth = {
+      currentUser: {
+        uid: 'owner-1',
+        monthBudgetPending: 'NaN',
+        moneyInHands: '200000',
+        clientsSavings: '50000',
+        fees: '15000',
+        dailySavingReturns: {},
+        dailyFeesReturns: {},
+      },
+    };
+    const service = new DataService(
+      afs as any,
+      {} as any,
+      auth as any,
+      {
+        todaysDateMonthDayYear: () => '8-16-2026',
+        todaysDate: () => '8-16-2026-10-00-00',
+        getTomorrowsDateMonthDayYear: () => '8-17-2026',
+      } as any,
+      {
+        computeDailySavingReturn: () => '0',
+        computeDailyFeesReturn: () => '0',
+      } as any,
+      {} as any
+    );
+    const pendingClient = Object.assign(new Client(), {
+      requestStatus: 'pending',
+      requestType: 'lending',
+      requestAmount: '100000',
+      creditScore: '50',
+      applicationFee: '5000',
+      membershipFee: '10000',
+      savings: '30000',
+    });
+
+    await service.UpdateUserInfoForCancelingdRegisteredClient(pendingClient);
+
+    const writtenData = userRef.set.calls.mostRecent().args[0];
+    expect(writtenData.monthBudgetPending).toBe('0');
+    expect(writtenData.monthBudgetPending).not.toBe('NaN');
+  });
+
+  it('keeps a score-70 request from changing the legacy pending counter', async () => {
+    const userRef = {
+      set: jasmine.createSpy('set').and.resolveTo(undefined),
+    };
+    const afs = {
+      doc: jasmine.createSpy('doc').and.returnValue(userRef),
+    };
+    const auth = {
+      currentUser: {
+        uid: 'owner-1',
+        monthBudgetPending: '250000',
+        numberOfClients: '10',
+        clientsSavings: '0',
+        fees: '0',
+        moneyInHands: '0',
+        dailySaving: {},
+        dailyMoneyRequests: {},
+        feesData: {},
+      },
+    };
+    const service = new DataService(
+      afs as any,
+      {} as any,
+      auth as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-17-2026',
+        todaysDate: () => '8-16-2026-10-00-00',
+      } as any,
+      {
+        computeDailyFees: () => '0',
+        computeDailySaving: () => '0',
+        computeDailyMoneyRequests: () => '0',
+      } as any,
+      {} as any
+    );
+    const bestClient = Object.assign(new Client(), {
+      requestAmount: '500000',
+      requestDate: '8-20-2026',
+      creditScore: '70',
+      savings: '0',
+      applicationFee: '0',
+      membershipFee: '0',
+    });
+
+    await service.updateUserInfoForRegisterClient(bestClient, '8-16-2026');
+
+    expect(
+      userRef.set.calls.mostRecent().args[0].monthBudgetPending
+    ).toBe('250000');
+  });
+
   it('appends a gallery picture to the selected site owner without replacing the gallery', async () => {
     const clientRef = {
       update: jasmine.createSpy('update').and.resolveTo(undefined),

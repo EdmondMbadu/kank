@@ -487,6 +487,51 @@ describe('NewCycleRegisterComponent', () => {
     expect(component.loanAmount).toBe('50000');
   });
 
+  it('keeps score 70 and higher outside the budget guard', () => {
+    populateValidSubmissionFields('50 000');
+    component.client.creditScore = '70';
+    const auth = TestBed.inject(AuthService) as any;
+    auth.currentUser.monthBudget = 'NaN';
+    auth.currentUser.monthBudgetPending = 'NaN';
+    (component as any).clientsLoaded = false;
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.registerClientNewDebtCycle();
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(proceedSpy).toHaveBeenCalled();
+  });
+
+  it('uses active client requests for a score below 70 even when the legacy total is NaN', () => {
+    populateValidSubmissionFields('50 000');
+    component.client.creditScore = '60';
+    const auth = TestBed.inject(AuthService) as any;
+    auth.currentUser.monthBudget = '100000';
+    auth.currentUser.monthBudgetPending = 'NaN';
+    component.allClients = [
+      component.client,
+      Object.assign(new Client(), {
+        firstName: 'Marie',
+        lastName: 'Kanku',
+        requestStatus: 'pending',
+        requestType: 'lending',
+        requestAmount: '75000',
+        creditScore: '65',
+      }),
+    ];
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.registerClientNewDebtCycle();
+
+    expect(proceedSpy).not.toHaveBeenCalled();
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain(
+      'budget restant'
+    );
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain('25');
+  });
+
   it('defensively replaces a changed date with the exact policy date during submission', () => {
     populateValidSubmissionFields('50 000');
     component.requestDate = '2000-01-01';

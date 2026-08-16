@@ -412,6 +412,57 @@ describe('RegisterClientComponent', () => {
     expect(component.loanAmount).toBe('50000');
   });
 
+  it('uses active client requests when the legacy pending budget is NaN', () => {
+    populateValidSubmissionFields('150 000');
+    const auth = TestBed.inject(AuthService) as any;
+    auth.currentUser.monthBudget = '250000';
+    auth.currentUser.monthBudgetPending = 'NaN';
+    component.allClients = [
+      Object.assign(new Client(), {
+        uid: 'pending-client',
+        firstName: 'Paul',
+        lastName: 'Mbuyi',
+        requestStatus: 'pending',
+        requestType: 'lending',
+        requestAmount: '125000',
+        creditScore: '60',
+      }),
+    ];
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.addNewClient();
+
+    expect(proceedSpy).not.toHaveBeenCalled();
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain(
+      'budget restant'
+    );
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain('125');
+  });
+
+  it('does not let a malformed active request silently become zero', () => {
+    populateValidSubmissionFields('50 000');
+    component.allClients = [
+      Object.assign(new Client(), {
+        firstName: 'Client',
+        lastName: 'Invalide',
+        requestStatus: 'pending',
+        requestType: 'lending',
+        requestAmount: 'NaN',
+        creditScore: '55',
+      }),
+    ];
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.addNewClient();
+
+    expect(proceedSpy).not.toHaveBeenCalled();
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain(
+      'Client Invalide'
+    );
+  });
+
   it('defensively replaces a changed date with the exact policy date during submission', () => {
     populateValidSubmissionFields('50 000');
     component.requestDate = '2000-01-01';

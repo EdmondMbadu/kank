@@ -1227,6 +1227,7 @@ export class RegiserPortalComponent {
     const tomorrow = this.time.getTomorrowsDateMonthDayYear(); // 05/29/2025
 
     c.rejectionReturnAmount = amount.toString();
+    c.previouslyRequestedAmount = c.requestAmount;
     c.requestAmount = c.rejectionReturnAmount;
     c.requestStatus = 'pending';
     c.requestType = 'rejection';

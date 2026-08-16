@@ -44,10 +44,10 @@ service firebase.storage {
 
     // Preserve the application's existing authenticated staff upload model,
     // while excluding the admin-managed investigation document namespace.
-    match /{allPaths=**} {
+    match /{topLevel}/{allPaths=**} {
       allow read, write: if signedIn() &&
         !isPortalClient() &&
-        !allPaths.matches('investigation-documents/.*');
+        topLevel != 'investigation-documents';
     }
   }
 }
