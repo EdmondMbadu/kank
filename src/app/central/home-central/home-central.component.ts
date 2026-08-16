@@ -160,6 +160,12 @@ type PaymentReminderLogDocument = {
   quitteSucceeded?: number;
   excludedQuitte?: number;
   skipped?: number;
+  duplicatePrevented?: number;
+  billableSegments?: number;
+  oneSegmentSent?: number;
+  multiSegmentSent?: number;
+  providerCostAmount?: number;
+  providerCostCurrency?: string | null;
   sentAtDateKey?: string;
   sentAtMs?: number;
   sentAt?: any;
@@ -181,6 +187,12 @@ type PaymentReminderSummaryStats = {
   skipped: number;
   quittePlanned: number;
   quitteSent: number;
+  duplicatePrevented: number;
+  billableSegments: number;
+  oneSegmentSent: number;
+  multiSegmentSent: number;
+  providerCostAmount: number;
+  providerCostCurrency: string | null;
 };
 
 type PaymentReminderSendMode = 'all' | 'excludeQuitte';
@@ -2647,6 +2659,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
           firstName: client.firstName,
           lastName: client.lastName,
           phoneNumber: client.phoneNumber,
+          clientId: client.uid || client.trackingId || null,
+          ownerUid: client.locationOwnerId || null,
           isQuitte: this.isClientQuitte(client),
           vitalStatus: client.vitalStatus || null,
           minPayment,
@@ -2665,7 +2679,17 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       next: (result: any) => {
         console.log('Reminder function result:', result);
         this.loadPaymentReminderLogsForDate();
-        alert('Reminders sent successfully!');
+        const response = result?.data ?? result ?? {};
+        const sent = Number(response.successCount) || 0;
+        const duplicates = Number(response.duplicatePrevented) || 0;
+        const failed = Number(response.failCount) || 0;
+        alert(
+          `${sent} rappel(s) envoyé(s).` +
+            (duplicates
+              ? ` ${duplicates} doublon(s) bloqué(s), sans nouvel envoi.`
+              : '') +
+            (failed ? ` ${failed} échec(s).` : '')
+        );
       },
       error: (err: any) => {
         console.error('Error calling reminder function', err);
@@ -5575,7 +5599,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
   }
 
   get paymentReminderSummaryStats(): PaymentReminderSummaryStats {
-    return this.paymentReminderLogs.reduce(
+    return this.paymentReminderLogs.reduce<PaymentReminderSummaryStats>(
       (summary, log) => {
         const plannedTotal = Number(log.plannedTotal) || Number(log.total) || 0;
         const excludedQuitte = Number(log.excludedQuitte) || 0;
@@ -5586,6 +5610,19 @@ Merci pona confiance na FONDATION GERVAIS.`;
         summary.skipped += Number(log.skipped) || 0;
         summary.quittePlanned += (Number(log.quitteTotal) || 0) + excludedQuitte;
         summary.quitteSent += Number(log.quitteSucceeded) || 0;
+        summary.duplicatePrevented += Number(log.duplicatePrevented) || 0;
+        summary.billableSegments += Number(log.billableSegments) || 0;
+        summary.oneSegmentSent += Number(log.oneSegmentSent) || 0;
+        summary.multiSegmentSent += Number(log.multiSegmentSent) || 0;
+        const costCurrency = log.providerCostCurrency || null;
+        if (
+          costCurrency &&
+          (!summary.providerCostCurrency ||
+            summary.providerCostCurrency === costCurrency)
+        ) {
+          summary.providerCostCurrency = costCurrency;
+          summary.providerCostAmount += Number(log.providerCostAmount) || 0;
+        }
         return summary;
       },
       {
@@ -5596,6 +5633,12 @@ Merci pona confiance na FONDATION GERVAIS.`;
         skipped: 0,
         quittePlanned: 0,
         quitteSent: 0,
+        duplicatePrevented: 0,
+        billableSegments: 0,
+        oneSegmentSent: 0,
+        multiSegmentSent: 0,
+        providerCostAmount: 0,
+        providerCostCurrency: null,
       }
     );
   }
@@ -5915,6 +5958,12 @@ Merci pona confiance na FONDATION GERVAIS.`;
       quitteSucceeded: Number(safe.quitteSucceeded) || 0,
       excludedQuitte: Number(safe.excludedQuitte) || 0,
       skipped: Number(safe.skipped) || 0,
+      duplicatePrevented: Number(safe.duplicatePrevented) || 0,
+      billableSegments: Number(safe.billableSegments) || 0,
+      oneSegmentSent: Number(safe.oneSegmentSent) || 0,
+      multiSegmentSent: Number(safe.multiSegmentSent) || 0,
+      providerCostAmount: Number(safe.providerCostAmount) || 0,
+      providerCostCurrency: safe.providerCostCurrency || null,
       sentAtMs,
       sentAtDate: new Date(sentAtMs),
       sourceLabel:

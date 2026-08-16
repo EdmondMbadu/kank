@@ -1998,7 +1998,7 @@
               {{ paymentReminderLogsWarning }}
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-6">
               <div
                 class="flex min-h-[86px] flex-col items-center justify-center rounded-xl bg-white px-3 py-3 text-center shadow-sm dark:bg-slate-900/80"
               >
@@ -2043,6 +2043,36 @@
                   {{ paymentReminderMetric(paymentReminderSummaryStats.failed) }}
                 </p>
               </div>
+              <div
+                class="flex min-h-[86px] flex-col items-center justify-center rounded-xl bg-white px-3 py-3 text-center shadow-sm dark:bg-slate-900/80"
+              >
+                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-500">
+                  Segments
+                </p>
+                <p class="mt-1 text-2xl font-semibold leading-none text-indigo-600 dark:text-indigo-300">
+                  {{ paymentReminderMetric(paymentReminderSummaryStats.billableSegments) }}
+                </p>
+                <p class="text-xs text-slate-400">
+                  {{ paymentReminderSummaryStats.oneSegmentSent }} à 1 segment
+                </p>
+              </div>
+              <div
+                class="flex min-h-[86px] flex-col items-center justify-center rounded-xl bg-white px-3 py-3 text-center shadow-sm dark:bg-slate-900/80"
+              >
+                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+                  Coût retourné
+                </p>
+                <p class="mt-1 text-xl font-semibold leading-none text-violet-600 dark:text-violet-300">
+                  <ng-container *ngIf="paymentReminderSummaryStats.providerCostCurrency; else costUnavailable">
+                    {{ paymentReminderSummaryStats.providerCostAmount | number : "1.4-4" }}
+                    {{ paymentReminderSummaryStats.providerCostCurrency }}
+                  </ng-container>
+                  <ng-template #costUnavailable>—</ng-template>
+                </p>
+                <p class="text-xs text-slate-400">
+                  {{ paymentReminderSummaryStats.duplicatePrevented }} doublons bloqués
+                </p>
+              </div>
             </div>
 
             <div
@@ -2079,6 +2109,16 @@
                       · {{ log.excludedQuitte }} quittés exclus
                     </span>
                     <span *ngIf="log.failed"> · {{ log.failed }} échecs </span>
+                    <span *ngIf="log.billableSegments">
+                      · {{ log.billableSegments }} segments
+                    </span>
+                    <span *ngIf="log.providerCostCurrency">
+                      · {{ log.providerCostAmount | number : "1.4-4" }}
+                      {{ log.providerCostCurrency }}
+                    </span>
+                    <span *ngIf="log.duplicatePrevented">
+                      · {{ log.duplicatePrevented }} doublons bloqués
+                    </span>
                   </p>
                 </div>
                 <span

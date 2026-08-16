@@ -9,6 +9,18 @@ const AfricasTalking = require("africastalking");
 const twilio = require("twilio");
 const {mirrorLegacyWrite} = require("./firestore-v2-mirror");
 const {runRetentionCycle} = require("./firestore-v2-retention");
+const {
+  buildEmployeeSummaryMessage,
+  buildLoanActivationMessage,
+  buildPaymentUpdateMessage,
+  buildRegistrationMessage,
+  buildReminderMessage,
+  buildSmsDeliveryId,
+  extractProviderCost,
+  measureSms,
+  stableHash,
+  toGsmSafe,
+} = require("./sms-utils");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -403,6 +415,10 @@ const MOBILE_MONEY_LOOKUP_COLLECTION = "mobileMoneyTransactionLookup";
 const PAYMENT_REMINDER_LOGS_COLLECTION = "payment_reminder_logs";
 const PAYMENT_REMINDER_SETTINGS_COLLECTION = "payment_reminder_settings";
 const PAYMENT_REMINDER_SETTINGS_DOC_ID = "default";
+const SMS_DELIVERY_LOGS_COLLECTION = "sms_delivery_logs";
+const SMS_AUTOMATION_RUNS_COLLECTION = "sms_automation_runs";
+const SMS_DELIVERY_LEASE_MS = 30 * 60 * 1000;
+const SMS_RUN_LEASE_MS = 30 * 60 * 1000;
 const BIRTHDAY_AUTOMATION_SETTINGS_COLLECTION = "birthday_automation_settings";
 const BIRTHDAY_AUTOMATION_RUNS_COLLECTION = "birthday_automation_runs";
 const BIRTHDAY_AUTOMATION_SETTINGS_DOC_ID = "default";
@@ -440,6 +456,232 @@ function dateKeyForTimeZone(date = new Date(), timeZone = KINSHASA_TIME_ZONE) {
     if (part.type !== "literal") values[part.type] = part.value;
   });
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+function smsRecipientKey({ownerUid, clientId, to}) {
+  if (ownerUid && clientId) return `${ownerUid}/${clientId}`;
+  return `phone:${stableHash(to).slice(0, 24)}`;
+}
+
+async function claimSmsDelivery({
+  messageType,
+  dateKey,
+  recipientKey,
+  dedupeKey,
+  message,
+  measurement,
+  source,
+  ownerUid,
+  clientId,
+  executionId,
+  critical,
+  usedCompactFallback,
+}) {
+  const id = buildSmsDeliveryId({
+    messageType,
+    dateKey,
+    recipientKey,
+    dedupeKey,
+  });
+  const ref = db.collection(SMS_DELIVERY_LOGS_COLLECTION).doc(id);
+  const nowMs = Date.now();
+  let claimed = false;
+  let existingStatus = null;
+
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const existing = snapshot.exists ? snapshot.data() || {} : {};
+    existingStatus = existing.status || null;
+    const leaseActive = Number(existing.leaseUntilMs) > nowMs;
+    const mustNotRetry = ["dispatching", "sent", "unknown"].includes(
+        existingStatus,
+    );
+    if (mustNotRetry || (existingStatus === "claimed" && leaseActive)) return;
+
+    transaction.set(ref, {
+      messageType,
+      dateKey: dateKey || null,
+      recipientKey,
+      source: source || "unknown",
+      ownerUid: ownerUid || null,
+      clientId: clientId || null,
+      executionId: executionId || null,
+      critical: critical !== false,
+      messageHash: stableHash(message),
+      encoding: measurement.encoding,
+      characters: measurement.characters,
+      septets: measurement.septets,
+      segments: measurement.segments,
+      usedCompactFallback: usedCompactFallback === true,
+      status: "claimed",
+      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+      claimedAtMs: nowMs,
+      leaseUntilMs: nowMs + SMS_DELIVERY_LEASE_MS,
+      attemptCount: admin.firestore.FieldValue.increment(1),
+    }, {merge: true});
+    claimed = true;
+  });
+
+  return {claimed, existingStatus, id, ref};
+}
+
+async function sendOperationalSms({
+  to,
+  message,
+  messageType,
+  dateKey,
+  dedupeKey,
+  source,
+  ownerUid,
+  clientId,
+  executionId,
+  critical = true,
+  usedCompactFallback = false,
+}) {
+  if (!sms) throw new Error("Africa's Talking SMS client is not configured.");
+  const measurement = measureSms(message);
+  const recipientKey = smsRecipientKey({ownerUid, clientId, to});
+  const claim = await claimSmsDelivery({
+    messageType,
+    dateKey,
+    recipientKey,
+    dedupeKey,
+    message,
+    measurement,
+    source,
+    ownerUid,
+    clientId,
+    executionId,
+    critical,
+    usedCompactFallback,
+  });
+
+  if (!claim.claimed) {
+    console.warn("SMS duplicate prevented", {
+      messageType,
+      dateKey,
+      recipientKey,
+      existingStatus: claim.existingStatus,
+    });
+    return {
+      duplicatePrevented: true,
+      measurement,
+      providerCost: {amount: null, currency: null},
+    };
+  }
+
+  if (measurement.segments > 2) {
+    console.error("Critical SMS exceeds the two-segment target; sending it", {
+      messageType,
+      recipientKey,
+      ...measurement,
+    });
+  }
+
+  await claim.ref.set({
+    status: "dispatching",
+    dispatchStartedAt: admin.firestore.FieldValue.serverTimestamp(),
+    dispatchStartedAtMs: Date.now(),
+  }, {merge: true});
+
+  try {
+    const response = await sms.send({to: [to], message});
+    const providerCost = extractProviderCost(response);
+    await claim.ref.set({
+      status: "sent",
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      sentAtMs: Date.now(),
+      leaseUntilMs: 0,
+      providerCostAmount: providerCost.amount,
+      providerCostCurrency: providerCost.currency,
+      providerMessageId: providerCost.messageId,
+      providerStatus: providerCost.status,
+      providerStatusCode: providerCost.statusCode,
+    }, {merge: true});
+    console.info("SMS delivery recorded", {
+      messageType,
+      dateKey,
+      segments: measurement.segments,
+      encoding: measurement.encoding,
+      cost: providerCost.amount,
+      currency: providerCost.currency,
+    });
+    return {duplicatePrevented: false, measurement, providerCost, response};
+  } catch (error) {
+    // The provider may have accepted a request even when the response was lost.
+    // Mark this ambiguous instead of automatically retrying and charging twice.
+    await claim.ref.set({
+      status: "unknown",
+      failedAt: admin.firestore.FieldValue.serverTimestamp(),
+      failedAtMs: Date.now(),
+      leaseUntilMs: 0,
+      error: error && error.message ? error.message : String(error),
+    }, {merge: true});
+    throw error;
+  }
+}
+
+async function claimSmsAutomationRun({runType, dateKey, executionId}) {
+  const id = stableHash(`${runType}|${dateKey}`);
+  const ref = db.collection(SMS_AUTOMATION_RUNS_COLLECTION).doc(id);
+  const nowMs = Date.now();
+  let claimed = false;
+  let existingStatus = null;
+
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const existing = snapshot.exists ? snapshot.data() || {} : {};
+    existingStatus = existing.status || null;
+    if (existingStatus === "completed") return;
+    if (existingStatus === "running" && Number(existing.leaseUntilMs) > nowMs) {
+      return;
+    }
+    transaction.set(ref, {
+      runType,
+      dateKey,
+      status: "running",
+      executionId: executionId || null,
+      startedAt: admin.firestore.FieldValue.serverTimestamp(),
+      startedAtMs: nowMs,
+      leaseUntilMs: nowMs + SMS_RUN_LEASE_MS,
+      attemptCount: admin.firestore.FieldValue.increment(1),
+    }, {merge: true});
+    claimed = true;
+  });
+
+  return {claimed, existingStatus, ref};
+}
+
+async function runSmsAutomationOnce({runType, dateKey, executionId}, callback) {
+  const run = await claimSmsAutomationRun({runType, dateKey, executionId});
+  if (!run.claimed) {
+    console.warn("Duplicate SMS automation run prevented", {
+      runType,
+      dateKey,
+      existingStatus: run.existingStatus,
+    });
+    return {duplicateRunPrevented: true};
+  }
+
+  try {
+    const result = await callback();
+    await run.ref.set({
+      status: "completed",
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      completedAtMs: Date.now(),
+      leaseUntilMs: 0,
+    }, {merge: true});
+    return result;
+  } catch (error) {
+    await run.ref.set({
+      status: "failed",
+      failedAt: admin.firestore.FieldValue.serverTimestamp(),
+      failedAtMs: Date.now(),
+      leaseUntilMs: 0,
+      error: error && error.message ? error.message : String(error),
+    }, {merge: true});
+    throw error;
+  }
 }
 
 function monthDayForTimeZone(date = new Date(), timeZone = KINSHASA_TIME_ZONE) {
@@ -561,6 +803,12 @@ async function recordPaymentReminderLog(payload) {
     quitteSucceeded: Number(payload.quitteSucceeded) || 0,
     excludedQuitte: Number(payload.excludedQuitte) || 0,
     skipped: Number(payload.skipped) || 0,
+    duplicatePrevented: Number(payload.duplicatePrevented) || 0,
+    billableSegments: Number(payload.billableSegments) || 0,
+    oneSegmentSent: Number(payload.oneSegmentSent) || 0,
+    multiSegmentSent: Number(payload.multiSegmentSent) || 0,
+    providerCostAmount: Number(payload.providerCostAmount) || 0,
+    providerCostCurrency: payload.providerCostCurrency || null,
     timeZone: KINSHASA_TIME_ZONE,
     sentAtDateKey: dateKeyForTimeZone(now, KINSHASA_TIME_ZONE),
     sentAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -671,6 +919,12 @@ exports.getPaymentReminderLogs = functions.https.onCall(async (data, context) =>
       quitteSucceeded: Number(row.quitteSucceeded) || 0,
       excludedQuitte: Number(row.excludedQuitte) || 0,
       skipped: Number(row.skipped) || 0,
+      duplicatePrevented: Number(row.duplicatePrevented) || 0,
+      billableSegments: Number(row.billableSegments) || 0,
+      oneSegmentSent: Number(row.oneSegmentSent) || 0,
+      multiSegmentSent: Number(row.multiSegmentSent) || 0,
+      providerCostAmount: Number(row.providerCostAmount) || 0,
+      providerCostCurrency: row.providerCostCurrency || null,
       sentAtDateKey: row.sentAtDateKey || dateKey,
       sentAtMs: Number(row.sentAtMs) || 0,
       sentBy: row.sentBy || null,
@@ -679,6 +933,89 @@ exports.getPaymentReminderLogs = functions.https.onCall(async (data, context) =>
   });
 
   return {logs};
+});
+
+exports.getSmsCostSummary = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required to read SMS cost summaries.",
+    );
+  }
+
+  const dateKey = String((data && data.dateKey) || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "dateKey must use YYYY-MM-DD.",
+    );
+  }
+
+  const snapshot = await db.collection(SMS_DELIVERY_LOGS_COLLECTION)
+      .where("dateKey", "==", dateKey)
+      .limit(5000)
+      .get();
+  const byMessageType = {};
+
+  snapshot.forEach((document) => {
+    const row = document.data() || {};
+    const messageType = String(row.messageType || "unknown");
+    const bucket = byMessageType[messageType] || {
+      messageType,
+      attempted: 0,
+      sent: 0,
+      unknown: 0,
+      oneSegmentSent: 0,
+      multiSegmentSent: 0,
+      billableSegments: 0,
+      providerCosts: {},
+      costUnavailable: 0,
+    };
+    bucket.attempted += 1;
+    if (row.status === "unknown") bucket.unknown += 1;
+    if (row.status === "sent") {
+      bucket.sent += 1;
+      const segments = Number(row.segments) || 0;
+      bucket.billableSegments += segments;
+      if (segments === 1) bucket.oneSegmentSent += 1;
+      if (segments > 1) bucket.multiSegmentSent += 1;
+      if (
+        row.providerCostCurrency &&
+        Number.isFinite(Number(row.providerCostAmount))
+      ) {
+        const currency = String(row.providerCostCurrency);
+        bucket.providerCosts[currency] =
+          (bucket.providerCosts[currency] || 0) + Number(row.providerCostAmount);
+      } else {
+        bucket.costUnavailable += 1;
+      }
+    }
+    byMessageType[messageType] = bucket;
+  });
+
+  const rows = Object.values(byMessageType)
+      .sort((left, right) => right.billableSegments - left.billableSegments);
+  return {
+    dateKey,
+    rows,
+    totals: rows.reduce((totals, row) => ({
+      attempted: totals.attempted + row.attempted,
+      sent: totals.sent + row.sent,
+      unknown: totals.unknown + row.unknown,
+      billableSegments: totals.billableSegments + row.billableSegments,
+      providerCosts: Object.entries(row.providerCosts)
+          .reduce((costs, [currency, amount]) => ({
+            ...costs,
+            [currency]: (costs[currency] || 0) + amount,
+          }), totals.providerCosts),
+    }), {
+      attempted: 0,
+      sent: 0,
+      unknown: 0,
+      billableSegments: 0,
+      providerCosts: {},
+    }),
+  };
 });
 
 const FLEXPAY_CALLBACK_URL = resolveFlexpayCallbackUrl(
@@ -2503,10 +2840,6 @@ exports.sendClientCompletionSMS = functions.firestore
         "N/A";
         const nombrePaiements = afterData.paymentPeriodRange || "N/A";
 
-        const duree = afterData.paymentPeriodRange ?
-        `${afterData.paymentPeriodRange} semaines` :
-        "N/A";
-
         // Compute minimum payment
         let montantMinimum = "N/A";
         const amountToPay = parseFloat(afterData.amountToPay);
@@ -2518,7 +2851,6 @@ exports.sendClientCompletionSMS = functions.firestore
         // Retrieve client details
         const firstName = afterData.firstName || "";
         const lastName = afterData.lastName || "";
-        const fullName = `${firstName} ${lastName}`.trim() || "Valued Client";
         const phoneNumber = afterData.phoneNumber;
 
         if (!phoneNumber) {
@@ -2534,16 +2866,30 @@ exports.sendClientCompletionSMS = functions.firestore
 
         console.log(`Formatted phone number: ${formattedNumber}`);
 
-        // Construct your message
-        const message = `${fullName},
-Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. Félicitations na confiance ya kozala membre ya Fondation Gervais. Soki ofuti crédit nayo bien ba avantages eza ebele. Soki mituna ezali benga 0825333567. Merci pona confiance na FONDATION GERVAIS`;
+        const builtMessage = buildLoanActivationMessage({
+          firstName,
+          lastName,
+          loanAmount: montant,
+          startDate: dateDebut,
+          endDate: dateFin,
+          paymentCount: nombrePaiements,
+          minimumPayment: montantMinimum,
+        });
+        const message = builtMessage.message;
 
         console.log(`Constructed message: ${message}`);
 
         try {
-          const response = await sms.send({
-            to: [formattedNumber],
-            message: message,
+          const response = await sendOperationalSms({
+            to: formattedNumber,
+            message,
+            messageType: "loan-activation",
+            dedupeKey: context.eventId,
+            source: "firestore-trigger",
+            ownerUid: context.params.userId,
+            clientId: context.params.clientId,
+            executionId: context.eventId,
+            usedCompactFallback: builtMessage.usedCompactFallback,
           });
           console.log(`SMS sent to ${formattedNumber}:`, response);
         } catch (error) {
@@ -2566,7 +2912,13 @@ Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${d
  *   callable({ clients: [...] });
  */
 exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
-  const {clients} = data;
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required to send payment reminders.",
+    );
+  }
+  const {clients} = data || {};
   const sendMode = normalizePaymentReminderSendMode(data && data.sendMode);
 
   if (!clients || !Array.isArray(clients)) {
@@ -2574,6 +2926,12 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError(
         "invalid-argument",
         "Expected clients array",
+    );
+  }
+  if (clients.length > 500) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "A maximum of 500 reminder recipients is allowed per request.",
     );
   }
   const plannedTotal = Number(data && data.plannedTotal) || clients.length;
@@ -2591,6 +2949,14 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
   let failCount = 0;
   let quitteTotal = 0;
   let quitteSuccessCount = 0;
+  let duplicatePrevented = 0;
+  let billableSegments = 0;
+  let oneSegmentSent = 0;
+  let multiSegmentSent = 0;
+  let providerCostAmount = 0;
+  let providerCostCurrency = null;
+  const dateKey = dateKeyForTimeZone(new Date(), KINSHASA_TIME_ZONE);
+  const executionId = randomUUID();
 
   // Iterate through each client, format phone, build message, and send
   for (const client of clients) {
@@ -2610,22 +2976,44 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
       continue;
     }
 
-    // Construct your reminder message
-    // You can adjust the wording as you wish
-    const message = `Bonjour ${firstName || "Valued"} ${
-      lastName || "Client"
-    },\n` +
-    `Ozali programmer lelo pona kofuta  FC ${minPayment}. Otikali na niongo ya FC ${debtLeft}. Epargnes na yo ezali: FC ${savings}.\n` +
-    `Merci pona confiance na FONDATION GERVAIS.`;
+    const builtMessage = buildReminderMessage({
+      firstName,
+      lastName,
+      minPayment,
+      debtLeft,
+      savings,
+    });
 
     try {
-      // Send SMS via Africa's Talking
-      const response = await sms.send({
-        to: [formattedNumber],
-        message,
+      const response = await sendOperationalSms({
+        to: formattedNumber,
+        message: builtMessage.message,
+        messageType: "payment-reminder",
+        dateKey,
+        source: "manual",
+        ownerUid: client.ownerUid || client.locationOwnerId || null,
+        clientId: client.clientId || client.uid || client.id || null,
+        executionId,
+        usedCompactFallback: builtMessage.usedCompactFallback,
       });
       console.log(`SMS sent to ${formattedNumber} ->`, response);
+      if (response.duplicatePrevented) {
+        duplicatePrevented++;
+        continue;
+      }
       successCount++;
+      billableSegments += response.measurement.segments;
+      if (response.measurement.segments === 1) oneSegmentSent++;
+      if (response.measurement.segments > 1) multiSegmentSent++;
+      if (
+        response.providerCost.currency &&
+        response.providerCost.amount != null &&
+        (!providerCostCurrency ||
+          providerCostCurrency === response.providerCost.currency)
+      ) {
+        providerCostCurrency = response.providerCost.currency;
+        providerCostAmount += Number(response.providerCost.amount) || 0;
+      }
       if (isQuitteClient) quitteSuccessCount++;
     } catch (error) {
       console.error("Error sending SMS:", error);
@@ -2645,6 +3033,12 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
     quitteTotal,
     quitteSucceeded: quitteSuccessCount,
     excludedQuitte,
+    duplicatePrevented,
+    billableSegments,
+    oneSegmentSent,
+    multiSegmentSent,
+    providerCostAmount,
+    providerCostCurrency,
     sentBy: authToken.name || authToken.email || null,
     sentById: authInfo.uid || null,
   });
@@ -2659,6 +3053,12 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
     sendMode,
     plannedTotal,
     excludedQuitte,
+    duplicatePrevented,
+    billableSegments,
+    oneSegmentSent,
+    multiSegmentSent,
+    providerCostAmount,
+    providerCostCurrency,
   };
 });
 
@@ -2799,22 +3199,31 @@ exports.sendClientRegistrationSMS = functions.firestore
       const requestDateRaw = afterData.requestDate; // e.g. "3-18-2025"
       const requestDate = formatDate(requestDateRaw);
 
-      // ---- Construct your SMS message ----
-      // Example in Lingala (based on your snippet):
-      const message = `${fullName},
-Osengi niongo ya ${montant} FC. Niongo okozua yango le ${requestDate}.
-Ofuti mobongo ya frais nionso ${frais} FC. Epargnes na yo otie ezali ${savings} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
-Merci pona confiance na FONDATION GERVAIS`;
+      const builtMessage = buildRegistrationMessage({
+        firstName,
+        lastName,
+        loanAmount: montant,
+        requestDate,
+        fees: frais,
+        savings,
+      });
+      const message = builtMessage.message;
 
       console.log("Registration SMS message:", message);
       console.log("Sending to:", formattedNumber);
 
       // ---- Send the SMS using your Africa's Talking (or other) SDK ----
       try {
-        const response = await sms.send({
-          to: [formattedNumber],
-          message: message,
+        const response = await sendOperationalSms({
+          to: formattedNumber,
+          message,
+          messageType: "client-registration",
+          dedupeKey: context.eventId,
+          source: "firestore-trigger",
+          ownerUid: context.params.userId,
+          clientId: context.params.clientId,
+          executionId: context.eventId,
+          usedCompactFallback: builtMessage.usedCompactFallback,
         });
         console.log(`SMS sent to ${formattedNumber}:`, response);
       } catch (error) {
@@ -2909,16 +3318,23 @@ Merci pona confiance na FONDATION GERVAIS`;
           ) ?
             "lobi" :
             `le ${requestDate}`;
-          const auditorMessage = isBestClient ?
-            `${chosenAudit.name},
-MEILLEUR CLIENT: asengeli kozwa mbongo ${bestClientTiming}. Benga ${fullName} ya ${clientLocation} na ${phoneNumber}; verifier ba infos. FONDATION GERVAIS` :
-            `${chosenAudit.name},
-Oponami pona ko verifier ba information ya client ${fullName} ya location ${clientLocation}. Numero na ye ezali ${phoneNumber}. Benga ye pe verifier ba information na ye. Merci pona mosala malamu na FONDATION GERVAIS`;
+          const auditorMessage = toGsmSafe(isBestClient ?
+            `${chosenAudit.name}: MEILLEUR CLIENT ${fullName}, ` +
+              `${clientLocation}, ${phoneNumber}; mbongo ${bestClientTiming}. ` +
+              "Verifier na application. Fondation Gervais." :
+            `${chosenAudit.name}: Verifier client ${fullName}, ` +
+              `${clientLocation}, ${phoneNumber}. Details na application. ` +
+              "Fondation Gervais.");
 
           try {
-            const response = await sms.send({
-              to: [auditorNumber],
+            const response = await sendOperationalSms({
+              to: auditorNumber,
               message: auditorMessage,
+              messageType: "auditor-assignment",
+              dedupeKey: `${context.eventId}:auditor`,
+              source: "firestore-trigger",
+              clientId: chosenAudit.id,
+              executionId: context.eventId,
             });
             console.log(`SMS sent to auditor ${auditorNumber}:`, response);
           } catch (error) {
@@ -3013,249 +3429,284 @@ exports.scheduledSendReminders = functions.pubsub
     .schedule("0 8 * * *")
     .timeZone("Africa/Kinshasa")
     .onRun(async (context) => {
-      console.log("===> Starting scheduledSendReminders at 8AM Kinshasa time...");
+      const dateKey = dateKeyForTimeZone(new Date(), KINSHASA_TIME_ZONE);
+      return runSmsAutomationOnce({
+        runType: "scheduled-payment-reminders",
+        dateKey,
+        executionId: context.eventId,
+      }, async () => {
+        console.log("===> Starting scheduledSendReminders at 8AM Kinshasa time...");
 
-      try {
-      // 1. Identify today's weekday => "Monday", "Tuesday", etc.
-        const theDay = new Date().toLocaleString("en-US", {weekday: "long"});
-        console.log("===> Today is:", theDay);
+        try {
+          // 1. Identify today's weekday => "Monday", "Tuesday", etc.
+          const theDay = new Date().toLocaleString("en-US", {
+            weekday: "long",
+            timeZone: KINSHASA_TIME_ZONE,
+          });
+          console.log("===> Today is:", theDay);
 
-        // 2. Fetch all users except those with mode="testing"
-        const usersSnapshot = await admin
-            .firestore()
-            .collection("users")
-            .where("mode", "!=", "testing")
-            .get();
-
-        if (usersSnapshot.empty) {
-          console.log("No users found (excl. mode='testing'). Exiting...");
-          return null;
-        }
-
-        // 3. For each user, get sub-collection "clients"
-        const allClients = [];
-        for (const userDoc of usersSnapshot.docs) {
-          const userId = userDoc.id;
-
-          const clientSnapshot = await admin
+          // 2. Fetch all users except those with mode="testing"
+          const usersSnapshot = await admin
               .firestore()
               .collection("users")
-              .doc(userId)
-              .collection("clients")
+              .where("mode", "!=", "testing")
               .get();
 
-          if (!clientSnapshot.empty) {
-            clientSnapshot.forEach((cDoc) => {
-            // Add doc data to allClients array
-              allClients.push({
-                ...cDoc.data(),
-                docId: cDoc.id,
-                userId,
-              });
-            });
+          if (usersSnapshot.empty) {
+            console.log("No users found (excl. mode='testing'). Exiting...");
+            return null;
           }
-        }
 
-        if (allClients.length === 0) {
-          console.log("No clients found across all non-testing users. Exiting...");
-          return null;
-        }
+          // 3. For each user, get sub-collection "clients"
+          const allClients = [];
+          for (const userDoc of usersSnapshot.docs) {
+            const userId = userDoc.id;
 
-        // 4. Filter to only those with debts
-        const clientsWithDebts = findClientsWithDebtsIncludingThoseWhoLeft(allClients);
+            const clientSnapshot = await admin
+                .firestore()
+                .collection("users")
+                .doc(userId)
+                .collection("clients")
+                .get();
 
-        // 5. Filter by paymentDay, isPhoneCorrect, and didClientStartThisWeek
-        const plannedClientsToRemind = clientsWithDebts.filter((client) => {
-          return (
-            client.paymentDay === theDay &&
+            if (!clientSnapshot.empty) {
+              clientSnapshot.forEach((cDoc) => {
+                // Add doc data to allClients array
+                allClients.push({
+                  ...cDoc.data(),
+                  docId: cDoc.id,
+                  userId,
+                });
+              });
+            }
+          }
+
+          if (allClients.length === 0) {
+            console.log("No clients found across all non-testing users. Exiting...");
+            return null;
+          }
+
+          // 4. Filter to only those with debts
+          const clientsWithDebts = findClientsWithDebtsIncludingThoseWhoLeft(allClients);
+
+          // 5. Filter by paymentDay, isPhoneCorrect, and didClientStartThisWeek
+          const plannedClientsToRemind = clientsWithDebts.filter((client) => {
+            return (
+              client.paymentDay === theDay &&
           client.isPhoneCorrect !== "false" &&
           didClientStartThisWeek(client)
-          );
-        });
-        const plannedQuitteTotal = plannedClientsToRemind.filter((client) =>
-          isLeftQuitte(client),
-        ).length;
-        const sendMode = await getPaymentReminderSendMode();
-        const clientsToRemind = sendMode === "excludeQuitte" ?
+            );
+          });
+          const plannedQuitteTotal = plannedClientsToRemind.filter((client) =>
+            isLeftQuitte(client),
+          ).length;
+          const sendMode = await getPaymentReminderSendMode();
+          const clientsToRemind = sendMode === "excludeQuitte" ?
           plannedClientsToRemind.filter((client) => !isLeftQuitte(client)) :
           plannedClientsToRemind;
-        const scheduledQuitteTotal = clientsToRemind.filter((client) =>
-          isLeftQuitte(client),
-        ).length;
-        const excludedQuitte = sendMode === "excludeQuitte" ?
+          const scheduledQuitteTotal = clientsToRemind.filter((client) =>
+            isLeftQuitte(client),
+          ).length;
+          const excludedQuitte = sendMode === "excludeQuitte" ?
           plannedQuitteTotal :
           0;
-        console.log(
-            "===> Payment reminder mode:",
-            sendMode,
-            "planned:",
-            plannedClientsToRemind.length,
-            "target:",
-            clientsToRemind.length,
-            "excludedQuitte:",
-            excludedQuitte,
-        );
+          console.log(
+              "===> Payment reminder mode:",
+              sendMode,
+              "planned:",
+              plannedClientsToRemind.length,
+              "target:",
+              clientsToRemind.length,
+              "excludedQuitte:",
+              excludedQuitte,
+          );
 
-        if (clientsToRemind.length === 0) {
-          console.log("No clients need reminders today after filtering. Exiting...");
+          if (clientsToRemind.length === 0) {
+            console.log("No clients need reminders today after filtering. Exiting...");
+            await recordPaymentReminderLog({
+              source: "scheduled",
+              sendMode,
+              plannedTotal: plannedClientsToRemind.length,
+              total: 0,
+              succeeded: 0,
+              failed: 0,
+              quitteTotal: scheduledQuitteTotal,
+              quitteSucceeded: 0,
+              excludedQuitte,
+              sentBy: "Automatique 8h",
+            });
+            return null;
+          }
+
+          // 6. Send SMS to each valid client
+          let successCount = 0;
+          let failCount = 0;
+          let quitteSuccessCount = 0;
+          let skippedCount = 0;
+          let duplicatePrevented = 0;
+          let billableSegments = 0;
+          let oneSegmentSent = 0;
+          let multiSegmentSent = 0;
+          let providerCostAmount = 0;
+          let providerCostCurrency = null;
+
+          for (const client of clientsToRemind) {
+            const {
+              firstName,
+              lastName,
+              phoneNumber,
+              debtLeft,
+              savings,
+              debtCycleEndDate,
+              requestNotTosend,
+            } = client;
+            const isQuitteClient = isLeftQuitte(client);
+
+            // Calculate minPayment with your logic
+            //   amountToPay / paymentPeriodRange
+            //   or leftover debt if smaller
+            const minPay = minimumPayment(client);
+
+            // Format phone
+            if (!phoneNumber) {
+              console.log("Skipping client with no phone number:", client);
+              failCount++;
+              continue;
+            }
+            const formattedNumber = makeValidE164(phoneNumber);
+            if (!formattedNumber) {
+              console.log(`Skipping invalid phone number: ${phoneNumber}`);
+              failCount++;
+              continue;
+            }
+
+            // Check if client is late (debtCycleEndDate is before today)
+            let isLate = false;
+            if (debtCycleEndDate) {
+              try {
+              // Parse debtCycleEndDate (format: M-D-YYYY or MM-DD-YYYY)
+                const parts = debtCycleEndDate.split("-");
+                if (parts.length === 3) {
+                  const month = Number(parts[0]);
+                  const day = Number(parts[1]);
+                  const year = Number(parts[2]);
+
+                  // Validate parsed values
+                  if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+                    const debtEndDate = new Date(year, month - 1, day);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    debtEndDate.setHours(0, 0, 0, 0);
+
+                    // If debt end date is before today, client is late
+                    if (debtEndDate < today) {
+                      isLate = true;
+                      console.log(`Client ${firstName} ${lastName} is LATE. debtCycleEndDate: ${debtCycleEndDate}, parsed: ${debtEndDate.toISOString()}, today: ${today.toISOString()}`);
+                    } else {
+                      console.log(`Client ${firstName} ${lastName} is NOT late. debtCycleEndDate: ${debtCycleEndDate}, parsed: ${debtEndDate.toISOString()}, today: ${today.toISOString()}`);
+                    }
+                  } else {
+                    console.log(`Invalid date format for client ${firstName} ${lastName}: ${debtCycleEndDate}`);
+                  }
+                } else {
+                  console.log(`Invalid date format (wrong number of parts) for client ${firstName} ${lastName}: ${debtCycleEndDate}`);
+                }
+              } catch (error) {
+                console.error(`Error parsing debtCycleEndDate for client ${firstName} ${lastName}: ${debtCycleEndDate}`, error);
+              }
+            } else {
+              console.log(`No debtCycleEndDate for client ${firstName} ${lastName}`);
+            }
+
+            // Filter out clients who requested not to send, UNLESS they are late
+            // If client is not late and has requestNotTosend === 'true', skip them
+            // IMPORTANT: If client is late, ALWAYS send message regardless of requestNotTosend
+            if (!isLate && requestNotTosend === "true") {
+              console.log(`Skipping client ${firstName} ${lastName} - requested not to send and NOT late (deadline: ${debtCycleEndDate || "N/A"})`);
+              skippedCount++;
+              continue;
+            }
+
+            // Log if sending to a late client who requested not to send
+            if (isLate && requestNotTosend === "true") {
+              console.log(`Sending to LATE client ${firstName} ${lastName} despite requestNotTosend=true (deadline passed: ${debtCycleEndDate})`);
+            }
+
+            const builtMessage = buildReminderMessage({
+              firstName,
+              lastName,
+              minPayment: minPay,
+              debtLeft,
+              savings,
+              isLate,
+            });
+
+            try {
+              const response = await sendOperationalSms({
+                to: formattedNumber,
+                message: builtMessage.message,
+                messageType: "payment-reminder",
+                dateKey,
+                source: "scheduled",
+                ownerUid: client.userId,
+                clientId: client.docId,
+                executionId: context.eventId,
+                usedCompactFallback: builtMessage.usedCompactFallback,
+              });
+              console.log(`SMS sent to ${formattedNumber} =>`, response);
+              if (response.duplicatePrevented) {
+                duplicatePrevented++;
+                continue;
+              }
+              successCount++;
+              billableSegments += response.measurement.segments;
+              if (response.measurement.segments === 1) oneSegmentSent++;
+              if (response.measurement.segments > 1) multiSegmentSent++;
+              if (
+                response.providerCost.currency &&
+                response.providerCost.amount != null &&
+                (!providerCostCurrency ||
+                  providerCostCurrency === response.providerCost.currency)
+              ) {
+                providerCostCurrency = response.providerCost.currency;
+                providerCostAmount += Number(response.providerCost.amount) || 0;
+              }
+              if (isQuitteClient) quitteSuccessCount++;
+            } catch (error) {
+              console.error(`Error sending SMS to ${formattedNumber}:`, error);
+              failCount++;
+            }
+          }
+
           await recordPaymentReminderLog({
             source: "scheduled",
             sendMode,
             plannedTotal: plannedClientsToRemind.length,
-            total: 0,
-            succeeded: 0,
-            failed: 0,
+            total: clientsToRemind.length,
+            succeeded: successCount,
+            failed: failCount,
             quitteTotal: scheduledQuitteTotal,
-            quitteSucceeded: 0,
+            quitteSucceeded: quitteSuccessCount,
             excludedQuitte,
+            skipped: skippedCount,
+            duplicatePrevented,
+            billableSegments,
+            oneSegmentSent,
+            multiSegmentSent,
+            providerCostAmount,
+            providerCostCurrency,
             sentBy: "Automatique 8h",
           });
+
+          console.log(
+              `===> Reminders done. Success: ${successCount}, Failed: ${failCount}`,
+          );
           return null;
+        } catch (error) {
+          console.error("Error in scheduledSendReminders:", error);
+          throw error; // Let Firebase log it as a function error
         }
-
-        // 6. Send SMS to each valid client
-        let successCount = 0;
-        let failCount = 0;
-        let quitteSuccessCount = 0;
-        let skippedCount = 0;
-
-        for (const client of clientsToRemind) {
-          const {
-            firstName,
-            lastName,
-            phoneNumber,
-            debtLeft,
-            savings,
-            debtCycleEndDate,
-            requestNotTosend,
-          } = client;
-          const isQuitteClient = isLeftQuitte(client);
-
-          // Calculate minPayment with your logic
-          //   amountToPay / paymentPeriodRange
-          //   or leftover debt if smaller
-          const minPay = minimumPayment(client);
-
-          // Format phone
-          if (!phoneNumber) {
-            console.log("Skipping client with no phone number:", client);
-            failCount++;
-            continue;
-          }
-          const formattedNumber = makeValidE164(phoneNumber);
-          if (!formattedNumber) {
-            console.log(`Skipping invalid phone number: ${phoneNumber}`);
-            failCount++;
-            continue;
-          }
-
-          // Check if client is late (debtCycleEndDate is before today)
-          let isLate = false;
-          if (debtCycleEndDate) {
-            try {
-              // Parse debtCycleEndDate (format: M-D-YYYY or MM-DD-YYYY)
-              const parts = debtCycleEndDate.split("-");
-              if (parts.length === 3) {
-                const month = Number(parts[0]);
-                const day = Number(parts[1]);
-                const year = Number(parts[2]);
-
-                // Validate parsed values
-                if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-                  const debtEndDate = new Date(year, month - 1, day);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  debtEndDate.setHours(0, 0, 0, 0);
-
-                  // If debt end date is before today, client is late
-                  if (debtEndDate < today) {
-                    isLate = true;
-                    console.log(`Client ${firstName} ${lastName} is LATE. debtCycleEndDate: ${debtCycleEndDate}, parsed: ${debtEndDate.toISOString()}, today: ${today.toISOString()}`);
-                  } else {
-                    console.log(`Client ${firstName} ${lastName} is NOT late. debtCycleEndDate: ${debtCycleEndDate}, parsed: ${debtEndDate.toISOString()}, today: ${today.toISOString()}`);
-                  }
-                } else {
-                  console.log(`Invalid date format for client ${firstName} ${lastName}: ${debtCycleEndDate}`);
-                }
-              } else {
-                console.log(`Invalid date format (wrong number of parts) for client ${firstName} ${lastName}: ${debtCycleEndDate}`);
-              }
-            } catch (error) {
-              console.error(`Error parsing debtCycleEndDate for client ${firstName} ${lastName}: ${debtCycleEndDate}`, error);
-            }
-          } else {
-            console.log(`No debtCycleEndDate for client ${firstName} ${lastName}`);
-          }
-
-          // Filter out clients who requested not to send, UNLESS they are late
-          // If client is not late and has requestNotTosend === 'true', skip them
-          // IMPORTANT: If client is late, ALWAYS send message regardless of requestNotTosend
-          if (!isLate && requestNotTosend === "true") {
-            console.log(`Skipping client ${firstName} ${lastName} - requested not to send and NOT late (deadline: ${debtCycleEndDate || "N/A"})`);
-            skippedCount++;
-            continue;
-          }
-
-          // Log if sending to a late client who requested not to send
-          if (isLate && requestNotTosend === "true") {
-            console.log(`Sending to LATE client ${firstName} ${lastName} despite requestNotTosend=true (deadline passed: ${debtCycleEndDate})`);
-          }
-
-          // Construct your reminder message
-          let message = `Bonjour ${firstName || "Valued"} ${
-            lastName || "Client"
-          },\n` +
-          `Ozali programmer lelo pona kofuta ${minPay} FC. ` +
-          `Otikali na niongo ya ${debtLeft} FC. ` +
-          `Epargnes na yo ezali: ${savings}FC.\n`;
-
-          // Add late payment message if client is late
-          // (This will be sent even if requestNotTosend is true)
-          if (isLate) {
-            message += `Ozali na retard makasi Mpenza. Kende Kofuta niongo.\n`;
-          }
-
-          message += `En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.`+
-          `Merci pona confiance na FONDATION GERVAIS.`;
-
-          try {
-          // Send SMS via Africa's Talking
-            const response = await sms.send({
-              to: [formattedNumber],
-              message,
-            });
-            // console.log(`SMS sent to ${formattedNumber} =>`, message);
-            console.log(`SMS sent to ${formattedNumber} =>`, response);
-            successCount++;
-            if (isQuitteClient) quitteSuccessCount++;
-          } catch (error) {
-            console.error(`Error sending SMS to ${formattedNumber}:`, error);
-            failCount++;
-          }
-        }
-
-        await recordPaymentReminderLog({
-          source: "scheduled",
-          sendMode,
-          plannedTotal: plannedClientsToRemind.length,
-          total: clientsToRemind.length,
-          succeeded: successCount,
-          failed: failCount,
-          quitteTotal: scheduledQuitteTotal,
-          quitteSucceeded: quitteSuccessCount,
-          excludedQuitte,
-          skipped: skippedCount,
-          sentBy: "Automatique 8h",
-        });
-
-        console.log(
-            `===> Reminders done. Success: ${successCount}, Failed: ${failCount}`,
-        );
-        return null;
-      } catch (error) {
-        console.error("Error in scheduledSendReminders:", error);
-        throw error; // Let Firebase log it as a function error
-      }
+      });
     });
 
 exports.scheduledSendBirthdayMessages = functions.pubsub
@@ -3358,17 +3809,41 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
 
         let succeeded = 0;
         let failed = 0;
+        let duplicatePrevented = 0;
+        let billableSegments = 0;
+        let providerCostAmount = 0;
+        let providerCostCurrency = null;
         const failures = [];
         const recipientEntries = [];
 
         for (const client of recipients) {
           const message = personalizeBirthdayMessage(client, settings.template);
           try {
-            await sms.send({
-              to: [client.to],
+            const result = await sendOperationalSms({
+              to: client.to,
               message,
+              messageType: "birthday",
+              dateKey,
+              source: "scheduled",
+              ownerUid: client.userId,
+              clientId: client.docId,
+              critical: false,
             });
+            if (result.duplicatePrevented) {
+              duplicatePrevented += 1;
+              continue;
+            }
             succeeded += 1;
+            billableSegments += result.measurement.segments;
+            if (
+              result.providerCost.currency &&
+              result.providerCost.amount != null &&
+              (!providerCostCurrency ||
+                providerCostCurrency === result.providerCost.currency)
+            ) {
+              providerCostCurrency = result.providerCost.currency;
+              providerCostAmount += Number(result.providerCost.amount) || 0;
+            }
             recipientEntries.push({
               name: clientFullName(client) || "Client",
               locationName: client.locationName || "Sans localisation",
@@ -3412,6 +3887,10 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
             total: recipients.length,
             succeeded,
             failed,
+            duplicatePrevented,
+            billableSegments,
+            providerCostAmount,
+            providerCostCurrency,
             locationTotals: aggregateClientLocations(recipients),
             recipientEntries,
             template: settings.template,
@@ -3435,6 +3914,10 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
           total: recipients.length,
           succeeded,
           failed,
+          duplicatePrevented,
+          billableSegments,
+          providerCostAmount,
+          providerCostCurrency,
           excludedCriteria: birthdayClients.length - eligibleClients.length,
           excludedNoPhone,
           failures,
@@ -3760,72 +4243,30 @@ exports.sendPaymentOrSavingsUpdateSMS = functions.firestore
 
       // For the savings difference
       const savingsDiff = savingsAfter - savingsBefore;
-      // Example:
-      //   if > 0, "Obakisi epargnes na yo ya XXX FC"
-      //   if < 0, "Olongoli epargnes na yo ya XXX FC"
-      const absoluteSavingsDiff = Math.abs(savingsDiff);
-
-      // Build the final message (4 main cases + optional nuance if both changed but savings decreased)
-      let message = "";
-
-      // CASE 1: Only payments changed
-      if (paymentsChanged && !savingsChanged) {
-      // {firstname}{lastname}, Ofuti mombongo ya {paymentJustpaid} FC
-      // Otikali na Niongo ya {debtLeft} FC. Epargnes na yo ezali {savings}.
-      // Merci pona confiance na Fondation Gervais.
-        message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC.
-Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
-Merci pona confiance na FONDATION GERVAIS.`;
-      }
-
-      // CASE 2 or 3: Only savings changed
-      else if (!paymentsChanged && savingsChanged) {
-        if (savingsDiff > 0) {
-        // CASE 2: savings added
-        // {firstname}{lastname}, Obakisi epargnes na yo ya {savingsAdded} FC
-          message = `${fullName}, Obakisi epargnes na yo ya ${absoluteSavingsDiff} FC.
-Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
-Merci pona confiance na FONDATION GERVAIS.`;
-        } else {
-        // CASE 3: savings removed
-        // {firstname}{lastname}, Olongoli epargnes na yo ya {savingsRemoved} FC
-          message = `${fullName}, Olongoli epargnes na yo ya ${absoluteSavingsDiff} FC.
-Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
-Merci pona confiance na FONDATION GERVAIS.`;
-        }
-      }
-
-      // CASE 4: Both payments and savings changed
-      else if (paymentsChanged && savingsChanged) {
-      // The user only explicitly provided a message for "added" savings,
-      // but let's handle removal similarly if that case can happen.
-
-        if (savingsDiff > 0) {
-        // "Ofuti mombongo ya {paymentJustpaid} FC. Obakisi epargnes na yo ya {savingsAdded} FC"
-          message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC. Obakisi epargnes na yo ya ${absoluteSavingsDiff} FC.
-Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
-Merci pona confiance na FONDATION GERVAIS.`;
-        } else {
-        // If you need a "removal" version, do:
-        // "Ofuti mombongo ya {paymentJustPaid} FC. Olongoli epargnes na yo ya {savingsRemoved} FC"
-          message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC. Olongoli epargnes na yo ya ${absoluteSavingsDiff} FC.
-Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154. 
-Merci pona confiance na FONDATION GERVAIS.`;
-        }
-      }
-
-      console.log("Constructed message:", message);
+      const builtMessage = buildPaymentUpdateMessage({
+        firstName,
+        lastName,
+        paymentAmount: paymentJustPaid,
+        debtLeft,
+        savingsAfter,
+        savingsDifference: savingsDiff,
+        paymentsChanged,
+        savingsChanged,
+      });
+      console.log("Constructed message:", builtMessage.message);
 
       // Send the SMS
       try {
-        const response = await sms.send({
-          to: [formattedNumber],
-          message,
+        const response = await sendOperationalSms({
+          to: formattedNumber,
+          message: builtMessage.message,
+          messageType: "payment-confirmation",
+          dedupeKey: context.eventId,
+          source: "firestore-trigger",
+          ownerUid: context.params.userId,
+          clientId: context.params.clientId,
+          executionId: context.eventId,
+          usedCompactFallback: builtMessage.usedCompactFallback,
         });
         console.log(`SMS sent to ${formattedNumber} =>`, response);
       } catch (error) {
@@ -3854,22 +4295,29 @@ Merci pona confiance na FONDATION GERVAIS.`;
         let congratsMessage = "";
         if (creditScore < 20) {
         // Short congrats only
-          congratsMessage =
-`${fullName},
- Félicitations! Osilisi niongo (solde: 0 FC).
-Merci pona confiance na FONDATION GERVAIS.`;
+          congratsMessage = toGsmSafe(
+              `${fullName}: Felicitations! Osilisi niongo, solde FC0. ` +
+              "Fondation Gervais.",
+          );
         } else {
         // Short invite to come back + perks summary
-          congratsMessage =
-`${fullName}, 
-Félicitations! Osilisi kofuta (solde: 0 FC). Okoki kozua lisusu. Soki obongisi efuteli makambo ya kitoko eza: leka na bureau po oyeba nionso.
-Merci pona confiance na FONDATION GERVAIS.`;
+          congratsMessage = toGsmSafe(
+              `${fullName}: Felicitations! Osilisi kofuta, solde FC0. ` +
+              "Okoki kozua lisusu; tala bureau pona ba avantages. " +
+              "Fondation Gervais.",
+          );
         }
 
         try {
-          const resp2 = await sms.send({
-            to: [formattedNumber],
+          const resp2 = await sendOperationalSms({
+            to: formattedNumber,
             message: congratsMessage,
+            messageType: "loan-completion",
+            dedupeKey: `${context.eventId}:completion`,
+            source: "firestore-trigger",
+            ownerUid: context.params.userId,
+            clientId: context.params.clientId,
+            executionId: context.eventId,
           });
           console.log(`Congrats SMS sent to ${formattedNumber} =>`, resp2);
         } catch (err) {
@@ -3892,23 +4340,36 @@ exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>
   if (!["bonus", "paiement"].includes(type) || !Array.isArray(employees))
   {throw new functions.https.HttpsError("invalid-argument", "Bad payload");}
 
-  let sent=0; let failed=0;
+  let sent=0; let failed=0; let duplicatePrevented=0;
+  const dateKey = dateKeyForTimeZone(new Date(), KINSHASA_TIME_ZONE);
+  const executionId = randomUUID();
   for (const e of employees) {
     const to = makeValidE164(e.phoneNumber||"");
     if (!to) {failed++; continue;}
 
-    const msg =
-  `FONDATION GERVAIS : ${e.firstName} ${e.lastName}, ` +
-  `votre ${type} est disponible. ` +
-  `Allez le SIGNER dans l’appli pour déclencher le virement. ` +
-  `Montant incorrect? Contactez +1 2156877614.`;
+    const msg = toGsmSafe(
+        `${e.firstName || "Employe"} ${e.lastName || ""}: ${type} disponible. ` +
+        "Signez dans l'application pour le virement. Probleme? 0825333567. " +
+        "Fondation Gervais.",
+    );
 
     try {
-      await sms.send({to: [to], message: msg});
+      const result = await sendOperationalSms({
+        to,
+        message: msg,
+        messageType: "employee-pay-reminder",
+        dateKey,
+        source: "manual",
+        clientId: e.uid || e.id || null,
+        executionId,
+        dedupeKey: type,
+        critical: false,
+      });
+      if (result.duplicatePrevented) {duplicatePrevented++; continue;}
       sent++;
     } catch (err) {console.error(err); failed++;}
   }
-  return {sent, failed};
+  return {sent, failed, duplicatePrevented};
 });
 
 
@@ -3920,200 +4381,203 @@ exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>
 exports.scheduledSendAgentFollowups = functions.pubsub
     .schedule("5 8 * * *")
     .timeZone("Africa/Kinshasa")
-    .onRun(async () => {
-      try {
-        const weekday = new Date().toLocaleString("en-US", {weekday: "long", timeZone: "Africa/Kinshasa"});
-        if (weekday === "Sunday") {
-          console.log("Sunday detected. Skipping employee follow-ups.");
-          return null;
-        }
-        const frenchDate = new Date().toLocaleDateString("fr-FR", {timeZone: "Africa/Kinshasa"});
+    .onRun(async (context) => {
+      const dateKey = dateKeyForTimeZone(new Date(), KINSHASA_TIME_ZONE);
+      return runSmsAutomationOnce({
+        runType: "scheduled-agent-followups",
+        dateKey,
+        executionId: context.eventId,
+      }, async () => {
+        try {
+          const weekday = new Date().toLocaleString("en-US", {weekday: "long", timeZone: "Africa/Kinshasa"});
+          if (weekday === "Sunday") {
+            console.log("Sunday detected. Skipping employee follow-ups.");
+            return null;
+          }
+          const usersSnap = await db.collection("users").where("mode", "!=", "testing").get();
+          if (usersSnap.empty) {console.log("No active users"); return null;}
 
-        const usersSnap = await db.collection("users").where("mode", "!=", "testing").get();
-        if (usersSnap.empty) {console.log("No active users"); return null;}
+          let totalSent = 0; let totalSkippedNoPhone = 0; let totalSkippedNoWork = 0; let totalSkippedRole = 0; let totalFailed = 0;
 
-        let totalSent = 0; let totalSkippedNoPhone = 0; let totalSkippedNoWork = 0; let totalSkippedRole = 0; let totalFailed = 0;
-
-        for (const userDoc of usersSnap.docs) {
-          const userId = userDoc.id;
-          const defaultLocation =
+          for (const userDoc of usersSnap.docs) {
+            const userId = userDoc.id;
+            const defaultLocation =
           String(userDoc.get("firstName") || userDoc.get("lastName") || "").trim() || "Unknown";
 
-          const [empSnap, cliSnap] = await Promise.all([
-            db.collection("users").doc(userId).collection("employees").get(),
-            db.collection("users").doc(userId).collection("clients").get(),
-          ]);
+            const [empSnap, cliSnap] = await Promise.all([
+              db.collection("users").doc(userId).collection("employees").get(),
+              db.collection("users").doc(userId).collection("clients").get(),
+            ]);
 
-          const employees = empSnap.docs.map((d) => ({id: d.id, ...d.data()}));
-          const employeeByUid = new Map();
-          for (const e of employees) {
-            const uid = String(e.uid || e.id || "").trim();
-            if (uid) employeeByUid.set(uid, e);
-          }
+            const employees = empSnap.docs.map((d) => ({id: d.id, ...d.data()}));
+            const employeeByUid = new Map();
+            for (const e of employees) {
+              const uid = String(e.uid || e.id || "").trim();
+              if (uid) employeeByUid.set(uid, e);
+            }
 
-          // Clients scheduled for *today* with debt, valid phone flag, and not "just started"
-          const allClients = cliSnap.docs.map((d) => ({id: d.id, ...d.data()}));
-          const clientsWithDebts = allClients.filter((c) => Number(c.debtLeft) > 0);
-          const clientsToday = clientsWithDebts
-              .filter((c) =>
-                c.paymentDay === weekday &&
+            // Clients scheduled for *today* with debt, valid phone flag, and not "just started"
+            const allClients = cliSnap.docs.map((d) => ({id: d.id, ...d.data()}));
+            const clientsWithDebts = allClients.filter((c) => Number(c.debtLeft) > 0);
+            const clientsToday = clientsWithDebts
+                .filter((c) =>
+                  c.paymentDay === weekday &&
             c.isPhoneCorrect !== "false" &&
             didClientStartThisWeek(c),
-              )
-              .filter((c) => !isLeftQuitte(c)); // 🚫 drop "+Quitte"/left altogether
+                )
+                .filter((c) => !isLeftQuitte(c)); // 🚫 drop "+Quitte"/left altogether
 
-          // byAgent: agentUid -> { employee, current[], away[], location }
-          const byAgent = new Map();
-          // unassigned (no agent uid) → defaultLocation
-          const unassignedByLoc = new Map(); // loc -> { current:[], away:[] }
-          const ensureLocBucket = (map, loc) => {
-            if (!map.has(loc)) map.set(loc, {current: [], away: []});
-            return map.get(loc);
-          };
+            // byAgent: agentUid -> { employee, current[], away[], location }
+            const byAgent = new Map();
+            // unassigned (no agent uid) → defaultLocation
+            const unassignedByLoc = new Map(); // loc -> { current:[], away:[] }
+            const ensureLocBucket = (map, loc) => {
+              if (!map.has(loc)) map.set(loc, {current: [], away: []});
+              return map.get(loc);
+            };
 
-          const pushToAgent = (bucket, uid, client) => {
-            if (!uid || !employeeByUid.has(uid)) {
-              ensureLocBucket(unassignedByLoc, defaultLocation)[bucket].push(client);
-              return;
+            const pushToAgent = (bucket, uid, client) => {
+              if (!uid || !employeeByUid.has(uid)) {
+                ensureLocBucket(unassignedByLoc, defaultLocation)[bucket].push(client);
+                return;
+              }
+              if (!byAgent.has(uid)) {
+                const emp = employeeByUid.get(uid);
+                byAgent.set(uid, {
+                  employee: emp,
+                  current: [],
+                  away: [],
+                  location: empLocation(emp, defaultLocation),
+                });
+              }
+              byAgent.get(uid)[bucket].push(client);
+            };
+
+            for (const c of clientsToday) {
+              const alive = !c.vitalStatus || String(c.vitalStatus).toLowerCase() === "vivant";
+              const bucket = alive ? "current" : "away";
+              const agentUid = String(c.agent || c.employeeUid || "").trim();
+              pushToAgent(bucket, agentUid, c);
             }
-            if (!byAgent.has(uid)) {
-              const emp = employeeByUid.get(uid);
-              byAgent.set(uid, {
-                employee: emp,
-                current: [],
-                away: [],
-                location: empLocation(emp, defaultLocation),
-              });
-            }
-            byAgent.get(uid)[bucket].push(client);
-          };
 
-          for (const c of clientsToday) {
-            const alive = !c.vitalStatus || String(c.vitalStatus).toLowerCase() === "vivant";
-            const bucket = alive ? "current" : "away";
-            const agentUid = String(c.agent || c.employeeUid || "").trim();
-            pushToAgent(bucket, agentUid, c);
-          }
-
-          // Aggregate *per-location* from NON-working agents (+ unassigned)
-          // aggregatedByLoc: loc -> { current:[], away:[] }
-          const aggregatedByLoc = new Map(unassignedByLoc);
-          for (const entry of byAgent.values()) {
-            const emp = entry.employee;
-            const loc = entry.location || defaultLocation;
-            if (!isWorkingEmployee(emp)) {
-              const acc = ensureLocBucket(aggregatedByLoc, loc);
-              acc.current.push(...entry.current);
-              acc.away.push(...entry.away);
-            }
-          }
-
-          // Index managers by location (only working managers)
-          const managersByLoc = new Map(); // loc -> Employee[]
-          const workingManagersByLoc = new Map(); // loc -> boolean (has working manager)
-          for (const e of employees) {
-            if (roleOf(e) === "manager") {
-              const loc = empLocation(e, defaultLocation);
-              if (!managersByLoc.has(loc)) managersByLoc.set(loc, []);
-              managersByLoc.get(loc).push(e);
-              // Track if there's at least one working manager at this location
-              if (isWorkingEmployee(e)) {
-                workingManagersByLoc.set(loc, true);
+            // Aggregate *per-location* from NON-working agents (+ unassigned)
+            // aggregatedByLoc: loc -> { current:[], away:[] }
+            const aggregatedByLoc = new Map(unassignedByLoc);
+            for (const entry of byAgent.values()) {
+              const emp = entry.employee;
+              const loc = entry.location || defaultLocation;
+              if (!isWorkingEmployee(emp)) {
+                const acc = ensureLocBucket(aggregatedByLoc, loc);
+                acc.current.push(...entry.current);
+                acc.away.push(...entry.away);
               }
             }
-          }
 
-          // Send per employee (only those who are working + have valid phone + allowed role)
-          const sendJobs = [];
-          for (const e of employees) {
-            if (!isAllowedRecipient(e)) {totalSkippedRole++; continue;}
-            if (!isWorkingEmployee(e)) {totalSkippedNoWork++; continue;}
-
-            const rawPhone = hasPhone(e);
-            const to = makeValidE164(rawPhone || "");
-            if (!to) {totalSkippedNoPhone++; continue;}
-
-            const uid = String(e.uid || e.id || "").trim();
-            const base = byAgent.get(uid) || {
-              employee: e,
-              current: [],
-              away: [],
-              location: empLocation(e, defaultLocation),
-            };
-            const isMgr = roleOf(e) === "manager";
-            const myLoc = empLocation(e, defaultLocation);
-
-            // Get aggregated load for this location
-            const agg = aggregatedByLoc.get(myLoc) || {current: [], away: []};
-
-            // Managers always get aggregated load for their location
-            // If no working manager exists at this location, working agents also get aggregated load
-            const hasWorkingManager = workingManagersByLoc.get(myLoc) === true;
-            const shouldGetAggregated = isMgr || (!hasWorkingManager && agg.current.length > 0);
-
-            const mergedCurrent = shouldGetAggregated ? [...base.current, ...agg.current] : base.current;
-
-            // Defensive filter
-            const effCurrent = mergedCurrent.filter((c) => !isLeftQuitte(c));
-            const linesCurrent = effCurrent.map((c) => `• ${formatClientLine(c)}`);
-
-            // Build message with appropriate note about aggregated clients
-            const hasAggregatedClients = shouldGetAggregated && agg.current.length > 0;
-            const aggregatedNote = hasAggregatedClients ?
-              (isMgr ?
-                  "⚠️ Inclus : clients des agents non actifs de votre site." :
-                  "⚠️ Inclus : clients des agents non actifs (manager absent).") :
-              "";
-
-            const message =
-            (!linesCurrent.length) ?
-              buildRecruitmentMessage(e) :
-              [
-                `Bonjour ${e.firstName || ""} ${e.lastName || ""}, voici les suivis du ${frenchDate} :`,
-                ...(linesCurrent.length ? ["", `En cours (${linesCurrent.length}) :`, ...linesCurrent] : []),
-                ...(hasAggregatedClients ? ["", aggregatedNote] : []),
-                "",
-                "Merci pour la confiance à la FONDATION GERVAIS.",
-              ].join("\n");
-
-            sendJobs.push(
-                sms.send({to: [to], message})
-                    .then(() => {totalSent++;})
-                    .catch((err) => {console.error("SMS send failed", err); totalFailed++;}),
-            );
-          }
-
-          // Log if there is aggregated load for a given location but no working manager or agent at that location
-          for (const [loc, agg] of aggregatedByLoc.entries()) {
-            const hasAgg = (agg.current.length || agg.away.length);
-            const hasWorkingMgr = workingManagersByLoc.get(loc) === true;
-            if (hasAgg && !hasWorkingMgr) {
-              // Check if there are any working agents at this location
-              let hasWorkingAgent = false;
-              for (const e of employees) {
-                const empRole = roleOf(e);
-                if (isAllowedRecipient(e) && isWorkingEmployee(e) && empRole !== "manager" && empLocation(e, defaultLocation) === loc) {
-                  hasWorkingAgent = true;
-                  break;
+            // Index managers by location (only working managers)
+            const managersByLoc = new Map(); // loc -> Employee[]
+            const workingManagersByLoc = new Map(); // loc -> boolean (has working manager)
+            for (const e of employees) {
+              if (roleOf(e) === "manager") {
+                const loc = empLocation(e, defaultLocation);
+                if (!managersByLoc.has(loc)) managersByLoc.set(loc, []);
+                managersByLoc.get(loc).push(e);
+                // Track if there's at least one working manager at this location
+                if (isWorkingEmployee(e)) {
+                  workingManagersByLoc.set(loc, true);
                 }
               }
-              if (!hasWorkingAgent) {
-                console.log(`No working manager or agent found at location "${loc}" for user ${userId}; aggregated clients not routed for this site.`);
+            }
+
+            // Send per employee (only those who are working + have valid phone + allowed role)
+            const sendJobs = [];
+            for (const e of employees) {
+              if (!isAllowedRecipient(e)) {totalSkippedRole++; continue;}
+              if (!isWorkingEmployee(e)) {totalSkippedNoWork++; continue;}
+
+              const rawPhone = hasPhone(e);
+              const to = makeValidE164(rawPhone || "");
+              if (!to) {totalSkippedNoPhone++; continue;}
+
+              const uid = String(e.uid || e.id || "").trim();
+              const base = byAgent.get(uid) || {
+                employee: e,
+                current: [],
+                away: [],
+                location: empLocation(e, defaultLocation),
+              };
+              const isMgr = roleOf(e) === "manager";
+              const myLoc = empLocation(e, defaultLocation);
+
+              // Get aggregated load for this location
+              const agg = aggregatedByLoc.get(myLoc) || {current: [], away: []};
+
+              // Managers always get aggregated load for their location
+              // If no working manager exists at this location, working agents also get aggregated load
+              const hasWorkingManager = workingManagersByLoc.get(myLoc) === true;
+              const shouldGetAggregated = isMgr || (!hasWorkingManager && agg.current.length > 0);
+
+              const mergedCurrent = shouldGetAggregated ? [...base.current, ...agg.current] : base.current;
+
+              // Defensive filter
+              const effCurrent = mergedCurrent.filter((c) => !isLeftQuitte(c));
+              const builtMessage = buildEmployeeSummaryMessage({
+                firstName: e.firstName,
+                lastName: e.lastName,
+                clientCount: effCurrent.length,
+              });
+
+              sendJobs.push(
+                  sendOperationalSms({
+                    to,
+                    message: builtMessage.message,
+                    messageType: "employee-followup",
+                    dateKey,
+                    source: "scheduled",
+                    ownerUid: userId,
+                    clientId: e.id,
+                    executionId: context.eventId,
+                    critical: false,
+                    usedCompactFallback: builtMessage.usedCompactFallback,
+                  })
+                      .then((result) => {
+                        if (!result.duplicatePrevented) totalSent++;
+                      })
+                      .catch((err) => {console.error("SMS send failed", err); totalFailed++;}),
+              );
+            }
+
+            // Log if there is aggregated load for a given location but no working manager or agent at that location
+            for (const [loc, agg] of aggregatedByLoc.entries()) {
+              const hasAgg = (agg.current.length || agg.away.length);
+              const hasWorkingMgr = workingManagersByLoc.get(loc) === true;
+              if (hasAgg && !hasWorkingMgr) {
+              // Check if there are any working agents at this location
+                let hasWorkingAgent = false;
+                for (const e of employees) {
+                  const empRole = roleOf(e);
+                  if (isAllowedRecipient(e) && isWorkingEmployee(e) && empRole !== "manager" && empLocation(e, defaultLocation) === loc) {
+                    hasWorkingAgent = true;
+                    break;
+                  }
+                }
+                if (!hasWorkingAgent) {
+                  console.log(`No working manager or agent found at location "${loc}" for user ${userId}; aggregated clients not routed for this site.`);
+                }
               }
             }
+
+            if (sendJobs.length) await Promise.allSettled(sendJobs);
           }
 
-          if (sendJobs.length) await Promise.allSettled(sendJobs);
+          console.log(
+              `scheduledSendAgentFollowups DONE — sent: ${totalSent}, failed: ${totalFailed}, skipped(role): ${totalSkippedRole}, skipped(noWork): ${totalSkippedNoWork}, skipped(noPhone): ${totalSkippedNoPhone}`,
+          );
+          return null;
+        } catch (err) {
+          console.error("scheduledSendAgentFollowups error:", err);
+          throw err;
         }
-
-        console.log(
-            `scheduledSendAgentFollowups DONE — sent: ${totalSent}, failed: ${totalFailed}, skipped(role): ${totalSkippedRole}, skipped(noWork): ${totalSkippedNoWork}, skipped(noPhone): ${totalSkippedNoPhone}`,
-        );
-        return null;
-      } catch (err) {
-        console.error("scheduledSendAgentFollowups error:", err);
-        throw err;
-      }
+      });
     });
 
 /** ── helpers (reuse variants from your component/other functions) */
@@ -4141,28 +4605,6 @@ function hasPhone(e) {
 }
 function empLocation(e, fallback) {
   return String(e.location || e.site || e.office || e.branch || fallback || "").trim();
-}
-function displayPhone(p) {
-  const raw = (p || "").toString().trim();
-  return raw.length ? raw : "numéro indisponible";
-}
-function toFr(n) {
-  return Number(n || 0).toLocaleString("fr-FR", {maximumFractionDigits: 0});
-}
-function formatClientLine(c) {
-  const min = minimumPayment(c);
-  const debt = Number(c.debtLeft || 0);
-  const phone = displayPhone(c.phoneNumber);
-  return `${c.firstName || ""} ${c.lastName || ""} — ${phone} (min: ${toFr(min)} FC, dette: ${toFr(debt)} FC)`;
-}
-function buildRecruitmentMessage(e) {
-  return [
-    `Bonjour ${e.firstName || ""} ${e.lastName || ""},`,
-    `Ozali na client programmé te lelo.`,
-    `Profitez pona Marketting pe kolouka ba clients ya sika pe kotala ba clients oyo bafutaki te lobi.`,
-    ``,
-    `Merci pour la confiance à la FONDATION GERVAIS.`,
-  ].join("\n");
 }
 function isLeftQuitte(c) {
   const fields = [

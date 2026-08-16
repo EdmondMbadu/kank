@@ -1,0 +1,197 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const {
+  BRAND_LINE,
+  SUPPORT_NUMBERS,
+  buildEmployeeSummaryMessage,
+  buildLoanActivationMessage,
+  buildPaymentUpdateMessage,
+  buildRegistrationMessage,
+  buildReminderMessage,
+  buildSmsDeliveryId,
+  extractProviderCost,
+  measureSms,
+  toGsmSafe,
+} = require("../sms-utils");
+
+test("delivery IDs block the same recipient and day only", () => {
+  const input = {
+    messageType: "payment-reminder",
+    dateKey: "2026-08-16",
+    recipientKey: "owner/client",
+  };
+  const first = buildSmsDeliveryId(input);
+
+  assert.equal(buildSmsDeliveryId({...input}), first);
+  assert.notEqual(
+      buildSmsDeliveryId({...input, dateKey: "2026-08-17"}),
+      first,
+  );
+  assert.notEqual(
+      buildSmsDeliveryId({...input, messageType: "payment-confirmation"}),
+      first,
+  );
+});
+
+test("approved reminder remains one GSM segment with all support " +
+  "numbers", () => {
+  const result = buildReminderMessage({
+    firstName: "Elysée",
+    lastName: "Ntumba",
+    minPayment: 70000,
+    debtLeft: 340000,
+    savings: 194000,
+  });
+
+  assert.equal(result.message,
+      "Elysée Ntumba: Lelo futa FC70000. Niongo etikali FC340000; " +
+      "epargne FC194000. Tel 0825333567/0899401993/0975849850. " +
+      "Fondation Gervais.");
+  assert.equal(result.measurement.encoding, "GSM-7");
+  assert.equal(result.measurement.segments, 1);
+  assert.equal(result.measurement.characters, 133);
+});
+
+test("late reminder remains one segment", () => {
+  const result = buildReminderMessage({
+    firstName: "Elysée",
+    lastName: "Ntumba",
+    minPayment: 70000,
+    debtLeft: 340000,
+    savings: 194000,
+    isLate: true,
+  });
+
+  assert.equal(result.measurement.segments, 1);
+  assert.match(result.message, /Ozali na retard/);
+});
+
+test("payment and savings withdrawal remains one segment", () => {
+  const result = buildPaymentUpdateMessage({
+    firstName: "Viviane",
+    lastName: "Phemba",
+    paymentAmount: 10000,
+    debtLeft: 390000,
+    savingsAfter: 60000,
+    savingsDifference: -10000,
+    paymentsChanged: true,
+    savingsChanged: true,
+  });
+
+  assert.equal(result.measurement.segments, 1);
+  assert.ok(result.measurement.septets <= 150);
+  assert.match(result.message, /Fondation Gervais\.$/);
+});
+
+test("payment-only confirmation remains one segment", () => {
+  const result = buildPaymentUpdateMessage({
+    firstName: "Bernadette",
+    lastName: "Ntelo",
+    paymentAmount: 5000,
+    debtLeft: 120000,
+    savingsAfter: 0,
+    savingsDifference: 0,
+    paymentsChanged: true,
+    savingsChanged: false,
+  });
+
+  assert.equal(result.measurement.segments, 1);
+  assert.match(result.message, /Ofuti FC5000/);
+});
+
+test("long personalized values use a compact fallback instead of " +
+  "disappearing", () => {
+  const result = buildPaymentUpdateMessage({
+    firstName: "Marie-Christine-Extraordinairement-Longue",
+    lastName: "Phemba-Ntumba-Makengo",
+    paymentAmount: 1000000000,
+    debtLeft: 39000000000,
+    savingsAfter: 6000000000,
+    savingsDifference: -1000000000,
+    paymentsChanged: true,
+    savingsChanged: true,
+  });
+
+  assert.equal(result.usedCompactFallback, true);
+  assert.ok(result.message.length > 0);
+  assert.ok(result.measurement.septets <= 150);
+});
+
+test("customer templates retain the full brand and three numbers", () => {
+  const builders = [
+    buildRegistrationMessage({
+      firstName: "Jean",
+      lastName: "Client",
+      loanAmount: 100000,
+      requestDate: "20/08/2026",
+      fees: 5000,
+      savings: 10000,
+    }),
+    buildLoanActivationMessage({
+      firstName: "Jean",
+      lastName: "Client",
+      loanAmount: 100000,
+      startDate: "20/08/2026",
+      endDate: "20/10/2026",
+      paymentCount: 8,
+      minimumPayment: 12500,
+    }),
+    buildEmployeeSummaryMessage({
+      firstName: "Jean",
+      lastName: "Agent",
+      clientCount: 6,
+    }),
+  ];
+
+  for (const result of builders) {
+    const brandPattern = new RegExp(`${BRAND_LINE.replace(".", "\\.")}$`);
+    assert.match(result.message, brandPattern);
+    for (const number of SUPPORT_NUMBERS) {
+      assert.match(result.message, new RegExp(number));
+    }
+    assert.equal(result.measurement.encoding, "GSM-7");
+    assert.equal(result.measurement.segments, 1);
+  }
+});
+
+test("unicode punctuation is normalized without forcing UCS-2", () => {
+  const safe = toGsmSafe("⚠️ Client • dette — l’appli");
+  assert.equal(measureSms(safe).encoding, "GSM-7");
+  assert.equal(safe.includes("⚠"), false);
+  assert.equal(safe.includes("•"), false);
+  assert.equal(safe.includes("—"), false);
+  assert.equal(safe.includes("’"), false);
+});
+
+test("provider cost is extracted from Africa's Talking response", () => {
+  const result = extractProviderCost({
+    SMSMessageData: {
+      Message: "Sent to 1/1 Total Cost: CDF 57.2867",
+      Recipients: [{
+        cost: "CDF 57.2867",
+        messageId: "abc123",
+        status: "Success",
+        statusCode: 101,
+      }],
+    },
+  });
+
+  assert.deepEqual(result, {
+    amount: 57.2867,
+    currency: "CDF",
+    messageId: "abc123",
+    status: "Success",
+    statusCode: 101,
+  });
+});
+
+test("USD provider costs keep the precision shown by Africa's Talking", () => {
+  const result = extractProviderCost({
+    SMSMessageData: {
+      Recipients: [{cost: "USD 0.0750", status: "Success", statusCode: 101}],
+    },
+  });
+
+  assert.equal(result.amount, 0.075);
+  assert.equal(result.currency, "USD");
+});
