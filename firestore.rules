@@ -53,7 +53,8 @@ service cloud.firestore {
         topCollection == 'clientPortalSessions' ||
         topCollection == 'mobileMoneyTransactionLookup' ||
         topCollection == 'moneyAvailabilityPolicies' ||
-        topCollection == 'performanceMetricSettings';
+        topCollection == 'performanceMetricSettings' ||
+        topCollection == 'investigationDocuments';
     }
 
     match /users/{userId} {
@@ -225,6 +226,14 @@ service cloud.firestore {
     match /performanceMetricSettings/{settingsId} {
       allow read: if signedIn() && !isPortalClient();
       allow write: if isAppAdmin();
+    }
+
+    // Reusable blank PDFs for the investigation team. Investigators can read
+    // and download them, while only application administrators can add,
+    // replace, archive, or restore library entries.
+    match /investigationDocuments/{documentId} {
+      allow read: if signedIn() && !isPortalClient();
+      allow create, update, delete: if isAppAdmin();
     }
 
     // Migration controls are readable for diagnostics, but only an app admin

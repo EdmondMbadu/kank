@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isPortalClient() {
+      return signedIn() &&
+        ('portalClient' in request.auth.token) &&
+        request.auth.token.portalClient == true;
+    }
+
+    function currentUser() {
+      return firestore.get(
+        /databases/(default)/documents/users/$(request.auth.uid)
+      );
+    }
+
+    function isAppAdmin() {
+      return signedIn() &&
+        !isPortalClient() &&
+        firestore.exists(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        ) &&
+        (
+          currentUser().data.admin == 'true' ||
+          (
+            currentUser().data.roles is list &&
+            currentUser().data.roles.hasAny(['admin'])
+          )
+        );
+    }
+
+    match /investigation-documents/{allPaths=**} {
+      allow read: if signedIn() && !isPortalClient();
+      allow create, update: if isAppAdmin() &&
+        request.resource != null &&
+        request.resource.size <= 20 * 1024 * 1024 &&
+        request.resource.contentType == 'application/pdf';
+      allow delete: if isAppAdmin();
+    }
+
+    // Preserve the application's existing authenticated staff upload model,
+    // while excluding the admin-managed investigation document namespace.
+    match /{allPaths=**} {
+      allow read, write: if signedIn() &&
+        !isPortalClient() &&
+        !allPaths.matches('investigation-documents/.*');
+    }
+  }
+}

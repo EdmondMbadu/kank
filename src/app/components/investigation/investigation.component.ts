@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import {
   AngularFirestore,
   AngularFirestoreDocument,
@@ -25,6 +25,7 @@ import {
   PAYMENT_RESPONSIBILITY_MAX_FILE_SIZE,
   paymentResponsibilityDocuments,
 } from 'src/app/utils/payment-responsibility-document.util';
+import { InvestigationDocumentsComponent } from '../investigation-documents/investigation-documents.component';
 
 type InvestigationDayComment = {
   name?: string;
@@ -170,6 +171,9 @@ type WeeklyExpectedProgressTone = 'red' | 'yellow' | 'orange' | 'green';
   styleUrls: ['./investigation.component.css'],
 })
 export class InvestigationComponent implements OnInit, OnDestroy {
+  @ViewChild(InvestigationDocumentsComponent)
+  private documentLibrary?: InvestigationDocumentsComponent;
+
   readonly audioFileAccept =
     '.m4a,.mp3,.wav,.aac,.caf,.aif,.aiff,.amr,.flac,.ogg,.webm,.3gp,.3gpp,.3gpp2,.mp4,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/3gpp,audio/3gpp2,audio/amr,audio/flac,audio/ogg,audio/webm,audio/*';
   private readonly supportedAudioExtensions = new Set([
@@ -195,6 +199,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   policeNotifiedClients: Client[] = [];
   problematicClients: Client[] = [];
   policeNotifiedSectionOpen = false;
+  riskSectionView: 'problematic' | 'police' = 'problematic';
+  feedbackSectionView: 'team' | 'clients' = 'team';
   locations: User[] = [];
   selectedLocationId = '';
   selectedLocationLabel = '';
@@ -512,6 +518,26 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   get investigationAccessEmployeeName(): string {
     const emp = this.investigationAccessEmployee;
     return `${emp?.firstName ?? ''} ${emp?.lastName ?? ''}`.trim();
+  }
+
+  get documentEditorName(): string {
+    return [this.auth.currentUser?.firstName, this.auth.currentUser?.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+  }
+
+  get riskClientCount(): number {
+    return new Set(
+      [...this.problematicClients, ...this.policeNotifiedClients].map(
+        (client) =>
+          `${client.locationOwnerId || this.selectedLocationId}:${client.uid || ''}`
+      )
+    ).size;
+  }
+
+  openDocumentLibrary(preferredDocumentId = ''): void {
+    this.documentLibrary?.open(preferredDocumentId);
   }
 
   verifyInvestigationAccessCode(): void {

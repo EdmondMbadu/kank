@@ -88,6 +88,7 @@ import { SavingCycleActivityComponent } from '../components/saving-cycle-activit
 import { ReviewsComponent } from '../components/reviews/reviews.component';
 import { QuestionsComponent } from '../components/questions/questions.component';
 import { InvestigationComponent } from '../components/investigation/investigation.component';
+import { InvestigationDocumentsComponent } from '../components/investigation-documents/investigation-documents.component';
 import { WhatsappAdminComponent } from '../components/whatsapp-admin/whatsapp-admin.component';
 import { ClientGalleryComponent } from '../components/client-gallery/client-gallery.component';
 
@@ -173,6 +174,7 @@ PlotlyModule.plotlyjs = PlotlyJS;
     ReviewsComponent,
     QuestionsComponent,
     InvestigationComponent,
+    InvestigationDocumentsComponent,
     WhatsappAdminComponent,
     ClientGalleryComponent,
   ],
