@@ -50,6 +50,12 @@ export interface ClientGalleryPicture {
   paymentResponsibleName?: string;
   paymentResponsibleRelationship?: string;
   paymentResponsiblePhone?: string;
+  /** Stable link to an existing client who accepted responsibility. */
+  paymentResponsibleClientId?: string;
+  /** Owner/site containing the linked client document. */
+  paymentResponsibleLocationOwnerId?: string;
+  /** Human-readable site snapshot retained for audit/history displays. */
+  paymentResponsibleLocationName?: string;
   paymentResponsibilityEffectiveAt?: string;
   paymentResponsibilityNote?: string;
   debtCycle?: string;

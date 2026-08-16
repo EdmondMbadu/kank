@@ -2,8 +2,10 @@ import { Client } from '../models/client';
 import {
   currentDateTimeLocal,
   dateTimeLocalToISO,
+  hasLinkedPaymentResponsibleClient,
   latestPaymentResponsibilityDocument,
   paymentResponsibilityDocuments,
+  resolveClientPortalClient,
 } from './payment-responsibility-document.util';
 
 describe('payment responsibility document utilities', () => {
@@ -53,5 +55,31 @@ describe('payment responsibility document utilities', () => {
       'older',
     ]);
     expect(latestPaymentResponsibilityDocument(client)?.id).toBe('newest');
+  });
+
+  it('resolves stable client ids while preserving legacy numeric portal links', () => {
+    const clients = [
+      { uid: 'client-a', firstName: 'Amina' },
+      { uid: 'client-b', firstName: 'Benoit' },
+    ] as Client[];
+
+    expect(resolveClientPortalClient(clients, 'client-b')?.firstName).toBe('Benoit');
+    expect(resolveClientPortalClient(clients, '0')?.firstName).toBe('Amina');
+    expect(resolveClientPortalClient(clients, 'missing')).toBeUndefined();
+  });
+
+  it('treats only responsibility documents with a client id as linked', () => {
+    expect(
+      hasLinkedPaymentResponsibleClient({
+        documentType: 'payment_responsibility',
+        paymentResponsibleClientId: 'client-b',
+      })
+    ).toBeTrue();
+    expect(
+      hasLinkedPaymentResponsibleClient({
+        documentType: 'payment_responsibility',
+        paymentResponsibleName: 'Benoit',
+      })
+    ).toBeFalse();
   });
 });

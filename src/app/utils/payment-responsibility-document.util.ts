@@ -33,6 +33,31 @@ export function latestPaymentResponsibilityDocument(
   return paymentResponsibilityDocuments(client)[0];
 }
 
+export function resolveClientPortalClient(
+  clients: Client[] | null | undefined,
+  routeId: string | null | undefined
+): Client | undefined {
+  const list = Array.isArray(clients) ? clients.filter(Boolean) : [];
+  const requestedId = String(routeId ?? '').trim();
+  if (!requestedId) return undefined;
+
+  const stableMatch = list.find((client) => client.uid === requestedId);
+  if (stableMatch) return stableMatch;
+
+  if (!/^\d+$/.test(requestedId)) return undefined;
+  const legacyIndex = Number(requestedId);
+  return Number.isSafeInteger(legacyIndex) ? list[legacyIndex] : undefined;
+}
+
+export function hasLinkedPaymentResponsibleClient(
+  picture?: Partial<ClientGalleryPicture> | null
+): boolean {
+  return Boolean(
+    isPaymentResponsibilityDocument(picture) &&
+      picture?.paymentResponsibleClientId?.trim()
+  );
+}
+
 export function currentDateTimeLocal(date = new Date()): string {
   const pad = (value: number, length = 2) => String(value).padStart(length, '0');
   return [

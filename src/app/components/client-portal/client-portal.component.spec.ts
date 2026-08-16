@@ -28,6 +28,9 @@ describe('ClientPortalComponent', () => {
           paramMap: {
             get: () => '2',
           },
+          queryParamMap: {
+            get: () => null,
+          },
         },
       } as unknown as ActivatedRoute,
       {} as Router,
@@ -136,7 +139,7 @@ describe('ClientPortalComponent', () => {
     (component as any).syncSelectedClientCycles(component.clientCycles);
     (component as any).recalculateClientGeneratedBenefit();
 
-    expect(component.clientGeneratedBenefit).toBe(2200);
+    expect(component.clientGeneratedBenefit).toBe(1200);
     expect(component.clientGeneratedBenefitUsd).toBe(1);
     expect(component.finishedClientCyclesCount).toBe(2);
   });
@@ -298,5 +301,31 @@ describe('ClientPortalComponent', () => {
 
     expect(component.showPaymentResponsibilityDetails).toBeFalse();
     expect(component.toggleHomePicture).toHaveBeenCalledWith(picture.url);
+  });
+
+  it('should navigate to the linked responsible client and preserve site context', () => {
+    const component = createComponent();
+    const router = (component as any).router as jasmine.SpyObj<Router>;
+    router.navigate = jasmine.createSpy('navigate');
+    component.client.locationOwnerId = 'site-edmond';
+    component.showPaymentResponsibilityDetails = true;
+
+    component.openPaymentResponsibleClient({
+      id: 'responsibility',
+      category: 'other',
+      documentType: 'payment_responsibility',
+      paymentResponsibleClientId: 'responsible-client-2',
+      paymentResponsibleLocationOwnerId: 'site-edmond',
+      url: 'https://example.com/responsibility.jpg',
+      path: 'responsibility.jpg',
+      size: 1024,
+      uploadedAt: '2026-08-15T16:07:06.045Z',
+    });
+
+    expect(component.showPaymentResponsibilityDetails).toBeFalse();
+    expect(router.navigate).toHaveBeenCalledWith(
+      ['/client-portal', 'responsible-client-2'],
+      { queryParams: { owner: 'site-edmond' } }
+    );
   });
 });

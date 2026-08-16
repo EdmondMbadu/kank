@@ -220,12 +220,17 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   paymentResponsibleName = '';
   paymentResponsibleRelationship = '';
   paymentResponsiblePhone = '';
+  paymentResponsibleClientKey = '';
   paymentResponsibilityEffectiveLocal = '';
   paymentResponsibilityNote = '';
   paymentResponsibilityFile?: File;
   paymentResponsibilityPreviewUrl = '';
   paymentResponsibilityUploading = false;
   paymentResponsibilityError = '';
+  showPaymentResponsibilityLinkForm = false;
+  paymentResponsibilityLinkClientKey = '';
+  paymentResponsibilityLinkSaving = false;
+  paymentResponsibilityLinkError = '';
   clientCommentName = '';
   clientCommentText = '';
   activeClientCommentPresetGroupId = '';
@@ -2698,6 +2703,145 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     }
   }
 
+  paymentResponsibleClientOptions(subject?: Client | null): Client[] {
+    const candidates = this.allClients.length ? this.allClients : this.clients;
+    const seen = new Set<string>();
+
+    return candidates
+      .filter((candidate) => {
+        const ownerId =
+          candidate.locationOwnerId || this.selectedLocationId || this.currentUserId;
+        const key = this.paymentResponsibleClientOptionKey(candidate);
+        const subjectOwnerId =
+          subject?.locationOwnerId || this.selectedLocationId || this.currentUserId;
+        const isSubject =
+          !!subject?.uid &&
+          candidate.uid === subject.uid &&
+          ownerId === subjectOwnerId;
+        const isSameSite = !subject || ownerId === subjectOwnerId;
+        if (
+          !candidate.uid ||
+          !key ||
+          isSubject ||
+          !isSameSite ||
+          seen.has(key)
+        ) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) =>
+        this.paymentResponsibleClientLabel(a).localeCompare(
+          this.paymentResponsibleClientLabel(b),
+          'fr',
+          { sensitivity: 'base' }
+        )
+      );
+  }
+
+  paymentResponsibleClientOptionKey(client: Client): string {
+    const ownerId =
+      client.locationOwnerId || this.selectedLocationId || this.currentUserId;
+    return ownerId && client.uid ? `${ownerId}::${client.uid}` : '';
+  }
+
+  paymentResponsibleClientLabel(client: Client): string {
+    const name = [client.firstName, client.middleName, client.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim() || 'Client sans nom';
+    const site = client.locationName || this.selectedLocationLabel || 'Site';
+    const phone = this.displayPhone(client.phoneNumber);
+    return `${name} — ${site}${phone !== '-' ? ` — ${phone}` : ''}`;
+  }
+
+  selectPaymentResponsibleClient(key: string): void {
+    this.paymentResponsibleClientKey = key || '';
+    const selected = this.findPaymentResponsibleClient(key);
+    if (!selected) return;
+    this.paymentResponsibleName = [
+      selected.firstName,
+      selected.middleName,
+      selected.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    this.paymentResponsiblePhone = selected.phoneNumber || '';
+  }
+
+  openPaymentResponsibilityLinkForm(document: ClientGalleryPicture): void {
+    if (!this.auth.isAdmin) return;
+    this.showPaymentResponsibilityLinkForm = true;
+    this.paymentResponsibilityLinkError = '';
+    this.paymentResponsibilityLinkClientKey = document.paymentResponsibleClientId
+      ? `${
+          document.paymentResponsibleLocationOwnerId ||
+          this.activeClient?.locationOwnerId ||
+          this.selectedLocationId ||
+          this.currentUserId
+        }::${document.paymentResponsibleClientId}`
+      : '';
+  }
+
+  closePaymentResponsibilityLinkForm(): void {
+    if (this.paymentResponsibilityLinkSaving) return;
+    this.showPaymentResponsibilityLinkForm = false;
+    this.paymentResponsibilityLinkClientKey = '';
+    this.paymentResponsibilityLinkError = '';
+  }
+
+  async savePaymentResponsibilityClientLink(
+    document: ClientGalleryPicture
+  ): Promise<void> {
+    const subject = this.activeClient;
+    const subjectId = subject?.uid;
+    const subjectOwnerId =
+      subject?.locationOwnerId || this.selectedLocationId || this.currentUserId;
+    const selected = this.findPaymentResponsibleClient(
+      this.paymentResponsibilityLinkClientKey
+    );
+
+    if (!this.auth.isAdmin || !subjectId || !subjectOwnerId) {
+      this.paymentResponsibilityLinkError = 'Client introuvable.';
+      return;
+    }
+    if (!selected?.uid) {
+      this.paymentResponsibilityLinkError = 'Sélectionnez le client responsable.';
+      return;
+    }
+
+    this.paymentResponsibilityLinkSaving = true;
+    this.paymentResponsibilityLinkError = '';
+    const updated: ClientGalleryPicture = {
+      ...document,
+      ...this.paymentResponsibleClientMetadata(selected),
+    };
+
+    try {
+      await this.data.addClientGalleryPictureForUser(
+        subjectOwnerId,
+        subjectId,
+        updated
+      );
+      this.applyPaymentResponsibilityDocumentLocal(
+        subjectOwnerId,
+        subjectId,
+        updated
+      );
+      this.showPaymentResponsibilityLinkForm = false;
+      this.paymentResponsibilityLinkClientKey = '';
+      this.paymentResponsibilityLinkError = '';
+    } catch (error) {
+      console.error('Payment responsibility client link failed:', error);
+      this.paymentResponsibilityLinkError =
+        "Impossible d'associer ce client. Réessayez.";
+    } finally {
+      this.paymentResponsibilityLinkSaving = false;
+    }
+  }
+
   closePaymentResponsibilityForm(): void {
     if (this.paymentResponsibilityUploading) return;
     this.resetPaymentResponsibilityDraft();
@@ -2735,6 +2879,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       client?.locationOwnerId || this.selectedLocationId || this.currentUserId;
     const file = this.paymentResponsibilityFile;
     const responsibleName = this.paymentResponsibleName.trim();
+    const responsibleClient = this.findPaymentResponsibleClient(
+      this.paymentResponsibleClientKey
+    );
     const effectiveAt = dateTimeLocalToISO(
       this.paymentResponsibilityEffectiveLocal
     );
@@ -2797,6 +2944,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         paymentResponsibleRelationship:
           this.paymentResponsibleRelationship.trim(),
         paymentResponsiblePhone: this.paymentResponsiblePhone.trim(),
+        ...(responsibleClient
+          ? this.paymentResponsibleClientMetadata(responsibleClient)
+          : {}),
         paymentResponsibilityEffectiveAt: effectiveAt,
         paymentResponsibilityNote: this.paymentResponsibilityNote.trim(),
         ...(client.debtCycle ? { debtCycle: client.debtCycle } : {}),
@@ -2847,11 +2997,40 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.paymentResponsibleName = '';
     this.paymentResponsibleRelationship = '';
     this.paymentResponsiblePhone = '';
+    this.paymentResponsibleClientKey = '';
     this.paymentResponsibilityEffectiveLocal = '';
     this.paymentResponsibilityNote = '';
     this.paymentResponsibilityError = '';
     this.showPaymentResponsibilityForm = false;
     this.clearPaymentResponsibilityFile();
+  }
+
+  private findPaymentResponsibleClient(key: string): Client | undefined {
+    if (!key) return undefined;
+    return this.paymentResponsibleClientOptions(this.activeClient).find(
+      (candidate) => this.paymentResponsibleClientOptionKey(candidate) === key
+    );
+  }
+
+  private paymentResponsibleClientMetadata(
+    client: Client
+  ): Partial<ClientGalleryPicture> {
+    const ownerId =
+      client.locationOwnerId || this.selectedLocationId || this.currentUserId;
+    const name = [client.firstName, client.middleName, client.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    return {
+      paymentResponsibleClientId: client.uid,
+      paymentResponsibleLocationOwnerId: ownerId,
+      paymentResponsibleLocationName:
+        client.locationName || this.selectedLocationLabel || 'Site',
+      ...(name ? { paymentResponsibleName: name } : {}),
+      ...(client.phoneNumber
+        ? { paymentResponsiblePhone: client.phoneNumber }
+        : {}),
+    };
   }
 
   hasMoreClientModalGalleryPictures(client?: Client | null): boolean {

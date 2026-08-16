@@ -26,8 +26,10 @@ import MediaInfo from 'mediainfo.js';
 import { commentImageToGalleryPicture } from 'src/app/utils/client-comment-gallery.util';
 import {
   formatPaymentResponsibilityDate,
+  hasLinkedPaymentResponsibleClient,
   latestPaymentResponsibilityDocument,
   paymentResponsibilityDocuments,
+  resolveClientPortalClient,
 } from 'src/app/utils/payment-responsibility-document.util';
 
 type ImageAttachment = {
@@ -279,8 +281,25 @@ export class ClientPortalComponent {
   }
 
   retrieveClient(): void {
-    this.auth.getAllClients().subscribe((data: any) => {
-      this.client = data[Number(this.id)];
+    const requestedOwnerId =
+      this.activatedRoute.snapshot.queryParamMap?.get('owner')?.trim() || '';
+    const clientSource: { subscribe: (next: (data: any) => void) => unknown } =
+      requestedOwnerId && this.auth.isAdmin
+        ? (this.auth.getClientsOfAUser(requestedOwnerId) as any)
+        : (this.auth.getAllClients() as any);
+
+    clientSource.subscribe((data: any) => {
+      const clients = Array.isArray(data) ? (data.filter(Boolean) as Client[]) : [];
+      const resolvedClient = resolveClientPortalClient(clients, this.id);
+      if (!resolvedClient) return;
+
+      this.client = {
+        ...resolvedClient,
+        locationOwnerId:
+          resolvedClient.locationOwnerId ||
+          requestedOwnerId ||
+          this.auth.currentUser?.uid,
+      };
       this.age = this.compute.computeAge(this.client.birthDate);
       this.birthDateDisplay = this.formatBirthDate(this.client.birthDate);
 
@@ -1085,6 +1104,35 @@ export class ClientPortalComponent {
   openPaymentResponsibilityDocument(picture: ClientGalleryPicture): void {
     this.showPaymentResponsibilityDetails = false;
     this.toggleHomePicture(picture.url);
+  }
+
+  hasLinkedPaymentResponsibleClient(
+    picture?: ClientGalleryPicture | null
+  ): boolean {
+    return hasLinkedPaymentResponsibleClient(picture);
+  }
+
+  canOpenPaymentResponsibleClient(
+    picture?: ClientGalleryPicture | null
+  ): boolean {
+    if (!hasLinkedPaymentResponsibleClient(picture)) return false;
+    const linkedOwnerId = picture?.paymentResponsibleLocationOwnerId?.trim();
+    const currentOwnerId =
+      this.client.locationOwnerId?.trim() || this.auth.currentUser?.uid?.trim();
+    return !linkedOwnerId || !currentOwnerId || linkedOwnerId === currentOwnerId;
+  }
+
+  openPaymentResponsibleClient(picture: ClientGalleryPicture): void {
+    const clientId = picture.paymentResponsibleClientId?.trim();
+    if (!clientId) return;
+
+    if (!this.canOpenPaymentResponsibleClient(picture)) return;
+
+    this.showPaymentResponsibilityDetails = false;
+    const linkedOwnerId = picture.paymentResponsibleLocationOwnerId?.trim();
+    this.router.navigate(['/client-portal', clientId], {
+      ...(linkedOwnerId ? { queryParams: { owner: linkedOwnerId } } : {}),
+    });
   }
   setComments() {
     this.comments = [];
