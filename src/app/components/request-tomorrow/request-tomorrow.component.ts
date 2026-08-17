@@ -97,15 +97,8 @@ export class RequestTomorrowComponent implements OnInit {
   }
 
   addIdToFilterItemsCard() {
-    let total = 0;
     for (let i = 0; i < this.cards!.length; i++) {
       this.cards![i].trackingId = `${i}`;
-      // total += Number(this.cards![i].debtLeft);
-      if (this.cards![i].dateOfRequest) {
-        this.cards![i].dateOfRequest = this.time.convertDateToDesiredFormat(
-          this.cards![i].dateOfRequest!
-        );
-      }
     }
   }
   addIdToFilterItems() {
@@ -119,12 +112,17 @@ export class RequestTomorrowComponent implements OnInit {
         (element) => element.uid === this.clients![i].agent
       );
       this.clients![i].employee = emp;
-      if (this.clients![i].dateOfRequest) {
-        this.clients![i].dateOfRequest = this.time.convertDateToDesiredFormat(
-          this.clients![i].dateOfRequest!
-        );
-      }
     }
+  }
+
+  formatRequestDate(dateOfRequest?: string): string {
+    if (!dateOfRequest) return '';
+
+    const rawRequestTimestamp =
+      /^\d{1,2}-\d{1,2}-\d{4}-\d{1,2}-\d{1,2}-\d{1,2}$/;
+    if (!rawRequestTimestamp.test(dateOfRequest)) return dateOfRequest;
+
+    return this.time.convertDateToDesiredFormat(dateOfRequest);
   }
 
   otherDate() {

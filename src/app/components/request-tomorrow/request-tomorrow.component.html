@@ -131,7 +131,7 @@
                   *ngIf="c.dateOfRequest"
                   class="whitespace-normal break-words leading-tight
                          text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                  Demandé le {{ c.dateOfRequest }}
+                  Demandé le {{ formatRequestDate(c.dateOfRequest) }}
                 </p>
               </div>
 
@@ -216,7 +216,7 @@
                 *ngIf="c.dateOfRequest"
                 class="whitespace-normal break-words leading-tight
                        text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                Demandé le {{ c.dateOfRequest }}
+                Demandé le {{ formatRequestDate(c.dateOfRequest) }}
               </p>
             </div>
 
