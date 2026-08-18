@@ -28,7 +28,11 @@ import {
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { Router } from '@angular/router';
-import { recoverOrRetryClientPhotoUpload } from '../utils/client-photo-recovery.util';
+import {
+  isRetryableStorageError,
+  recoverClientPhotoUpload,
+  uploadClientPhotoThroughServer,
+} from '../utils/client-photo-recovery.util';
 import { isActivelyFollowedClient } from '../utils/active-followed-client.util';
 import { coerceToNumber } from '../utils/number-utils';
 import { isLoanBudgetExempt } from '../utils/pending-loan-budget.util';
@@ -36,6 +40,13 @@ import firebase from 'firebase/compat/app'; // ① NEW
 import 'firebase/compat/firestore'; // ②
 
 import 'firebase/compat/firestore';
+
+export interface AttendanceAttachmentUploadOptions {
+  timeoutMs?: number;
+  onProgress?: (percentage: number) => void;
+  onPhase?: (phase: 'uploading' | 'recovering') => void;
+  onTask?: (task: { cancel?: () => Promise<boolean> } | null) => void;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -2862,34 +2873,96 @@ export class DataService {
     dateISO: string,
     uploaderId: string,
     dateLabel: string,
-    functions?: AngularFireFunctions
+    functions?: AngularFireFunctions,
+    options: AttendanceAttachmentUploadOptions = {}
   ): Promise<AttendanceAttachment> {
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
     const path = `attendance_proofs/${userId}/${employeeId}/${dateISO}/${Date.now()}.${ext}`;
     let url = '';
 
+    let uploadError: unknown = null;
+    const timeoutMs = Math.max(15_000, options.timeoutMs ?? 90_000);
+
     try {
-      const uploadTask = await this.storage.upload(path, file, {
+      options.onPhase?.('uploading');
+      const uploadTask: any = this.storage.upload(path, file, {
         contentType: file.type || undefined,
         customMetadata: { userId, employeeId, dateISO, dateLabel, uploaderId },
       });
-      url = await uploadTask.ref.getDownloadURL();
+      options.onTask?.(uploadTask);
+      const progressSubscription = uploadTask.percentageChanges
+        ? uploadTask.percentageChanges().subscribe((percentage: number) => {
+            if (Number.isFinite(percentage)) {
+              options.onProgress?.(Math.max(0, Math.min(100, percentage)));
+            }
+          })
+        : null;
+      let timedOut = false;
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<never>((_resolve, reject) => {
+        timeoutHandle = setTimeout(() => {
+          timedOut = true;
+          Promise.resolve(uploadTask.cancel?.()).catch(() => undefined);
+          reject({
+            code: 'storage/retry-limit-exceeded',
+            message: "Le téléversement de la photo a dépassé le délai prévu.",
+          });
+        }, timeoutMs);
+      });
+
+      try {
+        const snapshot: any = await Promise.race([
+          Promise.resolve(uploadTask),
+          timeout,
+        ]);
+        url = await snapshot.ref.getDownloadURL();
+        options.onProgress?.(100);
+      } catch (error) {
+        if (timedOut) {
+          throw {
+            code: 'storage/retry-limit-exceeded',
+            message: "Le téléversement de la photo a dépassé le délai prévu.",
+          };
+        }
+        throw error;
+      } finally {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+        progressSubscription?.unsubscribe();
+        options.onTask?.(null);
+      }
     } catch (error) {
+      uploadError = error;
       if (!functions) {
         throw error;
       }
-
-      const recovered = await recoverOrRetryClientPhotoUpload(
-        functions,
-        this.storage,
-        error,
-        path,
-        file
-      );
-      if (!recovered) {
+      if (!isRetryableStorageError(error)) {
         throw error;
       }
+
+      options.onPhase?.('recovering');
+      let recovered = await recoverClientPhotoUpload(functions, error, path);
+      if (!recovered) {
+        try {
+          // Attendance images are prepared below 500 KB. Sending that small
+          // payload through the already-authenticated callable channel avoids
+          // another ten-minute Firebase Storage retry window on unstable iOS
+          // and Congo mobile connections.
+          recovered = await uploadClientPhotoThroughServer(
+            functions,
+            path,
+            file,
+            Math.min(3_000_000, Math.max(600_000, Math.ceil(file.size / 10)))
+          );
+        } catch (serverError) {
+          console.error('Attendance photo server fallback failed:', serverError);
+          recovered = await recoverClientPhotoUpload(functions, error, path);
+        }
+      }
+      if (!recovered) {
+        throw uploadError;
+      }
       url = recovered.downloadURL;
+      options.onProgress?.(100);
     }
 
     return {

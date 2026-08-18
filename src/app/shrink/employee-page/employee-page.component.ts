@@ -55,6 +55,10 @@ import {
   attendanceFileFingerprint,
   uploadFirstThenFinalizeAttendance,
 } from 'src/app/utils/attendance-photo-finalization.util';
+import {
+  AttendancePreparedPhoto,
+  prepareAttendancePhoto,
+} from 'src/app/utils/attendance-photo-preparation.util';
 
 // at the top, with other imports
 import exifr from 'exifr'; // if TS complains, use: import * as exifr from 'exifr';
@@ -381,11 +385,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   };
   // state
   savingAttendance = false;
-
-  // tiny sleep for UI smoothing (optional)
-  private sleep(ms: number) {
-    return new Promise((res) => setTimeout(res, ms));
-  }
 
   // Map: 'M-D-YYYY' -> array of attachments for that day
   monthAttachmentsByLabel: Record<string, any[]> = {};
@@ -7553,8 +7552,21 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (toggle) this.closeAttendanceModal();
   }
 
-  clearAttachment(em: any) {
+  clearAttachment(em: any, preserveUploadedObject = false) {
     if (!em) return;
+    const uploadedPath = em._uploadedAttendanceAttachment?.attachment?.path;
+    em._attendanceUploadGeneration =
+      Number(em._attendanceUploadGeneration || 0) + 1;
+    Promise.resolve(em._attendanceUploadTask?.cancel?.()).catch(() => undefined);
+    if (!preserveUploadedObject && uploadedPath) {
+      this.deleteUnconfirmedAttendanceObject(uploadedPath);
+    }
+    if (
+      typeof em._attachmentPreview === 'string' &&
+      em._attachmentPreview.startsWith('blob:')
+    ) {
+      URL.revokeObjectURL(em._attachmentPreview);
+    }
     em._attachmentError = '';
     em._attachmentFile = null;
     em._attachmentPreview = null;
@@ -7568,8 +7580,30 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     em._attachmentHash = null;
     em._attachmentTakenAtPromise = null;
     em._attachmentMetadataPromise = null;
+    em._attachmentExifPromise = null;
+    em._attendancePreparationPromise = null;
+    em._attendanceUploadPromise = null;
+    em._attendanceUploadTask = null;
+    em._attendanceUploadContext = null;
+    em._attendanceUploadError = null;
+    em._attendanceUploadPhase = '';
+    em._attendanceUploadProgress = 0;
+    em._attendancePreparedFile = null;
+    em._attendancePreparedSize = null;
+    em._attendanceOriginalSize = null;
     em._uploadedAttendanceAttachment = null;
     em._uploading = false;
+  }
+
+  private deleteUnconfirmedAttendanceObject(path: string) {
+    if (!path || !path.startsWith('attendance_proofs/')) return;
+    try {
+      firstValueFrom(this.storage.ref(path).delete()).catch((error) =>
+        console.warn('Unable to clean up unconfirmed attendance photo:', error)
+      );
+    } catch (error) {
+      console.warn('Unable to start attendance photo cleanup:', error);
+    }
   }
 
   async addAttendanceForEmployee(
@@ -7593,38 +7627,49 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         : target.toISOString().slice(0, 10);
       const plainLabel = this.normalizeLabel(label, dateISO);
 
-      const file = employee._attachmentFile as File | null;
-      if (!file) {
+      const originalFile = employee._attachmentFile as File | null;
+      if (!originalFile) {
         alert("Ajoutez d'abord une photo (obligatoire).");
         return;
       }
 
       employee._uploading = true;
 
-      const fingerprint = attendanceFileFingerprint(file);
+      if (employee._attachmentMetadataPromise) {
+        await employee._attachmentMetadataPromise;
+      }
+
+      const prepared = employee._attendancePreparationPromise
+        ? ((await employee._attendancePreparationPromise) as AttendancePreparedPhoto | null)
+        : null;
+      const uploadFile =
+        prepared?.file || employee._attendancePreparedFile || originalFile;
+      if (!uploadFile) {
+        throw new Error("La photo n'a pas pu être préparée.");
+      }
+
+      const fingerprint = attendanceFileFingerprint(originalFile);
       const reusable = employee._uploadedAttendanceAttachment;
       let attMeta: any = null;
 
       attMeta = await uploadFirstThenFinalizeAttendance(
         async () => {
+          let uploaded: any;
           if (
             reusable?.dateISO === dateISO &&
-            reusable?.dateLabel === label &&
             reusable?.fingerprint === fingerprint &&
             reusable?.attachment
           ) {
-            return reusable.attachment;
+            uploaded = reusable.attachment;
+          } else {
+            uploaded = await this.ensureAttendancePhotoUploaded(
+              employee,
+              uploadFile,
+              fingerprint,
+              dateISO,
+              label
+            );
           }
-
-          const uploaded = await this.data.uploadAttendanceAttachment(
-            file,
-            employee.uid!,
-            this.auth.currentUser.uid,
-            dateISO,
-            this.auth.currentUser?.uid || 'unknown',
-            label,
-            this.fns
-          );
           const enriched = {
             ...uploaded,
             ...(employee._attachmentTakenAt
@@ -7679,9 +7724,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       }
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
 
-      await this.sleep(350);
       this.displayAttendance = false;
-      this.clearAttachment(employee);
+      this.clearAttachment(employee, true);
       alert('Présence ajoutée avec succès');
     } catch (e) {
       console.error(e);
@@ -8749,23 +8793,167 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     });
     return legacy[bestKey];
   }
+
+  private async prepareAttendanceUploadFile(
+    file: File
+  ): Promise<AttendancePreparedPhoto> {
+    if (file.type.startsWith('video/')) {
+      return {
+        file,
+        originalSize: file.size,
+        uploadSize: file.size,
+        width: 0,
+        height: 0,
+      };
+    }
+
+    let decodedInput: Blob = file;
+    const isHeic =
+      /image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+    if (isHeic) {
+      try {
+        const heic2any = (await import('heic2any')).default;
+        const converted = await heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.9,
+        });
+        decodedInput = Array.isArray(converted) ? converted[0] : converted;
+      } catch (error) {
+        console.error('Attendance HEIC conversion failed:', error);
+        throw new Error('Impossible de convertir cette photo HEIC.');
+      }
+    }
+
+    return prepareAttendancePhoto(file, { decodedInput });
+  }
+
+  private runAttendancePhotoUpload(
+    em: any,
+    uploadFile: File,
+    fingerprint: string,
+    dateISO: string,
+    dateLabel: string
+  ): Promise<any | null> {
+    const generation = Number(em._attendanceUploadGeneration || 0);
+    const contextKey = `${dateISO}|${fingerprint}`;
+    em._attendanceUploadContext = contextKey;
+    em._attendanceUploadError = null;
+    em._attendanceUploadPhase = 'uploading';
+    em._attendanceUploadProgress = 0;
+    em._uploading = true;
+
+    const promise = this.data
+      .uploadAttendanceAttachment(
+        uploadFile,
+        em.uid!,
+        this.auth.currentUser.uid,
+        dateISO,
+        this.auth.currentUser?.uid || 'unknown',
+        dateLabel,
+        this.fns,
+        {
+          timeoutMs: 90_000,
+          onProgress: (percentage) => {
+            if (Number(em._attendanceUploadGeneration || 0) === generation) {
+              em._attendanceUploadProgress = Math.round(percentage);
+            }
+          },
+          onPhase: (phase) => {
+            if (Number(em._attendanceUploadGeneration || 0) === generation) {
+              em._attendanceUploadPhase = phase;
+            }
+          },
+          onTask: (task) => {
+            if (Number(em._attendanceUploadGeneration || 0) === generation) {
+              em._attendanceUploadTask = task;
+            } else {
+              Promise.resolve(task?.cancel?.()).catch(() => undefined);
+            }
+          },
+        }
+      )
+      .then((attachment) => {
+        if (Number(em._attendanceUploadGeneration || 0) !== generation) {
+          this.deleteUnconfirmedAttendanceObject(attachment.path);
+          return null;
+        }
+        em._uploadedAttendanceAttachment = {
+          dateISO,
+          fingerprint,
+          attachment,
+        };
+        em._attendanceUploadPhase = 'ready';
+        em._attendanceUploadProgress = 100;
+        return attachment;
+      })
+      .catch((error) => {
+        if (Number(em._attendanceUploadGeneration || 0) === generation) {
+          em._attendanceUploadError = error;
+          em._attendanceUploadPhase = 'error';
+        }
+        console.error('Attendance photo upload failed:', error);
+        return null;
+      })
+      .finally(() => {
+        if (Number(em._attendanceUploadGeneration || 0) === generation) {
+          em._attendanceUploadTask = null;
+          em._uploading = false;
+        }
+      });
+
+    em._attendanceUploadPromise = promise;
+    return promise;
+  }
+
+  private async ensureAttendancePhotoUploaded(
+    em: any,
+    uploadFile: File,
+    fingerprint: string,
+    dateISO: string,
+    dateLabel: string
+  ): Promise<any> {
+    const reusable = em._uploadedAttendanceAttachment;
+    if (
+      reusable?.dateISO === dateISO &&
+      reusable?.fingerprint === fingerprint &&
+      reusable?.attachment
+    ) {
+      return reusable.attachment;
+    }
+
+    const contextKey = `${dateISO}|${fingerprint}`;
+    if (
+      em._attendanceUploadContext === contextKey &&
+      em._attendanceUploadPromise
+    ) {
+      const activeResult = await em._attendanceUploadPromise;
+      if (activeResult) return activeResult;
+    }
+
+    const retried = await this.runAttendancePhotoUpload(
+      em,
+      uploadFile,
+      fingerprint,
+      dateISO,
+      dateLabel
+    );
+    if (!retried) {
+      throw (
+        em._attendanceUploadError ||
+        new Error('Le téléversement de la photo a échoué.')
+      );
+    }
+    return retried;
+  }
+
   onAttachmentSelected(em: any, evt: Event) {
     const input = evt.target as HTMLInputElement;
     const file = input.files?.[0];
+    this.clearAttachment(em);
     em._attachmentError = '';
-    em._attachmentFile = null;
-    em._attachmentPreview = null;
-    em._attachmentType = null;
-    em._attachmentSize = null;
-    em._attachmentTakenAt = null;
-    em._attachmentTakenAtSource = '';
-    em._attachmentDeviceInfo = null;
-    em._attachmentHash = null;
     em._attachmentUA = this.getUaInfo();
     em._attachmentSoftId = this.ensureSoftDeviceId();
-    em._attachmentTakenAtPromise = null;
-    em._attachmentMetadataPromise = null;
-    em._uploadedAttendanceAttachment = null;
 
     if (!file) return;
 
@@ -8786,26 +8974,27 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     em._attachmentFile = file;
     em._attachmentType = file.type;
     em._attachmentSize = file.size;
-
-    const reader = new FileReader();
-    reader.onload = () => (em._attachmentPreview = reader.result as string);
-    reader.readAsDataURL(file);
+    em._attendanceOriginalSize = file.size;
+    em._attachmentPreview = URL.createObjectURL(file);
 
     // Extract optional audit metadata in parallel while the employee reviews
     // the preview. Metadata failures must never prevent a valid photo upload.
-    em._attachmentTakenAtPromise = this.readFirstCreated(file)
+    em._attachmentExifPromise = this.readAttendanceExifTags(file);
+    em._attachmentTakenAtPromise = em._attachmentExifPromise
+      .then((tags: any) => this.readFirstCreated(file, tags))
       .catch(() => ({
         date: file.lastModified ? new Date(file.lastModified) : null,
         source: file.lastModified ? 'fileLastModified' : 'unknown',
       }))
-      .then((info) => {
+      .then((info: any) => {
         if (em._attachmentFile !== file) return;
         em._attachmentTakenAt = info.date;
         em._attachmentTakenAtSource = info.source;
       });
-    const devicePromise = this.readExifDeviceInfo(file)
+    const devicePromise = em._attachmentExifPromise
+      .then((tags: any) => this.readExifDeviceInfo(file, tags))
       .catch(() => null)
-      .then((device) => {
+      .then((device: any) => {
         if (em._attachmentFile === file) {
           em._attachmentDeviceInfo = device;
         }
@@ -8822,11 +9011,64 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       devicePromise,
       hashPromise,
     ]).then(() => undefined);
+
+    const generation = Number(em._attendanceUploadGeneration || 0);
+    em._attendanceUploadPhase = 'preparing';
+    const preparationPromise = this.prepareAttendanceUploadFile(file)
+      .then((prepared) => {
+        if (
+          Number(em._attendanceUploadGeneration || 0) !== generation ||
+          em._attachmentFile !== file
+        ) {
+          return null;
+        }
+
+        em._attendancePreparedFile = prepared.file;
+        em._attendancePreparedSize = prepared.uploadSize;
+        em._attendanceUploadPhase = 'uploading';
+        if (prepared.file.type.startsWith('image/')) {
+          if (
+            typeof em._attachmentPreview === 'string' &&
+            em._attachmentPreview.startsWith('blob:')
+          ) {
+            URL.revokeObjectURL(em._attachmentPreview);
+          }
+          em._attachmentPreview = URL.createObjectURL(prepared.file);
+          em._attachmentType = prepared.file.type;
+        }
+
+        const target = this.attendanceTargetDate
+          ? new Date(this.attendanceTargetDate.getTime())
+          : this.resolveAttendanceTargetDate(this.attendanceMode);
+        const dateISO = this.isoFromKinDate(target);
+        const dateLabel = this.dateToMonthDayYear(target);
+        const fingerprint = attendanceFileFingerprint(file);
+        this.runAttendancePhotoUpload(
+          em,
+          prepared.file,
+          fingerprint,
+          dateISO,
+          dateLabel
+        );
+        return prepared;
+      })
+      .catch((error) => {
+        if (Number(em._attendanceUploadGeneration || 0) === generation) {
+          em._attachmentError =
+            error?.message || 'Impossible de préparer cette photo.';
+          em._attendanceUploadError = error;
+          em._attendanceUploadPhase = 'error';
+          em._uploading = false;
+        }
+        console.error('Attendance photo preparation failed:', error);
+        return null;
+      });
+    em._attendancePreparationPromise = preparationPromise;
   }
 
   /** Try to read the original capture/creation date from EXIF/QuickTime.
    *  Falls back to the file's lastModified when EXIF isn't present. */
-  private async readFirstCreated(file: File): Promise<{
+  private async readFirstCreated(file: File, parsedTags?: any): Promise<{
     date: Date | null;
     source:
       | 'exif'
@@ -8839,7 +9081,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }> {
     // 1) Try EXIF / QuickTime metadata via exifr
     try {
-      const tags: any = await exifr.parse(file);
+      const tags: any =
+        parsedTags === undefined ? await exifr.parse(file) : parsedTags;
       const candidates: (Date | undefined)[] = [
         tags?.DateTimeOriginal,
         tags?.CreateDate,
@@ -9196,21 +9439,47 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     };
   }
 
-  /** Read useful EXIF fields from an image file. */
-  private async readExifDeviceInfo(file: File) {
+  private async readAttendanceExifTags(file: File): Promise<any | null> {
     try {
-      const tags = await (exifr as any).parse(file, {
+      return await (exifr as any).parse(file, {
         pick: [
+          'DateTimeOriginal',
+          'CreateDate',
+          'MediaCreateDate',
+          'TrackCreateDate',
+          'ModifyDate',
           'Make',
           'Model',
           'Software',
           'ImageUniqueID',
           'BodySerialNumber',
           'LensModel',
-          'CreateDate',
-          'DateTimeOriginal',
         ],
       });
+    } catch (error) {
+      console.warn('Attendance EXIF parse failed', error);
+      return null;
+    }
+  }
+
+  /** Read useful EXIF fields from an image file. */
+  private async readExifDeviceInfo(file: File, parsedTags?: any) {
+    try {
+      const tags =
+        parsedTags === undefined
+          ? await (exifr as any).parse(file, {
+              pick: [
+                'Make',
+                'Model',
+                'Software',
+                'ImageUniqueID',
+                'BodySerialNumber',
+                'LensModel',
+                'CreateDate',
+                'DateTimeOriginal',
+              ],
+            })
+          : parsedTags;
       return {
         make: tags?.Make || null,
         model: tags?.Model || null,

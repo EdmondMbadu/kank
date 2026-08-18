@@ -4916,6 +4916,56 @@
             </button>
           </div>
         </div>
+
+        <div
+          *ngIf="employee._attendanceUploadPhase as uploadPhase"
+          class="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <span>
+              {{
+                uploadPhase === "preparing"
+                  ? "Optimisation de la photo…"
+                  : uploadPhase === "uploading"
+                  ? "Téléversement de la photo…"
+                  : uploadPhase === "recovering"
+                  ? "Connexion lente — sécurisation du téléversement…"
+                  : uploadPhase === "ready"
+                  ? "Photo prête — vous pouvez confirmer."
+                  : "Téléversement interrompu — cliquez sur Confirmer pour réessayer."
+              }}
+            </span>
+            <strong
+              *ngIf="uploadPhase === 'uploading' || uploadPhase === 'recovering'"
+            >
+              {{ employee._attendanceUploadProgress || 0 }}%
+            </strong>
+          </div>
+
+          <div
+            *ngIf="uploadPhase === 'uploading' || uploadPhase === 'recovering'"
+            class="mt-2 h-1.5 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950"
+          >
+            <div
+              class="h-full rounded-full bg-blue-600 transition-all duration-200"
+              [style.width.%]="employee._attendanceUploadProgress || 2"
+            ></div>
+          </div>
+
+          <p
+            *ngIf="employee._attendancePreparedSize"
+            class="mt-2 text-blue-700 dark:text-blue-200"
+          >
+            Photo optimisée :
+            {{
+              (employee._attendanceOriginalSize || employee._attachmentSize || 0) /
+                (1024 * 1024) | number : "1.1-1"
+            }}
+            Mo →
+            {{ employee._attendancePreparedSize / 1024 | number : "1.0-0" }}
+            Ko
+          </p>
+        </div>
       </div>
     </div>
 
@@ -4941,7 +4991,7 @@
           class="inline-flex items-center gap-2 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <svg
-            *ngIf="savingAttendance"
+            *ngIf="savingAttendance || employee._uploading"
             class="animate-spin h-4 w-4"
             viewBox="0 0 24 24"
             fill="none"
@@ -4960,7 +5010,17 @@
               stroke-linecap="round"
             ></path>
           </svg>
-          <span>{{ savingAttendance ? "Enregistrement…" : "Confirmer" }}</span>
+          <span>
+            {{
+              savingAttendance
+                ? "Enregistrement…"
+                : employee._uploading
+                ? employee._attendanceUploadPhase === "recovering"
+                  ? "Connexion lente…"
+                  : "Téléversement…"
+                : "Confirmer"
+            }}
+          </span>
         </button>
       </div>
     </div>

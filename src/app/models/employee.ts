@@ -123,6 +123,16 @@ export class Employee {
   _attachmentUA?: string;
   _attachmentSoftId?: string;
   _attachmentHash?: string;
+  _attendanceUploadPhase?:
+    | ''
+    | 'preparing'
+    | 'uploading'
+    | 'recovering'
+    | 'ready'
+    | 'error';
+  _attendanceUploadProgress?: number;
+  _attendanceOriginalSize?: number | null;
+  _attendancePreparedSize?: number | null;
 
   // 🆕 Daily payments ranking (transient)
   _dailyTotal?: number;

@@ -1266,6 +1266,98 @@ describe('EmployeePageComponent', () => {
     expect(employee._attachmentFile).toBeTruthy();
   });
 
+  it('prepares and starts uploading the optimized proof while preserving the original audit file', async () => {
+    const original = new File([new Uint8Array(4_000_000)], 'presence.jpg', {
+      type: 'image/jpeg',
+      lastModified: 1774688400000,
+    });
+    const optimized = new File([new Uint8Array(280_000)], 'presence-presence.jpg', {
+      type: 'image/jpeg',
+      lastModified: original.lastModified,
+    });
+    const attachment = {
+      url: 'https://firebase.test/preuploaded-presence',
+      path: 'attendance_proofs/site-1/employee-1/2026-03-28/photo.jpg',
+      size: optimized.size,
+      contentType: optimized.type,
+      uploadedAt: 1774688400000,
+      uploaderId: 'site-1',
+    };
+    const data = {
+      uploadAttendanceAttachment: jasmine
+        .createSpy('uploadAttendanceAttachment')
+        .and.resolveTo(attachment),
+    };
+    const component = createComponent({ currentUser: { uid: 'site-1' } });
+    (component as any).data = data;
+    const employee: any = { uid: 'employee-1' };
+    component.employee = employee;
+    spyOn<any>(component, 'prepareAttendanceUploadFile').and.resolveTo({
+      file: optimized,
+      originalSize: original.size,
+      uploadSize: optimized.size,
+      width: 1280,
+      height: 960,
+    });
+    spyOn<any>(component, 'readFirstCreated').and.resolveTo({
+      date: new Date(original.lastModified),
+      source: 'exif',
+    });
+    spyOn<any>(component, 'readExifDeviceInfo').and.resolveTo({
+      make: 'Test',
+      model: 'Phone',
+    });
+    spyOn<any>(component, 'hashFile').and.resolveTo('original-photo-hash');
+    const input = document.createElement('input');
+    Object.defineProperty(input, 'files', { value: [original] });
+
+    component.onAttachmentSelected(employee, { target: input } as any);
+    await employee._attendancePreparationPromise;
+    await employee._attendanceUploadPromise;
+    await employee._attachmentMetadataPromise;
+
+    expect(data.uploadAttendanceAttachment).toHaveBeenCalledWith(
+      optimized,
+      'employee-1',
+      'site-1',
+      jasmine.any(String),
+      'site-1',
+      jasmine.any(String),
+      jasmine.anything(),
+      jasmine.objectContaining({ timeoutMs: 90_000 })
+    );
+    expect(employee._attachmentFile).toBe(original);
+    expect(employee._attachmentHash).toBe('original-photo-hash');
+    expect(employee._attendancePreparedSize).toBe(optimized.size);
+    expect(employee._attendanceUploadPhase).toBe('ready');
+  });
+
+  it('cancels and removes an uploaded proof when the modal is abandoned', async () => {
+    const cancel = jasmine.createSpy('cancel').and.resolveTo(true);
+    const deleteObject = jasmine.createSpy('delete').and.returnValue(of(undefined));
+    const component = createComponent({ currentUser: { uid: 'site-1' } });
+    (component as any).storage = {
+      ref: jasmine.createSpy('ref').and.returnValue({ delete: deleteObject }),
+    };
+    const employee: any = {
+      _attendanceUploadTask: { cancel },
+      _uploadedAttendanceAttachment: {
+        attachment: {
+          path: 'attendance_proofs/site-1/employee-1/2026-03-28/photo.jpg',
+        },
+      },
+    };
+
+    component.clearAttachment(employee);
+    await Promise.resolve();
+
+    expect(cancel).toHaveBeenCalled();
+    expect((component as any).storage.ref).toHaveBeenCalledWith(
+      'attendance_proofs/site-1/employee-1/2026-03-28/photo.jpg'
+    );
+    expect(deleteObject).toHaveBeenCalled();
+  });
+
   it('reuses a completed upload when only attendance finalization must be retried', async () => {
     const attachment = {
       url: 'https://firebase.test/presence',
@@ -1298,7 +1390,6 @@ describe('EmployeePageComponent', () => {
       }),
     };
     component.employee = employee;
-    spyOn<any>(component, 'sleep').and.resolveTo();
     spyOn<any>(component, 'invalidateAttendanceRuleCaches').and.stub();
     spyOn(component, 'generateAttendanceTable').and.stub();
     spyOn(window, 'alert');
