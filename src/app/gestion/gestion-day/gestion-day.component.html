@@ -1326,7 +1326,7 @@
       >
         <button
           type="button"
-          class="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none dark:focus:ring-offset-slate-800"
+          class="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none dark:focus:ring-offset-slate-800"
           (click)="captureWeeklyPaymentTable()"
           [disabled]="
             isCapturingWeeklyPayment || weeklyPaymentTotals.length === 0
@@ -1337,7 +1337,7 @@
           <svg
             *ngIf="!isCapturingWeeklyPayment"
             aria-hidden="true"
-            class="h-5 w-5"
+            class="h-4 w-4"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -1353,7 +1353,7 @@
           <svg
             *ngIf="isCapturingWeeklyPayment"
             aria-hidden="true"
-            class="h-5 w-5 animate-spin"
+            class="h-4 w-4 animate-spin"
             viewBox="0 0 24 24"
             fill="none"
           >
