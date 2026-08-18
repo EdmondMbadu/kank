@@ -424,6 +424,129 @@ describe('GestionDayComponent weekly payment history', () => {
   });
 });
 
+describe('GestionDayComponent weekly payment capture', () => {
+  function createComponent(isAdmin = true): GestionDayComponent {
+    const router = jasmine.createSpyObj('Router', ['navigate']);
+    const auth = { isAdmin };
+    const time = {
+      getTodaysDateYearMonthDay: () => '2026-08-18',
+      todaysDateMonthDayYear: () => '8-18-2026',
+      yesterdaysDateMonthDayYear: () => '8-17-2026',
+      getTomorrowsDateMonthDayYear: () => '8-19-2026',
+      convertDateToDayMonthYear: (date: string) => date,
+      toDate: (date: string) => {
+        const [month, day, year] = date.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      },
+    };
+
+    const component = new GestionDayComponent(
+      router,
+      auth as any,
+      time as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+    component.weeklyPaymentDate = '2026-08-18';
+    component.weeklyPaymentDateCorrectFormat = '8-18-2026';
+    component.weeklyPaymentTotals = [{ firstName: 'Pumbu' } as any];
+    component.weeklyPaymentCapture = {
+      nativeElement: document.createElement('section'),
+    } as any;
+    return component;
+  }
+
+  it('exports the selected Monday-to-Sunday week with a stable filename', async () => {
+    const component = createComponent();
+    const exportSpy = spyOn<any>(
+      component,
+      'exportWeeklyPaymentElement'
+    ).and.resolveTo();
+
+    await component.captureWeeklyPaymentTable();
+
+    expect(exportSpy).toHaveBeenCalledOnceWith(
+      component.weeklyPaymentCapture!.nativeElement,
+      'paiement-semaine-2026-08-17-au-2026-08-23.png'
+    );
+    expect(component.weeklyPaymentCaptureMessage).toBe(
+      'Capture téléchargée avec succès.'
+    );
+    expect(component.weeklyPaymentCaptureError).toBe('');
+    expect(component.isCapturingWeeklyPayment).toBeFalse();
+  });
+
+  it('blocks duplicate capture work until the current image finishes', async () => {
+    const component = createComponent();
+    let finishCapture!: () => void;
+    const exportSpy = spyOn<any>(
+      component,
+      'exportWeeklyPaymentElement'
+    ).and.returnValue(
+      new Promise<void>((resolve) => {
+        finishCapture = resolve;
+      })
+    );
+
+    const firstCapture = component.captureWeeklyPaymentTable();
+    await component.captureWeeklyPaymentTable();
+
+    expect(component.isCapturingWeeklyPayment).toBeTrue();
+    expect(exportSpy).toHaveBeenCalledTimes(1);
+
+    finishCapture();
+    await firstCapture;
+
+    expect(component.isCapturingWeeklyPayment).toBeFalse();
+  });
+
+  it('restores the action and reports a rendering failure', async () => {
+    const component = createComponent();
+    spyOn(console, 'error');
+    spyOn<any>(component, 'exportWeeklyPaymentElement').and.rejectWith(
+      new Error('canvas unavailable')
+    );
+
+    await component.captureWeeklyPaymentTable();
+
+    expect(component.isCapturingWeeklyPayment).toBeFalse();
+    expect(component.weeklyPaymentCaptureMessage).toBe('');
+    expect(component.weeklyPaymentCaptureError).toBe(
+      'Impossible de générer la capture. Veuillez réessayer.'
+    );
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it('does not expose capture work to non-admin viewers', async () => {
+    const component = createComponent(false);
+    const exportSpy = spyOn<any>(
+      component,
+      'exportWeeklyPaymentElement'
+    ).and.resolveTo();
+
+    await component.captureWeeklyPaymentTable();
+
+    expect(exportSpy).not.toHaveBeenCalled();
+  });
+
+  it('shows a useful message when the selected week has no teams', async () => {
+    const component = createComponent();
+    component.weeklyPaymentTotals = [];
+    const exportSpy = spyOn<any>(
+      component,
+      'exportWeeklyPaymentElement'
+    ).and.resolveTo();
+
+    await component.captureWeeklyPaymentTable();
+
+    expect(exportSpy).not.toHaveBeenCalled();
+    expect(component.weeklyPaymentCaptureError).toBe(
+      'Aucune équipe n’est disponible pour cette semaine.'
+    );
+  });
+});
+
 describe('GestionDayComponent upcoming request summary', () => {
   function createComponent(isAdmin = true): {
     component: GestionDayComponent;

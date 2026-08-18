@@ -1,0 +1,192 @@
+.weekly-payment-export-only {
+  display: none;
+}
+
+.weekly-payment-capture--export {
+  box-sizing: border-box;
+  width: 1320px !important;
+  max-width: none !important;
+  overflow: visible !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  color: #334155 !important;
+  padding: 32px !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+.weekly-payment-capture--export *,
+.weekly-payment-capture--export *::before,
+.weekly-payment-capture--export *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+.weekly-payment-capture--export .weekly-payment-export-only {
+  display: flex;
+}
+
+.weekly-payment-capture--export .weekly-payment-export-kicker {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.weekly-payment-capture--export .weekly-payment-capture-heading {
+  align-items: flex-end !important;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 18px;
+}
+
+.weekly-payment-capture--export .weekly-payment-capture-heading h2 {
+  color: #0f172a !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.weekly-payment-capture--export .weekly-payment-capture-heading p {
+  margin-top: 6px;
+  color: #475569 !important;
+  font-size: 15px !important;
+  font-weight: 600;
+}
+
+.weekly-payment-capture--export .weekly-payment-table-scroll {
+  width: 100% !important;
+  margin-top: 22px !important;
+  overflow: visible !important;
+}
+
+.weekly-payment-capture--export .weekly-payment-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed;
+  border-spacing: 0;
+  border-collapse: separate;
+  color: #334155 !important;
+  font-size: 13px !important;
+}
+
+.weekly-payment-capture--export .weekly-payment-table thead th {
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #cbd5e1;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  padding: 13px 14px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.045em;
+}
+
+.weekly-payment-capture--export .weekly-payment-table thead th:first-child {
+  border-left: 1px solid #e2e8f0;
+  border-top-left-radius: 12px;
+}
+
+.weekly-payment-capture--export .weekly-payment-table thead th:last-child {
+  border-right: 1px solid #e2e8f0;
+  border-top-right-radius: 12px;
+}
+
+.weekly-payment-capture--export .weekly-payment-table tbody tr {
+  background: #ffffff !important;
+}
+
+.weekly-payment-capture--export .weekly-payment-table tbody tr:nth-child(even) {
+  background: #f8fafc !important;
+}
+
+.weekly-payment-capture--export .weekly-payment-table tbody th,
+.weekly-payment-capture--export .weekly-payment-table tbody td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 13px 14px !important;
+  vertical-align: middle;
+}
+
+.weekly-payment-capture--export .weekly-payment-table tbody th {
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.weekly-payment-capture--export .weekly-payment-table tfoot th,
+.weekly-payment-capture--export .weekly-payment-table tfoot td {
+  border-top: 2px solid #c7d2fe;
+  background: #eef2ff !important;
+  padding: 16px 14px !important;
+  vertical-align: middle;
+}
+
+.weekly-payment-capture--export .weekly-payment-table tfoot th {
+  border-bottom-left-radius: 12px;
+  color: #312e81 !important;
+  font-weight: 800 !important;
+}
+
+.weekly-payment-capture--export .weekly-payment-table tfoot td:last-child {
+  border-bottom-right-radius: 12px;
+}
+
+.weekly-payment-capture--export .weekly-payment-table th:nth-child(1),
+.weekly-payment-capture--export .weekly-payment-table td:nth-child(1) {
+  width: 14%;
+}
+
+.weekly-payment-capture--export .weekly-payment-table th:nth-child(2),
+.weekly-payment-capture--export .weekly-payment-table td:nth-child(2) {
+  width: 22%;
+}
+
+.weekly-payment-capture--export .weekly-payment-table th:nth-child(3),
+.weekly-payment-capture--export .weekly-payment-table td:nth-child(3),
+.weekly-payment-capture--export .weekly-payment-table th:nth-child(4),
+.weekly-payment-capture--export .weekly-payment-table td:nth-child(4) {
+  width: 16%;
+}
+
+.weekly-payment-capture--export .weekly-payment-table th:nth-child(5),
+.weekly-payment-capture--export .weekly-payment-table td:nth-child(5) {
+  width: 14%;
+}
+
+.weekly-payment-capture--export .weekly-payment-table th:nth-child(6),
+.weekly-payment-capture--export .weekly-payment-table td:nth-child(6) {
+  width: 18%;
+}
+
+.weekly-payment-capture--export .mt-3 {
+  margin-top: 0.6rem !important;
+}
+
+.weekly-payment-capture--export .mt-2 {
+  margin-top: 0.45rem !important;
+}
+
+.weekly-payment-capture--export .mt-1,
+.weekly-payment-capture--export .mt-1\.5 {
+  margin-top: 0.25rem !important;
+}
+
+.weekly-payment-capture--export .weekly-payment-export-footer {
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  padding-top: 14px;
+  font-size: 11px;
+  font-weight: 600;
+}

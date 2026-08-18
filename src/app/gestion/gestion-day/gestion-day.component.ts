@@ -1,4 +1,10 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin, Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -11,6 +17,7 @@ import { Client } from 'src/app/models/client';
 import { Card } from 'src/app/models/card';
 import { DataService } from 'src/app/services/data.service';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { exportElementAsPng } from 'src/app/utils/element-png-export.util';
 
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 type WeeklyPaymentHistoryPreset = '1M' | '3M' | '6M' | '1A' | 'MAX';
@@ -75,6 +82,9 @@ interface UpcomingRequestDateTotal {
   styleUrls: ['./gestion-day.component.css'],
 })
 export class GestionDayComponent implements OnInit, OnDestroy {
+  @ViewChild('weeklyPaymentCapture', { read: ElementRef })
+  weeklyPaymentCapture?: ElementRef<HTMLElement>;
+
   size = 220;
   strokeWidth = 16;
   avgPerf = 0; // 0..100
@@ -323,6 +333,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   weeklyPaymentDate: string = this.time.getTodaysDateYearMonthDay();
   weeklyPaymentDateCorrectFormat: string = this.time.todaysDateMonthDayYear();
   weeklyPaymentRangeLabel: string = '';
+  isCapturingWeeklyPayment = false;
+  weeklyPaymentCaptureMessage = '';
+  weeklyPaymentCaptureError = '';
   weeklyPaymentHistoryRange: WeeklyPaymentHistoryRange = '1M';
   weeklyPaymentHistoryMode: WeeklyPaymentHistoryMode = 'payment';
   weeklyPaymentHistoryIncludesCurrentWeek = false;
@@ -1378,6 +1391,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
   updateWeeklyPaymentDate() {
     if (!this.auth.isAdmin) return;
+    this.weeklyPaymentCaptureMessage = '';
+    this.weeklyPaymentCaptureError = '';
     this.weeklyPaymentDateCorrectFormat = this.time.convertDateToMonthDayYear(
       this.weeklyPaymentDate
     );
@@ -1386,6 +1401,69 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     );
     this.computeWeeklyPaymentTotals();
     this.updateWeeklyPaymentHistory(this.weeklyPaymentHistoryRange);
+  }
+
+  async captureWeeklyPaymentTable(): Promise<void> {
+    if (!this.auth.isAdmin || this.isCapturingWeeklyPayment) return;
+
+    this.weeklyPaymentCaptureMessage = '';
+    this.weeklyPaymentCaptureError = '';
+
+    const source = this.weeklyPaymentCapture?.nativeElement;
+    if (!source) {
+      this.weeklyPaymentCaptureError =
+        'La table n’est pas encore prête pour la capture.';
+      return;
+    }
+
+    if (this.weeklyPaymentTotals.length === 0) {
+      this.weeklyPaymentCaptureError =
+        'Aucune équipe n’est disponible pour cette semaine.';
+      return;
+    }
+
+    this.isCapturingWeeklyPayment = true;
+    try {
+      await this.exportWeeklyPaymentElement(
+        source,
+        this.weeklyPaymentCaptureFileName()
+      );
+      this.weeklyPaymentCaptureMessage =
+        'Capture téléchargée avec succès.';
+    } catch (error) {
+      console.error('Weekly payment capture failed.', error);
+      this.weeklyPaymentCaptureError =
+        'Impossible de générer la capture. Veuillez réessayer.';
+    } finally {
+      this.isCapturingWeeklyPayment = false;
+    }
+  }
+
+  private exportWeeklyPaymentElement(
+    source: HTMLElement,
+    fileName: string
+  ): Promise<void> {
+    return exportElementAsPng(source, {
+      fileName,
+      captureWidth: 1320,
+      preferredScale: 2,
+      backgroundColor: '#ffffff',
+      exportClassName: 'weekly-payment-capture--export',
+      excludeSelector: '[data-capture-exclude="true"]',
+    });
+  }
+
+  private weeklyPaymentCaptureFileName(): string {
+    try {
+      const { start, end } = this.getWeekBounds(
+        this.weeklyPaymentDateCorrectFormat
+      );
+      return `paiement-semaine-${this.formatIsoDate(
+        start
+      )}-au-${this.formatIsoDate(end)}.png`;
+    } catch {
+      return `paiement-semaine-${this.weeklyPaymentDate || 'selection'}.png`;
+    }
   }
 
   updateWeeklyPaymentHistory(range: WeeklyPaymentHistoryRange): void {

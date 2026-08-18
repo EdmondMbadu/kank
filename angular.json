@@ -16,6 +16,7 @@
             "allowedCommonJsDependencies": [
               "plotly.js-basic-dist",
               "heic2any",
+              "html2canvas",
               "pdfmake/build/pdfmake",
               "pdfmake/build/vfs_fonts"
             ],
