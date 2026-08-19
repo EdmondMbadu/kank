@@ -23,6 +23,7 @@ type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 type WeeklyPaymentHistoryPreset = '1M' | '3M' | '6M' | '1A' | 'MAX';
 type WeeklyPaymentHistoryRange = WeeklyPaymentHistoryPreset | 'CUSTOM';
 type WeeklyPaymentHistoryMode = 'payment' | 'combined' | 'reserve';
+type WeeklyPaymentViewMode = 'ranking' | 'detailed';
 type GestionHeatmapMode =
   | 'paymentToday'
   | 'reserveToday'
@@ -334,6 +335,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   weeklyPaymentDateCorrectFormat: string = this.time.todaysDateMonthDayYear();
   weeklyPaymentRangeLabel: string = '';
   isCapturingWeeklyPayment = false;
+  isCapturingWeeklyPaymentRanking = false;
+  weeklyPaymentViewMode: WeeklyPaymentViewMode = 'ranking';
   weeklyPaymentCaptureMessage = '';
   weeklyPaymentCaptureError = '';
   weeklyPaymentHistoryRange: WeeklyPaymentHistoryRange = '1M';
@@ -424,6 +427,26 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
   weeklyDailyAverage(value: number | string | null | undefined): number {
     return (Number(value) || 0) / this.weeklyWorkingDays;
+  }
+
+  get overallWeeklyTargetTotal(): number {
+    return this.weeklyPaymentTotals.reduce(
+      (total, row) => total + (Number(row.weeklyTargetFc) || 0),
+      0
+    );
+  }
+
+  get overallWeeklyTargetProgressPercent(): number {
+    const target = this.overallWeeklyTargetTotal;
+    if (target <= 0) return 0;
+
+    return Math.min(100, (this.overallWeeklyPaymentTotal / target) * 100);
+  }
+
+  get overallWeeklyTargetProgressTone(): WeeklyProgressTone {
+    return this.resolveExpectedProgressTone(
+      this.overallWeeklyTargetProgressPercent
+    );
   }
 
   overallWeeklyPaymentTotal: number = 0;
@@ -1404,7 +1427,13 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   async captureWeeklyPaymentTable(): Promise<void> {
-    if (!this.auth.isAdmin || this.isCapturingWeeklyPayment) return;
+    if (
+      !this.auth.isAdmin ||
+      this.isCapturingWeeklyPayment ||
+      this.isCapturingWeeklyPaymentRanking
+    ) {
+      return;
+    }
 
     this.weeklyPaymentCaptureMessage = '';
     this.weeklyPaymentCaptureError = '';
@@ -1439,6 +1468,54 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     }
   }
 
+  captureWeeklyPaymentView(): Promise<void> {
+    return this.weeklyPaymentViewMode === 'ranking'
+      ? this.captureWeeklyPaymentRanking()
+      : this.captureWeeklyPaymentTable();
+  }
+
+  async captureWeeklyPaymentRanking(): Promise<void> {
+    if (
+      !this.auth.isAdmin ||
+      this.isCapturingWeeklyPayment ||
+      this.isCapturingWeeklyPaymentRanking
+    ) {
+      return;
+    }
+
+    this.weeklyPaymentCaptureMessage = '';
+    this.weeklyPaymentCaptureError = '';
+
+    const source = this.weeklyPaymentCapture?.nativeElement;
+    if (!source) {
+      this.weeklyPaymentCaptureError =
+        'Le classement n’est pas encore prêt pour la capture.';
+      return;
+    }
+
+    if (this.weeklyPaymentTotals.length === 0) {
+      this.weeklyPaymentCaptureError =
+        'Aucune équipe n’est disponible pour cette semaine.';
+      return;
+    }
+
+    this.isCapturingWeeklyPaymentRanking = true;
+    try {
+      await this.exportWeeklyPaymentRankingElement(
+        source,
+        this.weeklyPaymentRankingCaptureFileName()
+      );
+      this.weeklyPaymentCaptureMessage =
+        'Capture du classement téléchargée avec succès.';
+    } catch (error) {
+      console.error('Weekly payment ranking capture failed.', error);
+      this.weeklyPaymentCaptureError =
+        'Impossible de générer la capture. Veuillez réessayer.';
+    } finally {
+      this.isCapturingWeeklyPaymentRanking = false;
+    }
+  }
+
   private exportWeeklyPaymentElement(
     source: HTMLElement,
     fileName: string
@@ -1453,6 +1530,20 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     });
   }
 
+  private exportWeeklyPaymentRankingElement(
+    source: HTMLElement,
+    fileName: string
+  ): Promise<void> {
+    return exportElementAsPng(source, {
+      fileName,
+      captureWidth: 940,
+      preferredScale: 2,
+      backgroundColor: '#ffffff',
+      exportClassName: 'weekly-payment-ranking-capture--export',
+      excludeSelector: '[data-capture-exclude="true"]',
+    });
+  }
+
   private weeklyPaymentCaptureFileName(): string {
     try {
       const { start, end } = this.getWeekBounds(
@@ -1463,6 +1554,21 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       )}-au-${this.formatIsoDate(end)}.png`;
     } catch {
       return `paiement-semaine-${this.weeklyPaymentDate || 'selection'}.png`;
+    }
+  }
+
+  private weeklyPaymentRankingCaptureFileName(): string {
+    try {
+      const { start, end } = this.getWeekBounds(
+        this.weeklyPaymentDateCorrectFormat
+      );
+      return `classement-paiement-semaine-${this.formatIsoDate(
+        start
+      )}-au-${this.formatIsoDate(end)}.png`;
+    } catch {
+      return `classement-paiement-semaine-${
+        this.weeklyPaymentDate || 'selection'
+      }.png`;
     }
   }
 

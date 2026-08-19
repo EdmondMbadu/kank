@@ -1306,6 +1306,11 @@
     data-weekly-payment-capture="true"
     class="weekly-payment-capture w-full max-w-7xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-5"
   >
+    <div
+      class="weekly-payment-ranking-export-only weekly-payment-ranking-export-kicker"
+    >
+      Classement des équipes
+    </div>
     <div class="weekly-payment-export-only weekly-payment-export-kicker">
       Rapport hebdomadaire
     </div>
@@ -1320,22 +1325,65 @@
           Semaine : {{ weeklyPaymentRangeLabel }}
         </p>
       </div>
+      <span
+        class="weekly-payment-ranking-export-only weekly-payment-ranking-export-range"
+      >
+        {{ weeklyPaymentRangeLabel }}
+      </span>
       <div
         data-capture-exclude="true"
         class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
       >
+        <div
+          role="group"
+          aria-label="Vue du paiement de la semaine"
+          class="inline-flex min-h-[36px] rounded-lg bg-slate-100 p-1 dark:bg-slate-700"
+        >
+          <button
+            type="button"
+            class="rounded-md px-3 py-1 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            [ngClass]="
+              weeklyPaymentViewMode === 'ranking'
+                ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-800 dark:text-indigo-200'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'
+            "
+            [attr.aria-pressed]="weeklyPaymentViewMode === 'ranking'"
+            (click)="weeklyPaymentViewMode = 'ranking'"
+          >
+            Classement
+          </button>
+          <button
+            type="button"
+            class="rounded-md px-3 py-1 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            [ngClass]="
+              weeklyPaymentViewMode === 'detailed'
+                ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-800 dark:text-indigo-200'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'
+            "
+            [attr.aria-pressed]="weeklyPaymentViewMode === 'detailed'"
+            (click)="weeklyPaymentViewMode = 'detailed'"
+          >
+            Détaillé
+          </button>
+        </div>
         <button
           type="button"
           class="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none dark:focus:ring-offset-slate-800"
-          (click)="captureWeeklyPaymentTable()"
+          (click)="captureWeeklyPaymentView()"
           [disabled]="
-            isCapturingWeeklyPayment || weeklyPaymentTotals.length === 0
+            isCapturingWeeklyPayment ||
+            isCapturingWeeklyPaymentRanking ||
+            weeklyPaymentTotals.length === 0
           "
-          [attr.aria-busy]="isCapturingWeeklyPayment"
-          title="Télécharger toute la table dans une seule image PNG"
+          [attr.aria-busy]="
+            isCapturingWeeklyPayment || isCapturingWeeklyPaymentRanking
+          "
+          title="Télécharger la vue affichée"
         >
           <svg
-            *ngIf="!isCapturingWeeklyPayment"
+            *ngIf="
+              !isCapturingWeeklyPayment && !isCapturingWeeklyPaymentRanking
+            "
             aria-hidden="true"
             class="h-4 w-4"
             viewBox="0 0 24 24"
@@ -1351,7 +1399,7 @@
             <circle cx="12" cy="13" r="3.25"></circle>
           </svg>
           <svg
-            *ngIf="isCapturingWeeklyPayment"
+            *ngIf="isCapturingWeeklyPayment || isCapturingWeeklyPaymentRanking"
             aria-hidden="true"
             class="h-4 w-4 animate-spin"
             viewBox="0 0 24 24"
@@ -1372,9 +1420,9 @@
             ></path>
           </svg>
           {{
-            isCapturingWeeklyPayment
-              ? "Préparation de l’image…"
-              : "Prendre une capture"
+            isCapturingWeeklyPayment || isCapturingWeeklyPaymentRanking
+              ? "Préparation…"
+              : "Capture"
           }}
         </button>
         <input
@@ -1401,7 +1449,10 @@
       {{ weeklyPaymentCaptureError || weeklyPaymentCaptureMessage }}
     </div>
 
-    <div class="weekly-payment-table-scroll mt-4 w-full overflow-x-auto">
+    <div
+      *ngIf="weeklyPaymentViewMode === 'detailed'"
+      class="weekly-payment-table-scroll mt-4 w-full overflow-x-auto"
+    >
       <table
         class="weekly-payment-table w-full min-w-[940px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
       >
@@ -1808,10 +1859,123 @@
       </tfoot>
       </table>
     </div>
-    <div class="weekly-payment-export-only weekly-payment-export-footer">
+    <div
+      *ngIf="weeklyPaymentViewMode === 'detailed'"
+      class="weekly-payment-export-only weekly-payment-export-footer"
+    >
       <span>Paiement · Réserve · Minimum · Avancement</span>
       <span>Une seule image · Semaine complète</span>
     </div>
+
+  <section
+    *ngIf="weeklyPaymentViewMode === 'ranking'"
+    data-weekly-payment-ranking-capture="true"
+    class="weekly-payment-ranking-view weekly-payment-ranking-capture--export"
+  >
+    <table class="weekly-payment-ranking-table">
+      <thead>
+        <tr>
+          <th scope="col">Rang</th>
+          <th scope="col">Équipe</th>
+          <th scope="col">Paiement semaine</th>
+          <th scope="col">Avancement</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let s of weeklyPaymentTotals; let i = index"
+          data-weekly-payment-ranking-row="true"
+        >
+          <td>
+            <span class="weekly-payment-ranking-position">{{ i + 1 }}</span>
+          </td>
+          <th scope="row">{{ s.firstName }}</th>
+          <td class="weekly-payment-ranking-amount">
+            <strong>${{ +s.totalInDollar || 0 | number : "1.0-0" }}</strong>
+            <span>{{ +s.total || 0 | number : "1.0-0" }} FC</span>
+          </td>
+          <td>
+            <div class="weekly-payment-ranking-progress-label">
+              <span>Paiement</span>
+              <strong>{{ s.weeklyProgressPercent || 0 | number : "1.0-0" }}%</strong>
+            </div>
+            <div
+              class="weekly-payment-ranking-progress-track"
+              [attr.aria-label]="
+                'Progression: ' +
+                (s.weeklyProgressPercent || 0 | number : '1.0-0') +
+                '%'
+              "
+            >
+              <span
+                *ngFor="let marker of s.weeklyProgressMarkers"
+                class="weekly-payment-ranking-progress-marker"
+                [style.left.%]="marker.percent"
+              ></span>
+              <div
+                class="weekly-payment-ranking-progress-fill"
+                [ngClass]="
+                  'weekly-payment-ranking-progress-fill--' +
+                  s.weeklyProgressTone
+                "
+                [style.width.%]="s.weeklyProgressPercent || 0"
+              ></div>
+            </div>
+            <div
+              *ngIf="s.weeklyProgressMarkers.length > 0"
+              class="weekly-payment-ranking-milestones"
+            >
+              <ng-container *ngFor="let marker of s.weeklyProgressMarkers">
+                <span
+                  *ngIf="s.total >= marker.amountFc"
+                  [ngClass]="{
+                    'weekly-payment-ranking-milestone--floor':
+                      marker.amountFc === 600000,
+                    'weekly-payment-ranking-milestone--stretch':
+                      marker.amountFc === 900000
+                  }"
+                >
+                  <i></i>
+                  {{ marker.label }}
+                </span>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr data-weekly-payment-ranking-total-row="true">
+          <th scope="row" colspan="2">Total</th>
+          <td class="weekly-payment-ranking-amount">
+            <strong>
+              ${{ +overallWeeklyPaymentTotalDollar || 0 | number : "1.0-0" }}
+            </strong>
+            <span>
+              {{ +overallWeeklyPaymentTotal || 0 | number : "1.0-0" }} FC
+            </span>
+          </td>
+          <td>
+            <div class="weekly-payment-ranking-progress-label">
+              <span>Objectif global</span>
+              <strong>
+                {{ overallWeeklyTargetProgressPercent | number : "1.0-0" }}%
+              </strong>
+            </div>
+            <div class="weekly-payment-ranking-progress-track">
+              <div
+                class="weekly-payment-ranking-progress-fill"
+                [ngClass]="
+                  'weekly-payment-ranking-progress-fill--' +
+                  overallWeeklyTargetProgressTone
+                "
+                [style.width.%]="overallWeeklyTargetProgressPercent"
+              ></div>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
   </div>
 </div>
 

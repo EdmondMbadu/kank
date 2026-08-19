@@ -501,6 +501,54 @@ describe('GestionDayComponent weekly payment capture', () => {
     expect(component.isCapturingWeeklyPayment).toBeFalse();
   });
 
+  it('exports a compact ranking with its own stable filename', async () => {
+    const component = createComponent();
+    const exportSpy = spyOn<any>(
+      component,
+      'exportWeeklyPaymentRankingElement'
+    ).and.resolveTo();
+
+    await component.captureWeeklyPaymentRanking();
+
+    expect(exportSpy).toHaveBeenCalledOnceWith(
+      component.weeklyPaymentCapture!.nativeElement,
+      'classement-paiement-semaine-2026-08-17-au-2026-08-23.png'
+    );
+    expect(component.weeklyPaymentCaptureMessage).toBe(
+      'Capture du classement téléchargée avec succès.'
+    );
+    expect(component.weeklyPaymentCaptureError).toBe('');
+    expect(component.isCapturingWeeklyPaymentRanking).toBeFalse();
+  });
+
+  it('computes the compact total progress from all weekly targets', () => {
+    const component = createComponent();
+    component.weeklyPaymentTotals = [
+      { weeklyTargetFc: 600000 } as any,
+      { weeklyTargetFc: 900000 } as any,
+    ];
+    component.overallWeeklyPaymentTotal = 750000;
+
+    expect(component.overallWeeklyTargetTotal).toBe(1500000);
+    expect(component.overallWeeklyTargetProgressPercent).toBe(50);
+    expect(component.overallWeeklyTargetProgressTone).toBe('yellow');
+  });
+
+  it('uses ranking by default and captures whichever view is selected', async () => {
+    const component = createComponent();
+    const rankingSpy = spyOn(component, 'captureWeeklyPaymentRanking').and.resolveTo();
+    const detailedSpy = spyOn(component, 'captureWeeklyPaymentTable').and.resolveTo();
+
+    expect(component.weeklyPaymentViewMode).toBe('ranking');
+    await component.captureWeeklyPaymentView();
+    expect(rankingSpy).toHaveBeenCalledTimes(1);
+    expect(detailedSpy).not.toHaveBeenCalled();
+
+    component.weeklyPaymentViewMode = 'detailed';
+    await component.captureWeeklyPaymentView();
+    expect(detailedSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('restores the action and reports a rendering failure', async () => {
     const component = createComponent();
     spyOn(console, 'error');

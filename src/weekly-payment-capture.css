@@ -190,3 +190,373 @@
   font-size: 11px;
   font-weight: 600;
 }
+
+.weekly-payment-ranking-capture {
+  display: none;
+}
+
+.weekly-payment-ranking-export-only {
+  display: none;
+}
+
+.weekly-payment-ranking-capture--export {
+  box-sizing: border-box;
+  display: block !important;
+  width: 940px !important;
+  max-width: none !important;
+  overflow: visible !important;
+  border: 1px solid #cbd5e1;
+  border-radius: 22px;
+  background: #ffffff;
+  color: #334155;
+  padding: 28px !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+.weekly-payment-ranking-view.weekly-payment-ranking-capture--export {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: 1rem;
+  overflow-x: auto !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 !important;
+}
+
+.weekly-payment-ranking-view .weekly-payment-ranking-table {
+  min-width: 760px;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-export-only {
+  display: block;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-export-kicker {
+  width: fit-content;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.weekly-payment-ranking-capture--export *,
+.weekly-payment-ranking-capture--export *::before,
+.weekly-payment-ranking-capture--export *::after {
+  box-sizing: border-box;
+  animation: none !important;
+  transition: none !important;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-capture-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 18px;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-capture-heading p {
+  display: none;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-capture-heading h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-export-range {
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table {
+  width: 100%;
+  margin-top: 20px;
+  table-layout: fixed;
+  border-spacing: 0;
+  border-collapse: separate;
+  color: #334155;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table th,
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table td {
+  text-align: left;
+  vertical-align: middle;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table thead th {
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-table
+  thead
+  th:first-child {
+  border-left: 1px solid #e2e8f0;
+  border-top-left-radius: 11px;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-table
+  thead
+  th:last-child {
+  border-right: 1px solid #e2e8f0;
+  border-top-right-radius: 11px;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table tbody tr {
+  background: #ffffff;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-table
+  tbody
+  tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table tbody th,
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table tbody td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 13px 14px;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table tbody th {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table th:nth-child(1),
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table td:nth-child(1) {
+  width: 9%;
+  text-align: center;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table th:nth-child(2),
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table td:nth-child(2) {
+  width: 27%;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table th:nth-child(3),
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table td:nth-child(3) {
+  width: 25%;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table th:nth-child(4),
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table td:nth-child(4) {
+  width: 39%;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-position {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-table
+  .weekly-payment-ranking-amount
+  strong,
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-table
+  .weekly-payment-ranking-amount
+  span {
+  display: block;
+  text-align: right;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-table
+  .weekly-payment-ranking-amount
+  strong {
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-table
+  .weekly-payment-ranking-amount
+  span {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-progress-label
+  strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-progress-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-progress-marker {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.25);
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-milestones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-milestones:empty {
+  display: none;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-milestones > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-milestones i {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-milestone--floor {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-milestone--floor
+  i {
+  background: #f59e0b;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-milestone--stretch {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-milestone--stretch
+  i {
+  background: #f97316;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-progress-fill--red {
+  background: #ef4444;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-progress-fill--yellow {
+  background: #f59e0b;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-progress-fill--orange {
+  background: #f97316;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-progress-fill--green {
+  background: #10b981;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table tfoot th,
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table tfoot td {
+  border-top: 2px solid #c7d2fe;
+  background: #eef2ff;
+  padding: 15px 14px;
+}
+
+.weekly-payment-ranking-capture--export .weekly-payment-ranking-table tfoot th {
+  border-bottom-left-radius: 11px;
+  color: #312e81;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.weekly-payment-ranking-capture--export
+  .weekly-payment-ranking-table
+  tfoot
+  td:last-child {
+  border-bottom-right-radius: 11px;
+}
