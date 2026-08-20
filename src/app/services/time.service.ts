@@ -273,24 +273,51 @@ export class TimeService {
   }
 
   nextPaymentDate(dateJoined: any) {
+    const nextPaymentDate = this.getNextPaymentDate(dateJoined);
+    const format = nextPaymentDate.toDateString().split(' ');
+    return format[1] + ' ' + format[2];
+  }
+
+  nextPaymentDateDisplay(
+    dateJoined: any,
+    today: Date = new Date()
+  ): { long: string; numeric: string } {
+    const nextPaymentDate = this.getNextPaymentDate(dateJoined, today);
+    const longDate = nextPaymentDate.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    return {
+      long: longDate.charAt(0).toUpperCase() + longDate.slice(1),
+      numeric: nextPaymentDate.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }),
+    };
+  }
+
+  private getNextPaymentDate(dateJoined: any, today: Date = new Date()): Date {
     const targetDay = new Date(dateJoined).getDay();
     if (targetDay < 0 || targetDay > 6) {
       throw new Error('Invalid day: the day parameter must be between 0 and 6');
     }
 
-    let today = new Date();
-    let dayOfWeek = today.getDay();
+    const nextPaymentDate = new Date(today);
+    const dayOfWeek = nextPaymentDate.getDay();
     let daysUntilTargetDay = (targetDay - dayOfWeek + 7) % 7;
 
     // If the target day is today, we want the date for the same day in the next week
     if (daysUntilTargetDay === 0) {
       daysUntilTargetDay = 7;
     }
-    today.setDate(today.getDate() + daysUntilTargetDay);
-    today.setHours(0, 0, 0, 0); // Reset hours, minutes, seconds and milliseconds
+    nextPaymentDate.setDate(nextPaymentDate.getDate() + daysUntilTargetDay);
+    nextPaymentDate.setHours(0, 0, 0, 0);
 
-    const format = today.toDateString().split(' ');
-    return format[1] + ' ' + format[2];
+    return nextPaymentDate;
   }
 
   formatDateString(inputDate: any) {

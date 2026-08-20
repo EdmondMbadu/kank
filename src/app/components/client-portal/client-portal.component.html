@@ -1124,8 +1124,15 @@
       class="hidden md:flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
     >
       <dt class="text-lg font-semibold">Prochaine Échéance</dt>
-      <dd class="mt-1 text-2xl font-bold">
-        {{ client.frenchPaymentDay }} {{ paymentDate }}
+      <dd
+        class="mt-2 text-center text-2xl font-extrabold tracking-tight text-indigo-700 dark:text-indigo-300"
+      >
+        {{ paymentDateLong }}
+        <span
+          class="mx-auto mt-2 block w-fit rounded-full border border-slate-200 bg-white/80 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400"
+        >
+          {{ paymentDateNumeric }}
+        </span>
       </dd>
     </div>
 

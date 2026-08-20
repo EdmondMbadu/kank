@@ -190,7 +190,8 @@ export class ClientPortalComponent {
   }
 
   id: any = '';
-  paymentDate = '';
+  paymentDateLong = '';
+  paymentDateNumeric = '';
   debtStart = '';
   debtEnd = '';
   isDebtOverdue = false;
@@ -311,7 +312,11 @@ export class ClientPortalComponent {
       this.setGraphCredit();
       this.setComments();
 
-      this.paymentDate = this.time.nextPaymentDate(this.client.dateJoined);
+      const paymentDateDisplay = this.time.nextPaymentDateDisplay(
+        this.client.dateJoined
+      );
+      this.paymentDateLong = paymentDateDisplay.long;
+      this.paymentDateNumeric = paymentDateDisplay.numeric;
       this.debtStart = this.time.formatDateString(
         this.client.debtCycleStartDate
       );
