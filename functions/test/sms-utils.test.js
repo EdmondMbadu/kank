@@ -2,7 +2,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   BRAND_LINE,
+  CARD_SUPPORT_LINE,
   SUPPORT_NUMBERS,
+  buildCardLifecycleMessage,
   buildEmployeeSummaryMessage,
   buildLoanActivationMessage,
   buildPaymentUpdateMessage,
@@ -10,9 +12,96 @@ const {
   buildReminderMessage,
   buildSmsDeliveryId,
   extractProviderCost,
+  hasExactlyTenPhoneDigits,
   measureSms,
   toGsmSafe,
 } = require("../sms-utils");
+
+test("every card lifecycle message is exactly one GSM segment", () => {
+  const common = {
+    fullName: "Jensen Jeffrey Kabi",
+    firstName: "Jensen",
+    middleName: "Jeffrey",
+    lastName: "Kabi",
+    amount: 5000000,
+    amountToPay: 5000000,
+    cardTotalBefore: 15000000,
+    cardTotalAfter: 10000000,
+    returnableAfter: 5000000,
+    returnedAmount: 10000000,
+    debtLeftAfter: 40000000,
+    cycle: 12,
+    depositCount: 12,
+    returnDate: "25/08/2026",
+  };
+  const eventTypes = [
+    "card_created",
+    "cycle_started",
+    "deposit",
+    "partial_withdrawal",
+    "withdrawal_requested",
+    "total_withdrawal",
+    "credit_transfer",
+    "total_withdrawal_reversed",
+    "manual_correction",
+  ];
+
+  for (const type of eventTypes) {
+    const result = buildCardLifecycleMessage({...common, type});
+    assert.equal(result.measurement.encoding, "GSM-7", type);
+    assert.equal(result.measurement.segments, 1, type);
+    assert.ok(result.measurement.septets <= 160, type);
+    assert.match(result.message, /Carte/, type);
+    assert.ok(result.message.includes(CARD_SUPPORT_LINE), type);
+    assert.ok(!result.message.includes(SUPPORT_NUMBERS[1]), type);
+    assert.ok(!result.message.includes(SUPPORT_NUMBERS[2]), type);
+    assert.match(result.message, /Fondation Gervais\.$/);
+  }
+});
+
+test("card messages compact long client names before adding a segment", () => {
+  const result = buildCardLifecycleMessage({
+    type: "credit_transfer",
+    fullName: "Marie-Christine-Extraordinairement-Longue Phemba-Ntumba-Makengo",
+    amount: 999999999,
+    amountToPay: 999999999,
+    cardTotalAfter: 9999999999,
+    returnableAfter: 8999999999,
+    debtLeftAfter: 9999999999,
+    cycle: 99,
+    depositCount: 31,
+  });
+
+  assert.equal(result.measurement.segments, 1);
+  assert.equal(result.usedCompactFallback, true);
+});
+
+test("second card deposit distinguishes total paid from returnable money", () => {
+  const result = buildCardLifecycleMessage({
+    type: "deposit",
+    fullName: "Jensen Jeffrey Kabi",
+    amount: 50000,
+    amountToPay: 50000,
+    cardTotalBefore: 50000,
+    cardTotalAfter: 100000,
+    returnableAfter: 50000,
+    cycle: 1,
+    depositCount: 2,
+  });
+
+  assert.match(
+      result.message,
+      /Depot Carte FC50000.*Osi ofuti FC100000; okozwa FC50000\. 2\/31 paiements\./,
+  );
+  assert.equal(result.measurement.segments, 1);
+});
+
+test("card SMS accepts exactly ten phone digits", () => {
+  assert.equal(hasExactlyTenPhoneDigits("(215) 687-7614"), true);
+  assert.equal(hasExactlyTenPhoneDigits("215687761"), false);
+  assert.equal(hasExactlyTenPhoneDigits("+1 215 687 7614"), false);
+  assert.equal(hasExactlyTenPhoneDigits("21568776145"), false);
+});
 
 test("delivery IDs block the same recipient and day only", () => {
   const input = {

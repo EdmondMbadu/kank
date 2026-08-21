@@ -10,8 +10,7 @@ describe('ClientPortalCardComponent', () => {
       {} as any,
       {} as any,
       {} as any,
-      new FormBuilder(),
-      {} as any
+      new FormBuilder()
     );
 
   it('allows total-withdraw undo only for admin on terminé cards with a snapshot', () => {

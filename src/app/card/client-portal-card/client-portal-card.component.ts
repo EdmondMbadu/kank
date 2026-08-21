@@ -22,7 +22,6 @@ import {
   of,
   switchMap,
 } from 'rxjs';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
 
 @Component({
   selector: 'app-client-portal-card',
@@ -49,6 +48,7 @@ export class ClientPortalCardComponent {
   saving = false;
   saveMsg = '';
   saveOk = false;
+  sendCorrectionSms = false;
 
   constructor(
     public auth: AuthService,
@@ -56,8 +56,7 @@ export class ClientPortalCardComponent {
     private router: Router,
     private time: TimeService,
     private data: DataService,
-    private fb: FormBuilder,
-    private afs: AngularFirestore
+    private fb: FormBuilder
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -482,9 +481,17 @@ export class ClientPortalCardComponent {
         // payments:  // ← intentionally omitted
       };
 
-      const path = `users/${ownerUid}/cards/${docId}`;
-      console.log('[ClientPortalCard] Saving card', { path, updatePayload });
-      await this.afs.doc(path).set(updatePayload, { merge: true });
+      const financialValuesChanged =
+        String(updatePayload.amountPaid) !==
+          String(this.clientCard.amountPaid ?? '0') ||
+        String(updatePayload.amountToPay) !==
+          String(this.clientCard.amountToPay ?? '0');
+      await this.data.updateCardWithOptionalCorrectionEvent(
+        docId,
+        this.clientCard,
+        updatePayload,
+        this.sendCorrectionSms && financialValuesChanged
+      );
 
       // Update local model (so UI above reflects instantly)
       Object.assign(this.clientCard, updatePayload);
@@ -493,6 +500,7 @@ export class ClientPortalCardComponent {
 
       this.saveOk = true;
       this.saveMsg = 'Modifications enregistrées ✅';
+      this.sendCorrectionSms = false;
     } catch (e: any) {
       console.error(e);
       this.saveOk = false;

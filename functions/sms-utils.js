@@ -4,6 +4,7 @@ const crypto = require("crypto");
 
 const SUPPORT_NUMBERS = ["0825333567", "0899401993", "0975849850"];
 const SUPPORT_LINE = `Tel ${SUPPORT_NUMBERS.join("/")}.`;
+const CARD_SUPPORT_LINE = `Tel ${SUPPORT_NUMBERS[0]}.`;
 const BRAND_LINE = "Fondation Gervais.";
 
 const GSM_7_BASIC = new Set(Array.from(
@@ -109,6 +110,10 @@ function formatAmount(value) {
   if (!Number.isFinite(numeric)) return toGsmSafe(raw || "0");
   if (Number.isInteger(numeric)) return String(numeric);
   return numeric.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+}
+
+function hasExactlyTenPhoneDigits(value) {
+  return String(value || "").replace(/\D/g, "").length === 10;
 }
 
 function selectCriticalMessage(candidates, targetSeptets = 150) {
@@ -268,6 +273,75 @@ function buildLoanActivationMessage({
   ]);
 }
 
+function buildCardLifecycleMessage(event = {}) {
+  const fullName = toGsmSafe(
+      event.fullName ||
+      `${event.firstName || ""} ${event.middleName || ""} ${event.lastName || ""}`,
+  ).replace(/\s+/g, " ").trim() || "Client";
+  const firstName = compactName(fullName);
+  const amount = formatAmount(event.amount);
+  const step = formatAmount(event.amountToPay);
+  const cardTotal = formatAmount(event.cardTotalAfter);
+  const cardTotalBefore = formatAmount(event.cardTotalBefore);
+  const returnable = formatAmount(event.returnableAfter);
+  const returnedAmount = formatAmount(event.returnedAmount || event.amount);
+  const debtLeft = formatAmount(event.debtLeftAfter);
+  const cycle = formatAmount(event.cycle || 1);
+  const paymentCount = formatAmount(event.depositCount || 1);
+  const returnDate = toGsmSafe(event.returnDate || "N/A");
+
+  const bodyFor = (name) => {
+    switch (event.type) {
+      case "card_created":
+        return `${name}: Carte efungwami. Tranche FC${step}; ` +
+          `ofuti FC${cardTotal}; okozwa FC${returnable}. ` +
+          `${paymentCount}/31 paiements.`;
+      case "cycle_started":
+        return `${name}: Cycle Carte ${cycle} ebandi. Tranche FC${step}; ` +
+          `ofuti FC${cardTotal}; okozwa FC${returnable}. ` +
+          `${paymentCount}/31 paiements.`;
+      case "deposit":
+        return `${name}: Depot Carte FC${amount} endimami. Osi ofuti ` +
+          `FC${cardTotal}; okozwa FC${returnable}. ` +
+          `${paymentCount}/31 paiements.`;
+      case "partial_withdrawal":
+        return `${name}: Retrait Carte FC${amount} endimami. Total ` +
+          `FC${cardTotal}; okozwa FC${returnable}.`;
+      case "withdrawal_requested":
+        return `${name}: Demande retrait Carte ezwami. Ofuti FC${cardTotal}; ` +
+          `okozwa FC${returnable} le ${returnDate}.`;
+      case "total_withdrawal":
+        return `${name}: Retrait total Carte endimami. Ofutaki ` +
+          `FC${cardTotalBefore}; ozwi FC${returnedAmount}. ` +
+          `Cycle ${cycle} esili.`;
+      case "credit_transfer":
+        return `${name}: Transfert Carte-credit FC${amount}. Total ` +
+          `FC${cardTotal}; okozwa FC${returnable}; niongo FC${debtLeft}.`;
+      case "total_withdrawal_reversed":
+        return `${name}: Correction retrait Carte. Total FC${cardTotal}; ` +
+          `okozwa FC${returnable}; cycle ${cycle} actif.`;
+      case "manual_correction":
+        return `${name}: Correction Carte. Total FC${cardTotal}; ` +
+          `okozwa FC${returnable}.`;
+      default:
+        throw new Error(`Unsupported card lifecycle event: ${event.type}`);
+    }
+  };
+
+  const selected = selectCriticalMessage([
+    `${bodyFor(fullName)} ${CARD_SUPPORT_LINE} ${BRAND_LINE}`,
+    `${bodyFor(firstName)} ${CARD_SUPPORT_LINE} ${BRAND_LINE}`,
+    `${bodyFor("Client")} ${CARD_SUPPORT_LINE} ${BRAND_LINE}`,
+  ], 150);
+
+  if (selected.measurement.encoding !== "GSM-7" ||
+      selected.measurement.segments !== 1) {
+    throw new Error("Card lifecycle SMS exceeds one GSM segment.");
+  }
+
+  return selected;
+}
+
 function employeeClientName(client, firstOnly) {
   const names = clientNames(client.firstName, client.lastName);
   return firstOnly ? names.firstName : names.fullName;
@@ -357,16 +431,19 @@ function extractProviderCost(response) {
 
 module.exports = {
   BRAND_LINE,
+  CARD_SUPPORT_LINE,
   SUPPORT_LINE,
   SUPPORT_NUMBERS,
   buildSmsDeliveryId,
   buildEmployeeSummaryMessage,
+  buildCardLifecycleMessage,
   buildLoanActivationMessage,
   buildPaymentUpdateMessage,
   buildRegistrationMessage,
   buildReminderMessage,
   extractProviderCost,
   formatAmount,
+  hasExactlyTenPhoneDigits,
   measureSms,
   selectCriticalMessage,
   stableHash,

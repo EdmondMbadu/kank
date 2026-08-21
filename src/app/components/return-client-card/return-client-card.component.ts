@@ -6,6 +6,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { countPositiveCardDeposits } from 'src/app/utils/card-lifecycle-event.util';
 
 @Component({
   selector: 'app-return-client-card',
@@ -84,9 +85,14 @@ export class ReturnClientCardComponent {
   }
 
   private buildRetraitTotalSnapshot(): CardTotalWithdrawalSnapshot {
+    const depositCount =
+      this.clientCard.depositCount !== undefined
+        ? Math.max(0, Number(this.clientCard.depositCount) || 0)
+        : countPositiveCardDeposits(this.clientCard.payments);
     return {
       amountPaid: this.clientCard.amountPaid ?? '0',
       numberOfPaymentsMade: this.clientCard.numberOfPaymentsMade ?? '0',
+      depositCount: String(depositCount),
       payments: { ...(this.clientCard.payments ?? {}) },
       withdrawal: { ...(this.clientCard.withdrawal ?? {}) },
       clientCardStatus: this.clientCard.clientCardStatus ?? '',

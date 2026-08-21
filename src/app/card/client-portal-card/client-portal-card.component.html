@@ -443,6 +443,22 @@
         <input formControlName="dateJoined" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
       </div>
 
+      <label
+        class="sm:col-span-2 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200"
+      >
+        <input
+          type="checkbox"
+          [(ngModel)]="sendCorrectionSms"
+          [ngModelOptions]="{ standalone: true }"
+          class="mt-0.5 h-4 w-4 rounded border-amber-300 text-indigo-600 focus:ring-indigo-500"
+        />
+        <span>
+          Envoyer un SMS de correction si le montant perçu ou le montant à
+          verser change et si la carte atteint le seuil global. Aucun SMS n’est
+          envoyé pour les autres modifications.
+        </span>
+      </label>
+
       <!-- Actions -->
       <div class="sm:col-span-2 flex items-center justify-end gap-2 mt-2">
         <button type="button"

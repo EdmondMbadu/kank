@@ -3,6 +3,7 @@ import { ClientGalleryPicture } from './client';
 export interface CardTotalWithdrawalSnapshot {
   amountPaid?: string;
   numberOfPaymentsMade?: string;
+  depositCount?: string;
   payments?: { [key: string]: string };
   withdrawal?: { [key: string]: string };
   clientCardStatus?: string;
@@ -14,6 +15,41 @@ export interface CardTotalWithdrawalSnapshot {
   returnedAmount?: string;
   returnDayKey?: string;
   capturedAt?: string;
+}
+
+export type CardLifecycleEventType =
+  | 'card_created'
+  | 'cycle_started'
+  | 'deposit'
+  | 'partial_withdrawal'
+  | 'withdrawal_requested'
+  | 'total_withdrawal'
+  | 'credit_transfer'
+  | 'total_withdrawal_reversed'
+  | 'manual_correction';
+
+export interface CardLifecycleEvent {
+  type: CardLifecycleEventType;
+  amount: number;
+  amountToPay: number;
+  cardTotalBefore: number;
+  cardTotalAfter: number;
+  returnableBefore: number;
+  returnableAfter: number;
+  depositCount: number;
+  cycle: number;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  fullName: string;
+  phoneNumber: string;
+  returnDate?: string;
+  returnedAmount?: number;
+  debtLeftAfter?: number;
+  occurredAtMs: number;
+  occurredDateKey: string;
+  createdByUid: string;
+  source: string;
 }
 
 export class Card {
@@ -32,6 +68,7 @@ export class Card {
   cardCycle?: string;
   clientMoney?: string;
   numberOfPaymentsMade?: string;
+  depositCount?: string;
   payments?: { [key: string]: string } = {};
   withdrawal?: { [key: string]: string } = {};
   amountToPay?: string;

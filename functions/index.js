@@ -11,12 +11,14 @@ const {mirrorLegacyWrite} = require("./firestore-v2-mirror");
 const {runRetentionCycle} = require("./firestore-v2-retention");
 const {
   buildEmployeeSummaryMessage,
+  buildCardLifecycleMessage,
   buildLoanActivationMessage,
   buildPaymentUpdateMessage,
   buildRegistrationMessage,
   buildReminderMessage,
   buildSmsDeliveryId,
   extractProviderCost,
+  hasExactlyTenPhoneDigits,
   measureSms,
   stableHash,
   toGsmSafe,
@@ -417,6 +419,9 @@ const PAYMENT_REMINDER_SETTINGS_COLLECTION = "payment_reminder_settings";
 const PAYMENT_REMINDER_SETTINGS_DOC_ID = "default";
 const SMS_DELIVERY_LOGS_COLLECTION = "sms_delivery_logs";
 const SMS_AUTOMATION_RUNS_COLLECTION = "sms_automation_runs";
+const CARD_SMS_SETTINGS_COLLECTION = "card_sms_settings";
+const CARD_SMS_SETTINGS_DOC_ID = "default";
+const DEFAULT_CARD_SMS_MINIMUM_FC = 400000;
 const SMS_DELIVERY_LEASE_MS = 30 * 60 * 1000;
 const SMS_RUN_LEASE_MS = 30 * 60 * 1000;
 const BIRTHDAY_AUTOMATION_SETTINGS_COLLECTION = "birthday_automation_settings";
@@ -461,6 +466,49 @@ function dateKeyForTimeZone(date = new Date(), timeZone = KINSHASA_TIME_ZONE) {
 function smsRecipientKey({ownerUid, clientId, to}) {
   if (ownerUid && clientId) return `${ownerUid}/${clientId}`;
   return `phone:${stableHash(to).slice(0, 24)}`;
+}
+
+function normalizeCardSmsSettings(raw = {}) {
+  const minimum = Number(raw.minimumAmountToPayFc);
+  return {
+    enabled: raw.enabled === true,
+    minimumAmountToPayFc:
+      Number.isInteger(minimum) && minimum > 0 ?
+        minimum : DEFAULT_CARD_SMS_MINIMUM_FC,
+  };
+}
+
+async function getCardSmsSettings() {
+  const snapshot = await db
+      .collection(CARD_SMS_SETTINGS_COLLECTION)
+      .doc(CARD_SMS_SETTINGS_DOC_ID)
+      .get();
+  return normalizeCardSmsSettings(snapshot.exists ? snapshot.data() : {});
+}
+
+function cardMeetsSmsThreshold(cardOrEvent, settings) {
+  const amountToPay = Number(cardOrEvent && cardOrEvent.amountToPay);
+  return settings.enabled === true &&
+    Number.isFinite(amountToPay) &&
+    amountToPay >= settings.minimumAmountToPayFc;
+}
+
+async function assertAppAdmin(context) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required.",
+    );
+  }
+  const userSnapshot = await db.collection("users").doc(context.auth.uid).get();
+  const user = userSnapshot.exists ? userSnapshot.data() || {} : {};
+  const roles = Array.isArray(user.roles) ? user.roles : [];
+  if (user.admin !== "true" && !roles.includes("admin")) {
+    throw new functions.https.HttpsError(
+        "permission-denied",
+        "Administrator access is required.",
+    );
+  }
 }
 
 async function claimSmsDelivery({
@@ -1616,6 +1664,219 @@ exports.sendCustomSMS = functions.https.onCall(async (data, context) => {
   }
 });
 
+exports.sendCardLifecycleSMS = functions
+    .runWith({failurePolicy: true, maxInstances: 25, timeoutSeconds: 120})
+    .firestore
+    .document("users/{userId}/cards/{cardId}/events/{eventId}")
+    .onCreate(async (snapshot, context) => {
+      const event = snapshot.data() || {};
+      const eventRef = snapshot.ref;
+      const settings = await getCardSmsSettings();
+      const statusBase = {
+        evaluatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        evaluatedAtMs: Date.now(),
+        thresholdFc: settings.minimumAmountToPayFc,
+      };
+
+      if (!settings.enabled) {
+        await eventRef.set({
+          ...statusBase,
+          smsStatus: "skipped",
+          smsSkipReason: "automation-disabled",
+        }, {merge: true});
+        return null;
+      }
+
+      const cardSnapshot = await db
+          .collection("users")
+          .doc(context.params.userId)
+          .collection("cards")
+          .doc(context.params.cardId)
+          .get();
+      const card = cardSnapshot.exists ? cardSnapshot.data() || {} : null;
+      if (!card) {
+        await eventRef.set({
+          ...statusBase,
+          smsStatus: "skipped",
+          smsSkipReason: "card-not-found",
+        }, {merge: true});
+        return null;
+      }
+
+      if (!cardMeetsSmsThreshold(card, settings)) {
+        await eventRef.set({
+          ...statusBase,
+          smsStatus: "skipped",
+          smsSkipReason: "below-threshold",
+        }, {merge: true});
+        return null;
+      }
+
+      const trustedEvent = {
+        ...event,
+        amountToPay: Number(card.amountToPay) || 0,
+        firstName: card.firstName || event.firstName,
+        middleName: card.middleName || event.middleName,
+        lastName: card.lastName || event.lastName,
+        fullName: [card.firstName, card.middleName, card.lastName]
+            .filter(Boolean)
+            .join(" ") || event.fullName,
+        phoneNumber: card.phoneNumber,
+      };
+      const formattedNumber = hasExactlyTenPhoneDigits(card.phoneNumber) ?
+        makeValidE164(card.phoneNumber) : null;
+      if (!formattedNumber) {
+        await eventRef.set({
+          ...statusBase,
+          smsStatus: "skipped",
+          smsSkipReason: "invalid-phone",
+        }, {merge: true});
+        return null;
+      }
+
+      let builtMessage;
+      try {
+        builtMessage = buildCardLifecycleMessage(trustedEvent);
+      } catch (error) {
+        await eventRef.set({
+          ...statusBase,
+          smsStatus: "skipped",
+          smsSkipReason: "message-too-long-or-invalid",
+          smsError: error && error.message ? error.message : String(error),
+        }, {merge: true});
+        return null;
+      }
+
+      const finalMeasurement = measureSms(builtMessage.message);
+      if (finalMeasurement.encoding !== "GSM-7" ||
+          finalMeasurement.segments !== 1) {
+        await eventRef.set({
+          ...statusBase,
+          smsStatus: "skipped",
+          smsSkipReason: "segment-guard",
+          smsEncoding: finalMeasurement.encoding,
+          smsSegments: finalMeasurement.segments,
+        }, {merge: true});
+        return null;
+      }
+
+      try {
+        const result = await sendOperationalSms({
+          to: formattedNumber,
+          message: builtMessage.message,
+          messageType: `card-${event.type}`,
+          dateKey: event.occurredDateKey || dateKeyForTimeZone(),
+          dedupeKey: context.params.eventId,
+          source: "card-lifecycle-event",
+          ownerUid: context.params.userId,
+          clientId: context.params.cardId,
+          executionId: context.eventId,
+          segmentTarget: 1,
+          usedCompactFallback: builtMessage.usedCompactFallback,
+        });
+        await eventRef.set({
+          ...statusBase,
+          smsStatus: "sent",
+          smsSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          smsSentAtMs: Date.now(),
+          smsEncoding: finalMeasurement.encoding,
+          smsSegments: finalMeasurement.segments,
+          smsCharacters: finalMeasurement.characters,
+          smsUsedCompactFallback: builtMessage.usedCompactFallback,
+          smsDuplicatePrevented: result.duplicatePrevented === true,
+          smsProviderCostAmount: result.providerCost.amount,
+          smsProviderCostCurrency: result.providerCost.currency,
+        }, {merge: true});
+      } catch (error) {
+        await eventRef.set({
+          ...statusBase,
+          smsStatus: "failed",
+          smsFailedAtMs: Date.now(),
+          smsError: error && error.message ? error.message : String(error),
+        }, {merge: true});
+        throw error;
+      }
+
+      return null;
+    });
+
+exports.sendCardCustomSMS = functions.https.onCall(async (data, context) => {
+  await assertAppAdmin(context);
+  const payload = data || {};
+  const ownerUid = String(payload.ownerUid || "").trim();
+  const cardId = String(payload.cardId || "").trim();
+  const rawMessage = String(payload.message || "").trim();
+  if (!ownerUid || !cardId || !rawMessage) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "ownerUid, cardId and message are required.",
+    );
+  }
+
+  const settings = await getCardSmsSettings();
+  if (!settings.enabled) {
+    throw new functions.https.HttpsError(
+        "failed-precondition",
+        "Card SMS automation is paused.",
+    );
+  }
+
+  const cardSnapshot = await db
+      .collection("users")
+      .doc(ownerUid)
+      .collection("cards")
+      .doc(cardId)
+      .get();
+  if (!cardSnapshot.exists) {
+    throw new functions.https.HttpsError("not-found", "Card not found.");
+  }
+  const card = cardSnapshot.data() || {};
+  if (!cardMeetsSmsThreshold(card, settings)) {
+    throw new functions.https.HttpsError(
+        "failed-precondition",
+        "This card is below the global SMS threshold.",
+    );
+  }
+
+  const formattedNumber = hasExactlyTenPhoneDigits(card.phoneNumber) ?
+    makeValidE164(card.phoneNumber) : null;
+  if (!formattedNumber) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "The card has no valid phone number.",
+    );
+  }
+  const message = toGsmSafe(rawMessage);
+  const measurement = measureSms(message);
+  if (measurement.encoding !== "GSM-7" || measurement.segments !== 1) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "The final card message must fit exactly one GSM segment.",
+    );
+  }
+
+  const result = await sendOperationalSms({
+    to: formattedNumber,
+    message,
+    messageType: "card-manual",
+    dateKey: dateKeyForTimeZone(),
+    dedupeKey: randomUUID(),
+    source: "card-admin-callable",
+    ownerUid,
+    clientId: cardId,
+    executionId: context.rawRequest && context.rawRequest.id,
+    critical: false,
+    segmentTarget: 1,
+  });
+
+  return {
+    ok: true,
+    segments: measurement.segments,
+    encoding: measurement.encoding,
+    providerCost: result.providerCost,
+  };
+});
+
 exports.initMobileMoneyPayment = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Authentication is required.");
@@ -2503,6 +2764,42 @@ exports.scheduleBulkMessage = functions.https.onCall(async (data, context) => {
     );
   }
 
+  let safeRecipients = recipients;
+  if (type === "card_clients") {
+    await assertAppAdmin(context);
+    const settings = await getCardSmsSettings();
+    if (!settings.enabled) {
+      throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Card SMS automation is paused.",
+      );
+    }
+    safeRecipients = await Promise.all(recipients.map(async (recipient) => {
+      const ownerUid = String(recipient.ownerUid || "").trim();
+      const cardId = String(recipient.cardId || "").trim();
+      const message = toGsmSafe(recipient.message || "");
+      const measurement = measureSms(message);
+      if (!ownerUid || !cardId || measurement.segments !== 1 ||
+          measurement.encoding !== "GSM-7") {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Every scheduled card recipient needs a valid card and one-segment message.",
+        );
+      }
+      const cardSnapshot = await db.collection("users").doc(ownerUid)
+          .collection("cards").doc(cardId).get();
+      const card = cardSnapshot.exists ? cardSnapshot.data() || {} : null;
+      if (!card || !cardMeetsSmsThreshold(card, settings) ||
+          !hasExactlyTenPhoneDigits(card.phoneNumber)) {
+        throw new functions.https.HttpsError(
+            "failed-precondition",
+            "A scheduled card recipient is below the global SMS threshold.",
+        );
+      }
+      return {...recipient, ownerUid, cardId, message};
+    }));
+  }
+
   const scheduledForMs = zonedTimeToUtcMs(scheduledForLocal, timeZone);
   if (!Number.isFinite(scheduledForMs)) {
     throw new functions.https.HttpsError(
@@ -2536,7 +2833,7 @@ exports.scheduleBulkMessage = functions.https.onCall(async (data, context) => {
     scheduledForLocal,
     scheduledForMs,
     timeZone,
-    total: recipients.length,
+    total: safeRecipients.length,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     createdAtMs: now,
     createdBy: sentBy || authToken.name || authToken.email || null,
@@ -2547,13 +2844,15 @@ exports.scheduleBulkMessage = functions.https.onCall(async (data, context) => {
   let batch = db.batch();
   let ops = 0;
 
-  recipients.forEach((recipient) => {
+  safeRecipients.forEach((recipient) => {
     const ref = docRef.collection("recipients").doc();
     batch.set(ref, {
       phoneNumber: recipient.phoneNumber || null,
       message: recipient.message || "",
       name: String(recipient.name || "").trim() || null,
       locationName: String(recipient.locationName || "").trim() || null,
+      ownerUid: String(recipient.ownerUid || "").trim() || null,
+      cardId: String(recipient.cardId || "").trim() || null,
     });
     ops += 1;
     if (ops === 450) {
@@ -2718,27 +3017,79 @@ exports.processScheduledBulkMessages = functions.pubsub
           let succeeded = 0;
           let failed = 0;
           const recipientEntries = [];
+          const cardSettings = data.type === "card_clients" ?
+            await getCardSmsSettings() : null;
 
           for (const recipient of recipientsSnap.docs) {
-            const {phoneNumber, message, name, locationName} =
+            const {phoneNumber, message, name, locationName, ownerUid, cardId} =
               recipient.data() || {};
-            const to = makeValidE164(phoneNumber);
-            if (!to || !message) {
+            let to = makeValidE164(phoneNumber);
+            const preparedMessage = data.type === "card_clients" ?
+              toGsmSafe(message || "") : message;
+            let cardEligible = true;
+
+            if (data.type === "card_clients") {
+              const measurement = measureSms(preparedMessage);
+              cardEligible = Boolean(
+                  cardSettings && cardSettings.enabled && ownerUid && cardId &&
+                  measurement.encoding === "GSM-7" &&
+                  measurement.segments === 1,
+              );
+              if (cardEligible) {
+                const cardSnapshot = await db.collection("users").doc(ownerUid)
+                    .collection("cards").doc(cardId).get();
+                const card = cardSnapshot.exists ?
+                  cardSnapshot.data() || {} : null;
+                cardEligible = Boolean(
+                    card && cardMeetsSmsThreshold(card, cardSettings),
+                );
+                to = card && hasExactlyTenPhoneDigits(card.phoneNumber) ?
+                  makeValidE164(card.phoneNumber) : null;
+              }
+            }
+
+            if (!to || !preparedMessage || !cardEligible) {
               failed += 1;
+              await recipient.ref.set({
+                status: "skipped",
+                skipReason: data.type === "card_clients" ?
+                  "card-policy-or-segment-guard" : "invalid-recipient",
+              }, {merge: true});
               if (name) {
                 recipientEntries.push({name, locationName, status: "failed"});
               }
               continue;
             }
             try {
-              await sms.send({to: [to], message});
+              if (data.type === "card_clients") {
+                await sendOperationalSms({
+                  to,
+                  message: preparedMessage,
+                  messageType: "card-scheduled",
+                  dateKey: dateKeyForTimeZone(),
+                  dedupeKey: `${ref.id}/${recipient.id}`,
+                  source: "scheduled-card-bulk",
+                  ownerUid,
+                  clientId: cardId,
+                  executionId: ref.id,
+                  critical: false,
+                  segmentTarget: 1,
+                });
+              } else {
+                await sms.send({to: [to], message: preparedMessage});
+              }
               succeeded += 1;
+              await recipient.ref.set({status: "sent"}, {merge: true});
               if (name) {
                 recipientEntries.push({name, locationName, status: "sent"});
               }
             } catch (err) {
               console.error("Scheduled SMS send failed:", err);
               failed += 1;
+              await recipient.ref.set({
+                status: "failed",
+                error: err && err.message ? err.message : String(err),
+              }, {merge: true});
               if (name) {
                 recipientEntries.push({name, locationName, status: "failed"});
               }

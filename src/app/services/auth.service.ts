@@ -43,6 +43,7 @@ import {
   WeeklyObjectiveAdjustmentConfig,
 } from '../utils/weekly-objective-adjustment.util';
 import { FirestoreV2CompatService } from './firestore-v2-compat.service';
+import { buildCardLifecycleEvent } from '../utils/card-lifecycle-event.util';
 
 const ADMIN_FLAG_KEY = 'kank-admin-flag';
 const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
@@ -750,13 +751,34 @@ export class AuthService {
       amountToPay: card.amountToPay,
       dateJoined: `${month}-${day}-${year}`,
       numberOfPaymentsMade: '1',
+      depositCount: '1',
       payments: card.payments,
     };
     this.clientId = data.uid;
     const cardtRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.currentUser.uid}/cards/${data.uid}`
     );
-    return cardtRef.set(data, { merge: true });
+    const eventRef = this.afs
+      .collection(`users/${this.currentUser.uid}/cards/${data.uid}/events`)
+      .doc().ref;
+    const batch = this.afs.firestore.batch();
+    const event = buildCardLifecycleEvent(
+      { ...card, ...data },
+      'card_created',
+      {
+        amount: Number(card.amountPaidToday) || 0,
+        cardTotalBefore: 0,
+        cardTotalAfter: Number(card.amountPaidToday) || 0,
+        depositCount: 1,
+        occurredDateKey: this.time.todaysDate(),
+        createdByUid: this.currentUser.uid || '',
+        source: 'new-card',
+      }
+    );
+
+    batch.set(cardtRef.ref, data, { merge: true });
+    batch.set(eventRef, event);
+    return batch.commit();
   }
 
   startNewCardCycle(card: Card) {
@@ -778,12 +800,33 @@ export class AuthService {
       clientCardStatus: '',
       cardCycleStartDate: `${month}-${day}-${year}`,
       numberOfPaymentsMade: '1',
+      depositCount: '1',
       payments: card.payments,
     };
     const cardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.currentUser.uid}/cards/${card.uid}`
     );
-    return cardRef.set(data, { merge: true });
+    const eventRef = this.afs
+      .collection(`users/${this.currentUser.uid}/cards/${card.uid}/events`)
+      .doc().ref;
+    const batch = this.afs.firestore.batch();
+    const event = buildCardLifecycleEvent(
+      { ...card, ...data },
+      'cycle_started',
+      {
+        amount: Number(card.amountPaidToday) || 0,
+        cardTotalBefore: 0,
+        cardTotalAfter: Number(card.amountPaidToday) || 0,
+        depositCount: 1,
+        occurredDateKey: this.time.todaysDate(),
+        createdByUid: this.currentUser.uid || '',
+        source: 'card-cycle',
+      }
+    );
+
+    batch.set(cardRef.ref, data, { merge: true });
+    batch.set(eventRef, event);
+    return batch.commit();
   }
 
   addNewEmployee(employee: Employee) {

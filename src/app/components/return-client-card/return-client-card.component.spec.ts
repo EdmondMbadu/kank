@@ -23,6 +23,7 @@ describe('ReturnClientCardComponent', () => {
     component.clientCard = {
       amountPaid: '12000',
       numberOfPaymentsMade: '6',
+      depositCount: '5',
       payments: { oldPayment: '2000' },
       withdrawal: { previousWithdrawal: '500' },
       clientCardStatus: '',
@@ -38,6 +39,7 @@ describe('ReturnClientCardComponent', () => {
     expect(snapshot).toEqual({
       amountPaid: '12000',
       numberOfPaymentsMade: '6',
+      depositCount: '5',
       payments: { oldPayment: '2000' },
       withdrawal: { previousWithdrawal: '500' },
       clientCardStatus: '',

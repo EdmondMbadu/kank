@@ -17,7 +17,11 @@ import {
   Employee,
 } from '../models/employee';
 import { ComputationService } from '../shrink/services/computation.service';
-import { Card, CardTotalWithdrawalSnapshot } from '../models/card';
+import {
+  Card,
+  CardLifecycleEventType,
+  CardTotalWithdrawalSnapshot,
+} from '../models/card';
 import { doc, increment, writeBatch } from 'firebase/firestore';
 import {
   Audit,
@@ -35,6 +39,10 @@ import {
 } from '../utils/client-photo-recovery.util';
 import { isActivelyFollowedClient } from '../utils/active-followed-client.util';
 import { coerceToNumber } from '../utils/number-utils';
+import {
+  buildCardLifecycleEvent,
+  countPositiveCardDeposits,
+} from '../utils/card-lifecycle-event.util';
 import { isLoanBudgetExempt } from '../utils/pending-loan-budget.util';
 import firebase from 'firebase/compat/app'; // ① NEW
 import 'firebase/compat/firestore'; // ②
@@ -508,6 +516,52 @@ export class DataService {
     return cardRef.set(data, { merge: true });
   }
 
+  updateCardWithOptionalCorrectionEvent(
+    cardId: string,
+    previousCard: Card,
+    updatePayload: Partial<Card>,
+    sendCorrectionSms: boolean
+  ): Promise<void> {
+    const ownerUid = this.auth.currentUser?.uid;
+    if (!ownerUid) {
+      return Promise.reject(
+        new Error("Impossible d'identifier le propriétaire de la carte.")
+      );
+    }
+
+    const cardRef = this.afs.doc<Card>(
+      `users/${ownerUid}/cards/${cardId}`
+    ).ref;
+    const batch = this.afs.firestore.batch();
+    batch.set(cardRef, updatePayload, { merge: true });
+
+    if (sendCorrectionSms) {
+      const nextCard: Card = { ...previousCard, ...updatePayload };
+      const beforeTotal = Number(previousCard.amountPaid) || 0;
+      const afterTotal = Number(nextCard.amountPaid) || 0;
+      const eventRef = this.afs
+        .collection(`users/${ownerUid}/cards/${cardId}/events`)
+        .doc().ref;
+      batch.set(
+        eventRef,
+        buildCardLifecycleEvent(nextCard, 'manual_correction', {
+          amount: Math.abs(afterTotal - beforeTotal),
+          cardTotalBefore: beforeTotal,
+          cardTotalAfter: afterTotal,
+          depositCount:
+            nextCard.depositCount !== undefined
+              ? Number(nextCard.depositCount) || 0
+              : countPositiveCardDeposits(nextCard.payments),
+          occurredDateKey: this.time.todaysDate(),
+          createdByUid: ownerUid,
+          source: 'client-portal-card-admin-edit',
+        })
+      );
+    }
+
+    return batch.commit();
+  }
+
   replaceCardGalleryPictures(
     cardId: string,
     galleryPictures: Card['galleryPictures']
@@ -573,7 +627,33 @@ export class DataService {
     if (clientCard.totalWithdrawalSnapshot) {
       data.totalWithdrawalSnapshot = clientCard.totalWithdrawalSnapshot;
     }
-    return clientCardRef.set(data, { merge: true });
+    const eventRef = this.afs
+      .collection(
+        `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}/events`
+      )
+      .doc().ref;
+    const snapshot = clientCard.totalWithdrawalSnapshot;
+    const cardTotalBefore = Number(snapshot?.amountPaid) || 0;
+    const returnedAmount = Number(snapshot?.returnedAmount) || 0;
+    const event = buildCardLifecycleEvent(clientCard, 'total_withdrawal', {
+      amount: returnedAmount,
+      returnedAmount,
+      cardTotalBefore,
+      cardTotalAfter: 0,
+      depositCount:
+        clientCard.depositCount !== undefined
+          ? Number(clientCard.depositCount) || 0
+          : snapshot?.depositCount !== undefined
+          ? Number(snapshot.depositCount) || 0
+          : countPositiveCardDeposits(snapshot?.payments),
+      occurredDateKey: this.time.todaysDate(),
+      createdByUid: this.auth.currentUser.uid || '',
+      source: 'return-client-card',
+    });
+    const batch = this.afs.firestore.batch();
+    batch.set(clientCardRef.ref, data, { merge: true });
+    batch.set(eventRef, event);
+    return batch.commit();
   }
 
   async undoClientCardReturnMoney(clientCard: Card) {
@@ -600,6 +680,9 @@ export class DataService {
     const cardRef = this.afs.doc<Card>(`users/${ownerUid}/cards/${clientCard.uid}`)
       .ref;
     const userRef = this.afs.doc<User>(`users/${ownerUid}`).ref;
+    const eventRef = this.afs
+      .collection(`users/${ownerUid}/cards/${clientCard.uid}/events`)
+      .doc().ref;
 
     let nextCardsMoney = '0';
     let nextDayReturns = '0';
@@ -631,6 +714,29 @@ export class DataService {
         },
         { merge: true }
       );
+      tx.set(
+        eventRef,
+        buildCardLifecycleEvent(
+          {
+            ...clientCard,
+            amountPaid: snapshot.amountPaid ?? '0',
+            clientCardStatus: snapshot.clientCardStatus ?? '',
+          },
+          'total_withdrawal_reversed',
+          {
+            amount: returnedAmount,
+            cardTotalBefore: 0,
+            cardTotalAfter: Number(snapshot.amountPaid) || 0,
+            depositCount:
+              snapshot.depositCount !== undefined
+                ? Number(snapshot.depositCount) || 0
+                : countPositiveCardDeposits(snapshot.payments),
+            occurredDateKey: this.time.todaysDate(),
+            createdByUid: ownerUid,
+            source: 'undo-total-withdrawal',
+          }
+        )
+      );
     });
 
     this.auth.currentUser = {
@@ -647,6 +753,7 @@ export class DataService {
     return {
       amountPaid: snapshot.amountPaid ?? '0',
       numberOfPaymentsMade: snapshot.numberOfPaymentsMade ?? '0',
+      depositCount: snapshot.depositCount ?? '0',
       payments: snapshot.payments ?? {},
       withdrawal: snapshot.withdrawal ?? {},
       clientCardStatus: snapshot.clientCardStatus ?? '',
@@ -669,7 +776,39 @@ export class DataService {
       requestType: 'card',
       dateOfRequest: clientCard.dateOfRequest,
     };
-    return clientCardRef.set(data, { merge: true });
+    const eventRef = this.afs
+      .collection(
+        `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}/events`
+      )
+      .doc().ref;
+    // The request screen temporarily sets its local amountPaid to zero, while
+    // Firestore intentionally keeps the card balance until the actual payout.
+    // Reconstruct that live total so the request SMS remains accurate.
+    const requestedAmount = Number(clientCard.requestAmount) || 0;
+    const total =
+      Number(clientCard.amountPaid) ||
+      requestedAmount + (Number(clientCard.amountToPay) || 0);
+    const event = buildCardLifecycleEvent(
+      clientCard,
+      'withdrawal_requested',
+      {
+        amount: requestedAmount,
+        cardTotalBefore: total,
+        cardTotalAfter: total,
+        depositCount:
+          clientCard.depositCount !== undefined
+            ? Number(clientCard.depositCount) || 0
+            : countPositiveCardDeposits(clientCard.payments),
+        returnDate: this.time.formatDateForDRC(clientCard.requestDate),
+        occurredDateKey: this.time.todaysDate(),
+        createdByUid: this.auth.currentUser.uid || '',
+        source: 'request-client-card',
+      }
+    );
+    const batch = this.afs.firestore.batch();
+    batch.set(clientCardRef.ref, data, { merge: true });
+    batch.set(eventRef, event);
+    return batch.commit();
   }
 
   updateClientInfo(client: Client) {
@@ -3216,7 +3355,14 @@ export class DataService {
     return docRef.update({ receipts: employee.receipts });
   }
 
-  async atomicClientCardAndUserUpdate(clientCard: Card, deposit: string) {
+  async atomicClientCardAndUserUpdate(
+    clientCard: Card,
+    deposit: string,
+    eventType: Extract<
+      CardLifecycleEventType,
+      'deposit' | 'partial_withdrawal'
+    > = 'deposit'
+  ) {
     // Document references
     const clientCardRef = this.afs.doc<Card>(
       `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`
@@ -3231,6 +3377,9 @@ export class DataService {
       amountPaid: clientCard.amountPaid,
       numberOfPaymentsMade: clientCard.numberOfPaymentsMade,
       payments: clientCard.payments,
+      ...(clientCard.depositCount !== undefined
+        ? { depositCount: clientCard.depositCount }
+        : {}),
     };
 
     const date = this.time.todaysDateMonthDayYear();
@@ -3246,10 +3395,31 @@ export class DataService {
 
     // 2. Build a single Firestore WriteBatch
     const batch = this.afs.firestore.batch();
+    const eventRef = this.afs
+      .collection(
+        `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}/events`
+      )
+      .doc().ref;
+    const cardTotalAfter = Number(clientCard.amountPaid) || 0;
+    const cardTotalBefore = cardTotalAfter - Number(deposit || 0);
+    const event = buildCardLifecycleEvent(clientCard, eventType, {
+      amount: Math.abs(Number(deposit) || 0),
+      cardTotalBefore,
+      cardTotalAfter,
+      depositCount:
+        clientCard.depositCount !== undefined
+          ? Number(clientCard.depositCount) || 0
+          : countPositiveCardDeposits(clientCard.payments),
+      occurredDateKey: this.time.todaysDate(),
+      createdByUid: this.auth.currentUser.uid || '',
+      source:
+        eventType === 'deposit' ? 'payment-card' : 'remove-card',
+    });
 
     // 3. Enqueue our two .set() operations
     batch.set(clientCardRef, cardData, { merge: true });
     batch.set(userRef, userData, { merge: true });
+    batch.set(eventRef, event);
 
     // 4. Commit the batch atomically
     return batch.commit();
@@ -4343,6 +4513,9 @@ export class DataService {
     const cardPath = `users/${uid}/cards/${card.uid}`;
     const creditPath = `users/${uid}/clients/${credit.uid}`;
     const userPath = `users/${uid}`;
+    const eventRef = this.afs
+      .collection(`users/${uid}/cards/${card.uid}/events`)
+      .doc().ref;
 
     const today = this.time.todaysDate(); // 26-07-2025
     const todayMDY = this.time.todaysDateMonthDayYear(); // 7-26-2025
@@ -4417,6 +4590,22 @@ export class DataService {
           // moneyInHands   : <unchanged>
         },
         { merge: true }
+      );
+      t.set(
+        eventRef,
+        buildCardLifecycleEvent(card, 'credit_transfer', {
+          amount,
+          cardTotalBefore: Number(card.amountPaid) || 0,
+          cardTotalAfter: newCardAmount,
+          depositCount:
+            card.depositCount !== undefined
+              ? Number(card.depositCount) || 0
+              : countPositiveCardDeposits(card.payments),
+          debtLeftAfter: newDebtLeft,
+          occurredDateKey: today,
+          createdByUid: uid || '',
+          source: 'client-portal-card-transfer',
+        })
       );
     });
   }

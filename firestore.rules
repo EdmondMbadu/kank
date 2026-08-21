@@ -52,6 +52,7 @@ service cloud.firestore {
         topCollection == 'clientLoginOtps' ||
         topCollection == 'clientPortalSessions' ||
         topCollection == 'mobileMoneyTransactionLookup' ||
+        topCollection == 'card_sms_settings' ||
         topCollection == 'moneyAvailabilityPolicies' ||
         topCollection == 'performanceMetricSettings' ||
         topCollection == 'investigationDocuments';
@@ -207,6 +208,13 @@ service cloud.firestore {
 
     match /payment_reminder_settings/{docId} {
       allow read, write: if signedIn() && !isPortalClient();
+    }
+
+    // The card SMS threshold is visible to authenticated staff, but only an
+    // application administrator can enable automation or change the amount.
+    match /card_sms_settings/{docId} {
+      allow read: if signedIn() && !isPortalClient();
+      allow write: if isAppAdmin();
     }
 
     match /presenceExceptionMonths/{monthKey} {

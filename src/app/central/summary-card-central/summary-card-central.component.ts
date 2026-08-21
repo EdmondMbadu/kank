@@ -16,6 +16,12 @@ import {
   firstValueFrom,
 } from 'rxjs';
 import { MessagingService } from 'src/app/services/messaging.service';
+import {
+  CardSmsSettings,
+  CardSmsSettingsService,
+  DEFAULT_CARD_SMS_MINIMUM_FC,
+  normalizeCardSmsSettings,
+} from 'src/app/services/card-sms-settings.service';
 
 type BulkFailure = { client: Card; error: string };
 type BulkResult = {
@@ -93,7 +99,8 @@ export class SummaryCardCentralComponent implements OnDestroy {
     private compute: ComputationService,
     public messaging: MessagingService,
     private fns: AngularFireFunctions,
-    private afs: AngularFirestore
+    private afs: AngularFirestore,
+    private cardSmsSettingsService: CardSmsSettingsService
   ) {}
 
   // Tri-state filter for finished cards
@@ -181,7 +188,16 @@ export class SummaryCardCentralComponent implements OnDestroy {
   cardsSearchControl = new FormControl('');
   private cardsSearchTerm = '';
 
-  minAmountToPay = 0; // ✅ new filter on Card.amountToPay
+  minAmountToPay = DEFAULT_CARD_SMS_MINIMUM_FC;
+
+  cardSmsSettings: CardSmsSettings = normalizeCardSmsSettings(undefined);
+  cardSmsEnabledInput = false;
+  cardSmsThresholdInput = DEFAULT_CARD_SMS_MINIMUM_FC;
+  cardSmsSettingsLoading = true;
+  cardSmsSettingsSaving = false;
+  cardSmsSettingsError = '';
+  cardSmsSettingsSuccess = '';
+  private cardSmsSettingsSub?: Subscription;
 
   cardUniqueLocations: string[] = [];
   cardSelectedLocations = new Set<string>();
@@ -234,6 +250,7 @@ export class SummaryCardCentralComponent implements OnDestroy {
   // placeholders
   cardPlaceholderTokens = [
     '{{FULL_NAME}}',
+    '{{FIRST_NAME}}',
     '{{LOCATION_NAME}}',
     '{{MAX_AMOUNT}}',
   ];
@@ -242,6 +259,7 @@ export class SummaryCardCentralComponent implements OnDestroy {
   private creditClientPhones = new Set<string>();
 
   ngOnInit(): void {
+    this.listenToCardSmsSettings();
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.getAllClientsCard();
@@ -254,6 +272,91 @@ export class SummaryCardCentralComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.bulkLogsSub?.unsubscribe();
     this.scheduledBulkSub?.unsubscribe();
+    this.cardSmsSettingsSub?.unsubscribe();
+  }
+
+  private listenToCardSmsSettings(): void {
+    this.cardSmsSettingsLoading = true;
+    this.cardSmsSettingsSub?.unsubscribe();
+    this.cardSmsSettingsSub = this.cardSmsSettingsService.settings$.subscribe({
+      next: (settings) => {
+        this.cardSmsSettings = settings;
+        this.cardSmsEnabledInput = settings.enabled;
+        this.cardSmsThresholdInput = settings.minimumAmountToPayFc;
+        // Keep the dashboard's default selection aligned with the saved global
+        // policy, including when an administrator intentionally lowers X.
+        this.minAmountToPay = settings.minimumAmountToPayFc;
+        this.cardSmsSettingsLoading = false;
+        this.cardSmsSettingsError = '';
+        if (this.cardsAll.length) this.applyCardsFilters();
+      },
+      error: (error) => {
+        console.error('Card SMS settings load failed', error);
+        this.cardSmsSettingsLoading = false;
+        this.cardSmsSettingsError =
+          'Impossible de charger le seuil. Les SMS automatiques restent en pause.';
+      },
+    });
+  }
+
+  async saveCardSmsSettings(): Promise<void> {
+    if (!this.auth.isAdmin || this.cardSmsSettingsSaving) return;
+    const threshold = Number(this.cardSmsThresholdInput);
+    if (!Number.isInteger(threshold) || threshold <= 0) {
+      this.cardSmsSettingsError =
+        'Saisissez un seuil entier supérieur à zéro.';
+      return;
+    }
+
+    const eligible = this.countCardsAtOrAbove(threshold);
+    const action = this.cardSmsEnabledInput ? 'activer' : 'mettre en pause';
+    const confirmed = window.confirm(
+      `Confirmer le seuil SMS cartes à ${this.toFcDisplay(threshold)} FC et ${action} les envois automatiques ?\n\n${eligible} carte(s) atteignent actuellement ce seuil. La règle s'appliquera uniquement aux prochains événements.`
+    );
+    if (!confirmed) return;
+
+    this.cardSmsSettingsSaving = true;
+    this.cardSmsSettingsError = '';
+    this.cardSmsSettingsSuccess = '';
+    try {
+      await this.cardSmsSettingsService.save(
+        this.cardSmsEnabledInput,
+        threshold,
+        {
+          uid: this.auth.currentUser?.uid || '',
+          name: [
+            this.auth.currentUser?.firstName,
+            this.auth.currentUser?.lastName,
+          ]
+            .filter(Boolean)
+            .join(' '),
+        }
+      );
+      this.cardSmsSettingsSuccess = 'Règle SMS cartes sauvegardée.';
+    } catch (error: any) {
+      console.error('Card SMS settings save failed', error);
+      this.cardSmsSettingsError =
+        error?.message || 'Impossible de sauvegarder la règle.';
+    } finally {
+      this.cardSmsSettingsSaving = false;
+    }
+  }
+
+  private countCardsAtOrAbove(threshold: number): number {
+    return (this.allClientsCard || []).filter(
+      (card) => Number(card.amountToPay) >= threshold
+    ).length;
+  }
+
+  get cardSmsEligibleCount(): number {
+    return this.countCardsAtOrAbove(this.cardSmsThresholdInput);
+  }
+
+  isCardSmsEligible(card: Card): boolean {
+    return (
+      this.cardSmsSettings.enabled &&
+      Number(card.amountToPay) >= this.cardSmsSettings.minimumAmountToPayFc
+    );
   }
 
   // ======== FETCH & SUMMARY =========
@@ -268,6 +371,7 @@ export class SummaryCardCentralComponent implements OnDestroy {
         const tagged = clients.map((c: any) => ({
           ...c,
           locationName: c.locationName || user.firstName,
+          ownerUid: user.uid,
         }));
         tempClients = tempClients.concat(tagged);
         completedRequests++;
@@ -469,15 +573,19 @@ export class SummaryCardCentralComponent implements OnDestroy {
     } // 'all' → leave base as-is
 
     // 3) amountToPay filter
+    const effectiveMinimum = Math.max(
+      Number(this.minAmountToPay) || 0,
+      this.cardSmsSettings.minimumAmountToPayFc
+    );
     const withAmount = base.filter(
-      (c) => this.amountToPay(c) >= (Number(this.minAmountToPay) || 0)
+      (c) => this.amountToPay(c) >= effectiveMinimum
     );
 
     // 4) valid phone
     const withPhone = withAmount.filter(
       (c) =>
         !!(
-          c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length >= 10
+          c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length === 10
         )
     );
 
@@ -722,6 +830,12 @@ export class SummaryCardCentralComponent implements OnDestroy {
 
   // ======== SINGLE SMS (CARDS) =========
   openCardSmsModal(c: Card) {
+    if (!this.isCardSmsEligible(c)) {
+      window.alert(
+        'Cette carte ne respecte pas le seuil SMS global ou les envois sont en pause.'
+      );
+      return;
+    }
     const anyC: any = c;
     this.cardSendResult = null;
     this.cardSmsModal.client = c;
@@ -749,14 +863,7 @@ export class SummaryCardCentralComponent implements OnDestroy {
   }
 
   private buildDefaultCardTemplate(c: any): string {
-    const loc = c.locationName || 'site';
-    // MAX_AMOUNT is fixed to 400,000 FC for cards clients
-    return `Mbote ${c.firstName || ''} ${c.lastName || ''},
-To moni ozali kosalela CARTE na FONDATION GERVAIS. 
-Soki olingi kobanda kozua crédit ya liboso, tokoki kopesa yo {{MAX_AMOUNT}} FC. 
-Kende na FONDATION GERVAIS location {{LOCATION_NAME}}.
-Mutungisi eza te, Fondation ya biso na biso
-Merci pona confiance na FONDATION GERVAIS`;
+    return `${c.firstName || 'Client'}: Carte ekoki kopesa credit kino FC{{MAX_AMOUNT}}. Na {{LOCATION_NAME}}. Tel 0825333567. Fondation Gervais.`;
   }
 
   async sendSmsToCardClient() {
@@ -770,11 +877,15 @@ Merci pona confiance na FONDATION GERVAIS`;
 
     try {
       const text = this.personalizeCardMessage(msg, c);
-      await this.messaging.sendCustomSMS(phone, text, {
-        reason: 'invite_card_to_loan',
-        clientId: c.trackingId || c.uid || null,
-        clientName: `${c.firstName || ''} ${c.lastName || ''}`.trim(),
-        locationName: c.locationName || null,
+      await this.messaging.sendCardSMS({
+        ownerUid: c.ownerUid,
+        cardId: c.uid,
+        message: text,
+        metadata: {
+          reason: 'invite_card_to_loan',
+          clientName: `${c.firstName || ''} ${c.lastName || ''}`.trim(),
+          locationName: c.locationName || null,
+        },
       });
       this.cardSendResult = { ok: true, text: 'SMS envoyé avec succès.' };
     } catch (e) {
@@ -807,11 +918,7 @@ Merci pona confiance na FONDATION GERVAIS`;
   }
 
   applyDefaultCardBulkTemplate() {
-    this.cardBulkModal.message = `Mbote {{FULL_NAME}},
-To moni ozali kosalela CARTE (épargne) na FONDATION GERVAIS. 
-Soki olingi kobanda kozua crédit ya liboso, okoki kozua {{MAX_AMOUNT}} FC. 
-Kende na FONDATION GERVAIS location {{LOCATION_NAME}}.
-Merci pona confiance na FONDATION GERVAIS`;
+    this.cardBulkModal.message = `{{FIRST_NAME}}: Carte ekoki kopesa credit kino FC{{MAX_AMOUNT}}. Na {{LOCATION_NAME}}. Tel 0825333567. Fondation Gervais.`;
   }
 
   updateCardBulkRecipients() {
@@ -819,8 +926,9 @@ Merci pona confiance na FONDATION GERVAIS`;
     let excludedNoPhone = 0;
 
     for (const c of this.cardsFiltered as any[]) {
+      if (!this.isCardSmsEligible(c)) continue;
       const okPhone = !!(
-        c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length >= 10
+        c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length === 10
       );
       if (!okPhone) {
         excludedNoPhone += 1;
@@ -848,11 +956,15 @@ Merci pona confiance na FONDATION GERVAIS`;
     for (const c of recipients as any[]) {
       try {
         const text = this.personalizeCardMessage(this.cardBulkModal.message, c);
-        await this.messaging.sendCustomSMS(c.phoneNumber!, text, {
-          reason: 'invite_card_to_loan_bulk',
-          clientId: c.trackingId || c.uid || null,
-          clientName: `${c.firstName || ''} ${c.lastName || ''}`.trim(),
-          locationName: c.locationName || null,
+        await this.messaging.sendCardSMS({
+          ownerUid: c.ownerUid,
+          cardId: c.uid,
+          message: text,
+          metadata: {
+            reason: 'invite_card_to_loan_bulk',
+            clientName: `${c.firstName || ''} ${c.lastName || ''}`.trim(),
+            locationName: c.locationName || null,
+          },
         });
         succeeded += 1;
       } catch (e: any) {
@@ -900,6 +1012,10 @@ Merci pona confiance na FONDATION GERVAIS`;
       const recipients = this.cardBulkModal.recipients.map((c: any) => ({
         phoneNumber: c.phoneNumber!,
         message: this.personalizeCardMessage(this.cardBulkModal.message, c),
+        ownerUid: c.ownerUid,
+        cardId: c.uid,
+        name: `${c.firstName || ''} ${c.lastName || ''}`.trim(),
+        locationName: c.locationName || null,
       }));
       const locationTotals = this.aggregateLocations(
         this.cardBulkModal.recipients,
@@ -973,8 +1089,10 @@ Merci pona confiance na FONDATION GERVAIS`;
     const fullName = `${c.firstName ?? ''} ${c.lastName ?? ''}`
       .trim()
       .replace(/\s+/g, ' ');
+    const firstName = String(c.firstName || 'Client').trim() || 'Client';
     let out = msg
       .replace(/\{\{\s*FULL_NAME\s*\}\}/g, fullName)
+      .replace(/\{\{\s*FIRST_NAME\s*\}\}/g, firstName)
       .replace(/\{\{\s*LOCATION_NAME\s*\}\}/g, c.locationName ?? 'site')
       // fixed default 400,000 FC for cards clients:
       .replace(/\{\{\s*MAX_AMOUNT\s*\}\}/g, this.toFcDisplay(400000));
@@ -1221,7 +1339,10 @@ Merci pona confiance na FONDATION GERVAIS`;
   private buildCardConditionsSummary(): string {
     const lines: string[] = [
       `Statut terminé : ${this.doneFilterLabel()}`,
-      `Montant à payer min : ${this.toFcDisplay(this.minAmountToPay || 0)} FC`,
+      `Seuil SMS global : ${this.toFcDisplay(
+        this.cardSmsSettings.minimumAmountToPayFc
+      )} FC`,
+      `Filtre ponctuel : ${this.toFcDisplay(this.minAmountToPay || 0)} FC`,
       `Sites : ${
         this.cardSelectedLocationsArray.length
           ? this.cardSelectedLocationsArray.join(', ')
@@ -1262,7 +1383,14 @@ Merci pona confiance na FONDATION GERVAIS`;
   private async createScheduledBulkMessage(payload: {
     type: BulkLogContext;
     scheduledForLocal: string;
-    recipients: { phoneNumber: string; message: string }[];
+    recipients: {
+      phoneNumber: string;
+      message: string;
+      ownerUid?: string;
+      cardId?: string;
+      name?: string;
+      locationName?: string | null;
+    }[];
     template: string;
     messagePreview?: string;
     locationTotals: Record<string, number>;

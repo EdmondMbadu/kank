@@ -7,6 +7,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { countPositiveCardDeposits } from 'src/app/utils/card-lifecycle-event.util';
 
 @Component({
   selector: 'app-payment-card',
@@ -42,6 +43,10 @@ export class PaymentCardComponent {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clientCard = data[Number(this.id)];
       this.depositAmount = this.clientCard.amountToPay!;
+      this.clientCard.depositCount = String(
+        Number(this.clientCard.depositCount) ||
+          countPositiveCardDeposits(this.clientCard.payments)
+      );
 
       this.numberOfPaymentToday = this.howManyTimesPaidToday();
     });
@@ -51,7 +56,7 @@ export class PaymentCardComponent {
     if (this.depositAmount === '') {
       alert('Remplissez toutes les données');
       return;
-    } else if (Number(this.clientCard.numberOfPaymentsMade) >= 31) {
+    } else if (Number(this.clientCard.depositCount) >= 31) {
       alert(
         ` Vous avez dépassé le nombre total de paiements(31) pour 1 cycle de carte. Commencez un nouveau cycle.`
       );
@@ -68,6 +73,9 @@ export class PaymentCardComponent {
       ).toString();
       this.clientCard.numberOfPaymentsMade = (
         Number(this.clientCard.numberOfPaymentsMade) + 1
+      ).toString();
+      this.clientCard.depositCount = (
+        Number(this.clientCard.depositCount) + 1
       ).toString();
       this.clientCard.payments = {
         [this.time.todaysDate()]: this.depositAmount,

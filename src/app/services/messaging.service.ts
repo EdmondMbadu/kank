@@ -11,4 +11,14 @@ export class MessagingService {
     const callable = this.fns.httpsCallable('sendCustomSMS');
     return firstValueFrom(callable({ phoneNumber, message, metadata }));
   }
+
+  sendCardSMS(payload: {
+    ownerUid: string;
+    cardId: string;
+    message: string;
+    metadata?: any;
+  }) {
+    const callable = this.fns.httpsCallable('sendCardCustomSMS');
+    return firstValueFrom(callable(payload));
+  }
 }

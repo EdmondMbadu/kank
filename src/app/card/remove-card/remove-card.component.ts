@@ -6,6 +6,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { countPositiveCardDeposits } from 'src/app/utils/card-lifecycle-event.util';
 
 @Component({
   selector: 'app-remove-card',
@@ -45,6 +46,11 @@ export class RemoveCardComponent {
   retrieveClientCard(): void {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clientCard = data[Number(this.id)];
+      this.clientCard.depositCount = String(
+        this.clientCard.depositCount !== undefined
+          ? Number(this.clientCard.depositCount) || 0
+          : countPositiveCardDeposits(this.clientCard.payments)
+      );
       this.generatePotentialNumbersToSubstract();
       this.numberOfPaymentToday = this.howManyTimesPaidToday();
     });
@@ -126,7 +132,8 @@ export class RemoveCardComponent {
     try {
       await this.data.atomicClientCardAndUserUpdate(
         this.clientCard,
-        reverseDeposit
+        reverseDeposit,
+        'partial_withdrawal'
       );
       this.router.navigate(['/client-portal-card/' + this.id]);
     } catch (err) {
