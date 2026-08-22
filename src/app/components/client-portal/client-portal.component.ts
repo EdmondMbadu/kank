@@ -2583,12 +2583,9 @@ export class ClientPortalComponent {
     this.transferActionType = 'accept';
 
     try {
-      // Update the client to mark transfer as accepted
-      await this.data.setClientField(
-        'transferStatus',
-        'accepted',
-        this.client.uid
-      );
+      // Accepting a transfer atomically refreshes the destination copy from
+      // the source and removes the source document, preventing double-counting.
+      await this.auth.acceptClientTransfer(this.client);
 
       // Update local client object
       this.client.transferStatus = 'accepted';

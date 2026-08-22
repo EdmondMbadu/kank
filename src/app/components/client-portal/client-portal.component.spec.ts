@@ -85,6 +85,33 @@ describe('ClientPortalComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/client-info/']);
   });
 
+  it('accepts a transfer through the atomic auth workflow', async () => {
+    const component = createComponent();
+    const acceptClientTransfer = jasmine
+      .createSpy('acceptClientTransfer')
+      .and.resolveTo();
+    (component as any).auth = {
+      currentUser: { uid: 'destination-1' },
+      acceptClientTransfer,
+    };
+    component.client = Object.assign(new Client(), {
+      uid: 'copied-client-1',
+      firstName: 'Test',
+      lastName: 'Client',
+      savings: '11500',
+      transferStatus: 'pending',
+      transferSourceUserId: 'source-1',
+      transferSourceClientId: 'source-client-1',
+    });
+    spyOn(window, 'confirm').and.returnValue(true);
+    spyOn(window, 'alert');
+
+    await component.acceptTransfer();
+
+    expect(acceptClientTransfer).toHaveBeenCalledWith(component.client);
+    expect(component.client.transferStatus).toBe('accepted');
+  });
+
   it('should select all previous cycles by default and sum their benefits', () => {
     const component = createComponent();
 

@@ -143,6 +143,7 @@ export class PublicAuthService {
       investmentsDollar: {},
       amountLended: '0',
       clientsSavings: '0',
+      clientsSavingsComputed: 0,
       expensesAmount: '0',
       expenses: {},
       performances: {},

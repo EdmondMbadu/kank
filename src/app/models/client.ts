@@ -203,6 +203,9 @@ export class Client {
   stars?: string;
   requestNotTosend?: string;
   transferStatus?: 'pending' | 'accepted';
+  globalClientId?: string;
+  transferSourceUserId?: string;
+  transferSourceClientId?: string;
   recoveredAwayDebts?: {
     [id: string]: {
       amount: number;

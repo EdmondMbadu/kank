@@ -10,6 +10,9 @@ const twilio = require("twilio");
 const {mirrorLegacyWrite} = require("./firestore-v2-mirror");
 const {runRetentionCycle} = require("./firestore-v2-retention");
 const {
+  syncClientSavingsAggregate,
+} = require("./client-savings-aggregate");
+const {
   buildEmployeeSummaryMessage,
   buildCardLifecycleMessage,
   buildLoanActivationMessage,
@@ -62,6 +65,22 @@ exports.mirrorEmployeeFirestoreV2 = firestoreV2MirrorRuntime.firestore
 exports.mirrorClientFirestoreV2 = firestoreV2MirrorRuntime.firestore
     .document("users/{ownerUid}/clients/{documentId}")
     .onWrite(mirrorLegacyWrite);
+
+const clientSavingsAggregateRuntime = functions.runWith({
+  failurePolicy: true,
+  maxInstances: 50,
+  timeoutSeconds: 120,
+});
+exports.syncClientSavingsAggregate = clientSavingsAggregateRuntime.firestore
+    .document("users/{ownerUid}/clients/{clientId}")
+    .onWrite((change, context) => syncClientSavingsAggregate(
+        change,
+        context,
+        {
+          db,
+          fieldValue: admin.firestore.FieldValue,
+        },
+    ));
 exports.mirrorCardFirestoreV2 = firestoreV2MirrorRuntime.firestore
     .document("users/{ownerUid}/cards/{documentId}")
     .onWrite(mirrorLegacyWrite);

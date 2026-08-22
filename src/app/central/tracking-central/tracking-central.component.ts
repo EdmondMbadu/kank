@@ -33,6 +33,16 @@ type WeeklyAdjustmentPreviewRow = {
   note?: string;
 };
 
+type CentralTreasuryTotals = {
+  savings: number;
+  expenses: number;
+  reserveDollar: number;
+  moneyInHands: number;
+  invested: number;
+  debtLeft: number;
+  cardsMoney: number;
+};
+
 @Component({
   selector: 'app-tracking-central',
   templateUrl: './tracking-central.component.html',
@@ -172,37 +182,16 @@ export class TrackingCentralComponent {
   today = this.time.todaysDateMonthDayYear();
   summaryContent: number[] = [];
   initalizeInputs() {
-    const savings =
-      coerceToNumber(
-        this.compute.findTotalAllUsersGivenField(this.allUsers, 'clientsSavings')
-      ) ?? 0;
-    const expenses =
-      coerceToNumber(
-        this.compute.findTotalAllUsersGivenField(this.allUsers, 'expensesAmount')
-      ) ?? 0;
-    const reserveDollar =
-      coerceToNumber(
-        this.compute.findTotalAllUsersGivenField(
-          this.allUsers,
-          'reserveAmountDollar'
-        )
-      ) ?? 0;
-    const moneyHand =
-      coerceToNumber(
-        this.compute.findTotalAllUsersGivenField(this.allUsers, 'moneyInHands')
-      ) ?? 0;
-    const invested =
-      coerceToNumber(
-        this.compute.findTotalAllUsersGivenField(this.allUsers, 'amountInvested')
-      ) ?? 0;
-    const debtTotal =
-      coerceToNumber(
-        this.compute.findTotalAllUsersGivenField(this.allUsers, 'totalDebtLeft')
-      ) ?? 0;
-    const cardM =
-      coerceToNumber(
-        this.compute.findTotalAllUsersGivenField(this.allUsers, 'cardsMoney')
-      ) ?? 0;
+    const totals = this.calculateTreasuryTotals();
+    const {
+      savings,
+      expenses,
+      reserveDollar,
+      moneyInHands: moneyHand,
+      invested,
+      debtLeft: debtTotal,
+      cardsMoney: cardM,
+    } = totals;
 
     const realBenefit = debtTotal - invested;
 
@@ -235,6 +224,44 @@ export class TrackingCentralComponent {
         this.compute.convertCongoleseFrancToUsDollars(realBenefit.toString())
       ) ?? 0,
     ];
+  }
+
+  private calculateTreasuryTotals(): CentralTreasuryTotals {
+    const emptyTotals: CentralTreasuryTotals = {
+      savings: 0,
+      expenses: 0,
+      reserveDollar: 0,
+      moneyInHands: 0,
+      invested: 0,
+      debtLeft: 0,
+      cardsMoney: 0,
+    };
+
+    return this.allUsers.reduce((totals, user) => {
+      const savings =
+        coerceToNumber(user.clientsSavingsComputed) ??
+        coerceToNumber(user.clientsSavings) ??
+        0;
+      const expenses = coerceToNumber(user.expensesAmount) ?? 0;
+      const reserveDollar = coerceToNumber(user.reserveAmountDollar) ?? 0;
+      const moneyInHands = coerceToNumber(user.moneyInHands) ?? 0;
+      const invested = coerceToNumber(user.amountInvested) ?? 0;
+      const debtLeft = coerceToNumber(user.totalDebtLeft) ?? 0;
+      const cardsMoney = coerceToNumber(user.cardsMoney) ?? 0;
+
+      // These are non-negative balances. Invalid legacy values must not erase
+      // or reduce valid totals from other locations. Cash remains signed so a
+      // real location-level cash deficit is still visible centrally.
+      totals.savings += Math.max(0, savings);
+      totals.expenses += Math.max(0, expenses);
+      totals.reserveDollar += Math.max(0, reserveDollar);
+      totals.moneyInHands += moneyInHands;
+      totals.invested += Math.max(0, invested);
+      totals.debtLeft += Math.max(0, debtLeft);
+      totals.cardsMoney += cardsMoney;
+
+      return totals;
+    }, emptyTotals);
   }
 
   saveRolePasswords(): void {

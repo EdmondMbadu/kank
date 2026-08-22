@@ -1,7 +1,10 @@
 import { TrackingCentralComponent } from './tracking-central.component';
 
 describe('TrackingCentralComponent', () => {
-  function createComponent(authOverrides: Record<string, any> = {}) {
+  function createComponent(
+    authOverrides: Record<string, any> = {},
+    computeOverrides: Record<string, any> = {}
+  ) {
     const auth: any = {
       isAdmin: true,
       weeklyPaymentTargetFc: 900000,
@@ -37,6 +40,7 @@ describe('TrackingCentralComponent', () => {
       findTotalAllUsersGivenField: () => 0,
       convertUsDollarsToCongoleseFranc: () => '0',
       convertCongoleseFrancToUsDollars: () => '0',
+      ...computeOverrides,
     } as any;
 
     const component = new TrackingCentralComponent(
@@ -243,5 +247,70 @@ describe('TrackingCentralComponent', () => {
     expect(window.alert).toHaveBeenCalledWith(
       'La date effective doit être un lundi.'
     );
+  });
+
+  it('calculates correct central totals without letting missing or negative legacy values corrupt them', () => {
+    const legacyTotalSpy = jasmine.createSpy('findTotalAllUsersGivenField');
+    const { component } = createComponent({}, {
+      findTotalAllUsersGivenField: legacyTotalSpy,
+      convertUsDollarsToCongoleseFranc: (value: string) =>
+        (Number(value) * 2500).toString(),
+      convertCongoleseFrancToUsDollars: (value: string) =>
+        (Number(value) / 2500).toString(),
+    });
+    component.allUsers = [
+      {
+        clientsSavings: '20000',
+        expensesAmount: '5000',
+        reserveAmountDollar: '10',
+        moneyInHands: '-1000',
+        amountInvested: '100000',
+        totalDebtLeft: '130000',
+        cardsMoney: '5000',
+      } as any,
+      {
+        clientsSavings: '-11500',
+        moneyInHands: '2000',
+        totalDebtLeft: '20,000',
+      } as any,
+      {
+        clientsSavings: '30,000',
+        expensesAmount: '2 500 FC',
+        reserveAmountDollar: '5',
+        moneyInHands: 'invalid',
+        amountInvested: '50000',
+        totalDebtLeft: '-5000',
+        cardsMoney: '1000',
+      } as any,
+    ];
+
+    component.initalizeInputs();
+
+    expect(component.summaryContent).toEqual([
+      50000,
+      7500,
+      37500,
+      7000,
+      0,
+    ]);
+    expect(component.valuesConvertedToDollars).toEqual([20, 3, 15, 2.8, 0]);
+    expect(legacyTotalSpy).not.toHaveBeenCalled();
+  });
+
+  it('prefers the authoritative computed savings aggregate', () => {
+    const { component } = createComponent({}, {
+      convertCongoleseFrancToUsDollars: (value: string) => value,
+    });
+    component.allUsers = [
+      {
+        clientsSavings: '-11500',
+        clientsSavingsComputed: 303500,
+      } as any,
+    ];
+
+    component.initalizeInputs();
+
+    expect(component.summaryContent[0]).toBe(303500);
+    expect(component.valuesConvertedToDollars[0]).toBe(303500);
   });
 });

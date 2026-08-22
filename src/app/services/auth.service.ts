@@ -420,8 +420,18 @@ export class AuthService {
 
   getCurrentUser() {
     this.user$.subscribe((user) => {
-      this.currentUser = user;
+      this.currentUser = this.withAuthoritativeClientsSavings(user);
     });
+  }
+
+  private withAuthoritativeClientsSavings(user: User | null): User | null {
+    if (!user) return null;
+    const computed = Number(user.clientsSavingsComputed);
+    if (!Number.isFinite(computed) || computed < 0) return user;
+    return {
+      ...user,
+      clientsSavings: computed.toString(),
+    };
   }
   // auth.service.ts
   SignOn(email: string, password: string, word: string): Promise<void> {
@@ -492,6 +502,7 @@ export class AuthService {
       investmentsDollar: {},
       amountLended: '0',
       clientsSavings: '0',
+      clientsSavingsComputed: 0,
       expensesAmount: '0',
       expenses: {},
       performances: {},
@@ -1459,11 +1470,69 @@ export class AuthService {
     const copiedData: any = {
       ...clientData,
       uid: newUid,
+      globalClientId: clientData.globalClientId || sourceClientId,
       transferStatus: 'pending',
+      transferSourceUserId: sourceUserId,
+      transferSourceClientId: sourceClientId,
       // agent is excluded - will need to be assigned at the new location
     };
 
     return targetClientRef.set(copiedData, { merge: true });
+  }
+
+  async acceptClientTransfer(client: Client): Promise<void> {
+    const targetUserId = this.currentUser?.uid;
+    const targetClientId = client.uid;
+    const sourceUserId = client.transferSourceUserId;
+    const sourceClientId = client.transferSourceClientId;
+    if (
+      !targetUserId ||
+      !targetClientId ||
+      !sourceUserId ||
+      !sourceClientId ||
+      sourceUserId === targetUserId
+    ) {
+      throw new Error('Informations de transfert incomplètes.');
+    }
+
+    const targetRef = this.afs.doc<Client>(
+      `users/${targetUserId}/clients/${targetClientId}`
+    ).ref;
+    const sourceRef = this.afs.doc<Client>(
+      `users/${sourceUserId}/clients/${sourceClientId}`
+    ).ref;
+
+    await this.afs.firestore.runTransaction(async (transaction) => {
+      const [targetSnapshot, sourceSnapshot] = await Promise.all([
+        transaction.get(targetRef),
+        transaction.get(sourceRef),
+      ]);
+      if (!targetSnapshot.exists || !sourceSnapshot.exists) {
+        throw new Error('Le client source ou le transfert est introuvable.');
+      }
+      const targetData = targetSnapshot.data() as Client;
+      if (targetData.transferStatus !== 'pending') {
+        throw new Error("Ce transfert n'est plus en attente.");
+      }
+
+      const sourceData = sourceSnapshot.data() as Client;
+      const {
+        agent,
+        employee,
+        locationName,
+        ...transferableData
+      } = sourceData as any;
+      transaction.set(targetRef, {
+        ...transferableData,
+        uid: targetClientId,
+        globalClientId:
+          sourceData.globalClientId || sourceClientId,
+        transferStatus: 'accepted',
+        transferSourceUserId: sourceUserId,
+        transferSourceClientId: sourceClientId,
+      });
+      transaction.delete(sourceRef);
+    });
   }
 
   deleteClient(client: Client) {

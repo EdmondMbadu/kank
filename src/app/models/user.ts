@@ -16,6 +16,7 @@ export class User {
   performances?: { [key: string]: string } = {};
   amountLended?: string;
   clientsSavings?: string;
+  clientsSavingsComputed?: number;
   expensesAmount?: string;
   expenses?: { [key: string]: string } = {};
   losses?: { [key: string]: string } = {};
