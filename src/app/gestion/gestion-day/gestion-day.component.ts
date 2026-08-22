@@ -6,8 +6,8 @@ import {
   ViewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin, Subscription } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { forkJoin, of, Subscription } from 'rxjs';
+import { map, take } from 'rxjs/operators';
 import { Management } from 'src/app/models/management';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -93,8 +93,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   managementInfo?: Management = {};
   reserveRevealTimeInput = '22:30';
   isSavingReserveRevealTime = false;
+  auditTablesError = '';
   private darkModeObserver?: MutationObserver;
   private weeklyPaymentTargetSubscription?: Subscription;
+  private auditTablesRequestVersion = 0;
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -105,32 +107,60 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   ) {}
   ngOnInit(): void {
     this.observeDarkModeChanges();
-    this.weeklyPaymentTargetSubscription =
-      this.auth.weeklyPaymentTarget$.subscribe(() => {
-        this.refreshWeeklyPaymentTargetCells();
-      });
+
+    const cachedManagementInfo = this.auth.managementInfo as Management;
+    if (
+      this.isAuditTeamViewer &&
+      cachedManagementInfo &&
+      Object.keys(cachedManagementInfo).length > 0
+    ) {
+      this.applyManagementInfo(cachedManagementInfo);
+    }
+
+    if (!this.isAuditTeamViewer) {
+      this.weeklyPaymentTargetSubscription =
+        this.auth.weeklyPaymentTarget$.subscribe(() => {
+          this.refreshWeeklyPaymentTargetCells();
+        });
+    }
+
     this.auth.getManagementInfo().subscribe((data) => {
-      this.managementInfo = data?.[0] || {};
-      this.reserveRevealTimeInput = this.normalizeRevealTime(
-        this.managementInfo?.reserveRevealTimeKinshasa
-      );
-      this.initalizeInputs();
-      this.updateReserveGraphics(this.graphicsRange);
-      this.updateServeGraphics(this.graphicsRangeServe);
-      this.updateCombinedGraphics(this.graphicsRangeCombined);
+      this.applyManagementInfo(data?.[0] || {});
     });
+
     // get all clients to find what is needed for tomorrow
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       // this is really weird. maybe some apsect of angular. but it works for now
-      if (this.allUsers.length > 1) {
-        this.getAllClients();
+      if (
+        (this.isAuditTeamViewer && this.allUsers.length > 0) ||
+        (!this.isAuditTeamViewer && this.allUsers.length > 1)
+      ) {
+        if (this.isAuditTeamViewer) {
+          this.getAuditOperationalTables();
+        } else {
+          this.getAllClients();
+        }
         // this.getAllClientsCard();
       }
       if (this.auth.isAdmin && this.allUsers.length > 0) {
         this.updateWeeklyPaymentDate();
       }
     });
+  }
+
+  private applyManagementInfo(managementInfo: Management): void {
+    this.managementInfo = managementInfo;
+    this.reserveRevealTimeInput = this.normalizeRevealTime(
+      this.managementInfo?.reserveRevealTimeKinshasa
+    );
+    this.initalizeInputs();
+
+    if (this.isAuditTeamViewer) return;
+
+    this.updateReserveGraphics(this.graphicsRange);
+    this.updateServeGraphics(this.graphicsRangeServe);
+    this.updateCombinedGraphics(this.graphicsRangeCombined);
   }
   ngOnDestroy(): void {
     this.weeklyPaymentTargetSubscription?.unsubscribe();
@@ -561,7 +591,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   get isAuditTeamViewer(): boolean {
-    return !this.auth.isAdmin && this.auth.isDistributor;
+    return this.auth.isAuditTeamViewer === true;
   }
 
   get auditTeamsWithMoneyInHandsCount(): number {
@@ -661,6 +691,276 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.overallUpcomingRequestTotal
     );
     this.upcomingRequestsReady = true;
+  }
+
+  /**
+   * Lightweight audit path. The audit tables need only today's outstanding
+   * requests, today's scheduled reserve clients, and each location's existing
+   * daily aggregate for tomorrow. Admin keeps the complete historical path in
+   * getAllClients().
+   */
+  getAuditOperationalTables(): void {
+    const requestVersion = ++this.auditTablesRequestVersion;
+    this.isFetchingClients = true;
+    this.auditTablesError = '';
+    this.userRequestTotals = [];
+    this.userServeTodayTotals = [];
+    this.reserveTotals = [];
+    this.overallTotal = 0;
+    this.overallTotalToday = 0;
+    this.overallTotalTodayInDollars = 0;
+    this.overallTotalReserve = 0;
+    this.overallTotalReserveInDollars = 0;
+    this.overallMoneyInHands = 0;
+    this.overallMoneyInHandsDollar = 0;
+
+    this.input = this.compute
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'investments',
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.inputDOllars = this.compute
+      .convertCongoleseFrancToUsDollars(this.input)
+      .toString();
+
+    const targetDate =
+      this.requestDateRigthFormat === this.tomorrow
+        ? this.effectiveTomorrowDate
+        : this.requestDateRigthFormat;
+
+    const locationRequests = this.allUsers.map((user) => {
+      const userId = user.uid!;
+      const clientsPath = `users/${userId}/clients`;
+      const cardsPath = `users/${userId}/cards`;
+      const dailyRequests = user.dailyMoneyRequests || {};
+      const hasTomorrowAggregate = Object.prototype.hasOwnProperty.call(
+        dailyRequests,
+        targetDate
+      );
+
+      const tomorrowTotal$ = hasTomorrowAggregate
+        ? of(this.auditFiniteAmount(dailyRequests[targetDate]))
+        : forkJoin({
+            clients: this.afs
+              .collection<Client>(clientsPath, (ref) =>
+                ref.where('requestDate', '==', targetDate)
+              )
+              .valueChanges()
+              .pipe(take(1)),
+            cards: this.afs
+              .collection<Card>(cardsPath, (ref) =>
+                ref.where('requestDate', '==', targetDate)
+              )
+              .valueChanges()
+              .pipe(take(1)),
+          }).pipe(
+            map(
+              ({ clients, cards }) =>
+                this.sumAuditOutstandingRequests(clients, targetDate) +
+                this.sumAuditOutstandingRequests(cards, targetDate)
+            )
+          );
+
+      return forkJoin({
+        reserveClients: this.afs
+          .collection<Client>(clientsPath, (ref) =>
+            ref.where('paymentDay', '==', this.theDay)
+          )
+          .valueChanges()
+          .pipe(take(1)),
+        todayClients: this.afs
+          .collection<Client>(clientsPath, (ref) =>
+            ref.where('requestDate', '==', this.requestDateCorrectFormat)
+          )
+          .valueChanges()
+          .pipe(take(1)),
+        todayCards: this.afs
+          .collection<Card>(cardsPath, (ref) =>
+            ref.where('requestDate', '==', this.requestDateCorrectFormat)
+          )
+          .valueChanges()
+          .pipe(take(1)),
+        tomorrowTotal: tomorrowTotal$,
+      }).pipe(
+        map(({ reserveClients, todayClients, todayCards, tomorrowTotal }) => {
+          const eligibleReserveClients = this.data
+            .findClientsWithDebts(reserveClients)
+            .filter(
+              (client) =>
+                Number(client.debtLeft) > 0 &&
+                client.paymentDay === this.theDay &&
+                this.data.didClientStartThisWeek(client)
+            );
+          const reserveTotal = this.compute.computeExpectedPerDate(
+            eligibleReserveClients
+          );
+          const todayTotal =
+            this.sumAuditOutstandingRequests(
+              todayClients,
+              this.requestDateCorrectFormat
+            ) +
+            this.sumAuditOutstandingRequests(
+              todayCards,
+              this.requestDateCorrectFormat
+            );
+          const todayReserveKeys = Object.keys(user.reserve || {}).filter(
+            (key) => key.startsWith(this.requestDateCorrectFormat)
+          );
+          const actualReserve = todayReserveKeys.reduce(
+            (sum, key) => sum + this.auditFiniteAmount(user.reserve?.[key]),
+            0
+          );
+          const moneyInHands =
+            this.auditFiniteAmount(user.moneyInHands) +
+            this.auditFiniteAmount(user.cardsMoney);
+
+          return {
+            firstName: user.firstName || '',
+            trackingId: userId,
+            todayTotal,
+            tomorrowTotal,
+            reserveTotal,
+            actualReserve,
+            hasActualSubmission: todayReserveKeys.length > 0,
+            moneyInHands,
+          };
+        })
+      );
+    });
+
+    if (locationRequests.length === 0) {
+      this.isFetchingClients = false;
+      return;
+    }
+
+    forkJoin(locationRequests).subscribe({
+      next: (rows) => {
+        if (requestVersion !== this.auditTablesRequestVersion) return;
+
+        this.userServeTodayTotals = rows
+          .filter((row) => row.todayTotal > 0)
+          .map((row) => ({
+            firstName: row.firstName,
+            total: row.todayTotal,
+            totalInDollar: this.auditFcToDollar(row.todayTotal),
+            trackingId: row.trackingId,
+          }))
+          .sort((a, b) => b.total - a.total);
+
+        this.userRequestTotals = rows
+          .filter((row) => row.tomorrowTotal > 0)
+          .map((row) => ({
+            firstName: row.firstName,
+            total: row.tomorrowTotal,
+            totalInDollar: this.auditFcToDollar(row.tomorrowTotal),
+            trackingId: row.trackingId,
+          }))
+          .sort((a, b) => b.total - a.total);
+
+        this.reserveTotals = rows
+          .filter(
+            (row) =>
+              row.reserveTotal > 0 ||
+              row.actualReserve > 0 ||
+              row.moneyInHands > 0
+          )
+          .map((row) => ({
+            firstName: row.firstName,
+            total: row.reserveTotal,
+            totalInDollar: this.auditFcToDollar(row.reserveTotal),
+            actual: row.actualReserve,
+            actualInDollar: this.auditFcToDollar(row.actualReserve),
+            hasActualSubmission: row.hasActualSubmission,
+            trackingId: row.trackingId,
+            moneyInHands: row.moneyInHands,
+            moneyInHandsDollar: this.auditFcToDollar(row.moneyInHands),
+          }))
+          .sort((a, b) => {
+            const first = Math.max(a.total || 0, a.actual || 0);
+            const second = Math.max(b.total || 0, b.actual || 0);
+            return second - first;
+          });
+
+        this.overallTotalToday = rows.reduce(
+          (sum, row) => sum + row.todayTotal,
+          0
+        );
+        this.overallTotal = rows.reduce(
+          (sum, row) => sum + row.tomorrowTotal,
+          0
+        );
+        this.overallTotalReserve = rows.reduce(
+          (sum, row) => sum + row.reserveTotal,
+          0
+        );
+        this.overallMoneyInHands = rows.reduce(
+          (sum, row) => sum + row.moneyInHands,
+          0
+        );
+        this.overallTotalTodayInDollars = this.auditFcToDollar(
+          this.overallTotalToday
+        );
+        this.overallTotalInDollars = this.auditFcToDollar(this.overallTotal);
+        this.overallTotalReserveInDollars = this.auditFcToDollar(
+          this.overallTotalReserve
+        );
+        this.overallMoneyInHandsDollar = this.auditFcToDollar(
+          this.overallMoneyInHands
+        );
+        this.percentage =
+          this.overallTotalReserve > 0
+            ? (
+                (Number(this.dailyReserve) / this.overallTotalReserve) *
+                100
+              ).toFixed(2)
+            : '0.00';
+        this.isFetchingClients = false;
+      },
+      error: (error) => {
+        if (requestVersion !== this.auditTablesRequestVersion) return;
+        console.error('Unable to load audit operational tables', error);
+        this.auditTablesError =
+          'Impossible de charger les tableaux. Vérifiez la connexion et réessayez.';
+        this.isFetchingClients = false;
+      },
+    });
+  }
+
+  private sumAuditOutstandingRequests(
+    records: Array<Client | Card>,
+    requestDate: string
+  ): number {
+    return records.reduce((sum, record) => {
+      if (
+        record.requestStatus === undefined ||
+        record.requestDate !== requestDate
+      ) {
+        return sum;
+      }
+
+      const validType =
+        record.requestType === 'card' ||
+        record.requestType === 'savings' ||
+        record.requestType === 'rejection' ||
+        (record.requestType === 'lending' &&
+          (record as Client).agentSubmittedVerification === 'true');
+      return validType
+        ? sum + this.auditFiniteAmount(record.requestAmount)
+        : sum;
+    }, 0);
+  }
+
+  private auditFiniteAmount(value: unknown): number {
+    const amount = Number(value ?? 0);
+    return Number.isFinite(amount) ? amount : 0;
+  }
+
+  private auditFcToDollar(amount: number): number {
+    return this.auditFiniteAmount(
+      this.compute.convertCongoleseFrancToUsDollars(amount.toString())
+    );
   }
 
   getAllClients() {
@@ -1383,7 +1683,11 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.theDay = this.time.getDayOfWeek(this.requestDateCorrectFormat);
 
     this.initalizeInputs();
-    this.getAllClients();
+    if (this.isAuditTeamViewer) {
+      this.getAuditOperationalTables();
+    } else {
+      this.getAllClients();
+    }
   }
 
   /**
@@ -2979,7 +3283,11 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.frenchDateTomorrow = this.time.convertDateToDayMonthYear(
       this.requestDateRigthFormat
     );
-    this.getAllClients();
+    if (this.isAuditTeamViewer) {
+      this.getAuditOperationalTables();
+    } else {
+      this.getAllClients();
+    }
   }
 
   updateCombinedGraphics(time: number) {

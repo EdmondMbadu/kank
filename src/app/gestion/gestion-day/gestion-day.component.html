@@ -43,6 +43,7 @@
 
 <!-- Average Performance Percentage -->
 <div
+  *ngIf="!isAuditTeamViewer"
   class="container mt-8 md:mt-16 flex mx-auto flex-col md:justify-center md:flex-row"
 >
   <div class="w-full max-w-sm mx-auto mt-0 md:-mt-8 mb-4">
@@ -280,6 +281,18 @@
 <div
   class="container mx-auto px-4 dark:text-white"
 >
+  <div
+    *ngIf="isAuditTeamViewer && isFetchingClients"
+    class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
+  >
+    Chargement des tableaux opérationnels…
+  </div>
+  <div
+    *ngIf="isAuditTeamViewer && auditTablesError"
+    class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+  >
+    {{ auditTablesError }}
+  </div>
   <!-- ===================== SUMMARY VERIFICATION ===================== -->
   <div
     class="w-full rounded-2xl border border-indigo-100 bg-white/70 p-5 shadow-xl dark:border-slate-700 dark:bg-slate-800/70"

@@ -1,4 +1,261 @@
 import { GestionDayComponent } from './gestion-day.component';
+import { of, Subject } from 'rxjs';
+
+describe('GestionDayComponent optimized audit view', () => {
+  const buildTime = () => ({
+    getTodaysDateYearMonthDay: () => '2026-08-22',
+    todaysDateMonthDayYear: () => '8-22-2026',
+    yesterdaysDateMonthDayYear: () => '8-21-2026',
+    getTomorrowsDateMonthDayYear: () => '8-23-2026',
+    convertDateToDayMonthYear: (date: string) => date,
+    convertDateToMonthDayYear: (date: string) => date,
+    getDayOfWeek: () => 'Saturday',
+  });
+
+  const buildCompute = () => ({
+    findTodayTotalResultsGivenField: () => 590000,
+    convertCongoleseFrancToUsDollars: (amount: string) =>
+      (Number(amount) / 3000).toString(),
+    computeExpectedPerDate: (clients: any[]) =>
+      clients.reduce((sum, client) => sum + Number(client.amountToPay || 0), 0),
+  });
+
+  function createComponent(
+    auth: any,
+    afs: any = {},
+    compute: any = buildCompute(),
+    data: any = {}
+  ): GestionDayComponent {
+    return new GestionDayComponent(
+      jasmine.createSpyObj('Router', ['navigate']),
+      auth,
+      buildTime() as any,
+      compute,
+      data,
+      afs
+    );
+  }
+
+  it('uses the isolated audit initialization path and preserves the admin path', () => {
+    const managementUpdates = new Subject<any[]>();
+    const auditAuth = {
+      isAdmin: false,
+      isDistributor: true,
+      isAuditTeamViewer: true,
+      managementInfo: { moneyInHands: '250000' },
+      weeklyPaymentTarget$: of(600000),
+      getManagementInfo: () => managementUpdates.asObservable(),
+      getAllUsersInfo: () => of([{ uid: 'audit-location' }]),
+    };
+    const auditComponent = createComponent(auditAuth);
+    spyOn<any>(auditComponent, 'observeDarkModeChanges');
+    spyOn(auditComponent, 'initalizeInputs');
+    spyOn(auditComponent, 'getAuditOperationalTables');
+    spyOn(auditComponent, 'getAllClients');
+    spyOn(auditComponent, 'updateReserveGraphics');
+    spyOn(auditComponent, 'updateServeGraphics');
+    spyOn(auditComponent, 'updateCombinedGraphics');
+
+    auditComponent.ngOnInit();
+
+    expect(auditComponent.initalizeInputs).toHaveBeenCalledTimes(1);
+    expect(auditComponent.getAuditOperationalTables).toHaveBeenCalledTimes(1);
+    expect(auditComponent.getAllClients).not.toHaveBeenCalled();
+    expect(auditComponent.updateReserveGraphics).not.toHaveBeenCalled();
+    expect(auditComponent.updateServeGraphics).not.toHaveBeenCalled();
+    expect(auditComponent.updateCombinedGraphics).not.toHaveBeenCalled();
+    managementUpdates.complete();
+
+    const adminAuth = {
+      isAdmin: true,
+      isDistributor: false,
+      isAuditTeamViewer: false,
+      managementInfo: {},
+      weeklyPaymentTarget$: of(600000),
+      getManagementInfo: () => of([{}]),
+      getAllUsersInfo: () => of([{ uid: 'one' }, { uid: 'two' }]),
+    };
+    const adminComponent = createComponent(adminAuth);
+    spyOn<any>(adminComponent, 'observeDarkModeChanges');
+    spyOn(adminComponent, 'initalizeInputs');
+    spyOn(adminComponent, 'getAuditOperationalTables');
+    spyOn(adminComponent, 'getAllClients');
+    spyOn(adminComponent, 'updateWeeklyPaymentDate');
+    spyOn(adminComponent, 'updateReserveGraphics');
+    spyOn(adminComponent, 'updateServeGraphics');
+    spyOn(adminComponent, 'updateCombinedGraphics');
+
+    adminComponent.ngOnInit();
+
+    expect(adminComponent.getAuditOperationalTables).not.toHaveBeenCalled();
+    expect(adminComponent.getAllClients).toHaveBeenCalledTimes(1);
+    expect(adminComponent.updateWeeklyPaymentDate).toHaveBeenCalledTimes(1);
+    expect(adminComponent.updateReserveGraphics).toHaveBeenCalledTimes(1);
+    expect(adminComponent.updateServeGraphics).toHaveBeenCalledTimes(1);
+    expect(adminComponent.updateCombinedGraphics).toHaveBeenCalledTimes(1);
+  });
+
+  it('computes the three audit tables from bounded queries and location aggregates', () => {
+    const queryLog: Array<{ path: string; field: string; value: string }> = [];
+    const queryData: Record<string, any[]> = {
+      'users/one/clients|paymentDay|Saturday': [
+        {
+          debtLeft: '300000',
+          paymentDay: 'Saturday',
+          amountToPay: '300000',
+        },
+      ],
+      'users/one/clients|requestDate|8-22-2026': [
+        {
+          requestStatus: 'pending',
+          requestDate: '8-22-2026',
+          requestType: 'lending',
+          agentSubmittedVerification: 'true',
+          requestAmount: '90000',
+        },
+      ],
+      'users/one/cards|requestDate|8-22-2026': [],
+      'users/two/clients|paymentDay|Saturday': [],
+      'users/two/clients|requestDate|8-22-2026': [],
+      'users/two/cards|requestDate|8-22-2026': [
+        {
+          requestStatus: 'pending',
+          requestDate: '8-22-2026',
+          requestType: 'card',
+          requestAmount: '50000',
+        },
+      ],
+    };
+    const afs = {
+      collection: (path: string, queryFactory: (ref: any) => any) => {
+        const descriptor = queryFactory({
+          where: (field: string, _operator: string, value: string) => ({
+            field,
+            value,
+          }),
+        });
+        queryLog.push({ path, field: descriptor.field, value: descriptor.value });
+        const key = `${path}|${descriptor.field}|${descriptor.value}`;
+        return { valueChanges: () => of(queryData[key] || []) };
+      },
+    };
+    const auth = {
+      isAdmin: false,
+      isDistributor: true,
+      isAuditTeamViewer: true,
+    };
+    const data = {
+      findClientsWithDebts: (clients: any[]) => clients,
+      didClientStartThisWeek: () => true,
+    };
+    const component = createComponent(auth, afs, buildCompute(), data);
+    component.theDay = 'Saturday';
+    component.dailyReserve = '175000';
+    component.allUsers = [
+      {
+        uid: 'one',
+        firstName: 'Masangambila',
+        dailyMoneyRequests: { '8-24-2026': '400000' },
+        reserve: { '8-22-2026-10-0-0': '175000' },
+        moneyInHands: '0',
+        cardsMoney: '0',
+      },
+      {
+        uid: 'two',
+        firstName: 'Matadikibala',
+        dailyMoneyRequests: { '8-24-2026': '100000' },
+        reserve: {},
+        moneyInHands: '50000',
+        cardsMoney: '10000',
+      },
+    ];
+
+    component.getAuditOperationalTables();
+
+    expect(component.overallTotalToday).toBe(140000);
+    expect(component.overallTotal).toBe(500000);
+    expect(component.overallTotalReserve).toBe(300000);
+    expect(component.overallMoneyInHands).toBe(60000);
+    expect(component.userRequestTotals.map((row) => row.total)).toEqual([
+      400000,
+      100000,
+    ]);
+    expect(component.userServeTodayTotals.map((row) => row.total)).toEqual([
+      90000,
+      50000,
+    ]);
+    expect(component.reserveTotals.map((row) => row.firstName)).toEqual([
+      'Masangambila',
+      'Matadikibala',
+    ]);
+    expect(component.reserveTotals[1].moneyInHands).toBe(60000);
+    expect(queryLog).toHaveSize(6);
+    expect(queryLog.some((query) => query.path.includes('transportReceipts')))
+      .toBeFalse();
+    expect(
+      queryLog.some(
+        (query) =>
+          query.field === 'requestDate' && query.value === '8-24-2026'
+      )
+    ).toBeFalse();
+  });
+
+  it('queries tomorrow directly only when a location aggregate is absent', () => {
+    const queryLog: Array<{ path: string; field: string; value: string }> = [];
+    const afs = {
+      collection: (path: string, queryFactory: (ref: any) => any) => {
+        const descriptor = queryFactory({
+          where: (field: string, _operator: string, value: string) => ({
+            field,
+            value,
+          }),
+        });
+        queryLog.push({ path, field: descriptor.field, value: descriptor.value });
+        const isTomorrow = descriptor.value === '8-24-2026';
+        const isCard = path.endsWith('/cards');
+        const records = isTomorrow
+          ? [
+              {
+                requestStatus: 'pending',
+                requestDate: '8-24-2026',
+                requestType: isCard ? 'card' : 'savings',
+                requestAmount: isCard ? '25000' : '75000',
+              },
+            ]
+          : [];
+        return { valueChanges: () => of(records) };
+      },
+    };
+    const component = createComponent(
+      { isAdmin: false, isAuditTeamViewer: true },
+      afs,
+      buildCompute(),
+      {
+        findClientsWithDebts: (clients: any[]) => clients,
+        didClientStartThisWeek: () => true,
+      }
+    );
+    component.theDay = 'Saturday';
+    component.allUsers = [
+      {
+        uid: 'missing',
+        firstName: 'Fallback',
+        dailyMoneyRequests: {},
+        reserve: {},
+      },
+    ];
+
+    component.getAuditOperationalTables();
+
+    expect(component.overallTotal).toBe(100000);
+    expect(
+      queryLog.filter(
+        (query) =>
+          query.field === 'requestDate' && query.value === '8-24-2026'
+      )
+    ).toHaveSize(2);
+  });
+});
 
 describe('GestionDayComponent confirmed planned-expense saves', () => {
   let component: GestionDayComponent;
