@@ -2628,11 +2628,9 @@ export class ClientPortalComponent {
     this.transferActionType = 'reject';
 
     try {
-      // Delete the client from this location (same as delete function)
+      // A pending transfer was never credited to this location's aggregates,
+      // so rejection only removes the copied client document.
       await this.auth.deleteClient(this.client);
-
-      // Also update user info for deleted client
-      await this.auth.UpdateUserInfoForDeletedClient(this.client);
 
       // Remove client from agent list if agent exists
       if (this.agent && this.agent.uid) {

@@ -1474,6 +1474,13 @@ export class AuthService {
   }
 
   UpdateUserInfoForDeletedClient(client: Client) {
+    // A pending transfer is only a copied proposal at the destination. Its
+    // balances were never credited to that location, so deleting/rejecting it
+    // must not debit the destination aggregates.
+    if (client.transferStatus === 'pending') {
+      return Promise.resolve();
+    }
+
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.currentUser.uid}`
     );

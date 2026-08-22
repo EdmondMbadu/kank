@@ -56,4 +56,41 @@ describe('TrackingComponent', () => {
     expect(component.amountBudgetPending).toBe('120000');
     expect(component.summaryContent[3]).toBe(120000);
   });
+
+  it('derives client savings from accepted clients instead of a stale negative aggregate', () => {
+    const component = new TrackingComponent(
+      {} as any,
+      {
+        currentUser: {
+          clientsSavings: '-11500',
+        },
+        isAdmninistrator: true,
+      } as any,
+      { todaysDateMonthDayYear: () => '8-22-2026' } as any,
+      {
+        convertUsDollarsToCongoleseFranc: (value: string) => value,
+        convertCongoleseFrancToUsDollars: (value: string) => value,
+      } as any,
+      {
+        generalMaxNumberOfClients: 70,
+        generalMaxNumberOfDaysToLend: 20,
+      } as any,
+      {} as any
+    );
+    component.clients = [
+      Object.assign(new Client(), {
+        savings: '20000',
+        transferStatus: 'accepted',
+      }),
+      Object.assign(new Client(), {
+        savings: '11500',
+        transferStatus: 'pending',
+      }),
+    ];
+
+    component.initalizeInputs();
+
+    expect(component.summaryContent[0]).toBe(20000);
+    expect(component.valuesConvertedToDollars[0]).toBe(20000);
+  });
 });

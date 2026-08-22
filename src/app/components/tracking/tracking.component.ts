@@ -211,7 +211,11 @@ export class TrackingComponent implements OnDestroy {
       Number.isFinite(requiredPercent) && requiredPercent > 0
         ? requiredPercent
         : 30;
-    const clientsSavings = coerceToNumber(user.clientsSavings);
+    // `clientsSavings` is a denormalized legacy aggregate and can drift when
+    // several client operations overlap or when a pending transfer is rejected.
+    // The client collection is already loaded before this method runs, so use it
+    // as the source of truth without adding another Firestore request.
+    const clientsSavings = this.calculateClientsSavings();
     const cardsMoney = coerceToNumber(user.cardsMoney);
     const moneyInHands = coerceToNumber(user.moneyInHands);
     const enMain = (moneyInHands ?? 0) + (cardsMoney ?? 0);
@@ -270,6 +274,18 @@ export class TrackingComponent implements OnDestroy {
       this.summary = this.compute.filterOutElements(this.summary, 4);
     }
   }
+
+  private calculateClientsSavings(): number {
+    return this.clients.reduce((total, client) => {
+      // Pending transfer copies have not yet been accepted by this location and
+      // must not affect its treasury totals.
+      if (client.transferStatus === 'pending') return total;
+
+      const savings = coerceToNumber(client.savings) ?? 0;
+      return total + Math.max(0, savings);
+    }, 0);
+  }
+
   private resetTrackingState(): void {
     this.maxNumberOfClients = this.data.generalMaxNumberOfClients;
     this.maxNumberOfDaysToLend = this.data.generalMaxNumberOfDaysToLend;

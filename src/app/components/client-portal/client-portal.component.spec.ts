@@ -7,6 +7,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
+import { Client } from 'src/app/models/client';
 
 describe('ClientPortalComponent', () => {
   function createComponent(
@@ -52,6 +53,36 @@ describe('ClientPortalComponent', () => {
     const component = createComponent();
 
     expect(component).toBeTruthy();
+  });
+
+  it('rejects a pending transfer without debiting user aggregates', async () => {
+    const component = createComponent();
+    const deleteClient = jasmine.createSpy('deleteClient').and.resolveTo();
+    const updateTotals = jasmine
+      .createSpy('UpdateUserInfoForDeletedClient')
+      .and.resolveTo();
+    const navigate = jasmine.createSpy('navigate');
+    (component as any).auth = {
+      currentUser: { uid: 'destination-1' },
+      deleteClient,
+      UpdateUserInfoForDeletedClient: updateTotals,
+    };
+    (component as any).router = { navigate };
+    component.client = Object.assign(new Client(), {
+      uid: 'copied-client-1',
+      firstName: 'Test',
+      lastName: 'Client',
+      savings: '11500',
+      transferStatus: 'pending',
+    });
+    spyOn(window, 'confirm').and.returnValue(true);
+    spyOn(window, 'alert');
+
+    await component.rejectTransfer();
+
+    expect(deleteClient).toHaveBeenCalledWith(component.client);
+    expect(updateTotals).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/client-info/']);
   });
 
   it('should select all previous cycles by default and sum their benefits', () => {
