@@ -24,6 +24,7 @@ type WeeklyPaymentHistoryPreset = '1M' | '3M' | '6M' | '1A' | 'MAX';
 type WeeklyPaymentHistoryRange = WeeklyPaymentHistoryPreset | 'CUSTOM';
 type WeeklyPaymentHistoryMode = 'payment' | 'combined' | 'reserve';
 type WeeklyPaymentViewMode = 'ranking' | 'detailed';
+type WeeklyPaymentSourceMode = 'total' | 'cashFlow';
 type GestionHeatmapMode =
   | 'paymentToday'
   | 'reserveToday'
@@ -41,6 +42,28 @@ interface WeeklyPaymentHistoryPoint {
   totalFc: number;
   reserveFc: number;
   boundaryNote: string;
+}
+
+interface WeeklyPaymentTotalRow {
+  firstName: string;
+  total: number;
+  totalInDollar: number;
+  weeklyReserveFc: number;
+  weeklyReserveDollar: number;
+  weeklyReserveProgressPercent: number;
+  weeklyReserveProgressTone: WeeklyProgressTone;
+  weeklyReserveProgressStatusLabel: string;
+  weeklyExpectedFc: number;
+  weeklyExpectedDollar: number;
+  weeklyExpectedProgressPercent: number;
+  weeklyExpectedProgressTone: WeeklyProgressTone;
+  weeklyTargetFc: number;
+  weeklyProgressPercent: number;
+  weeklyTargetReached: boolean;
+  weeklyProgressTone: WeeklyProgressTone;
+  weeklyProgressStatusLabel: string;
+  weeklyProgressMarkers: WeeklyProgressMarker[];
+  trackingId: string;
 }
 
 interface GestionHeatmapOption {
@@ -367,6 +390,16 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   isCapturingWeeklyPayment = false;
   isCapturingWeeklyPaymentRanking = false;
   weeklyPaymentViewMode: WeeklyPaymentViewMode = 'ranking';
+  weeklyPaymentSourceMode: WeeklyPaymentSourceMode = 'total';
+  weeklyCashFlowTotals: WeeklyPaymentTotalRow[] = [];
+  weeklyCashFlowLoading = false;
+  weeklyCashFlowError = '';
+  private weeklyCashFlowLoadingKey = '';
+  private weeklyCashFlowRequestVersion = 0;
+  private readonly weeklyCashFlowCache = new Map<
+    string,
+    ReadonlyMap<string, number>
+  >();
   weeklyPaymentCaptureMessage = '';
   weeklyPaymentCaptureError = '';
   weeklyPaymentHistoryRange: WeeklyPaymentHistoryRange = '1M';
@@ -432,31 +465,46 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     return 'Paiements de toutes les équipes, regroupés du lundi au dimanche.';
   }
 
-  weeklyPaymentTotals: Array<{
-    firstName: string;
-    total: number;
-    totalInDollar: number;
-    weeklyReserveFc: number;
-    weeklyReserveDollar: number;
-    weeklyReserveProgressPercent: number;
-    weeklyReserveProgressTone: WeeklyProgressTone;
-    weeklyReserveProgressStatusLabel: string;
-    weeklyExpectedFc: number;
-    weeklyExpectedDollar: number;
-    weeklyExpectedProgressPercent: number;
-    weeklyExpectedProgressTone: WeeklyProgressTone;
-    weeklyTargetFc: number;
-    weeklyProgressPercent: number;
-    weeklyTargetReached: boolean;
-    weeklyProgressTone: WeeklyProgressTone;
-    weeklyProgressStatusLabel: string;
-    weeklyProgressMarkers: WeeklyProgressMarker[];
-    trackingId: string;
-  }> = [];
+  weeklyPaymentTotals: WeeklyPaymentTotalRow[] = [];
   readonly weeklyWorkingDays = 6;
 
   weeklyDailyAverage(value: number | string | null | undefined): number {
     return (Number(value) || 0) / this.weeklyWorkingDays;
+  }
+
+  get displayedWeeklyPaymentTotals(): WeeklyPaymentTotalRow[] {
+    return this.weeklyPaymentSourceMode === 'cashFlow'
+      ? this.weeklyCashFlowTotals
+      : this.weeklyPaymentTotals;
+  }
+
+  get displayedOverallWeeklyPaymentTotal(): number {
+    return this.displayedWeeklyPaymentTotals.reduce(
+      (total, row) => total + (Number(row.total) || 0),
+      0
+    );
+  }
+
+  get displayedOverallWeeklyPaymentTotalDollar(): number {
+    return this.convertFcToDollar(this.displayedOverallWeeklyPaymentTotal);
+  }
+
+  get displayedOverallWeeklyExpectedProgressPercent(): number {
+    if (this.overallWeeklyExpectedTotal <= 0) {
+      return this.displayedOverallWeeklyPaymentTotal > 0 ? 100 : 0;
+    }
+    return Math.min(
+      100,
+      (this.displayedOverallWeeklyPaymentTotal /
+        this.overallWeeklyExpectedTotal) *
+        100
+    );
+  }
+
+  get displayedOverallWeeklyExpectedProgressTone(): WeeklyProgressTone {
+    return this.resolveExpectedProgressTone(
+      this.displayedOverallWeeklyExpectedProgressPercent
+    );
   }
 
   get overallWeeklyTargetTotal(): number {
@@ -476,6 +524,29 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   get overallWeeklyTargetProgressTone(): WeeklyProgressTone {
     return this.resolveExpectedProgressTone(
       this.overallWeeklyTargetProgressPercent
+    );
+  }
+
+  get displayedOverallWeeklyTargetTotal(): number {
+    return this.displayedWeeklyPaymentTotals.reduce(
+      (total, row) => total + (Number(row.weeklyTargetFc) || 0),
+      0
+    );
+  }
+
+  get displayedOverallWeeklyTargetProgressPercent(): number {
+    const target = this.displayedOverallWeeklyTargetTotal;
+    if (target <= 0) return 0;
+
+    return Math.min(
+      100,
+      (this.displayedOverallWeeklyPaymentTotal / target) * 100
+    );
+  }
+
+  get displayedOverallWeeklyTargetProgressTone(): WeeklyProgressTone {
+    return this.resolveExpectedProgressTone(
+      this.displayedOverallWeeklyTargetProgressPercent
     );
   }
 
@@ -1727,7 +1798,171 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.weeklyPaymentDateCorrectFormat
     );
     this.computeWeeklyPaymentTotals();
+    if (this.weeklyPaymentSourceMode === 'cashFlow') {
+      void this.loadWeeklyCashFlowTotals();
+    }
     this.updateWeeklyPaymentHistory(this.weeklyPaymentHistoryRange);
+  }
+
+  async setWeeklyPaymentSourceMode(
+    mode: WeeklyPaymentSourceMode
+  ): Promise<void> {
+    if (!this.auth.isAdmin || mode === this.weeklyPaymentSourceMode) return;
+
+    this.weeklyPaymentSourceMode = mode;
+    this.weeklyPaymentCaptureMessage = '';
+    this.weeklyPaymentCaptureError = '';
+    this.weeklyCashFlowError = '';
+
+    if (mode === 'cashFlow') {
+      await this.loadWeeklyCashFlowTotals();
+    }
+  }
+
+  async retryWeeklyCashFlow(): Promise<void> {
+    if (!this.auth.isAdmin || this.weeklyCashFlowLoading) return;
+    await this.loadWeeklyCashFlowTotals();
+  }
+
+  private async loadWeeklyCashFlowTotals(): Promise<void> {
+    if (!this.auth.isAdmin) return;
+
+    const teams = (this.allUsers || []).filter((user) => !!user.uid);
+    if (!teams.length) {
+      this.weeklyCashFlowTotals = [];
+      this.weeklyCashFlowError = '';
+      return;
+    }
+
+    const cacheKey = this.weeklyCashFlowCacheKey();
+    const cachedTotals = this.weeklyCashFlowCache.get(cacheKey);
+    if (cachedTotals) {
+      this.applyWeeklyCashFlowTotals(cachedTotals);
+      this.weeklyCashFlowError = '';
+      return;
+    }
+    if (
+      this.weeklyCashFlowLoading &&
+      this.weeklyCashFlowLoadingKey === cacheKey
+    ) {
+      return;
+    }
+
+    const requestId = ++this.weeklyCashFlowRequestVersion;
+    const { start, end } = this.getWeekBounds(
+      this.weeklyPaymentDateCorrectFormat
+    );
+    this.weeklyCashFlowLoading = true;
+    this.weeklyCashFlowLoadingKey = cacheKey;
+    this.weeklyCashFlowError = '';
+    this.weeklyCashFlowTotals = [];
+
+    try {
+      const totals = await this.data.getEmployeeWeekTotalsGroupedByTeam(
+        start.getTime(),
+        end.getTime(),
+        teams.map((team) => team.uid!)
+      );
+      if (
+        requestId !== this.weeklyCashFlowRequestVersion ||
+        cacheKey !== this.weeklyCashFlowCacheKey()
+      ) {
+        return;
+      }
+
+      const totalsByTeam = new Map(
+        totals.map((item) => [item.ownerUid, Number(item.total) || 0] as const)
+      );
+      this.cacheWeeklyCashFlowTotals(cacheKey, totalsByTeam);
+      this.applyWeeklyCashFlowTotals(totalsByTeam);
+    } catch (error) {
+      if (requestId !== this.weeklyCashFlowRequestVersion) return;
+      console.error('Unable to load weekly cash-flow payment ranking', error);
+      this.weeklyCashFlowTotals = [];
+      this.weeklyCashFlowError =
+        'Impossible de charger les paiements cash flow de la semaine.';
+    } finally {
+      if (requestId === this.weeklyCashFlowRequestVersion) {
+        this.weeklyCashFlowLoading = false;
+        this.weeklyCashFlowLoadingKey = '';
+      }
+    }
+  }
+
+  private weeklyCashFlowCacheKey(): string {
+    const { start, end } = this.getWeekBounds(
+      this.weeklyPaymentDateCorrectFormat
+    );
+    const teamIds = (this.allUsers || [])
+      .map((user) => user.uid || '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    return `${this.formatDateKey(start)}:${this.formatDateKey(
+      end
+    )}:${teamIds}`;
+  }
+
+  private cacheWeeklyCashFlowTotals(
+    cacheKey: string,
+    totalsByTeam: ReadonlyMap<string, number>
+  ): void {
+    this.weeklyCashFlowCache.set(cacheKey, new Map(totalsByTeam));
+    if (this.weeklyCashFlowCache.size <= 12) return;
+
+    const oldestKey = this.weeklyCashFlowCache.keys().next().value;
+    if (oldestKey) this.weeklyCashFlowCache.delete(oldestKey);
+  }
+
+  private applyWeeklyCashFlowTotals(
+    totalsByTeam: ReadonlyMap<string, number>
+  ): void {
+    this.weeklyCashFlowTotals = this.weeklyPaymentTotals
+      .map((row) =>
+        this.withWeeklyPaymentTotal(
+          row,
+          Number(totalsByTeam.get(row.trackingId)) || 0
+        )
+      )
+      .sort(
+        (a, b) =>
+          b.total - a.total || a.firstName.localeCompare(b.firstName, 'fr')
+      );
+  }
+
+  private withWeeklyPaymentTotal(
+    row: WeeklyPaymentTotalRow,
+    total: number
+  ): WeeklyPaymentTotalRow {
+    const safeTotal = Number.isFinite(total) ? Math.max(0, total) : 0;
+    const weeklyExpectedProgressPercent =
+      row.weeklyExpectedFc === 0
+        ? safeTotal > 0
+          ? 100
+          : 0
+        : Math.min(100, (safeTotal / row.weeklyExpectedFc) * 100);
+    const weeklyProgressPercent =
+      row.weeklyTargetFc === 0
+        ? 0
+        : Math.min(100, (safeTotal / row.weeklyTargetFc) * 100);
+    const weeklyProgressState = this.resolveWeeklyProgressState(
+      safeTotal,
+      row.weeklyTargetFc
+    );
+
+    return {
+      ...row,
+      total: safeTotal,
+      totalInDollar: this.convertFcToDollar(safeTotal),
+      weeklyExpectedProgressPercent,
+      weeklyExpectedProgressTone: this.resolveExpectedProgressTone(
+        weeklyExpectedProgressPercent
+      ),
+      weeklyTargetReached: safeTotal >= row.weeklyTargetFc,
+      weeklyProgressPercent,
+      weeklyProgressTone: weeklyProgressState.tone,
+      weeklyProgressStatusLabel: weeklyProgressState.statusLabel,
+    };
   }
 
   async captureWeeklyPaymentTable(): Promise<void> {
@@ -1749,7 +1984,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.weeklyPaymentTotals.length === 0) {
+    if (this.displayedWeeklyPaymentTotals.length === 0) {
       this.weeklyPaymentCaptureError =
         'Aucune équipe n’est disponible pour cette semaine.';
       return;
@@ -1797,7 +2032,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.weeklyPaymentTotals.length === 0) {
+    if (this.displayedWeeklyPaymentTotals.length === 0) {
       this.weeklyPaymentCaptureError =
         'Aucune équipe n’est disponible pour cette semaine.';
       return;
@@ -1849,28 +2084,34 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   private weeklyPaymentCaptureFileName(): string {
+    const source =
+      this.weeklyPaymentSourceMode === 'cashFlow' ? 'cash-flow-' : '';
     try {
       const { start, end } = this.getWeekBounds(
         this.weeklyPaymentDateCorrectFormat
       );
-      return `paiement-semaine-${this.formatIsoDate(
+      return `paiement-${source}semaine-${this.formatIsoDate(
         start
       )}-au-${this.formatIsoDate(end)}.png`;
     } catch {
-      return `paiement-semaine-${this.weeklyPaymentDate || 'selection'}.png`;
+      return `paiement-${source}semaine-${
+        this.weeklyPaymentDate || 'selection'
+      }.png`;
     }
   }
 
   private weeklyPaymentRankingCaptureFileName(): string {
+    const source =
+      this.weeklyPaymentSourceMode === 'cashFlow' ? 'cash-flow-' : '';
     try {
       const { start, end } = this.getWeekBounds(
         this.weeklyPaymentDateCorrectFormat
       );
-      return `classement-paiement-semaine-${this.formatIsoDate(
+      return `classement-paiement-${source}semaine-${this.formatIsoDate(
         start
       )}-au-${this.formatIsoDate(end)}.png`;
     } catch {
-      return `classement-paiement-semaine-${
+      return `classement-paiement-${source}semaine-${
         this.weeklyPaymentDate || 'selection'
       }.png`;
     }
@@ -2509,6 +2750,15 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.overallWeeklyReserveProgressTone = this.resolveExpectedProgressTone(
       this.overallWeeklyReserveProgressPercent
     );
+
+    if (this.weeklyPaymentSourceMode === 'cashFlow') {
+      const cachedTotals = this.weeklyCashFlowCache.get(
+        this.weeklyCashFlowCacheKey()
+      );
+      if (cachedTotals) {
+        this.applyWeeklyCashFlowTotals(cachedTotals);
+      }
+    }
   }
 
   /**
@@ -2557,6 +2807,16 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         weeklyProgressMarkers: this.buildWeeklyProgressMarkers(weeklyTargetFc),
       };
     });
+
+    if (this.weeklyCashFlowTotals.length > 0) {
+      this.applyWeeklyCashFlowTotals(
+        new Map(
+          this.weeklyCashFlowTotals.map(
+            (row) => [row.trackingId, row.total] as const
+          )
+        )
+      );
+    }
   }
 
   private computeWeeklyPaymentTotalForUser(user: User, dateKey: string): number {

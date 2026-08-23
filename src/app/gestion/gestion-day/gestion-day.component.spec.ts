@@ -681,6 +681,99 @@ describe('GestionDayComponent weekly payment history', () => {
   });
 });
 
+describe('GestionDayComponent weekly cash-flow toggle', () => {
+  function createComponent(getWeeklyTotals: jasmine.Spy): GestionDayComponent {
+    const auth = {
+      isAdmin: true,
+      currentUser: { firstName: 'Admin' },
+      resolveWeeklyPaymentTargetForDate: () => 1200,
+    };
+    const time = {
+      getTodaysDateYearMonthDay: () => '2026-08-23',
+      todaysDateMonthDayYear: () => '8-23-2026',
+      yesterdaysDateMonthDayYear: () => '8-22-2026',
+      getTomorrowsDateMonthDayYear: () => '8-24-2026',
+      convertDateToDayMonthYear: (date: string) => date,
+      convertDateToMonthDayYear: (date: string) => {
+        const [year, month, day] = date.split('-');
+        return `${Number(month)}-${Number(day)}-${year}`;
+      },
+      toDate: (date: string) => {
+        const [month, day, year] = date.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      },
+    };
+    const compute = {
+      convertCongoleseFrancToUsDollars: (amount: string) =>
+        (Number(amount) / 2500).toString(),
+    };
+    const component = new GestionDayComponent(
+      jasmine.createSpyObj('Router', ['navigate']),
+      auth as any,
+      time as any,
+      compute as any,
+      { getEmployeeWeekTotalsGroupedByTeam: getWeeklyTotals } as any,
+      {} as any
+    );
+    component.weeklyPaymentDate = '2026-08-23';
+    component.weeklyPaymentDateCorrectFormat = '8-23-2026';
+    component.allUsers = [
+      {
+        uid: 'pumbu',
+        firstName: 'Pumbu',
+        dailyReimbursement: { '8-17-2026': '1500' },
+      } as any,
+      {
+        uid: 'matadi',
+        firstName: 'Matadikibala',
+        dailyReimbursement: { '8-18-2026': '900' },
+      } as any,
+    ];
+    (component as any).weeklyClientsByUser.set('pumbu', []);
+    (component as any).weeklyClientsByUser.set('matadi', []);
+    (component as any).computeWeeklyPaymentTotals();
+    return component;
+  }
+
+  it('loads one authoritative weekly query lazily and caches repeated toggles', async () => {
+    const getWeeklyTotals = jasmine
+      .createSpy('getEmployeeWeekTotalsGroupedByTeam')
+      .and.resolveTo([
+        { ownerUid: 'pumbu', total: 700, count: 1 },
+        { ownerUid: 'matadi', total: 900, count: 2 },
+      ]);
+    const component = createComponent(getWeeklyTotals);
+
+    expect(component.weeklyPaymentSourceMode).toBe('total');
+    expect(getWeeklyTotals).not.toHaveBeenCalled();
+    expect(component.displayedWeeklyPaymentTotals[0].firstName).toBe('Pumbu');
+
+    await component.setWeeklyPaymentSourceMode('cashFlow');
+
+    expect(getWeeklyTotals).toHaveBeenCalledOnceWith(
+      new Date(2026, 7, 17).getTime(),
+      new Date(2026, 7, 23).getTime(),
+      ['pumbu', 'matadi']
+    );
+    expect(
+      component.displayedWeeklyPaymentTotals.map((row) => [
+        row.firstName,
+        row.total,
+      ])
+    ).toEqual([
+      ['Matadikibala', 900],
+      ['Pumbu', 700],
+    ]);
+    expect(component.displayedOverallWeeklyPaymentTotal).toBe(1600);
+
+    await component.setWeeklyPaymentSourceMode('total');
+    await component.setWeeklyPaymentSourceMode('cashFlow');
+
+    expect(getWeeklyTotals).toHaveBeenCalledTimes(1);
+    expect(component.displayedOverallWeeklyPaymentTotal).toBe(1600);
+  });
+});
+
 describe('GestionDayComponent weekly payment capture', () => {
   function createComponent(isAdmin = true): GestionDayComponent {
     const router = jasmine.createSpyObj('Router', ['navigate']);

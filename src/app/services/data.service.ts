@@ -957,6 +957,35 @@ export class DataService {
     );
   }
 
+  /**
+   * Loads a Monday-to-Sunday range of employee cash-payment totals with one
+   * collection-group query. This is the weekly equivalent of the monthly cash
+   * flow source and excludes savings-to-payment transfers by construction.
+   */
+  async getEmployeeWeekTotalsGroupedByTeam(
+    startDayMs: number,
+    endDayMs: number,
+    allowedOwnerUids: readonly string[]
+  ): Promise<EmployeeDayTeamTotal[]> {
+    const allowedOwners = new Set(allowedOwnerUids.filter(Boolean));
+    if (
+      !Number.isFinite(startDayMs) ||
+      !Number.isFinite(endDayMs) ||
+      startDayMs > endDayMs ||
+      !allowedOwners.size
+    ) {
+      return [];
+    }
+
+    const snapshot = await this.afs.firestore
+      .collectionGroup('dayTotals')
+      .where('dayStartMs', '>=', startDayMs)
+      .where('dayStartMs', '<=', endDayMs)
+      .get();
+
+    return this.groupEmployeeTotalsByOwner(snapshot, allowedOwners);
+  }
+
   private async getEmployeeTotalsGroupedByTeam(
     field: 'dayKey' | 'monthKey',
     value: string,
@@ -969,6 +998,13 @@ export class DataService {
       .collectionGroup('dayTotals')
       .where(field, '==', value)
       .get();
+    return this.groupEmployeeTotalsByOwner(snapshot, allowedOwners);
+  }
+
+  private groupEmployeeTotalsByOwner(
+    snapshot: { forEach: (callback: (doc: any) => void) => void },
+    allowedOwners: ReadonlySet<string>
+  ): EmployeeDayTeamTotal[] {
     const totalsByOwner = new Map<
       string,
       { total: number; count: number }
