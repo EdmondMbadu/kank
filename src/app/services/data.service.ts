@@ -934,12 +934,40 @@ export class DataService {
     dayKey: string,
     allowedOwnerUids: readonly string[]
   ): Promise<EmployeeDayTeamTotal[]> {
+    return this.getEmployeeTotalsGroupedByTeam(
+      'dayKey',
+      dayKey,
+      allowedOwnerUids
+    );
+  }
+
+  /**
+   * Loads one month of employee cash-payment totals with one collection-group
+   * query. See getEmployeeDayTotalsGroupedByTeam for why this source excludes
+   * savings-to-payment transfers.
+   */
+  async getEmployeeMonthTotalsGroupedByTeam(
+    monthKey: string,
+    allowedOwnerUids: readonly string[]
+  ): Promise<EmployeeDayTeamTotal[]> {
+    return this.getEmployeeTotalsGroupedByTeam(
+      'monthKey',
+      monthKey,
+      allowedOwnerUids
+    );
+  }
+
+  private async getEmployeeTotalsGroupedByTeam(
+    field: 'dayKey' | 'monthKey',
+    value: string,
+    allowedOwnerUids: readonly string[]
+  ): Promise<EmployeeDayTeamTotal[]> {
     const allowedOwners = new Set(allowedOwnerUids.filter(Boolean));
-    if (!dayKey || !allowedOwners.size) return [];
+    if (!value || !allowedOwners.size) return [];
 
     const snapshot = await this.afs.firestore
       .collectionGroup('dayTotals')
-      .where('dayKey', '==', dayKey)
+      .where(field, '==', value)
       .get();
     const totalsByOwner = new Map<
       string,

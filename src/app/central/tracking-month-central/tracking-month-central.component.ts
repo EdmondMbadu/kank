@@ -25,8 +25,17 @@ type CentralLendingBorrower = {
 };
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
+import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { selectWinnerTeamMembers } from '../winner-team-members';
+
+interface CashFlowMonthRankingRow {
+  teamId: string;
+  firstName: string;
+  totalPayment: number;
+  totalPaymentInDollars: number;
+  paymentCount: number;
+}
 
 @Component({
   selector: 'app-tracking-month-central',
@@ -37,7 +46,8 @@ export class TrackingMonthCentralComponent {
   constructor(
     public auth: AuthService,
     public time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private data: DataService
   ) {}
   allUsers: User[] = [];
   ngOnInit(): void {
@@ -152,6 +162,18 @@ export class TrackingMonthCentralComponent {
     averagePayment: number;
     averagePaymentUsd: number;
   }[] = [];
+  cashFlowMonthRows: CashFlowMonthRankingRow[] = [];
+  cashFlowMonthLoading = false;
+  cashFlowMonthError = '';
+  cashFlowMonthTotalFc = 0;
+  cashFlowMonthTotalDollars = 0;
+  cashFlowMonthMaxFc = 1;
+  private cashFlowMonthRequestId = 0;
+  private cashFlowMonthLoadingKey = '';
+  private readonly cashFlowMonthCache = new Map<
+    string,
+    CashFlowMonthRankingRow[]
+  >();
   sortedLendingMonth: {
     firstName: string;
     totalLending: number;
@@ -929,6 +951,9 @@ export class TrackingMonthCentralComponent {
       this.paymentCurrentTotalAmountDollars = '0';
       this.paymentGrowthRateTotal = '0';
       this.updateMiniGraphs();
+      if (this.auth.isAdmin && this.rankingMode === 'month') {
+        void this.loadCashFlowMonthRanking();
+      }
       return;
     }
 
@@ -1083,6 +1108,156 @@ export class TrackingMonthCentralComponent {
     
     // Update mini graphs after table data is updated
     this.updateMiniGraphs();
+    if (this.auth.isAdmin && this.rankingMode === 'month') {
+      void this.loadCashFlowMonthRanking();
+    }
+  }
+
+  private cashFlowMonthCacheKey(month: number, year: number): string {
+    const teamState = (this.allUsers || [])
+      .filter((user) => !!user?.uid)
+      .map((user) => {
+        const aggregate = Object.entries(user.dailyReimbursement || {}).reduce(
+          (sum, [dayKey, value]) => {
+            const [entryMonth, , entryYear] = dayKey.split('-').map(Number);
+            return entryMonth === month && entryYear === year
+              ? sum + (Number(value) || 0)
+              : sum;
+          },
+          0
+        );
+        return `${user.uid}:${aggregate}`;
+      })
+      .sort()
+      .join('|');
+    return `${year}-${String(month).padStart(2, '0')}|${teamState}`;
+  }
+
+  private applyCashFlowMonthRows(rows: CashFlowMonthRankingRow[]): void {
+    this.cashFlowMonthRows = rows;
+    this.cashFlowMonthTotalFc = rows.reduce(
+      (sum, row) => sum + row.totalPayment,
+      0
+    );
+    this.cashFlowMonthTotalDollars = Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        String(this.cashFlowMonthTotalFc)
+      )
+    ) || 0;
+    this.cashFlowMonthMaxFc = Math.max(
+      1,
+      ...rows.map((row) => row.totalPayment)
+    );
+  }
+
+  private cacheCashFlowMonthRows(
+    key: string,
+    rows: CashFlowMonthRankingRow[]
+  ): void {
+    this.cashFlowMonthCache.set(key, rows);
+    if (this.cashFlowMonthCache.size > 12) {
+      const oldestKey = this.cashFlowMonthCache.keys().next().value;
+      if (oldestKey) this.cashFlowMonthCache.delete(oldestKey);
+    }
+  }
+
+  private async loadCashFlowMonthRanking(): Promise<void> {
+    if (!this.auth.isAdmin || this.rankingMode !== 'month') {
+      this.applyCashFlowMonthRows([]);
+      this.cashFlowMonthError = '';
+      this.cashFlowMonthLoading = false;
+      return;
+    }
+
+    const teams = (this.allUsers || []).filter((user) => !!user?.uid);
+    if (!teams.length) {
+      this.applyCashFlowMonthRows([]);
+      this.cashFlowMonthError = '';
+      this.cashFlowMonthLoading = false;
+      return;
+    }
+
+    const month = this.paymentCurrentMonth;
+    const year = this.paymentCurrentYear;
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    const cacheKey = this.cashFlowMonthCacheKey(month, year);
+    const cachedRows = this.cashFlowMonthCache.get(cacheKey);
+    if (cachedRows) {
+      this.applyCashFlowMonthRows(cachedRows);
+      this.cashFlowMonthError = '';
+      this.cashFlowMonthLoading = false;
+      return;
+    }
+    if (
+      this.cashFlowMonthLoading &&
+      this.cashFlowMonthLoadingKey === cacheKey
+    ) {
+      return;
+    }
+
+    const requestId = ++this.cashFlowMonthRequestId;
+    this.cashFlowMonthLoading = true;
+    this.cashFlowMonthLoadingKey = cacheKey;
+    this.cashFlowMonthError = '';
+
+    try {
+      const totals = await this.data.getEmployeeMonthTotalsGroupedByTeam(
+        monthKey,
+        teams.map((team) => team.uid!)
+      );
+      if (
+        requestId !== this.cashFlowMonthRequestId ||
+        month !== this.paymentCurrentMonth ||
+        year !== this.paymentCurrentYear ||
+        this.rankingMode !== 'month'
+      ) {
+        return;
+      }
+
+      const totalsByTeam = new Map(
+        totals.map((total) => [total.ownerUid, total] as const)
+      );
+      const rows = teams
+        .map((team): CashFlowMonthRankingRow => {
+          const teamTotal = totalsByTeam.get(team.uid!) || {
+            total: 0,
+            count: 0,
+          };
+          const totalPayment = Number(teamTotal.total) || 0;
+          return {
+            teamId: team.uid!,
+            firstName: team.firstName || 'Sans nom',
+            totalPayment,
+            totalPaymentInDollars:
+              Number(
+                this.compute.convertCongoleseFrancToUsDollars(
+                  String(totalPayment)
+                )
+              ) || 0,
+            paymentCount: Number(teamTotal.count) || 0,
+          };
+        })
+        .filter((row) => row.totalPayment > 0)
+        .sort(
+          (a, b) =>
+            b.totalPayment - a.totalPayment ||
+            a.firstName.localeCompare(b.firstName, 'fr')
+        );
+
+      this.cacheCashFlowMonthRows(cacheKey, rows);
+      this.applyCashFlowMonthRows(rows);
+    } catch (error) {
+      if (requestId !== this.cashFlowMonthRequestId) return;
+      console.error('Unable to load monthly cash-flow payment ranking', error);
+      this.applyCashFlowMonthRows([]);
+      this.cashFlowMonthError =
+        'Impossible de charger les paiements cash flow du mois.';
+    } finally {
+      if (requestId === this.cashFlowMonthRequestId) {
+        this.cashFlowMonthLoading = false;
+        this.cashFlowMonthLoadingKey = '';
+      }
+    }
   }
 
   updateLendingTableData(): void {

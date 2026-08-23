@@ -150,12 +150,17 @@ test('staff can read investigation PDFs while portal clients cannot', async () =
   await assertFails(storageFor(portalClient).ref(objectPath).getMetadata());
 });
 
-test('only an app admin can run the dayTotals collection-group query', async () => {
+test('only an app admin can run dayTotals collection-group queries', async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await context
       .firestore()
       .doc('users/site-1/employees/employee-1/dayTotals/8-22-2026')
-      .set({ dayKey: '8-22-2026', total: 1000, count: 1 });
+      .set({
+        dayKey: '8-22-2026',
+        monthKey: '2026-08',
+        total: 1000,
+        count: 1,
+      });
   });
 
   const admin = testEnv.authenticatedContext('admin-user');
@@ -163,14 +168,24 @@ test('only an app admin can run the dayTotals collection-group query', async () 
   const portalClient = testEnv.authenticatedContext('portal-user', {
     portalClient: true,
   });
-  const queryFor = (context) =>
-    context
-      .firestore()
+  const queryFor = (firestore) =>
+    firestore
       .collectionGroup('dayTotals')
       .where('dayKey', '==', '8-22-2026')
       .get();
+  const monthQueryFor = (firestore) =>
+    firestore
+      .collectionGroup('dayTotals')
+      .where('monthKey', '==', '2026-08')
+      .get();
+  const adminFirestore = admin.firestore();
+  const staffFirestore = staff.firestore();
+  const portalFirestore = portalClient.firestore();
 
-  await assertSucceeds(queryFor(admin));
-  await assertFails(queryFor(staff));
-  await assertFails(queryFor(portalClient));
+  await assertSucceeds(queryFor(adminFirestore));
+  await assertSucceeds(monthQueryFor(adminFirestore));
+  await assertFails(queryFor(staffFirestore));
+  await assertFails(monthQueryFor(staffFirestore));
+  await assertFails(queryFor(portalFirestore));
+  await assertFails(monthQueryFor(portalFirestore));
 });
