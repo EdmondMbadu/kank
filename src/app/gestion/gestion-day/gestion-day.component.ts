@@ -22,7 +22,13 @@ import { exportElementAsPng } from 'src/app/utils/element-png-export.util';
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 type WeeklyPaymentHistoryPreset = '1M' | '3M' | '6M' | '1A' | 'MAX';
 type WeeklyPaymentHistoryRange = WeeklyPaymentHistoryPreset | 'CUSTOM';
-type WeeklyPaymentHistoryMode = 'payment' | 'combined' | 'reserve';
+type WeeklyPaymentHistoryMode =
+  | 'payment'
+  | 'cashFlow'
+  | 'combined'
+  | 'cashFlowCombined'
+  | 'reserve';
+type WeeklyPaymentHistoryMetric = 'payment' | 'cashFlow' | 'reserve';
 type WeeklyPaymentViewMode = 'ranking' | 'detailed';
 type WeeklyPaymentSourceMode = 'total' | 'cashFlow';
 type GestionHeatmapMode =
@@ -40,6 +46,7 @@ interface WeeklyProgressMarker {
 interface WeeklyPaymentHistoryPoint {
   weekStart: Date;
   totalFc: number;
+  cashFlowFc: number;
   reserveFc: number;
   boundaryNote: string;
 }
@@ -408,6 +415,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   weeklyPaymentHistoryStartDate = '';
   weeklyPaymentHistoryEndDate = '';
   weeklyPaymentHistoryDateError = '';
+  weeklyPaymentHistoryCashFlowLoading = false;
+  weeklyPaymentHistoryCashFlowError = '';
+  private weeklyPaymentHistoryCashFlowLoadingKey = '';
+  private weeklyPaymentHistoryCashFlowRequestVersion = 0;
+  private readonly weeklyPaymentHistoryCashFlowCache = new Map<
+    string,
+    ReadonlyMap<number, number>
+  >();
   readonly weeklyPaymentHistoryMaxDate =
     this.time.getTodaysDateYearMonthDay();
   readonly weeklyPaymentHistoryRanges: Array<{
@@ -425,7 +440,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     label: string;
   }> = [
     { value: 'payment', label: 'Paiement' },
+    { value: 'cashFlow', label: 'Paiement cash flow' },
     { value: 'combined', label: 'Paiement + Réserve' },
+    { value: 'cashFlowCombined', label: 'Cash flow + Réserve' },
     { value: 'reserve', label: 'Réserve' },
   ];
   public graphWeeklyPayments: any = {
@@ -446,8 +463,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   get weeklyPaymentHistoryHeading(): string {
+    if (this.weeklyPaymentHistoryMode === 'cashFlowCombined') {
+      return 'Évolution du Cash flow et de la Réserve de la Semaine';
+    }
     if (this.weeklyPaymentHistoryMode === 'combined') {
       return 'Évolution des Paiements et de la Réserve de la Semaine';
+    }
+    if (this.weeklyPaymentHistoryMode === 'cashFlow') {
+      return 'Évolution des Paiements cash flow de la Semaine';
     }
     if (this.weeklyPaymentHistoryMode === 'reserve') {
       return 'Évolution de la Réserve de la Semaine';
@@ -456,8 +479,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   get weeklyPaymentHistoryDescription(): string {
+    if (this.weeklyPaymentHistoryMode === 'cashFlowCombined') {
+      return 'Paiements clients encaissés, transferts d’épargne exclus, et réserves de toutes les équipes, regroupés du lundi au dimanche.';
+    }
     if (this.weeklyPaymentHistoryMode === 'combined') {
       return 'Paiements et réserves de toutes les équipes, regroupés du lundi au dimanche.';
+    }
+    if (this.weeklyPaymentHistoryMode === 'cashFlow') {
+      return 'Paiements clients encaissés de toutes les équipes, transferts d’épargne exclus, regroupés du lundi au dimanche.';
     }
     if (this.weeklyPaymentHistoryMode === 'reserve') {
       return 'Réserves de toutes les équipes, regroupées du lundi au dimanche.';
@@ -2117,7 +2146,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     }
   }
 
-  updateWeeklyPaymentHistory(range: WeeklyPaymentHistoryRange): void {
+  async updateWeeklyPaymentHistory(
+    range: WeeklyPaymentHistoryRange
+  ): Promise<void> {
     if (!this.auth.isAdmin) return;
 
     this.weeklyPaymentHistoryDateError = '';
@@ -2136,15 +2167,23 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     )!;
     this.weeklyPaymentHistoryIncludesCurrentWeek =
       bounds.start <= today && bounds.end >= today;
-    const hasSelectedData = points.some((point) => {
-      if (this.weeklyPaymentHistoryMode === 'reserve') {
-        return point.reserveFc !== 0;
-      }
-      if (this.weeklyPaymentHistoryMode === 'combined') {
-        return point.totalFc !== 0 || point.reserveFc !== 0;
-      }
-      return point.totalFc !== 0;
-    });
+
+    if (this.isWeeklyPaymentHistoryCashFlowMode()) {
+      await this.loadWeeklyPaymentHistoryCashFlow(points, bounds);
+      return;
+    }
+
+    this.weeklyPaymentHistoryCashFlowError = '';
+    this.renderWeeklyPaymentHistory(points);
+  }
+
+  private renderWeeklyPaymentHistory(
+    points: WeeklyPaymentHistoryPoint[]
+  ): void {
+    const metrics = this.weeklyPaymentHistoryMetrics();
+    const hasSelectedData = points.some((point) =>
+      metrics.some((metric) => this.weeklyPaymentHistoryValue(point, metric) !== 0)
+    );
     const chartTitle = this.weeklyPaymentHistoryChartTitle();
 
     if (!hasSelectedData) {
@@ -2152,30 +2191,18 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const paymentDollars = points.map((point) =>
-      this.convertFcToDollar(point.totalFc)
+    const displayedValues = metrics.flatMap((metric) =>
+      points.map((point) =>
+        this.convertFcToDollar(this.weeklyPaymentHistoryValue(point, metric))
+      )
     );
-    const reserveDollars = points.map((point) =>
-      this.convertFcToDollar(point.reserveFc)
-    );
-    const displayedValues =
-      this.weeklyPaymentHistoryMode === 'combined'
-        ? [...paymentDollars, ...reserveDollars]
-        : this.weeklyPaymentHistoryMode === 'reserve'
-        ? reserveDollars
-        : paymentDollars;
     const annotations =
-      this.weeklyPaymentHistoryMode === 'combined'
+      metrics.length > 1
         ? []
-        : [
-            this.buildWeeklyHistorySummaryAnnotation(
-              points,
-              this.weeklyPaymentHistoryMode
-            ),
-          ];
+        : [this.buildWeeklyHistorySummaryAnnotation(points, metrics[0])];
     const layout: any = this.buildStockChartLayout(chartTitle, {
       annotations,
-      showLegend: this.weeklyPaymentHistoryMode === 'combined',
+      showLegend: metrics.length > 1,
     });
     layout.xaxis = {
       ...layout.xaxis,
@@ -2193,18 +2220,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     };
 
     this.graphWeeklyPayments = {
-      data:
-        this.weeklyPaymentHistoryMode === 'combined'
-          ? [
-              this.buildWeeklyPaymentHistoryTrace(points, 'payment'),
-              this.buildWeeklyPaymentHistoryTrace(points, 'reserve'),
-            ]
-          : [
-              this.buildWeeklyPaymentHistoryTrace(
-                points,
-                this.weeklyPaymentHistoryMode
-              ),
-            ],
+      data: metrics.map((metric) =>
+        this.buildWeeklyPaymentHistoryTrace(points, metric)
+      ),
       layout,
       config: {
         responsive: true,
@@ -2214,15 +2232,58 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     };
   }
 
-  setWeeklyPaymentHistoryMode(mode: WeeklyPaymentHistoryMode): void {
+  async setWeeklyPaymentHistoryMode(
+    mode: WeeklyPaymentHistoryMode
+  ): Promise<void> {
     if (!this.auth.isAdmin || this.weeklyPaymentHistoryMode === mode) return;
     this.weeklyPaymentHistoryMode = mode;
-    this.updateWeeklyPaymentHistory(this.weeklyPaymentHistoryRange);
+    await this.updateWeeklyPaymentHistory(this.weeklyPaymentHistoryRange);
+  }
+
+  async retryWeeklyPaymentHistoryCashFlow(): Promise<void> {
+    if (!this.auth.isAdmin || this.weeklyPaymentHistoryCashFlowLoading) return;
+    await this.updateWeeklyPaymentHistory(this.weeklyPaymentHistoryRange);
+  }
+
+  private isWeeklyPaymentHistoryCashFlowMode(): boolean {
+    return (
+      this.weeklyPaymentHistoryMode === 'cashFlow' ||
+      this.weeklyPaymentHistoryMode === 'cashFlowCombined'
+    );
+  }
+
+  private weeklyPaymentHistoryMetrics(): WeeklyPaymentHistoryMetric[] {
+    switch (this.weeklyPaymentHistoryMode) {
+      case 'cashFlowCombined':
+        return ['cashFlow', 'reserve'];
+      case 'combined':
+        return ['payment', 'reserve'];
+      case 'cashFlow':
+        return ['cashFlow'];
+      case 'reserve':
+        return ['reserve'];
+      default:
+        return ['payment'];
+    }
+  }
+
+  private weeklyPaymentHistoryValue(
+    point: WeeklyPaymentHistoryPoint,
+    metric: WeeklyPaymentHistoryMetric
+  ): number {
+    if (metric === 'cashFlow') return point.cashFlowFc;
+    return metric === 'reserve' ? point.reserveFc : point.totalFc;
   }
 
   private weeklyPaymentHistoryChartTitle(): string {
+    if (this.weeklyPaymentHistoryMode === 'cashFlowCombined') {
+      return 'Cash flow et réserve par semaine (en $)';
+    }
     if (this.weeklyPaymentHistoryMode === 'combined') {
       return 'Paiements et réserve par semaine (en $)';
+    }
+    if (this.weeklyPaymentHistoryMode === 'cashFlow') {
+      return 'Paiements cash flow par semaine (en $)';
     }
     if (this.weeklyPaymentHistoryMode === 'reserve') {
       return 'Réserve par semaine (en $)';
@@ -2232,19 +2293,24 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
   private buildWeeklyPaymentHistoryTrace(
     points: WeeklyPaymentHistoryPoint[],
-    metric: 'payment' | 'reserve'
+    metric: WeeklyPaymentHistoryMetric
   ): any {
     const isReserve = metric === 'reserve';
-    const color = isReserve ? '#0284c7' : '#4f46e5';
-    const label = isReserve ? 'Réserve' : 'Paiements';
+    const isCashFlow = metric === 'cashFlow';
+    const color = isReserve ? '#0284c7' : isCashFlow ? '#059669' : '#4f46e5';
+    const label = isReserve
+      ? 'Réserve'
+      : isCashFlow
+      ? 'Paiements cash flow'
+      : 'Paiements';
 
     return {
       x: points.map((point) => this.formatIsoDate(point.weekStart)),
       y: points.map((point) =>
-        this.convertFcToDollar(isReserve ? point.reserveFc : point.totalFc)
+        this.convertFcToDollar(this.weeklyPaymentHistoryValue(point, metric))
       ),
       customdata: points.map((point) => [
-        isReserve ? point.reserveFc : point.totalFc,
+        this.weeklyPaymentHistoryValue(point, metric),
         this.formatWeeklyHistoryLabel(point.weekStart),
         point.boundaryNote ? `<br><i>${point.boundaryNote}</i>` : '',
       ]),
@@ -2274,10 +2340,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
   private buildWeeklyHistorySummaryAnnotation(
     points: WeeklyPaymentHistoryPoint[],
-    mode: 'payment' | 'reserve'
+    metric: WeeklyPaymentHistoryMetric
   ): any {
     const valuesFc = points.map((point) =>
-      mode === 'reserve' ? point.reserveFc : point.totalFc
+      this.weeklyPaymentHistoryValue(point, metric)
     );
     const valuesDollar = valuesFc.map((value) => this.convertFcToDollar(value));
     const latestFc = valuesFc[valuesFc.length - 1] || 0;
@@ -2304,6 +2370,125 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       changePercent,
       trendColor
     );
+  }
+
+  private async loadWeeklyPaymentHistoryCashFlow(
+    points: WeeklyPaymentHistoryPoint[],
+    bounds: { start: Date; end: Date }
+  ): Promise<void> {
+    const teams = (this.allUsers || []).filter((user) => !!user.uid);
+    if (!teams.length) {
+      this.weeklyPaymentHistoryCashFlowError = '';
+      this.renderWeeklyPaymentHistory(points);
+      return;
+    }
+
+    const cacheKey = this.weeklyPaymentHistoryCashFlowCacheKey(bounds);
+    const cachedTotals = this.weeklyPaymentHistoryCashFlowCache.get(cacheKey);
+    if (cachedTotals) {
+      this.weeklyPaymentHistoryCashFlowError = '';
+      this.renderWeeklyPaymentHistory(
+        this.withWeeklyPaymentHistoryCashFlow(points, cachedTotals)
+      );
+      return;
+    }
+    if (
+      this.weeklyPaymentHistoryCashFlowLoading &&
+      this.weeklyPaymentHistoryCashFlowLoadingKey === cacheKey
+    ) {
+      return;
+    }
+
+    const requestId = ++this.weeklyPaymentHistoryCashFlowRequestVersion;
+    this.weeklyPaymentHistoryCashFlowLoading = true;
+    this.weeklyPaymentHistoryCashFlowLoadingKey = cacheKey;
+    this.weeklyPaymentHistoryCashFlowError = '';
+    this.graphWeeklyPayments = this.createEmptyStockGraph(
+      this.weeklyPaymentHistoryChartTitle()
+    );
+
+    try {
+      const dailyTotals = await this.data.getEmployeeCashPaymentDayTotals(
+        bounds.start.getTime(),
+        bounds.end.getTime(),
+        teams.map((team) => team.uid!)
+      );
+      if (
+        requestId !== this.weeklyPaymentHistoryCashFlowRequestVersion ||
+        cacheKey !== this.weeklyPaymentHistoryCashFlowCacheKey(bounds)
+      ) {
+        return;
+      }
+
+      const totalsByWeek = new Map<number, number>();
+      dailyTotals.forEach((entry) => {
+        const entryDate = this.parsePaymentDateKey(entry.dayKey);
+        if (!entryDate || entryDate < bounds.start || entryDate > bounds.end) {
+          return;
+        }
+
+        const weekStart = this.getWeekBounds(entry.dayKey).start.getTime();
+        totalsByWeek.set(
+          weekStart,
+          (totalsByWeek.get(weekStart) || 0) + (Number(entry.total) || 0)
+        );
+      });
+      this.cacheWeeklyPaymentHistoryCashFlow(cacheKey, totalsByWeek);
+
+      if (this.isWeeklyPaymentHistoryCashFlowMode()) {
+        this.renderWeeklyPaymentHistory(
+          this.withWeeklyPaymentHistoryCashFlow(points, totalsByWeek)
+        );
+      }
+    } catch (error) {
+      if (requestId !== this.weeklyPaymentHistoryCashFlowRequestVersion) return;
+      console.error('Unable to load weekly cash-flow payment history', error);
+      this.weeklyPaymentHistoryCashFlowError =
+        'Impossible de charger l’historique des paiements cash flow.';
+    } finally {
+      if (requestId === this.weeklyPaymentHistoryCashFlowRequestVersion) {
+        this.weeklyPaymentHistoryCashFlowLoading = false;
+        this.weeklyPaymentHistoryCashFlowLoadingKey = '';
+      }
+    }
+  }
+
+  private weeklyPaymentHistoryCashFlowCacheKey(bounds: {
+    start: Date;
+    end: Date;
+  }): string {
+    const teamIds = (this.allUsers || [])
+      .map((user) => user.uid || '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    return `${this.formatIsoDate(bounds.start)}:${this.formatIsoDate(
+      bounds.end
+    )}:${teamIds}`;
+  }
+
+  private cacheWeeklyPaymentHistoryCashFlow(
+    cacheKey: string,
+    totalsByWeek: ReadonlyMap<number, number>
+  ): void {
+    this.weeklyPaymentHistoryCashFlowCache.set(
+      cacheKey,
+      new Map(totalsByWeek)
+    );
+    if (this.weeklyPaymentHistoryCashFlowCache.size <= 8) return;
+
+    const oldestKey = this.weeklyPaymentHistoryCashFlowCache.keys().next().value;
+    if (oldestKey) this.weeklyPaymentHistoryCashFlowCache.delete(oldestKey);
+  }
+
+  private withWeeklyPaymentHistoryCashFlow(
+    points: WeeklyPaymentHistoryPoint[],
+    totalsByWeek: ReadonlyMap<number, number>
+  ): WeeklyPaymentHistoryPoint[] {
+    return points.map((point) => ({
+      ...point,
+      cashFlowFc: Number(totalsByWeek.get(point.weekStart.getTime())) || 0,
+    }));
   }
 
   private buildFocusedWeeklyPaymentYAxisRange(
@@ -2437,6 +2622,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       points.push({
         weekStart: new Date(cursor),
         totalFc: paymentsByWeek.get(cursor.getTime()) || 0,
+        cashFlowFc: 0,
         reserveFc: reservesByWeek.get(cursor.getTime()) || 0,
         boundaryNote: boundaryNotes.join(' · '),
       });
@@ -2524,14 +2710,18 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       }
     };
 
+    const includedMetrics = this.weeklyPaymentHistoryMetrics();
     (this.allUsers || []).forEach((user) => {
-      if (this.weeklyPaymentHistoryMode !== 'reserve') {
+      if (
+        includedMetrics.includes('payment') ||
+        includedMetrics.includes('cashFlow')
+      ) {
         Object.entries(user.dailyReimbursement || {}).forEach(
           ([dateKey, rawAmount]) =>
             consider(this.parsePaymentDateKey(dateKey), rawAmount)
         );
       }
-      if (this.weeklyPaymentHistoryMode !== 'payment') {
+      if (includedMetrics.includes('reserve')) {
         Object.entries(user.reserve || {}).forEach(([dateKey, rawAmount]) =>
           consider(this.parseReserveDateKey(dateKey), rawAmount)
         );

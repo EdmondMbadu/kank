@@ -62,6 +62,12 @@ export interface EmployeeDayTeamTotal {
   count: number;
 }
 
+export interface EmployeeCashPaymentDayTotal {
+  dayKey: string;
+  total: number;
+  count: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -984,6 +990,60 @@ export class DataService {
       .get();
 
     return this.groupEmployeeTotalsByOwner(snapshot, allowedOwners);
+  }
+
+  /**
+   * Loads the employee cash-payment totals for an arbitrary history range in
+   * one request. Results are grouped by day so callers can build weekly chart
+   * buckets without issuing one request per week or per team.
+   */
+  async getEmployeeCashPaymentDayTotals(
+    startDayMs: number,
+    endDayMs: number,
+    allowedOwnerUids: readonly string[]
+  ): Promise<EmployeeCashPaymentDayTotal[]> {
+    const allowedOwners = new Set(allowedOwnerUids.filter(Boolean));
+    if (
+      !Number.isFinite(startDayMs) ||
+      !Number.isFinite(endDayMs) ||
+      startDayMs > endDayMs ||
+      !allowedOwners.size
+    ) {
+      return [];
+    }
+
+    const snapshot = await this.afs.firestore
+      .collectionGroup('dayTotals')
+      .where('dayStartMs', '>=', startDayMs)
+      .where('dayStartMs', '<=', endDayMs)
+      .get();
+    const totalsByDay = new Map<string, { total: number; count: number }>();
+
+    snapshot.forEach((doc) => {
+      const pathParts = doc.ref.path.split('/');
+      const isEmployeeDayTotal =
+        pathParts.length === 6 &&
+        pathParts[0] === 'users' &&
+        pathParts[2] === 'employees' &&
+        pathParts[4] === 'dayTotals';
+      if (!isEmployeeDayTotal || !allowedOwners.has(pathParts[1])) return;
+
+      const data: any = doc.data() || {};
+      const dayKey = String(data.dayKey || pathParts[5] || '').trim();
+      if (!dayKey) return;
+
+      const current = totalsByDay.get(dayKey) || { total: 0, count: 0 };
+      current.total += this.finiteNumberOrZero(
+        data.total ?? data.collected ?? data.paid
+      );
+      current.count += this.finiteNumberOrZero(data.count);
+      totalsByDay.set(dayKey, current);
+    });
+
+    return Array.from(totalsByDay, ([dayKey, totals]) => ({
+      dayKey,
+      ...totals,
+    })).sort((a, b) => a.dayKey.localeCompare(b.dayKey));
   }
 
   private async getEmployeeTotalsGroupedByTeam(

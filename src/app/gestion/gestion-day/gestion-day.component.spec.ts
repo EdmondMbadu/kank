@@ -341,7 +341,7 @@ describe('GestionDayComponent confirmed planned-expense saves', () => {
 });
 
 describe('GestionDayComponent weekly payment history', () => {
-  function createComponent(isAdmin = true): GestionDayComponent {
+  function createComponent(isAdmin = true, data: any = {}): GestionDayComponent {
     const router = jasmine.createSpyObj('Router', ['navigate']);
     const auth = {
       isAdmin,
@@ -374,7 +374,7 @@ describe('GestionDayComponent weekly payment history', () => {
       auth as any,
       time as any,
       compute as any,
-      {} as any,
+      data,
       {} as any
     );
   }
@@ -519,6 +519,58 @@ describe('GestionDayComponent weekly payment history', () => {
     expect(component.graphWeeklyPayments.data).toHaveSize(1);
     expect(component.graphWeeklyPayments.data[0].name).toBe('Réserve');
     expect(component.graphWeeklyPayments.data[0].y.slice(-1)).toEqual([100]);
+  });
+
+  it('loads cash-flow history once and reuses it for the combined reserve mode', async () => {
+    const data = jasmine.createSpyObj('DataService', [
+      'getEmployeeCashPaymentDayTotals',
+    ]);
+    data.getEmployeeCashPaymentDayTotals.and.resolveTo([
+      { dayKey: '7-13-2026', total: 300000, count: 2 },
+      { dayKey: '7-20-2026', total: 450000, count: 3 },
+    ]);
+    const component = createComponent(true, data);
+    component.weeklyPaymentDateCorrectFormat = '7-26-2026';
+    component.allUsers = [
+      {
+        uid: 'pumbu',
+        firstName: 'Pumbu',
+        dailyReimbursement: {
+          '7-13-2026': '600000',
+          '7-20-2026': '900000',
+        },
+        reserve: {
+          '7-20-2026-9-15-0': '300000',
+        },
+      } as any,
+    ];
+
+    component.updateWeeklyPaymentHistory('1M');
+    expect(data.getEmployeeCashPaymentDayTotals).not.toHaveBeenCalled();
+
+    await component.setWeeklyPaymentHistoryMode('cashFlow');
+
+    expect(data.getEmployeeCashPaymentDayTotals).toHaveBeenCalledTimes(1);
+    expect(component.graphWeeklyPayments.data).toHaveSize(1);
+    expect(component.graphWeeklyPayments.data[0].name).toBe(
+      'Paiements cash flow'
+    );
+    expect(component.graphWeeklyPayments.data[0].customdata.slice(-2)).toEqual([
+      [300000, 'Semaine du 13/07/2026 au 19/07/2026', ''],
+      [
+        450000,
+        'Semaine du 20/07/2026 au 26/07/2026',
+        '<br><i>Semaine en cours (partielle)</i>',
+      ],
+    ]);
+
+    await component.setWeeklyPaymentHistoryMode('cashFlowCombined');
+
+    expect(data.getEmployeeCashPaymentDayTotals).toHaveBeenCalledTimes(1);
+    expect(
+      component.graphWeeklyPayments.data.map((trace: any) => trace.name)
+    ).toEqual(['Paiements cash flow', 'Réserve']);
+    expect(component.graphWeeklyPayments.data[1].y.slice(-1)).toEqual([100]);
   });
 
   it('focuses the y-axis on positive weekly values without forcing a zero baseline', () => {

@@ -2146,18 +2146,16 @@
     </div>
 
     <div
-      class="mt-4 inline-flex max-w-full flex-wrap rounded-lg shadow-sm"
+      class="mt-4 grid w-full grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5"
       role="group"
       aria-label="Données affichées dans l'historique hebdomadaire"
     >
       <button
-        *ngFor="let mode of weeklyPaymentHistoryModes; let first = first; let last = last"
+        *ngFor="let mode of weeklyPaymentHistoryModes"
         type="button"
         [attr.data-testid]="'weekly-payment-history-mode-' + mode.value"
         (click)="setWeeklyPaymentHistoryMode(mode.value)"
-        class="border border-sky-100 px-4 py-2 text-sm font-semibold transition focus:z-10 focus:ring-2 focus:ring-sky-500 dark:border-slate-700"
-        [class.rounded-s-lg]="first"
-        [class.rounded-e-lg]="last"
+        class="min-h-[44px] rounded-xl border border-sky-100 px-4 py-2 text-sm font-semibold shadow-sm transition focus:z-10 focus:ring-2 focus:ring-sky-500 dark:border-slate-700"
         [ngClass]="
           weeklyPaymentHistoryMode === mode.value
             ? 'bg-sky-600 text-white hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400'
@@ -2166,6 +2164,40 @@
         [attr.aria-pressed]="weeklyPaymentHistoryMode === mode.value"
       >
         {{ mode.label }}
+      </button>
+    </div>
+
+    <div
+      *ngIf="
+        (weeklyPaymentHistoryMode === 'cashFlow' ||
+          weeklyPaymentHistoryMode === 'cashFlowCombined') &&
+        weeklyPaymentHistoryCashFlowLoading
+      "
+      class="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-50 px-4 py-4 text-sm font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-200"
+      aria-live="polite"
+    >
+      <span
+        class="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600"
+      ></span>
+      Chargement de l’historique cash flow…
+    </div>
+
+    <div
+      *ngIf="
+        (weeklyPaymentHistoryMode === 'cashFlow' ||
+          weeklyPaymentHistoryMode === 'cashFlowCombined') &&
+        weeklyPaymentHistoryCashFlowError
+      "
+      class="mt-4 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 sm:flex-row sm:items-center sm:justify-between dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-200"
+      role="alert"
+    >
+      <span>{{ weeklyPaymentHistoryCashFlowError }}</span>
+      <button
+        type="button"
+        class="shrink-0 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-red-700 dark:bg-slate-800 dark:text-red-200 dark:hover:bg-red-900/30"
+        (click)="retryWeeklyPaymentHistoryCashFlow()"
+      >
+        Réessayer
       </button>
     </div>
 

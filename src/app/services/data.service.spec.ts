@@ -241,6 +241,67 @@ describe('DataService', () => {
     ]);
   });
 
+  it('loads a cash-payment history range once and groups it by day', async () => {
+    const docs = [
+      {
+        ref: { path: 'users/site-a/employees/employee-1/dayTotals/8-17-2026' },
+        data: () => ({ dayKey: '8-17-2026', total: 600, count: 1 }),
+      },
+      {
+        ref: { path: 'users/site-b/employees/employee-2/dayTotals/8-17-2026' },
+        data: () => ({ dayKey: '8-17-2026', collected: '400', count: 2 }),
+      },
+      {
+        ref: { path: 'users/site-a/employees/employee-1/dayTotals/8-18-2026' },
+        data: () => ({ dayKey: '8-18-2026', paid: 300, count: 1 }),
+      },
+      {
+        ref: {
+          path: 'users/not-selected/employees/employee-3/dayTotals/8-18-2026',
+        },
+        data: () => ({ dayKey: '8-18-2026', total: 9999, count: 1 }),
+      },
+    ];
+    const get = jasmine.createSpy('get').and.resolveTo({
+      forEach: (callback: (doc: any) => void) => docs.forEach(callback),
+    });
+    const endWhere = jasmine.createSpy('endWhere').and.returnValue({ get });
+    const startWhere = jasmine
+      .createSpy('startWhere')
+      .and.returnValue({ where: endWhere });
+    const collectionGroup = jasmine
+      .createSpy('collectionGroup')
+      .and.returnValue({ where: startWhere });
+    const service = new DataService(
+      { firestore: { collectionGroup } } as any,
+      {} as any,
+      {} as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-24-2026',
+        todaysDate: () => '8-23-2026-12-00-00',
+      } as any,
+      {} as any,
+      {} as any
+    );
+    const startMs = new Date(2026, 7, 17).getTime();
+    const endMs = new Date(2026, 7, 23).getTime();
+
+    const result = await service.getEmployeeCashPaymentDayTotals(
+      startMs,
+      endMs,
+      ['site-a', 'site-b']
+    );
+
+    expect(collectionGroup).toHaveBeenCalledOnceWith('dayTotals');
+    expect(startWhere).toHaveBeenCalledOnceWith('dayStartMs', '>=', startMs);
+    expect(endWhere).toHaveBeenCalledOnceWith('dayStartMs', '<=', endMs);
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([
+      { dayKey: '8-17-2026', total: 1000, count: 3 },
+      { dayKey: '8-18-2026', total: 300, count: 1 },
+    ]);
+  });
+
   it('never writes NaN when cancelling a normal pending loan request', async () => {
     const userRef = {
       set: jasmine.createSpy('set').and.resolveTo(undefined),
