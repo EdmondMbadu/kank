@@ -564,6 +564,13 @@ describe('GestionDayComponent weekly payment history', () => {
       ],
     ]);
 
+    await component.setWeeklyPaymentHistoryMode('paymentCashFlowCombined');
+
+    expect(data.getEmployeeCashPaymentDayTotals).toHaveBeenCalledTimes(1);
+    expect(
+      component.graphWeeklyPayments.data.map((trace: any) => trace.name)
+    ).toEqual(['Paiements', 'Paiements cash flow']);
+
     await component.setWeeklyPaymentHistoryMode('cashFlowCombined');
 
     expect(data.getEmployeeCashPaymentDayTotals).toHaveBeenCalledTimes(1);

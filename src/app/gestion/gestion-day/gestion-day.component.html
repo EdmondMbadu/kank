@@ -2146,7 +2146,7 @@
     </div>
 
     <div
-      class="mt-4 grid w-full grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5"
+      class="mt-4 grid w-full grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-6"
       role="group"
       aria-label="Données affichées dans l'historique hebdomadaire"
     >
@@ -2170,6 +2170,7 @@
     <div
       *ngIf="
         (weeklyPaymentHistoryMode === 'cashFlow' ||
+          weeklyPaymentHistoryMode === 'paymentCashFlowCombined' ||
           weeklyPaymentHistoryMode === 'cashFlowCombined') &&
         weeklyPaymentHistoryCashFlowLoading
       "
@@ -2185,6 +2186,7 @@
     <div
       *ngIf="
         (weeklyPaymentHistoryMode === 'cashFlow' ||
+          weeklyPaymentHistoryMode === 'paymentCashFlowCombined' ||
           weeklyPaymentHistoryMode === 'cashFlowCombined') &&
         weeklyPaymentHistoryCashFlowError
       "

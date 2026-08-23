@@ -25,6 +25,7 @@ type WeeklyPaymentHistoryRange = WeeklyPaymentHistoryPreset | 'CUSTOM';
 type WeeklyPaymentHistoryMode =
   | 'payment'
   | 'cashFlow'
+  | 'paymentCashFlowCombined'
   | 'combined'
   | 'cashFlowCombined'
   | 'reserve';
@@ -441,6 +442,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }> = [
     { value: 'payment', label: 'Paiement' },
     { value: 'cashFlow', label: 'Paiement cash flow' },
+    { value: 'paymentCashFlowCombined', label: 'Paiement + Cash flow' },
     { value: 'combined', label: 'Paiement + Réserve' },
     { value: 'cashFlowCombined', label: 'Cash flow + Réserve' },
     { value: 'reserve', label: 'Réserve' },
@@ -463,6 +465,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   get weeklyPaymentHistoryHeading(): string {
+    if (this.weeklyPaymentHistoryMode === 'paymentCashFlowCombined') {
+      return 'Comparaison des Paiements et du Cash flow de la Semaine';
+    }
     if (this.weeklyPaymentHistoryMode === 'cashFlowCombined') {
       return 'Évolution du Cash flow et de la Réserve de la Semaine';
     }
@@ -479,6 +484,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   get weeklyPaymentHistoryDescription(): string {
+    if (this.weeklyPaymentHistoryMode === 'paymentCashFlowCombined') {
+      return 'Paiements totaux et paiements clients encaissés, transferts d’épargne exclus, comparés semaine par semaine.';
+    }
     if (this.weeklyPaymentHistoryMode === 'cashFlowCombined') {
       return 'Paiements clients encaissés, transferts d’épargne exclus, et réserves de toutes les équipes, regroupés du lundi au dimanche.';
     }
@@ -2248,12 +2256,15 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   private isWeeklyPaymentHistoryCashFlowMode(): boolean {
     return (
       this.weeklyPaymentHistoryMode === 'cashFlow' ||
+      this.weeklyPaymentHistoryMode === 'paymentCashFlowCombined' ||
       this.weeklyPaymentHistoryMode === 'cashFlowCombined'
     );
   }
 
   private weeklyPaymentHistoryMetrics(): WeeklyPaymentHistoryMetric[] {
     switch (this.weeklyPaymentHistoryMode) {
+      case 'paymentCashFlowCombined':
+        return ['payment', 'cashFlow'];
       case 'cashFlowCombined':
         return ['cashFlow', 'reserve'];
       case 'combined':
@@ -2276,6 +2287,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }
 
   private weeklyPaymentHistoryChartTitle(): string {
+    if (this.weeklyPaymentHistoryMode === 'paymentCashFlowCombined') {
+      return 'Paiements et cash flow par semaine (en $)';
+    }
     if (this.weeklyPaymentHistoryMode === 'cashFlowCombined') {
       return 'Cash flow et réserve par semaine (en $)';
     }
