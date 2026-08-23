@@ -2,6 +2,67 @@ import { Client } from '../models/client';
 import { DataService } from './data.service';
 
 describe('DataService', () => {
+  it('groups one day of employee cash payments by team with one query', async () => {
+    const docs = [
+      {
+        ref: {
+          path: 'users/site-a/employees/employee-1/dayTotals/8-22-2026',
+        },
+        data: () => ({ total: 600, count: 1, dayKey: '8-22-2026' }),
+      },
+      {
+        ref: {
+          path: 'users/site-a/employees/employee-2/dayTotals/8-22-2026',
+        },
+        data: () => ({ collected: '400', count: 2, dayKey: '8-22-2026' }),
+      },
+      {
+        ref: {
+          path: 'users/site-b/employees/employee-3/dayTotals/8-22-2026',
+        },
+        data: () => ({ paid: 300, count: 1, dayKey: '8-22-2026' }),
+      },
+      {
+        ref: {
+          path: 'users/not-selected/employees/employee-4/dayTotals/8-22-2026',
+        },
+        data: () => ({ total: 9999, count: 1, dayKey: '8-22-2026' }),
+      },
+    ];
+    const get = jasmine.createSpy('get').and.resolveTo({
+      forEach: (callback: (doc: any) => void) => docs.forEach(callback),
+    });
+    const where = jasmine.createSpy('where').and.returnValue({ get });
+    const collectionGroup = jasmine
+      .createSpy('collectionGroup')
+      .and.returnValue({ where });
+    const service = new DataService(
+      { firestore: { collectionGroup } } as any,
+      {} as any,
+      {} as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-23-2026',
+        todaysDate: () => '8-22-2026-12-00-00',
+      } as any,
+      {} as any,
+      {} as any
+    );
+
+    const result = await service.getEmployeeDayTotalsGroupedByTeam(
+      '8-22-2026',
+      ['site-a', 'site-b']
+    );
+
+    expect(collectionGroup).toHaveBeenCalledTimes(1);
+    expect(collectionGroup).toHaveBeenCalledWith('dayTotals');
+    expect(where).toHaveBeenCalledOnceWith('dayKey', '==', '8-22-2026');
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([
+      { ownerUid: 'site-a', total: 1000, count: 3 },
+      { ownerUid: 'site-b', total: 300, count: 1 },
+    ]);
+  });
+
   it('never writes NaN when cancelling a normal pending loan request', async () => {
     const userRef = {
       set: jasmine.createSpy('set').and.resolveTo(undefined),

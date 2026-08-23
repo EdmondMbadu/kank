@@ -56,6 +56,12 @@ export interface AttendanceAttachmentUploadOptions {
   onTask?: (task: { cancel?: () => Promise<boolean> } | null) => void;
 }
 
+export interface EmployeeDayTeamTotal {
+  ownerUid: string;
+  total: number;
+  count: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -915,6 +921,57 @@ export class DataService {
       }
       return { total: 0, count: 0 };
     });
+  }
+
+  /**
+   * Loads every employee cash-payment total for one day in a single Firestore
+   * request, then groups the results by location owner. Employee dayTotals are
+   * written by real client payments (including confirmed Mobile Money), while
+   * savings-to-payment transfers only update the location aggregate and are
+   * therefore intentionally absent here.
+   */
+  async getEmployeeDayTotalsGroupedByTeam(
+    dayKey: string,
+    allowedOwnerUids: readonly string[]
+  ): Promise<EmployeeDayTeamTotal[]> {
+    const allowedOwners = new Set(allowedOwnerUids.filter(Boolean));
+    if (!dayKey || !allowedOwners.size) return [];
+
+    const snapshot = await this.afs.firestore
+      .collectionGroup('dayTotals')
+      .where('dayKey', '==', dayKey)
+      .get();
+    const totalsByOwner = new Map<
+      string,
+      { total: number; count: number }
+    >();
+
+    snapshot.forEach((doc) => {
+      const pathParts = doc.ref.path.split('/');
+      const isEmployeeDayTotal =
+        pathParts.length === 6 &&
+        pathParts[0] === 'users' &&
+        pathParts[2] === 'employees' &&
+        pathParts[4] === 'dayTotals';
+      if (!isEmployeeDayTotal) return;
+
+      const ownerUid = pathParts[1];
+      if (!allowedOwners.has(ownerUid)) return;
+
+      const data: any = doc.data() || {};
+      const total = this.finiteNumberOrZero(
+        data.total ?? data.collected ?? data.paid
+      );
+      const count = this.finiteNumberOrZero(data.count);
+      const current = totalsByOwner.get(ownerUid) || { total: 0, count: 0 };
+      current.total += total;
+      current.count += count;
+      totalsByOwner.set(ownerUid, current);
+    });
+
+    return Array.from(totalsByOwner.entries()).map(
+      ([ownerUid, totals]) => ({ ownerUid, ...totals })
+    );
   }
 
   // Utility to chunk large arrays for batch writes

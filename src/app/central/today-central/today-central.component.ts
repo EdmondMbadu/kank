@@ -26,6 +26,14 @@ interface AuditPaymentPerformanceRow {
   trackingId: string;
 }
 
+interface CashFlowPaymentRankingRow {
+  teamId: string;
+  firstName: string;
+  totalPayment: number;
+  totalPaymentInDollars: number;
+  paymentCount: number;
+}
+
 @Component({
   selector: 'app-today-central',
   templateUrl: './today-central.component.html',
@@ -50,6 +58,9 @@ export class TodayCentralComponent {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.initalizeInputs();
+      if (this.auth.isAdmin) {
+        void this.loadCashFlowPaymentRanking();
+      }
       this.loadAuditPaymentPerformance();
     });
     // }
@@ -83,6 +94,18 @@ export class TodayCentralComponent {
     totalReserve: number;
     totalReserveInDollars: string;
   }[] = [];
+  cashFlowPaymentRows: CashFlowPaymentRankingRow[] = [];
+  cashFlowPaymentLoading = false;
+  cashFlowPaymentError = '';
+  cashFlowPaymentTotalFc = 0;
+  cashFlowPaymentTotalDollars = 0;
+  cashFlowPaymentMaxFc = 1;
+  private cashFlowPaymentRequestId = 0;
+  private cashFlowPaymentLoadingKey = '';
+  private readonly cashFlowPaymentCache = new Map<
+    string,
+    CashFlowPaymentRankingRow[]
+  >();
   sortedMobileMoneyToday: {
     firstName: string;
     totalReserve: number;
@@ -495,6 +518,9 @@ export class TodayCentralComponent {
     );
 
     this.initalizeInputs();
+    if (this.auth.isAdmin) {
+      void this.loadCashFlowPaymentRanking();
+    }
     this.computeAuditPaymentPerformanceRows();
     // Graph will be updated in initalizeInputs via updateMonthlyReserveGraph
   }
@@ -532,6 +558,137 @@ export class TodayCentralComponent {
       this.resetAuditPaymentTotals();
     } finally {
       this.auditPaymentPerformanceLoading = false;
+    }
+  }
+
+  private cashFlowPaymentCacheKey(dayKey: string): string {
+    const teamState = (this.allUsers || [])
+      .filter((user) => !!user?.uid)
+      .map((user) => {
+        const dailyPayments = user.dailyReimbursement as
+          | Record<string, string>
+          | undefined;
+        const aggregate = dailyPayments?.[dayKey] ?? '';
+        return `${user.uid}:${aggregate}`;
+      })
+      .sort()
+      .join('|');
+    return `${dayKey}|${teamState}`;
+  }
+
+  private applyCashFlowPaymentRows(rows: CashFlowPaymentRankingRow[]): void {
+    this.cashFlowPaymentRows = rows;
+    this.cashFlowPaymentTotalFc = rows.reduce(
+      (sum, row) => sum + row.totalPayment,
+      0
+    );
+    this.cashFlowPaymentTotalDollars = this.fcToDollar(
+      this.cashFlowPaymentTotalFc
+    );
+    this.cashFlowPaymentMaxFc = Math.max(
+      1,
+      ...rows.map((row) => row.totalPayment)
+    );
+  }
+
+  private cacheCashFlowPaymentRows(
+    key: string,
+    rows: CashFlowPaymentRankingRow[]
+  ): void {
+    this.cashFlowPaymentCache.set(key, rows);
+    if (this.cashFlowPaymentCache.size > 12) {
+      const oldestKey = this.cashFlowPaymentCache.keys().next().value;
+      if (oldestKey) this.cashFlowPaymentCache.delete(oldestKey);
+    }
+  }
+
+  private async loadCashFlowPaymentRanking(): Promise<void> {
+    if (!this.auth.isAdmin) {
+      this.applyCashFlowPaymentRows([]);
+      this.cashFlowPaymentError = '';
+      this.cashFlowPaymentLoading = false;
+      return;
+    }
+
+    const teams = (this.allUsers || []).filter((user) => !!user?.uid);
+    if (!teams.length) {
+      this.applyCashFlowPaymentRows([]);
+      this.cashFlowPaymentError = '';
+      this.cashFlowPaymentLoading = false;
+      return;
+    }
+
+    const dayKey = this.requestDateCorrectFormat;
+    const cacheKey = this.cashFlowPaymentCacheKey(dayKey);
+    const cachedRows = this.cashFlowPaymentCache.get(cacheKey);
+    if (cachedRows) {
+      this.applyCashFlowPaymentRows(cachedRows);
+      this.cashFlowPaymentError = '';
+      this.cashFlowPaymentLoading = false;
+      return;
+    }
+    if (
+      this.cashFlowPaymentLoading &&
+      this.cashFlowPaymentLoadingKey === cacheKey
+    ) {
+      return;
+    }
+
+    const requestId = ++this.cashFlowPaymentRequestId;
+    this.cashFlowPaymentLoading = true;
+    this.cashFlowPaymentLoadingKey = cacheKey;
+    this.cashFlowPaymentError = '';
+
+    try {
+      const totals = await this.data.getEmployeeDayTotalsGroupedByTeam(
+        dayKey,
+        teams.map((team) => team.uid!)
+      );
+      if (
+        requestId !== this.cashFlowPaymentRequestId ||
+        dayKey !== this.requestDateCorrectFormat
+      ) {
+        return;
+      }
+
+      const totalsByTeam = new Map(
+        totals.map((total) => [total.ownerUid, total] as const)
+      );
+      const rows = teams
+        .map((team): CashFlowPaymentRankingRow => {
+          const teamTotal = totalsByTeam.get(team.uid!) || {
+            total: 0,
+            count: 0,
+          };
+          const totalPayment = Number(teamTotal.total) || 0;
+          return {
+            teamId: team.uid!,
+            firstName: team.firstName || 'Sans nom',
+            totalPayment,
+            totalPaymentInDollars: this.fcToDollar(totalPayment),
+            paymentCount: Number(teamTotal.count) || 0,
+          };
+        })
+        .filter((row) => row.totalPayment > 0)
+        .sort(
+          (a, b) =>
+            b.totalPayment - a.totalPayment ||
+            a.firstName.localeCompare(b.firstName, 'fr')
+        );
+
+      this.cacheCashFlowPaymentRows(cacheKey, rows);
+      this.applyCashFlowPaymentRows(rows);
+    } catch (error) {
+      if (requestId !== this.cashFlowPaymentRequestId) return;
+      console.error('Unable to load cash-flow payment ranking', error);
+      this.applyCashFlowPaymentRows([]);
+      this.cashFlowPaymentError =
+        'Impossible de charger les paiements cash flow.';
+    } finally {
+      if (requestId === this.cashFlowPaymentRequestId) {
+        this.cashFlowPaymentLoading = false;
+        this.cashFlowPaymentLoadingKey = '';
+      }
     }
   }
 

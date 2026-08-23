@@ -189,6 +189,13 @@ service cloud.firestore {
       }
     }
 
+    // Collection-group access used by the admin-only cash-flow ranking.
+    // The recursive path is required for collectionGroup('dayTotals') queries;
+    // direct employee dayTotals access keeps using the owner/staff rules above.
+    match /{path=**}/dayTotals/{dayId} {
+      allow read: if isAppAdmin();
+    }
+
     match /clientLoginOtps/{docId} {
       allow read, write: if false;
     }

@@ -149,3 +149,28 @@ test('staff can read investigation PDFs while portal clients cannot', async () =
   await assertSucceeds(storageFor(staff).ref(objectPath).getMetadata());
   await assertFails(storageFor(portalClient).ref(objectPath).getMetadata());
 });
+
+test('only an app admin can run the dayTotals collection-group query', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context
+      .firestore()
+      .doc('users/site-1/employees/employee-1/dayTotals/8-22-2026')
+      .set({ dayKey: '8-22-2026', total: 1000, count: 1 });
+  });
+
+  const admin = testEnv.authenticatedContext('admin-user');
+  const staff = testEnv.authenticatedContext('staff-user');
+  const portalClient = testEnv.authenticatedContext('portal-user', {
+    portalClient: true,
+  });
+  const queryFor = (context) =>
+    context
+      .firestore()
+      .collectionGroup('dayTotals')
+      .where('dayKey', '==', '8-22-2026')
+      .get();
+
+  await assertSucceeds(queryFor(admin));
+  await assertFails(queryFor(staff));
+  await assertFails(queryFor(portalClient));
+});
