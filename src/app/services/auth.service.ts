@@ -520,6 +520,7 @@ export class AuthService {
       mode: 'production',
       feesData: {},
       dailyReimbursement: {},
+      dailySavingsToPayment: {},
       dailyMobileMoneyPayment: {},
       dailySaving: {},
       dailySavingReturns: {},

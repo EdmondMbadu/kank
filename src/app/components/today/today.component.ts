@@ -150,6 +150,7 @@ export class TodayComponent {
       this.updateWeekPickerTotals();
 
       this.recomputeHeaderReasons();
+      this.syncDailyPaymentBreakdown();
 
       this.findClientsWithDebts();
       this.computeRequestTotalSameAsRequestToday(); // NEW
@@ -173,6 +174,12 @@ export class TodayComponent {
   perc: number = 0;
   dailyLending: string = '0';
   dailyPayment: string = '0';
+  dailyDirectPaymentN: number = 0;
+  dailySavingsPaymentN: number = 0;
+  dailyDirectPaymentDollars: string = '0';
+  dailySavingsPaymentDollars: string = '0';
+  dailyDirectPaymentPercent: number = 100;
+  dailySavingsPaymentPercent: number = 0;
   dailyMobileMoneyPayment: string = '0';
   dailyMobileMoneyPaymentN: number = 0;
   dailyPaymentDollars: string = '0';
@@ -445,6 +452,7 @@ export class TodayComponent {
       this.auth.currentUser?.dailyReimbursement?.[
         this.requestDateCorrectFormat
       ] ?? '0';
+    this.syncDailyPaymentBreakdown();
     this.dailyMobileMoneyPayment =
       this.auth.currentUser?.dailyMobileMoneyPayment?.[
         this.requestDateCorrectFormat
@@ -567,6 +575,96 @@ export class TodayComponent {
     ];
     this.recomputeMoneyInHandsTrace();
     this.updatePaymentPerformanceWeeks();
+  }
+
+  get hasSavingsPaymentBreakdown(): boolean {
+    return this.dailySavingsPaymentN > 0;
+  }
+
+  private syncDailyPaymentBreakdown(): void {
+    const total = this.nonNegativeFiniteNumber(this.dailyPayment);
+    const savingsTotals = this.auth.currentUser?.dailySavingsToPayment;
+    const hasSourceTracking = savingsTotals !== undefined;
+    const recordedSavings = total === 0
+      ? 0
+      : hasSourceTracking
+      ? this.nonNegativeFiniteNumber(
+          savingsTotals?.[this.requestDateCorrectFormat]
+        )
+      : this.deriveSavingsPaymentFromClients(this.requestDateCorrectFormat);
+
+    this.dailySavingsPaymentN = Math.min(total, recordedSavings);
+    this.dailyDirectPaymentN = Math.max(
+      0,
+      total - this.dailySavingsPaymentN
+    );
+    this.dailyDirectPaymentDollars = this.compute
+      .convertCongoleseFrancToUsDollars(
+        this.dailyDirectPaymentN.toString()
+      )
+      .toString();
+    this.dailySavingsPaymentDollars = this.compute
+      .convertCongoleseFrancToUsDollars(
+        this.dailySavingsPaymentN.toString()
+      )
+      .toString();
+    this.dailyDirectPaymentPercent =
+      total > 0 ? (this.dailyDirectPaymentN / total) * 100 : 100;
+    this.dailySavingsPaymentPercent =
+      total > 0 ? (this.dailySavingsPaymentN / total) * 100 : 0;
+  }
+
+  private deriveSavingsPaymentFromClients(dateKey: string): number {
+    return (this.clients || []).reduce((total, client) => {
+      const currentSavings = client.savingsPayments || {};
+      const currentTransferTotal = this.sumMatchingSavingsTransfers(
+        client,
+        currentSavings,
+        dateKey
+      );
+      const previousTransferTotal = this.sumMatchingSavingsTransfers(
+        client,
+        client.previousSavingsPayments || {},
+        dateKey,
+        currentSavings
+      );
+
+      return total + currentTransferTotal + previousTransferTotal;
+    }, 0);
+  }
+
+  private sumMatchingSavingsTransfers(
+    client: Client,
+    savingsPayments: Record<string, string>,
+    dateKey: string,
+    keysToSkip: Record<string, string> = {}
+  ): number {
+    return Object.entries(savingsPayments).reduce(
+      (total, [entryKey, savingsValue]) => {
+        if (
+          keysToSkip[entryKey] !== undefined ||
+          !entryKey.startsWith(`${dateKey}-`)
+        ) {
+          return total;
+        }
+
+        const savingsWithdrawal = -Number(savingsValue);
+        if (!Number.isFinite(savingsWithdrawal) || savingsWithdrawal <= 0) {
+          return total;
+        }
+
+        const matchingPayment = this.nonNegativeFiniteNumber(
+          client.payments?.[entryKey] ?? client.previousPayments?.[entryKey]
+        );
+        return total + Math.min(savingsWithdrawal, matchingPayment);
+      },
+      0
+    );
+  }
+
+  private nonNegativeFiniteNumber(value: unknown): number {
+    const numberValue = Number(value ?? 0);
+    return Number.isFinite(numberValue) ? Math.max(0, numberValue) : 0;
   }
 
   private computeWeeklyPaymentTotal(dateKey: string): number {

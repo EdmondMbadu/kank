@@ -3584,6 +3584,13 @@ export class DataService {
       dailyReimbursement: {
         [date]: `${reimburse}`,
       },
+      // Keep source tracking on the same write. A zero value marks this day as
+      // direct-only, so the dashboard never needs a legacy client-history scan.
+      dailySavingsToPayment: {
+        [date]: `${
+          this.auth.currentUser.dailySavingsToPayment?.[date] ?? 0
+        }`,
+      },
       dailySaving: {
         [date]: `${save}`,
       },
@@ -4181,6 +4188,13 @@ export class DataService {
         Number(payment);
     }
     return reimburse;
+  }
+  computeDailySavingsToPayment(date: string, payment: string) {
+    const existing = this.auth.currentUser.dailySavingsToPayment?.[date];
+    if (existing === undefined) {
+      return payment;
+    }
+    return Number(existing) + Number(payment);
   }
   computeDailySaving(date: string, saving: string) {
     let save: any = '';

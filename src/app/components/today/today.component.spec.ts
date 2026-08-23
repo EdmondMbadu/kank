@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { Client } from 'src/app/models/client';
 import { resolveWeeklyPaymentTargetForDate } from 'src/app/utils/weekly-payment-target.util';
 import { computeWeeklyObjectiveAdjustment } from 'src/app/utils/weekly-objective-adjustment.util';
 
@@ -145,6 +146,75 @@ describe('TodayComponent', () => {
 
   afterEach(() => {
     jasmine.clock().uninstall();
+  });
+
+  it('keeps the original direct-only payment presentation when no savings transfer exists', () => {
+    const { component } = createComponent({
+      currentUser: {
+        uid: 'user-1',
+        teamCode: '',
+        dailyReimbursement: { '4-1-2026': '55000' },
+        dailySavingsToPayment: {},
+        weeklyPaymentTargetPeriods: [],
+      },
+    });
+    const legacyFallback = spyOn<any>(
+      component,
+      'deriveSavingsPaymentFromClients'
+    ).and.callThrough();
+
+    component.initalizeInputs();
+
+    expect(component.hasSavingsPaymentBreakdown).toBeFalse();
+    expect(component.dailyDirectPaymentN).toBe(55000);
+    expect(component.dailySavingsPaymentN).toBe(0);
+    expect(legacyFallback).not.toHaveBeenCalled();
+  });
+
+  it('splits the daily total when a savings-funded payment is recorded', () => {
+    const { component } = createComponent({
+      currentUser: {
+        uid: 'user-1',
+        teamCode: '',
+        dailyReimbursement: { '4-1-2026': '55000' },
+        dailySavingsToPayment: { '4-1-2026': '20000' },
+        weeklyPaymentTargetPeriods: [],
+      },
+    });
+
+    component.initalizeInputs();
+
+    expect(component.hasSavingsPaymentBreakdown).toBeTrue();
+    expect(component.dailyDirectPaymentN).toBe(35000);
+    expect(component.dailySavingsPaymentN).toBe(20000);
+    expect(component.dailyDirectPaymentPercent).toBeCloseTo(63.64, 1);
+    expect(component.dailySavingsPaymentPercent).toBeCloseTo(36.36, 1);
+  });
+
+  it('detects a pre-existing savings transfer from matching client history', () => {
+    const { component } = createComponent({
+      currentUser: {
+        uid: 'user-1',
+        teamCode: '',
+        dailyReimbursement: { '4-1-2026': '55000' },
+        weeklyPaymentTargetPeriods: [],
+      },
+    });
+    component.clients = [
+      Object.assign(new Client(), {
+        payments: { '4-1-2026-9-30-0': '20000' },
+        savingsPayments: { '4-1-2026-9-30-0': '-20000' },
+      }),
+      Object.assign(new Client(), {
+        savingsPayments: { '4-1-2026-11-0-0': '-5000' },
+      }),
+    ];
+
+    component.initalizeInputs();
+
+    expect(component.hasSavingsPaymentBreakdown).toBeTrue();
+    expect(component.dailyDirectPaymentN).toBe(35000);
+    expect(component.dailySavingsPaymentN).toBe(20000);
   });
 
   it('uses the target active on the monday of the selected week in the summary card', () => {

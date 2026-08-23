@@ -161,6 +161,7 @@ export class PublicAuthService {
       mode: 'production',
       feesData: {},
       dailyReimbursement: {},
+      dailySavingsToPayment: {},
       dailyMobileMoneyPayment: {},
       dailySaving: {},
       dailySavingReturns: {},

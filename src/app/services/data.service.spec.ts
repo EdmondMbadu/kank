@@ -2,6 +2,72 @@ import { Client } from '../models/client';
 import { DataService } from './data.service';
 
 describe('DataService', () => {
+  it('accumulates savings-to-payment totals independently from daily payments', () => {
+    const service = new DataService(
+      {} as any,
+      {} as any,
+      {
+        currentUser: {
+          dailySavingsToPayment: { '8-23-2026': '20000' },
+        },
+      } as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-24-2026',
+        todaysDate: () => '8-23-2026-12-00-00',
+      } as any,
+      {} as any,
+      {} as any
+    );
+
+    expect(service.computeDailySavingsToPayment('8-23-2026', '15000')).toBe(
+      35000
+    );
+    expect(service.computeDailySavingsToPayment('8-24-2026', '10000')).toBe(
+      '10000'
+    );
+  });
+
+  it('marks a direct-only day in the existing payment write', async () => {
+    const userRef = {
+      set: jasmine.createSpy('set').and.resolveTo(undefined),
+    };
+    const afs = {
+      doc: jasmine.createSpy('doc').and.returnValue(userRef),
+    };
+    const service = new DataService(
+      afs as any,
+      {} as any,
+      {
+        currentUser: {
+          uid: 'owner-1',
+          clientsSavings: '0',
+          moneyInHands: '0',
+          totalDebtLeft: '100000',
+          dailyReimbursement: {},
+          dailySaving: {},
+        },
+      } as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-24-2026',
+        todaysDate: () => '8-23-2026-12-00-00',
+      } as any,
+      {} as any,
+      {} as any
+    );
+
+    await service.updateUserInfoForClientPayment(
+      new Client(),
+      '0',
+      '8-23-2026',
+      '15000'
+    );
+
+    expect(userRef.set).toHaveBeenCalledTimes(1);
+    expect(userRef.set.calls.mostRecent().args[0].dailySavingsToPayment).toEqual(
+      { '8-23-2026': '0' }
+    );
+  });
+
   it('groups one day of employee cash payments by team with one query', async () => {
     const docs = [
       {

@@ -247,6 +247,10 @@ export class WithdrawSavingsComponent implements OnInit {
           todayMDY,
           amountNum.toString()
         );
+        const savingsToPayment = this.data.computeDailySavingsToPayment(
+          todayMDY,
+          amountNum.toString()
+        );
 
         t.set(
           this.afs.doc(userPath).ref,
@@ -259,6 +263,9 @@ export class WithdrawSavingsComponent implements OnInit {
               [date]: `${saveExtract}`,
             },
             dailyReimbursement: { [todayMDY]: `${reimb}` },
+            dailySavingsToPayment: {
+              [todayMDY]: `${savingsToPayment}`,
+            },
           },
           { merge: true }
         );
