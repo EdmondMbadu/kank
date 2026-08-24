@@ -3,7 +3,7 @@ import { TrackingMonthCentralComponent } from './tracking-month-central.componen
 describe('TrackingMonthCentralComponent', () => {
   const createComponent = (
     isAdmin: boolean,
-    getEmployeeMonthTotalsGroupedByTeam: jasmine.Spy
+    getEmployeeMonthTotalsGroupedByTeamForMonths: jasmine.Spy
   ) =>
     new TrackingMonthCentralComponent(
       { isAdmin } as any,
@@ -30,19 +30,34 @@ describe('TrackingMonthCentralComponent', () => {
         convertCongoleseFrancToUsDollars: (value: string) =>
           (Number(value) / 2500).toString(),
       } as any,
-      { getEmployeeMonthTotalsGroupedByTeam } as any
+      { getEmployeeMonthTotalsGroupedByTeamForMonths } as any
     );
 
   it('loads, ranks and caches the monthly admin cash-flow totals', async () => {
     const getMonthlyTotals = jasmine
-      .createSpy('getEmployeeMonthTotalsGroupedByTeam')
-      .and.resolveTo([
-        { ownerUid: 'site-a', total: 1000, count: 2 },
-        { ownerUid: 'site-b', total: 900, count: 3 },
-      ]);
+      .createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths')
+      .and.callFake((monthKeys: string[]) => {
+        const totalsByMonth: Record<string, [number, number]> = {
+          '2026-05': [250, 200],
+          '2026-06': [400, 300],
+          '2026-07': [500, 450],
+          '2026-08': [1000, 900],
+        };
+        return Promise.resolve(
+          monthKeys.flatMap((monthKey) => {
+            const [alpha, beta] = totalsByMonth[monthKey] || [0, 0];
+            return [
+              { monthKey, ownerUid: 'site-a', total: alpha, count: 2 },
+              { monthKey, ownerUid: 'site-b', total: beta, count: 3 },
+            ];
+          })
+        );
+      });
     const component = createComponent(true, getMonthlyTotals);
     component.paymentCurrentMonth = 8;
     component.paymentCurrentYear = 2026;
+    component.paymentComparisonMonth = 7;
+    component.paymentComparisonYear = 2026;
     component.allUsers = [
       {
         uid: 'site-a',
@@ -62,10 +77,10 @@ describe('TrackingMonthCentralComponent', () => {
     await (component as any).loadCashFlowMonthRanking();
 
     expect(getMonthlyTotals).toHaveBeenCalledTimes(1);
-    expect(getMonthlyTotals).toHaveBeenCalledWith('2026-08', [
-      'site-a',
-      'site-b',
-    ]);
+    expect(getMonthlyTotals).toHaveBeenCalledWith(
+      ['2026-08', '2026-07', '2026-05', '2026-06'],
+      ['site-a', 'site-b']
+    );
     expect(component.cashFlowMonthRows.map((row) => row.firstName)).toEqual([
       'Alpha',
       'Beta',
@@ -74,11 +89,27 @@ describe('TrackingMonthCentralComponent', () => {
     expect(component.cashFlowMonthTotalFc).toBe(1900);
     expect(component.cashFlowMonthTotalDollars).toBeCloseTo(0.76, 5);
     expect(component.cashFlowMonthMaxFc).toBe(1000);
+    expect(component.cashFlowMonthRows[0].growthRate).toBe(100);
+    expect(component.cashFlowMonthGrowthRateTotal).toBe(100);
+    const workingDays = (component as any).calculateWorkingDays(
+      8,
+      2026,
+      true
+    );
+    expect(component.cashFlowMonthRows[0].averagePayment).toBeCloseTo(
+      1000 / workingDays,
+      5
+    );
+    expect(component.cashFlowMonthAverageFc).toBeCloseTo(
+      1900 / workingDays,
+      5
+    );
+    expect(component.getMiniCashFlowPaymentGraph('site-a').data).toHaveSize(1);
   });
 
   it('does not request or retain monthly cash-flow totals for a non-admin', async () => {
     const getMonthlyTotals = jasmine.createSpy(
-      'getEmployeeMonthTotalsGroupedByTeam'
+      'getEmployeeMonthTotalsGroupedByTeamForMonths'
     );
     const component = createComponent(false, getMonthlyTotals);
     component.paymentCurrentMonth = 8;
@@ -91,6 +122,9 @@ describe('TrackingMonthCentralComponent', () => {
         totalPayment: 1,
         totalPaymentInDollars: 1,
         paymentCount: 1,
+        averagePayment: 1,
+        averagePaymentUsd: 1,
+        growthRate: 0,
       },
     ];
 
@@ -104,7 +138,7 @@ describe('TrackingMonthCentralComponent', () => {
   it('copies the monthly cash-flow ranking with the payment-table format', async () => {
     const component = createComponent(
       true,
-      jasmine.createSpy('getEmployeeMonthTotalsGroupedByTeam')
+      jasmine.createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths')
     );
     component.paymentCurrentMonth = 8;
     component.paymentCurrentYear = 2026;
@@ -115,6 +149,9 @@ describe('TrackingMonthCentralComponent', () => {
         totalPayment: 1000,
         totalPaymentInDollars: 0.4,
         paymentCount: 2,
+        averagePayment: 50,
+        averagePaymentUsd: 0.02,
+        growthRate: 100,
       },
       {
         teamId: 'site-b',
@@ -122,6 +159,9 @@ describe('TrackingMonthCentralComponent', () => {
         totalPayment: 900,
         totalPaymentInDollars: 0.36,
         paymentCount: 3,
+        averagePayment: 45,
+        averagePaymentUsd: 0.018,
+        growthRate: 100,
       },
     ];
     spyOn<any>(component, 'buildWinnerMembersLines').and.resolveTo([

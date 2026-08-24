@@ -62,6 +62,10 @@ export interface EmployeeDayTeamTotal {
   count: number;
 }
 
+export interface EmployeeMonthTeamTotal extends EmployeeDayTeamTotal {
+  monthKey: string;
+}
+
 export interface EmployeeCashPaymentDayTotal {
   dayKey: string;
   total: number;
@@ -960,6 +964,67 @@ export class DataService {
       'monthKey',
       monthKey,
       allowedOwnerUids
+    );
+  }
+
+  /**
+   * Loads several employee cash-payment months with one collection-group
+   * request, then groups each month by location owner.
+   */
+  async getEmployeeMonthTotalsGroupedByTeamForMonths(
+    monthKeys: readonly string[],
+    allowedOwnerUids: readonly string[]
+  ): Promise<EmployeeMonthTeamTotal[]> {
+    const allowedOwners = new Set(allowedOwnerUids.filter(Boolean));
+    const uniqueMonthKeys = Array.from(
+      new Set(monthKeys.map((key) => String(key || '').trim()).filter(Boolean))
+    ).slice(0, 10);
+    if (!allowedOwners.size || !uniqueMonthKeys.length) {
+      return [];
+    }
+
+    const snapshot = await this.afs.firestore
+      .collectionGroup('dayTotals')
+      .where('monthKey', 'in', uniqueMonthKeys)
+      .get();
+    const requestedMonths = new Set(uniqueMonthKeys);
+    const totalsByMonthAndOwner = new Map<
+      string,
+      { monthKey: string; ownerUid: string; total: number; count: number }
+    >();
+
+    snapshot.forEach((doc) => {
+      const pathParts = doc.ref.path.split('/');
+      const isEmployeeDayTotal =
+        pathParts.length === 6 &&
+        pathParts[0] === 'users' &&
+        pathParts[2] === 'employees' &&
+        pathParts[4] === 'dayTotals';
+      const ownerUid = pathParts[1];
+      if (!isEmployeeDayTotal || !allowedOwners.has(ownerUid)) return;
+
+      const data: any = doc.data() || {};
+      const monthKey = String(data.monthKey || '').trim();
+      if (!requestedMonths.has(monthKey)) return;
+
+      const mapKey = `${monthKey}|${ownerUid}`;
+      const current = totalsByMonthAndOwner.get(mapKey) || {
+        monthKey,
+        ownerUid,
+        total: 0,
+        count: 0,
+      };
+      current.total += this.finiteNumberOrZero(
+        data.total ?? data.collected ?? data.paid
+      );
+      current.count += this.finiteNumberOrZero(data.count);
+      totalsByMonthAndOwner.set(mapKey, current);
+    });
+
+    return Array.from(totalsByMonthAndOwner.values()).sort(
+      (a, b) =>
+        a.monthKey.localeCompare(b.monthKey) ||
+        a.ownerUid.localeCompare(b.ownerUid)
     );
   }
 

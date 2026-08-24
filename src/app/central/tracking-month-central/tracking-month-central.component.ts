@@ -29,12 +29,24 @@ import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { selectWinnerTeamMembers } from '../winner-team-members';
 
-interface CashFlowMonthRankingRow {
+interface CashFlowMonthTeamTotal {
   teamId: string;
   firstName: string;
   totalPayment: number;
   totalPaymentInDollars: number;
   paymentCount: number;
+}
+
+interface CashFlowMonthRankingRow extends CashFlowMonthTeamTotal {
+  averagePayment: number;
+  averagePaymentUsd: number;
+  growthRate: number;
+}
+
+interface CashFlowMonthTrendPeriod {
+  month: number;
+  year: number;
+  rows: CashFlowMonthTeamTotal[];
 }
 
 @Component({
@@ -168,11 +180,14 @@ export class TrackingMonthCentralComponent {
   cashFlowMonthTotalFc = 0;
   cashFlowMonthTotalDollars = 0;
   cashFlowMonthMaxFc = 1;
+  cashFlowMonthAverageFc = 0;
+  cashFlowMonthAverageDollars = 0;
+  cashFlowMonthGrowthRateTotal = 0;
   private cashFlowMonthRequestId = 0;
   private cashFlowMonthLoadingKey = '';
   private readonly cashFlowMonthCache = new Map<
     string,
-    CashFlowMonthRankingRow[]
+    CashFlowMonthTeamTotal[]
   >();
   sortedLendingMonth: {
     firstName: string;
@@ -267,6 +282,10 @@ export class TrackingMonthCentralComponent {
   // Mini graph cache for table sparklines
   miniReserveGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
   miniPaymentGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
+  miniCashFlowPaymentGraphs: Map<
+    string,
+    { data: any[]; layout: any; config?: any }
+  > = new Map();
 
   // Selected location for filtering graphs
   selectedReserveLocation: string | null = null;
@@ -1152,20 +1171,127 @@ export class TrackingMonthCentralComponent {
     );
   }
 
+  private resetCashFlowMonthAnalysis(): void {
+    this.applyCashFlowMonthRows([]);
+    this.cashFlowMonthAverageFc = 0;
+    this.cashFlowMonthAverageDollars = 0;
+    this.cashFlowMonthGrowthRateTotal = 0;
+    this.miniCashFlowPaymentGraphs.clear();
+  }
+
   private cacheCashFlowMonthRows(
     key: string,
-    rows: CashFlowMonthRankingRow[]
+    rows: CashFlowMonthTeamTotal[]
   ): void {
     this.cashFlowMonthCache.set(key, rows);
-    if (this.cashFlowMonthCache.size > 12) {
+    if (this.cashFlowMonthCache.size > 36) {
       const oldestKey = this.cashFlowMonthCache.keys().next().value;
       if (oldestKey) this.cashFlowMonthCache.delete(oldestKey);
     }
   }
 
+  private cashFlowMonthPeriodKey(month: number, year: number): string {
+    return `${year}-${String(month).padStart(2, '0')}`;
+  }
+
+  private previousCashFlowMonth(
+    month: number,
+    year: number
+  ): { month: number; year: number } {
+    return month === 1
+      ? { month: 12, year: year - 1 }
+      : { month: month - 1, year };
+  }
+
+  private cashFlowTrendPeriodKeys(
+    month: number,
+    year: number
+  ): Array<{ month: number; year: number }> {
+    const periods: Array<{ month: number; year: number }> = [];
+    for (let offset = 3; offset >= 0; offset--) {
+      const date = new Date(year, month - 1 - offset, 1);
+      periods.push({
+        month: date.getMonth() + 1,
+        year: date.getFullYear(),
+      });
+    }
+    return periods;
+  }
+
+  private async getCashFlowMonthsTeamTotals(
+    periods: Array<{ month: number; year: number }>,
+    teams: User[]
+  ): Promise<CashFlowMonthTrendPeriod[]> {
+    const rowsByPeriod = new Map<string, CashFlowMonthTeamTotal[]>();
+    const missingPeriods = periods.filter((period) => {
+      const cachedRows = this.cashFlowMonthCache.get(
+        this.cashFlowMonthCacheKey(period.month, period.year)
+      );
+      if (cachedRows) {
+        rowsByPeriod.set(
+          this.cashFlowMonthPeriodKey(period.month, period.year),
+          cachedRows
+        );
+        return false;
+      }
+      return true;
+    });
+
+    const totals = missingPeriods.length
+      ? await this.data.getEmployeeMonthTotalsGroupedByTeamForMonths(
+          missingPeriods.map((period) =>
+            this.cashFlowMonthPeriodKey(period.month, period.year)
+          ),
+          teams.map((team) => team.uid!)
+        )
+      : [];
+
+    missingPeriods.forEach((period) => {
+      const periodKey = this.cashFlowMonthPeriodKey(period.month, period.year);
+      const totalsByTeam = new Map(
+        totals
+          .filter((total) => total.monthKey === periodKey)
+          .map((total) => [total.ownerUid, total] as const)
+      );
+      const rows = teams.map((team): CashFlowMonthTeamTotal => {
+        const teamTotal = totalsByTeam.get(team.uid!) || {
+          total: 0,
+          count: 0,
+        };
+        const totalPayment = Number(teamTotal.total) || 0;
+        return {
+          teamId: team.uid!,
+          firstName: team.firstName || 'Sans nom',
+          totalPayment,
+          totalPaymentInDollars:
+            Number(
+              this.compute.convertCongoleseFrancToUsDollars(
+                String(totalPayment)
+              )
+            ) || 0,
+          paymentCount: Number(teamTotal.count) || 0,
+        };
+      });
+
+      this.cacheCashFlowMonthRows(
+        this.cashFlowMonthCacheKey(period.month, period.year),
+        rows
+      );
+      rowsByPeriod.set(periodKey, rows);
+    });
+
+    return periods.map((period) => ({
+      ...period,
+      rows:
+        rowsByPeriod.get(
+          this.cashFlowMonthPeriodKey(period.month, period.year)
+        ) || [],
+    }));
+  }
+
   private async loadCashFlowMonthRanking(): Promise<void> {
     if (!this.auth.isAdmin || this.rankingMode !== 'month') {
-      this.applyCashFlowMonthRows([]);
+      this.resetCashFlowMonthAnalysis();
       this.cashFlowMonthError = '';
       this.cashFlowMonthLoading = false;
       return;
@@ -1173,7 +1299,7 @@ export class TrackingMonthCentralComponent {
 
     const teams = (this.allUsers || []).filter((user) => !!user?.uid);
     if (!teams.length) {
-      this.applyCashFlowMonthRows([]);
+      this.resetCashFlowMonthAnalysis();
       this.cashFlowMonthError = '';
       this.cashFlowMonthLoading = false;
       return;
@@ -1181,62 +1307,108 @@ export class TrackingMonthCentralComponent {
 
     const month = this.paymentCurrentMonth;
     const year = this.paymentCurrentYear;
-    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-    const cacheKey = this.cashFlowMonthCacheKey(month, year);
-    const cachedRows = this.cashFlowMonthCache.get(cacheKey);
-    if (cachedRows) {
-      this.applyCashFlowMonthRows(cachedRows);
-      this.cashFlowMonthError = '';
-      this.cashFlowMonthLoading = false;
-      return;
+    const fallbackComparison = this.previousCashFlowMonth(month, year);
+    const comparisonMonth = Number.isFinite(this.paymentComparisonMonth)
+      ? this.paymentComparisonMonth
+      : fallbackComparison.month;
+    const comparisonYear = Number.isFinite(this.paymentComparisonYear)
+      ? this.paymentComparisonYear
+      : fallbackComparison.year;
+    if (!Number.isFinite(this.paymentComparisonMonth)) {
+      this.paymentComparisonMonth = comparisonMonth;
     }
+    if (!Number.isFinite(this.paymentComparisonYear)) {
+      this.paymentComparisonYear = comparisonYear;
+    }
+    const trendPeriods = this.cashFlowTrendPeriodKeys(month, year);
+    const requestedPeriods = [
+      { month, year },
+      { month: comparisonMonth, year: comparisonYear },
+      ...trendPeriods,
+    ];
+    const uniquePeriods = Array.from(
+      new Map(
+        requestedPeriods.map((period) => [
+          this.cashFlowMonthPeriodKey(period.month, period.year),
+          period,
+        ])
+      ).values()
+    );
+    const loadingKey = [
+      this.cashFlowMonthCacheKey(month, year),
+      this.cashFlowMonthCacheKey(comparisonMonth, comparisonYear),
+    ].join('|compare:');
     if (
       this.cashFlowMonthLoading &&
-      this.cashFlowMonthLoadingKey === cacheKey
+      this.cashFlowMonthLoadingKey === loadingKey
     ) {
       return;
     }
 
     const requestId = ++this.cashFlowMonthRequestId;
     this.cashFlowMonthLoading = true;
-    this.cashFlowMonthLoadingKey = cacheKey;
+    this.cashFlowMonthLoadingKey = loadingKey;
     this.cashFlowMonthError = '';
 
     try {
-      const totals = await this.data.getEmployeeMonthTotalsGroupedByTeam(
-        monthKey,
-        teams.map((team) => team.uid!)
+      const periodResults = await this.getCashFlowMonthsTeamTotals(
+        uniquePeriods,
+        teams
       );
       if (
         requestId !== this.cashFlowMonthRequestId ||
         month !== this.paymentCurrentMonth ||
         year !== this.paymentCurrentYear ||
+        comparisonMonth !== this.paymentComparisonMonth ||
+        comparisonYear !== this.paymentComparisonYear ||
         this.rankingMode !== 'month'
       ) {
         return;
       }
 
-      const totalsByTeam = new Map(
-        totals.map((total) => [total.ownerUid, total] as const)
+      const rowsByPeriod = new Map(
+        periodResults.map((period) => [
+          this.cashFlowMonthPeriodKey(period.month, period.year),
+          period.rows,
+        ])
       );
-      const rows = teams
-        .map((team): CashFlowMonthRankingRow => {
-          const teamTotal = totalsByTeam.get(team.uid!) || {
-            total: 0,
-            count: 0,
-          };
-          const totalPayment = Number(teamTotal.total) || 0;
+      const currentRows =
+        rowsByPeriod.get(this.cashFlowMonthPeriodKey(month, year)) || [];
+      const comparisonRows =
+        rowsByPeriod.get(
+          this.cashFlowMonthPeriodKey(comparisonMonth, comparisonYear)
+        ) || [];
+      const comparisonByTeam = new Map(
+        comparisonRows.map((row) => [row.teamId, row] as const)
+      );
+      const currentDate = new Date();
+      const workingDays = this.calculateWorkingDays(
+        month,
+        year,
+        month === currentDate.getMonth() + 1 &&
+          year === currentDate.getFullYear()
+      );
+      const rows = currentRows
+        .map((row): CashFlowMonthRankingRow => {
+          const previousTotal =
+            comparisonByTeam.get(row.teamId)?.totalPayment || 0;
+          const averagePayment =
+            workingDays > 0 ? row.totalPayment / workingDays : 0;
           return {
-            teamId: team.uid!,
-            firstName: team.firstName || 'Sans nom',
-            totalPayment,
-            totalPaymentInDollars:
+            ...row,
+            averagePayment,
+            averagePaymentUsd:
               Number(
                 this.compute.convertCongoleseFrancToUsDollars(
-                  String(totalPayment)
+                  String(averagePayment)
                 )
               ) || 0,
-            paymentCount: Number(teamTotal.count) || 0,
+            growthRate:
+              previousTotal > 0
+                ? ((row.totalPayment - previousTotal) / previousTotal) * 100
+                : row.totalPayment > 0
+                ? 100
+                : 0,
           };
         })
         .filter((row) => row.totalPayment > 0)
@@ -1246,12 +1418,41 @@ export class TrackingMonthCentralComponent {
             a.firstName.localeCompare(b.firstName, 'fr')
         );
 
-      this.cacheCashFlowMonthRows(cacheKey, rows);
       this.applyCashFlowMonthRows(rows);
+      const comparisonTotal = comparisonRows.reduce(
+        (sum, row) => sum + row.totalPayment,
+        0
+      );
+      this.cashFlowMonthGrowthRateTotal =
+        comparisonTotal > 0
+          ? ((this.cashFlowMonthTotalFc - comparisonTotal) /
+              comparisonTotal) *
+            100
+          : this.cashFlowMonthTotalFc > 0
+          ? 100
+          : 0;
+      this.cashFlowMonthAverageFc =
+        workingDays > 0 ? this.cashFlowMonthTotalFc / workingDays : 0;
+      this.cashFlowMonthAverageDollars =
+        Number(
+          this.compute.convertCongoleseFrancToUsDollars(
+            String(this.cashFlowMonthAverageFc)
+          )
+        ) || 0;
+      this.updateCashFlowMiniGraphs(
+        rows,
+        trendPeriods.map((period) => ({
+          ...period,
+          rows:
+            rowsByPeriod.get(
+              this.cashFlowMonthPeriodKey(period.month, period.year)
+            ) || [],
+        }))
+      );
     } catch (error) {
       if (requestId !== this.cashFlowMonthRequestId) return;
       console.error('Unable to load monthly cash-flow payment ranking', error);
-      this.applyCashFlowMonthRows([]);
+      this.resetCashFlowMonthAnalysis();
       this.cashFlowMonthError =
         'Impossible de charger les paiements cash flow du mois.';
     } finally {
@@ -2646,6 +2847,7 @@ export class TrackingMonthCentralComponent {
     if (!this.allUsers || this.allUsers.length === 0) {
       this.miniReserveGraphs.clear();
       this.miniPaymentGraphs.clear();
+      this.miniCashFlowPaymentGraphs.clear();
       return;
     }
 
@@ -2825,11 +3027,108 @@ export class TrackingMonthCentralComponent {
     return this.miniReserveGraphs.get(locationName) || this.createEmptyMiniGraph();
   }
 
+  private updateCashFlowMiniGraphs(
+    rows: CashFlowMonthRankingRow[],
+    periods: CashFlowMonthTrendPeriod[]
+  ): void {
+    this.miniCashFlowPaymentGraphs.clear();
+    rows.forEach((row) => {
+      this.miniCashFlowPaymentGraphs.set(
+        row.teamId,
+        this.createCashFlowMiniGraph(row.teamId, periods)
+      );
+    });
+  }
+
+  private createCashFlowMiniGraph(
+    teamId: string,
+    periods: CashFlowMonthTrendPeriod[]
+  ): { data: any[]; layout: any; config?: any } {
+    const values = periods.map(
+      (period) =>
+        period.rows.find((row) => row.teamId === teamId)
+          ?.totalPaymentInDollars || 0
+    );
+    if (values.length < 2) {
+      return this.createEmptyMiniGraph();
+    }
+
+    const labels = periods.map((period) => {
+      const monthName =
+        this.time.monthFrenchNames[period.month - 1] || String(period.month);
+      return `${monthName.slice(0, 3)} ${period.year}`;
+    });
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const valueRange = maxValue - minValue || 1;
+    const normalizedValues = values.map(
+      (value) => ((value - minValue) / valueRange) * 100
+    );
+    const xValues = values.map((_, index) => index);
+    const lineColor = values[values.length - 1] >= values[0]
+      ? '#26a69a'
+      : '#ef5350';
+
+    return {
+      data: [
+        {
+          x: xValues,
+          y: normalizedValues,
+          type: 'scatter',
+          mode: 'lines',
+          line: { color: lineColor, width: 2.5, shape: 'spline' },
+          fill: 'tozeroy',
+          fillcolor: `${lineColor}15`,
+          hovertemplate:
+            '<b>%{text}</b><br>$%{customdata:,.2f}<extra></extra>',
+          text: labels,
+          customdata: values,
+        },
+      ],
+      layout: {
+        height: 40,
+        width: 100,
+        margin: { t: 2, r: 2, l: 2, b: 2 },
+        xaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+          range: [xValues[0] - 0.1, xValues[xValues.length - 1] + 0.1],
+        },
+        yaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+          range: [0, 100],
+        },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        showlegend: false,
+      },
+      config: {
+        responsive: false,
+        displayModeBar: false,
+        staticPlot: true,
+      },
+    };
+  }
+
   /**
    * Get mini payment graph for a location
    */
   getMiniPaymentGraph(locationName: string): { data: any[]; layout: any; config?: any } {
     return this.miniPaymentGraphs.get(locationName) || this.createEmptyMiniGraph();
+  }
+
+  getMiniCashFlowPaymentGraph(
+    teamId: string
+  ): { data: any[]; layout: any; config?: any } {
+    return (
+      this.miniCashFlowPaymentGraphs.get(teamId) ||
+      this.createEmptyMiniGraph()
+    );
   }
 
   /**
