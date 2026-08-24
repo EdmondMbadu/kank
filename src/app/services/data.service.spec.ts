@@ -129,6 +129,76 @@ describe('DataService', () => {
     ]);
   });
 
+  it('groups several employee cash-payment days by team with one query', async () => {
+    const docs = [
+      {
+        ref: {
+          path: 'users/site-a/employees/employee-1/dayTotals/8-19-2026',
+        },
+        data: () => ({ total: 200, count: 1, dayKey: '8-19-2026' }),
+      },
+      {
+        ref: {
+          path: 'users/site-a/employees/employee-2/dayTotals/8-22-2026',
+        },
+        data: () => ({ collected: '600', count: 2, dayKey: '8-22-2026' }),
+      },
+      {
+        ref: {
+          path: 'users/site-a/employees/employee-3/dayTotals/8-22-2026',
+        },
+        data: () => ({ paid: 400, count: 1, dayKey: '8-22-2026' }),
+      },
+      {
+        ref: {
+          path: 'users/site-b/employees/employee-4/dayTotals/8-22-2026',
+        },
+        data: () => ({ total: 300, count: 1, dayKey: '8-22-2026' }),
+      },
+      {
+        ref: {
+          path: 'users/not-selected/employees/employee-5/dayTotals/8-22-2026',
+        },
+        data: () => ({ total: 9999, count: 1, dayKey: '8-22-2026' }),
+      },
+    ];
+    const get = jasmine.createSpy('get').and.resolveTo({
+      forEach: (callback: (doc: any) => void) => docs.forEach(callback),
+    });
+    const where = jasmine.createSpy('where').and.returnValue({ get });
+    const collectionGroup = jasmine
+      .createSpy('collectionGroup')
+      .and.returnValue({ where });
+    const service = new DataService(
+      { firestore: { collectionGroup } } as any,
+      {} as any,
+      {} as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-23-2026',
+        todaysDate: () => '8-22-2026-12-00-00',
+      } as any,
+      {} as any,
+      {} as any
+    );
+
+    const result = await service.getEmployeeDayTotalsGroupedByTeamForDays(
+      ['8-19-2026', '8-22-2026'],
+      ['site-a', 'site-b']
+    );
+
+    expect(collectionGroup).toHaveBeenCalledOnceWith('dayTotals');
+    expect(where).toHaveBeenCalledOnceWith('dayKey', 'in', [
+      '8-19-2026',
+      '8-22-2026',
+    ]);
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([
+      { dayKey: '8-19-2026', ownerUid: 'site-a', total: 200, count: 1 },
+      { dayKey: '8-22-2026', ownerUid: 'site-a', total: 1000, count: 3 },
+      { dayKey: '8-22-2026', ownerUid: 'site-b', total: 300, count: 1 },
+    ]);
+  });
+
   it('groups one month of employee cash payments by team with one query', async () => {
     const docs = [
       {

@@ -34,6 +34,16 @@ interface CashFlowPaymentRankingRow {
   paymentCount: number;
 }
 
+interface CashFlowPaymentTrendDay {
+  dayKey: string;
+  totalsByTeam: Map<string, number>;
+}
+
+interface CashFlowPaymentAnalysis {
+  rows: CashFlowPaymentRankingRow[];
+  trendDays: CashFlowPaymentTrendDay[];
+}
+
 @Component({
   selector: 'app-today-central',
   templateUrl: './today-central.component.html',
@@ -104,7 +114,7 @@ export class TodayCentralComponent {
   private cashFlowPaymentLoadingKey = '';
   private readonly cashFlowPaymentCache = new Map<
     string,
-    CashFlowPaymentRankingRow[]
+    CashFlowPaymentAnalysis
   >();
   sortedMobileMoneyToday: {
     firstName: string;
@@ -593,11 +603,38 @@ export class TodayCentralComponent {
     );
   }
 
-  private cacheCashFlowPaymentRows(
-    key: string,
-    rows: CashFlowPaymentRankingRow[]
+  private cashFlowPaymentTrendDayKeys(dayKey: string): string[] {
+    const [month, day, year] = String(dayKey || '')
+      .split('-')
+      .map(Number);
+    const endDate = new Date(year, month - 1, day);
+    if (
+      !Number.isFinite(endDate.getTime()) ||
+      endDate.getFullYear() !== year ||
+      endDate.getMonth() !== month - 1 ||
+      endDate.getDate() !== day
+    ) {
+      return dayKey ? [dayKey] : [];
+    }
+
+    return [3, 2, 1, 0].map((daysAgo) => {
+      const date = new Date(year, month - 1, day - daysAgo);
+      return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+    });
+  }
+
+  private applyCashFlowPaymentAnalysis(
+    analysis: CashFlowPaymentAnalysis
   ): void {
-    this.cashFlowPaymentCache.set(key, rows);
+    this.applyCashFlowPaymentRows(analysis.rows);
+    this.updateCashFlowPaymentMiniGraphs(analysis.rows, analysis.trendDays);
+  }
+
+  private cacheCashFlowPaymentAnalysis(
+    key: string,
+    analysis: CashFlowPaymentAnalysis
+  ): void {
+    this.cashFlowPaymentCache.set(key, analysis);
     if (this.cashFlowPaymentCache.size > 12) {
       const oldestKey = this.cashFlowPaymentCache.keys().next().value;
       if (oldestKey) this.cashFlowPaymentCache.delete(oldestKey);
@@ -607,6 +644,7 @@ export class TodayCentralComponent {
   private async loadCashFlowPaymentRanking(): Promise<void> {
     if (!this.auth.isAdmin) {
       this.applyCashFlowPaymentRows([]);
+      this.miniCashFlowPaymentGraphs.clear();
       this.cashFlowPaymentError = '';
       this.cashFlowPaymentLoading = false;
       return;
@@ -615,6 +653,7 @@ export class TodayCentralComponent {
     const teams = (this.allUsers || []).filter((user) => !!user?.uid);
     if (!teams.length) {
       this.applyCashFlowPaymentRows([]);
+      this.miniCashFlowPaymentGraphs.clear();
       this.cashFlowPaymentError = '';
       this.cashFlowPaymentLoading = false;
       return;
@@ -622,9 +661,9 @@ export class TodayCentralComponent {
 
     const dayKey = this.requestDateCorrectFormat;
     const cacheKey = this.cashFlowPaymentCacheKey(dayKey);
-    const cachedRows = this.cashFlowPaymentCache.get(cacheKey);
-    if (cachedRows) {
-      this.applyCashFlowPaymentRows(cachedRows);
+    const cachedAnalysis = this.cashFlowPaymentCache.get(cacheKey);
+    if (cachedAnalysis) {
+      this.applyCashFlowPaymentAnalysis(cachedAnalysis);
       this.cashFlowPaymentError = '';
       this.cashFlowPaymentLoading = false;
       return;
@@ -642,8 +681,9 @@ export class TodayCentralComponent {
     this.cashFlowPaymentError = '';
 
     try {
-      const totals = await this.data.getEmployeeDayTotalsGroupedByTeam(
-        dayKey,
+      const trendDayKeys = this.cashFlowPaymentTrendDayKeys(dayKey);
+      const totals = await this.data.getEmployeeDayTotalsGroupedByTeamForDays(
+        trendDayKeys,
         teams.map((team) => team.uid!)
       );
       if (
@@ -653,12 +693,14 @@ export class TodayCentralComponent {
         return;
       }
 
-      const totalsByTeam = new Map(
-        totals.map((total) => [total.ownerUid, total] as const)
+      const currentTotalsByTeam = new Map(
+        totals
+          .filter((total) => total.dayKey === dayKey)
+          .map((total) => [total.ownerUid, total] as const)
       );
       const rows = teams
         .map((team): CashFlowPaymentRankingRow => {
-          const teamTotal = totalsByTeam.get(team.uid!) || {
+          const teamTotal = currentTotalsByTeam.get(team.uid!) || {
             total: 0,
             count: 0,
           };
@@ -678,12 +720,22 @@ export class TodayCentralComponent {
             a.firstName.localeCompare(b.firstName, 'fr')
         );
 
-      this.cacheCashFlowPaymentRows(cacheKey, rows);
-      this.applyCashFlowPaymentRows(rows);
+      const trendDays = trendDayKeys.map((trendDayKey) => ({
+        dayKey: trendDayKey,
+        totalsByTeam: new Map(
+          totals
+            .filter((total) => total.dayKey === trendDayKey)
+            .map((total) => [total.ownerUid, total.total] as const)
+        ),
+      }));
+      const analysis = { rows, trendDays };
+      this.cacheCashFlowPaymentAnalysis(cacheKey, analysis);
+      this.applyCashFlowPaymentAnalysis(analysis);
     } catch (error) {
       if (requestId !== this.cashFlowPaymentRequestId) return;
       console.error('Unable to load cash-flow payment ranking', error);
       this.applyCashFlowPaymentRows([]);
+      this.miniCashFlowPaymentGraphs.clear();
       this.cashFlowPaymentError =
         'Impossible de charger les paiements cash flow.';
     } finally {
@@ -1494,6 +1546,10 @@ export class TodayCentralComponent {
     new Map();
   miniPaymentGraphs: Map<string, { data: any[]; layout: any; config?: any }> =
     new Map();
+  miniCashFlowPaymentGraphs: Map<
+    string,
+    { data: any[]; layout: any; config?: any }
+  > = new Map();
 
   onLocationClick(locationName: string) {
     // Toggle selection: if clicking the same location, deselect it
@@ -2533,6 +2589,7 @@ export class TodayCentralComponent {
     if (!this.allUsers || this.allUsers.length === 0) {
       this.miniReserveGraphs.clear();
       this.miniPaymentGraphs.clear();
+      this.miniCashFlowPaymentGraphs.clear();
       return;
     }
 
@@ -2695,6 +2752,83 @@ export class TodayCentralComponent {
     };
   }
 
+  private updateCashFlowPaymentMiniGraphs(
+    rows: CashFlowPaymentRankingRow[],
+    trendDays: CashFlowPaymentTrendDay[]
+  ): void {
+    this.miniCashFlowPaymentGraphs.clear();
+    rows.forEach((row) => {
+      this.miniCashFlowPaymentGraphs.set(
+        row.teamId,
+        this.createCashFlowPaymentMiniGraph(row.teamId, trendDays)
+      );
+    });
+  }
+
+  private createCashFlowPaymentMiniGraph(
+    teamId: string,
+    trendDays: CashFlowPaymentTrendDay[]
+  ): { data: any[]; layout: any; config?: any } {
+    if (trendDays.length < 2) return this.createEmptyMiniGraph();
+
+    const values = trendDays.map((trendDay) =>
+      this.fcToDollar(trendDay.totalsByTeam.get(teamId) || 0)
+    );
+    const labels = trendDays.map((trendDay) => trendDay.dayKey);
+    const lineColor = values[values.length - 1] >= values[0]
+      ? '#26a69a'
+      : '#ef5350';
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = maxValue - minValue || 1;
+    const normalizedValues = values.map(
+      (value) => ((value - minValue) / range) * 100
+    );
+
+    return {
+      data: [
+        {
+          x: labels,
+          y: normalizedValues,
+          type: 'scatter',
+          mode: 'lines',
+          line: { color: lineColor, width: 2.5, shape: 'spline' },
+          fill: 'tozeroy',
+          fillcolor: lineColor + '15',
+          customdata: values,
+          hovertemplate:
+            '<b>%{x}</b><br>$%{customdata:,.0f}<extra></extra>',
+        },
+      ],
+      layout: {
+        height: 40,
+        width: 100,
+        margin: { t: 2, r: 2, l: 2, b: 2 },
+        xaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+        },
+        yaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+          range: [0, 100],
+        },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        showlegend: false,
+      },
+      config: {
+        responsive: false,
+        displayModeBar: false,
+        staticPlot: true,
+      },
+    };
+  }
+
   getMiniReserveGraph(locationName: string): {
     data: any[];
     layout: any;
@@ -2712,6 +2846,17 @@ export class TodayCentralComponent {
   } {
     return (
       this.miniPaymentGraphs.get(locationName) || this.createEmptyMiniGraph()
+    );
+  }
+
+  getMiniCashFlowPaymentGraph(teamId: string): {
+    data: any[];
+    layout: any;
+    config?: any;
+  } {
+    return (
+      this.miniCashFlowPaymentGraphs.get(teamId) ||
+      this.createEmptyMiniGraph()
     );
   }
 

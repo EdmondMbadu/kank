@@ -62,6 +62,10 @@ export interface EmployeeDayTeamTotal {
   count: number;
 }
 
+export interface EmployeeTeamDayTotal extends EmployeeDayTeamTotal {
+  dayKey: string;
+}
+
 export interface EmployeeMonthTeamTotal extends EmployeeDayTeamTotal {
   monthKey: string;
 }
@@ -87,6 +91,12 @@ export class DataService {
 
   private finiteNumberOrZero(value: unknown): number {
     return coerceToNumber(value) ?? 0;
+  }
+
+  private parseEmployeeDayKey(dayKey: string): number {
+    const [month, day, year] = String(dayKey || '').split('-').map(Number);
+    const timestamp = new Date(year, month - 1, day).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
   }
 
   private budgetedRequestAmount(client: Client): number {
@@ -948,6 +958,65 @@ export class DataService {
       'dayKey',
       dayKey,
       allowedOwnerUids
+    );
+  }
+
+  /** Loads several employee cash-payment days in one request, by team/day. */
+  async getEmployeeDayTotalsGroupedByTeamForDays(
+    dayKeys: readonly string[],
+    allowedOwnerUids: readonly string[]
+  ): Promise<EmployeeTeamDayTotal[]> {
+    const allowedOwners = new Set(allowedOwnerUids.filter(Boolean));
+    const uniqueDayKeys = Array.from(
+      new Set(dayKeys.map((key) => String(key || '').trim()).filter(Boolean))
+    ).slice(0, 10);
+    if (!allowedOwners.size || !uniqueDayKeys.length) {
+      return [];
+    }
+
+    const snapshot = await this.afs.firestore
+      .collectionGroup('dayTotals')
+      .where('dayKey', 'in', uniqueDayKeys)
+      .get();
+    const requestedDays = new Set(uniqueDayKeys);
+    const totalsByDayAndOwner = new Map<
+      string,
+      { dayKey: string; ownerUid: string; total: number; count: number }
+    >();
+
+    snapshot.forEach((doc) => {
+      const pathParts = doc.ref.path.split('/');
+      const isEmployeeDayTotal =
+        pathParts.length === 6 &&
+        pathParts[0] === 'users' &&
+        pathParts[2] === 'employees' &&
+        pathParts[4] === 'dayTotals';
+      const ownerUid = pathParts[1];
+      if (!isEmployeeDayTotal || !allowedOwners.has(ownerUid)) return;
+
+      const data: any = doc.data() || {};
+      const dayKey = String(data.dayKey || pathParts[5] || '').trim();
+      if (!requestedDays.has(dayKey)) return;
+
+      const mapKey = `${dayKey}|${ownerUid}`;
+      const current = totalsByDayAndOwner.get(mapKey) || {
+        dayKey,
+        ownerUid,
+        total: 0,
+        count: 0,
+      };
+      current.total += this.finiteNumberOrZero(
+        data.total ?? data.collected ?? data.paid
+      );
+      current.count += this.finiteNumberOrZero(data.count);
+      totalsByDayAndOwner.set(mapKey, current);
+    });
+
+    return Array.from(totalsByDayAndOwner.values()).sort(
+      (a, b) =>
+        this.parseEmployeeDayKey(a.dayKey) -
+          this.parseEmployeeDayKey(b.dayKey) ||
+        a.ownerUid.localeCompare(b.ownerUid)
     );
   }
 

@@ -774,6 +774,13 @@
       </div>
 
       <div
+        *ngIf="cashFlowPaymentRows.length"
+        class="mb-3 text-xs text-slate-500 dark:text-slate-400"
+      >
+        Graphique = 4 derniers jours · Barre = % du meilleur $
+      </div>
+
+      <div
         *ngIf="cashFlowPaymentLoading"
         class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
       >
@@ -797,7 +804,7 @@
       >
         <div class="-mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
           <table
-            class="min-w-[480px] w-full table-auto text-sm tabular-nums sm:min-w-0"
+            class="min-w-[560px] w-full table-auto text-sm tabular-nums sm:min-w-0"
           >
             <thead
               class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -805,6 +812,7 @@
               <tr>
                 <th class="px-3 py-2 text-left">Rang</th>
                 <th class="px-2 py-2 text-left">Équipe</th>
+                <th class="px-3 py-2 text-center">Graphique</th>
                 <th class="px-3 py-2 text-right">Paiement cash flow</th>
               </tr>
             </thead>
@@ -841,6 +849,15 @@
                     ></div>
                   </div>
                 </td>
+                <td class="px-3 py-2">
+                  <div class="flex h-10 w-24 items-center justify-center">
+                    <plotly-plot
+                      [data]="getMiniCashFlowPaymentGraph(row.teamId).data"
+                      [layout]="getMiniCashFlowPaymentGraph(row.teamId).layout"
+                      [config]="getMiniCashFlowPaymentGraph(row.teamId).config"
+                    ></plotly-plot>
+                  </div>
+                </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   <div class="flex flex-col items-end">
                     <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
@@ -848,6 +865,12 @@
                     </span>
                     <span class="text-xs text-slate-500 dark:text-slate-400">
                       {{ row.totalPayment | number : "1.0-0" }} FC
+                    </span>
+                    <span class="text-[10px] text-emerald-600 dark:text-emerald-300">
+                      {{
+                        percentOf(row.totalPayment, cashFlowPaymentMaxFc)
+                          | number : "1.0-0"
+                      }}% du meilleur
                     </span>
                   </div>
                 </td>
@@ -857,6 +880,7 @@
               <tr>
                 <td class="px-3 py-2 font-semibold">Total</td>
                 <td class="px-2 py-2"></td>
+                <td class="px-3 py-2"></td>
                 <td class="px-3 py-2 text-right">
                   <div class="flex flex-col items-end">
                     <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">

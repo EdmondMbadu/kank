@@ -33,10 +33,16 @@ describe('TodayCentralComponent management hydration', () => {
 
   it('loads and caches one admin cash-flow ranking without using team aggregates', async () => {
     const cashFlowTotals = jasmine
-      .createSpy('getEmployeeDayTotalsGroupedByTeam')
+      .createSpy('getEmployeeDayTotalsGroupedByTeamForDays')
       .and.resolveTo([
-        { ownerUid: 'site-a', total: 1000, count: 2 },
-        { ownerUid: 'site-b', total: 900, count: 3 },
+        { dayKey: '8-19-2026', ownerUid: 'site-a', total: 200, count: 1 },
+        { dayKey: '8-19-2026', ownerUid: 'site-b', total: 300, count: 1 },
+        { dayKey: '8-20-2026', ownerUid: 'site-a', total: 400, count: 1 },
+        { dayKey: '8-20-2026', ownerUid: 'site-b', total: 450, count: 1 },
+        { dayKey: '8-21-2026', ownerUid: 'site-a', total: 600, count: 1 },
+        { dayKey: '8-21-2026', ownerUid: 'site-b', total: 700, count: 1 },
+        { dayKey: '8-22-2026', ownerUid: 'site-a', total: 1000, count: 2 },
+        { dayKey: '8-22-2026', ownerUid: 'site-b', total: 900, count: 3 },
       ]);
     const auth = {
       isAdmin: true,
@@ -57,7 +63,7 @@ describe('TodayCentralComponent management hydration', () => {
       auth as any,
       time as any,
       compute as any,
-      { getEmployeeDayTotalsGroupedByTeam: cashFlowTotals } as any
+      { getEmployeeDayTotalsGroupedByTeamForDays: cashFlowTotals } as any
     );
     component.allUsers = [
       {
@@ -78,10 +84,10 @@ describe('TodayCentralComponent management hydration', () => {
     await (component as any).loadCashFlowPaymentRanking();
 
     expect(cashFlowTotals).toHaveBeenCalledTimes(1);
-    expect(cashFlowTotals).toHaveBeenCalledWith('8-22-2026', [
-      'site-a',
-      'site-b',
-    ]);
+    expect(cashFlowTotals).toHaveBeenCalledWith(
+      ['8-19-2026', '8-20-2026', '8-21-2026', '8-22-2026'],
+      ['site-a', 'site-b']
+    );
     expect(component.cashFlowPaymentRows.map((row) => row.firstName)).toEqual([
       'Alpha',
       'Beta',
@@ -90,11 +96,15 @@ describe('TodayCentralComponent management hydration', () => {
     expect(component.cashFlowPaymentTotalFc).toBe(1900);
     expect(component.cashFlowPaymentTotalDollars).toBeCloseTo(0.76, 5);
     expect(component.cashFlowPaymentMaxFc).toBe(1000);
+    expect(component.getMiniCashFlowPaymentGraph('site-a').data.length).toBe(1);
+    expect(
+      component.getMiniCashFlowPaymentGraph('site-a').data[0].customdata
+    ).toEqual([0.08, 0.16, 0.24, 0.4]);
   });
 
   it('never requests or retains the cash-flow ranking for a non-admin', async () => {
     const cashFlowTotals = jasmine.createSpy(
-      'getEmployeeDayTotalsGroupedByTeam'
+      'getEmployeeDayTotalsGroupedByTeamForDays'
     );
     const component = new TodayCentralComponent(
       {} as any,
@@ -106,7 +116,7 @@ describe('TodayCentralComponent management hydration', () => {
         getTodaysDateYearMonthDay: () => '2026-08-22',
       } as any,
       { convertCongoleseFrancToUsDollars: () => '0' } as any,
-      { getEmployeeDayTotalsGroupedByTeam: cashFlowTotals } as any
+      { getEmployeeDayTotalsGroupedByTeamForDays: cashFlowTotals } as any
     );
     component.allUsers = [{ uid: 'site-a', firstName: 'Alpha' } as any];
     component.cashFlowPaymentRows = [
