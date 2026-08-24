@@ -728,15 +728,18 @@
     <div
       class="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
     >
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-            Classement Cash flow paiement du jour
-          </h2>
-          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Paiements clients encaissés · transferts d’épargne exclus
-          </p>
-        </div>
+      <div
+        class="mb-3 flex flex-wrap items-center justify-between gap-3"
+      >
+        <h2
+          class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+          title="Paiements clients encaissés · transferts d’épargne exclus"
+        >
+          Classement Cash flow paiement du jour
+          <span class="sr-only">
+            — Paiements clients encaissés, transferts d’épargne exclus
+          </span>
+        </h2>
         <div class="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -774,13 +777,6 @@
       </div>
 
       <div
-        *ngIf="cashFlowPaymentRows.length"
-        class="mb-3 text-xs text-slate-500 dark:text-slate-400"
-      >
-        Graphique = 4 derniers jours · Barre = % du meilleur $
-      </div>
-
-      <div
         *ngIf="cashFlowPaymentLoading"
         class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
       >
@@ -795,11 +791,7 @@
       </div>
 
       <div
-        *ngIf="
-          !cashFlowPaymentLoading &&
-          !cashFlowPaymentError &&
-          cashFlowPaymentRows.length
-        "
+        *ngIf="!cashFlowPaymentLoading && !cashFlowPaymentError"
         class="rounded-xl ring-1 ring-slate-200/70 dark:ring-slate-700"
       >
         <div class="-mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
@@ -813,13 +805,13 @@
                 <th class="px-3 py-2 text-left">Rang</th>
                 <th class="px-2 py-2 text-left">Équipe</th>
                 <th class="px-3 py-2 text-center">Graphique</th>
-                <th class="px-3 py-2 text-right">Paiement cash flow</th>
+                <th class="px-3 py-2 text-right">Paiement</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               <tr
                 *ngFor="let row of cashFlowPaymentRows; let i = index"
-                class="odd:bg-white/90 even:bg-white/70 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30"
+                class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
               >
                 <td class="px-3 py-2">
                   <span
@@ -866,17 +858,13 @@
                     <span class="text-xs text-slate-500 dark:text-slate-400">
                       {{ row.totalPayment | number : "1.0-0" }} FC
                     </span>
-                    <span class="text-[10px] text-emerald-600 dark:text-emerald-300">
-                      {{
-                        percentOf(row.totalPayment, cashFlowPaymentMaxFc)
-                          | number : "1.0-0"
-                      }}% du meilleur
-                    </span>
                   </div>
                 </td>
               </tr>
             </tbody>
-            <tfoot class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100">
+            <tfoot
+              class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
+            >
               <tr>
                 <td class="px-3 py-2 font-semibold">Total</td>
                 <td class="px-2 py-2"></td>
@@ -895,17 +883,6 @@
             </tfoot>
           </table>
         </div>
-      </div>
-
-      <div
-        *ngIf="
-          !cashFlowPaymentLoading &&
-          !cashFlowPaymentError &&
-          !cashFlowPaymentRows.length
-        "
-        class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
-      >
-        Aucun paiement cash flow enregistré pour cette date.
       </div>
     </div>
 
