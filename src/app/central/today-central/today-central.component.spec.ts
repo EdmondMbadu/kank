@@ -125,4 +125,58 @@ describe('TodayCentralComponent management hydration', () => {
     expect(component.cashFlowPaymentRows).toEqual([]);
     expect(component.cashFlowPaymentTotalFc).toBe(0);
   });
+
+  it('copies the daily cash-flow ranking with the payment-table format', async () => {
+    const component = new TodayCentralComponent(
+      {} as any,
+      { isAdmin: true } as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '8-23-2026',
+        todaysDateMonthDayYear: () => '8-22-2026',
+        convertDateToDayMonthYear: (value: string) => value,
+        getTodaysDateYearMonthDay: () => '2026-08-22',
+        englishToFrenchDay: { Saturday: 'Samedi' },
+      } as any,
+      {} as any,
+      {} as any
+    );
+    component.cashFlowPaymentRows = [
+      {
+        teamId: 'site-a',
+        firstName: 'Alpha',
+        totalPayment: 1000,
+        totalPaymentInDollars: 0.4,
+        paymentCount: 2,
+      },
+      {
+        teamId: 'site-b',
+        firstName: 'Beta',
+        totalPayment: 900,
+        totalPaymentInDollars: 0.36,
+        paymentCount: 3,
+      },
+    ];
+    spyOn<any>(component, 'buildWinnerMembersLines').and.resolveTo([
+      'Avec Alice et Bob',
+    ]);
+    const copyToClipboard = spyOn<any>(
+      component,
+      'copyToClipboard'
+    ).and.resolveTo();
+
+    await component.copyCashFlowPaymentRanking();
+
+    expect(copyToClipboard).toHaveBeenCalledOnceWith(
+      [
+        'Samedi 22/8/2026',
+        '===============',
+        '1. Equipe Gagnante:  Alpha',
+        'Avec Alice et Bob',
+        '2. Beta',
+      ].join('\n')
+    );
+    expect(component.copyCashFlowPaymentsMessage).toBe(
+      'Classement copié (montants exclus)'
+    );
+  });
 });

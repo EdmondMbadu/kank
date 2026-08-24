@@ -100,4 +100,51 @@ describe('TrackingMonthCentralComponent', () => {
     expect(component.cashFlowMonthRows).toEqual([]);
     expect(component.cashFlowMonthTotalFc).toBe(0);
   });
+
+  it('copies the monthly cash-flow ranking with the payment-table format', async () => {
+    const component = createComponent(
+      true,
+      jasmine.createSpy('getEmployeeMonthTotalsGroupedByTeam')
+    );
+    component.paymentCurrentMonth = 8;
+    component.paymentCurrentYear = 2026;
+    component.cashFlowMonthRows = [
+      {
+        teamId: 'site-a',
+        firstName: 'Alpha',
+        totalPayment: 1000,
+        totalPaymentInDollars: 0.4,
+        paymentCount: 2,
+      },
+      {
+        teamId: 'site-b',
+        firstName: 'Beta',
+        totalPayment: 900,
+        totalPaymentInDollars: 0.36,
+        paymentCount: 3,
+      },
+    ];
+    spyOn<any>(component, 'buildWinnerMembersLines').and.resolveTo([
+      'Avec Alice et Bob',
+    ]);
+    const copyToClipboard = spyOn<any>(
+      component,
+      'copyToClipboard'
+    ).and.resolveTo();
+
+    await component.copyCashFlowPaymentRanking();
+
+    expect(copyToClipboard).toHaveBeenCalledOnceWith(
+      [
+        'Resultats Août 2026',
+        '===============',
+        '1. Equipe Gagnante:  Alpha',
+        'Avec Alice et Bob',
+        '2. Beta',
+      ].join('\n')
+    );
+    expect(component.copyCashFlowPaymentsMessage).toBe(
+      'Classement copié (montants exclus)'
+    );
+  });
 });

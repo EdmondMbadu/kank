@@ -168,6 +168,8 @@ export class TodayCentralComponent {
   summaryContent: string[] = [];
   copyPaymentsMessage: string | null = null;
   isCopyingPayments = false;
+  copyCashFlowPaymentsMessage: string | null = null;
+  isCopyingCashFlowPayments = false;
   auditPaymentPerformanceMode: AuditPaymentPerformanceMode = 'day';
   readonly auditPaymentPerformanceOptions: Array<{
     mode: AuditPaymentPerformanceMode;
@@ -965,6 +967,49 @@ export class TodayCentralComponent {
       this.isCopyingPayments = false;
       if (this.copyPaymentsMessage) {
         setTimeout(() => (this.copyPaymentsMessage = null), 2200);
+      }
+    }
+  }
+  async copyCashFlowPaymentRanking(): Promise<void> {
+    if (
+      this.isCopyingCashFlowPayments ||
+      !this.cashFlowPaymentRows.length
+    ) {
+      return;
+    }
+
+    this.isCopyingCashFlowPayments = true;
+    this.copyCashFlowPaymentsMessage = null;
+
+    try {
+      const winner = this.cashFlowPaymentRows[0];
+      const winnerLines = await this.buildWinnerMembersLines(winner?.firstName);
+      const dateLabel = this.buildPaymentCopyDateLabel();
+      const lines: string[] = [dateLabel, '==============='];
+
+      this.cashFlowPaymentRows.forEach((team, index) => {
+        const rankLabel = index + 1;
+        if (index === 0) {
+          lines.push(`${rankLabel}. Equipe Gagnante:  ${team.firstName}`);
+          if (winnerLines.length) {
+            lines.push(...winnerLines);
+          }
+        } else {
+          lines.push(`${rankLabel}. ${team.firstName}`);
+        }
+      });
+
+      await this.copyToClipboard(lines.join('\n'));
+      this.copyCashFlowPaymentsMessage =
+        'Classement copié (montants exclus)';
+    } catch (error) {
+      console.error('Failed to copy cash-flow payment ranking', error);
+      this.copyCashFlowPaymentsMessage =
+        'Impossible de copier le classement.';
+    } finally {
+      this.isCopyingCashFlowPayments = false;
+      if (this.copyCashFlowPaymentsMessage) {
+        setTimeout(() => (this.copyCashFlowPaymentsMessage = null), 2200);
       }
     }
   }

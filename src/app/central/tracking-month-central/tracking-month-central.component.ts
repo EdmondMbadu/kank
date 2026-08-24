@@ -231,6 +231,8 @@ export class TrackingMonthCentralComponent {
   lendingCurrentAverageAmountDollars = 0;
   copyPaymentsMessage: string | null = null;
   isCopyingPayments = false;
+  copyCashFlowPaymentsMessage: string | null = null;
+  isCopyingCashFlowPayments = false;
   allLendingClients: Client[] = [];
   lendingBorrowersForMonth: CentralLendingBorrower[] = [];
   isLendingBorrowersModalOpen = false;
@@ -1788,6 +1790,50 @@ export class TrackingMonthCentralComponent {
       this.isCopyingPayments = false;
       if (this.copyPaymentsMessage) {
         setTimeout(() => (this.copyPaymentsMessage = null), 2200);
+      }
+    }
+  }
+
+  async copyCashFlowPaymentRanking(): Promise<void> {
+    if (
+      this.isCopyingCashFlowPayments ||
+      !this.cashFlowMonthRows.length
+    ) {
+      return;
+    }
+
+    this.isCopyingCashFlowPayments = true;
+    this.copyCashFlowPaymentsMessage = null;
+
+    try {
+      const winner = this.cashFlowMonthRows[0];
+      const winnerLines = await this.buildWinnerMembersLines(winner?.firstName);
+      const dateLabel = this.buildPaymentCopyDateLabel();
+      const lines: string[] = [dateLabel, '==============='];
+
+      this.cashFlowMonthRows.forEach((team, index) => {
+        const rankLabel = index + 1;
+        if (index === 0) {
+          lines.push(`${rankLabel}. Equipe Gagnante:  ${team.firstName}`);
+          if (winnerLines.length) {
+            lines.push(...winnerLines);
+          }
+        } else {
+          lines.push(`${rankLabel}. ${team.firstName}`);
+        }
+      });
+
+      await this.copyToClipboard(lines.join('\n'));
+      this.copyCashFlowPaymentsMessage =
+        'Classement copié (montants exclus)';
+    } catch (error) {
+      console.error('Failed to copy monthly cash-flow payment ranking', error);
+      this.copyCashFlowPaymentsMessage =
+        'Impossible de copier le classement.';
+    } finally {
+      this.isCopyingCashFlowPayments = false;
+      if (this.copyCashFlowPaymentsMessage) {
+        setTimeout(() => (this.copyCashFlowPaymentsMessage = null), 2200);
       }
     }
   }
