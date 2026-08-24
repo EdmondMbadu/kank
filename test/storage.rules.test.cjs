@@ -150,7 +150,7 @@ test('staff can read investigation PDFs while portal clients cannot', async () =
   await assertFails(storageFor(portalClient).ref(objectPath).getMetadata());
 });
 
-test('only an app admin can run dayTotals collection-group queries', async () => {
+test('authenticated staff can run dayTotals collection-group queries', async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await context
       .firestore()
@@ -165,6 +165,7 @@ test('only an app admin can run dayTotals collection-group queries', async () =>
 
   const admin = testEnv.authenticatedContext('admin-user');
   const staff = testEnv.authenticatedContext('staff-user');
+  const unauthenticated = testEnv.unauthenticatedContext();
   const portalClient = testEnv.authenticatedContext('portal-user', {
     portalClient: true,
   });
@@ -180,12 +181,15 @@ test('only an app admin can run dayTotals collection-group queries', async () =>
       .get();
   const adminFirestore = admin.firestore();
   const staffFirestore = staff.firestore();
+  const unauthenticatedFirestore = unauthenticated.firestore();
   const portalFirestore = portalClient.firestore();
 
   await assertSucceeds(queryFor(adminFirestore));
   await assertSucceeds(monthQueryFor(adminFirestore));
-  await assertFails(queryFor(staffFirestore));
-  await assertFails(monthQueryFor(staffFirestore));
+  await assertSucceeds(queryFor(staffFirestore));
+  await assertSucceeds(monthQueryFor(staffFirestore));
+  await assertFails(queryFor(unauthenticatedFirestore));
+  await assertFails(monthQueryFor(unauthenticatedFirestore));
   await assertFails(queryFor(portalFirestore));
   await assertFails(monthQueryFor(portalFirestore));
 });
