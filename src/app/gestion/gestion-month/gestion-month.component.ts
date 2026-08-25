@@ -177,6 +177,17 @@ export class GestionMonthComponent {
   overallMonthlyExpectedTotalDollar = 0;
   overallMonthlyPaymentTotal = 0;
   overallMonthlyPaymentTotalDollar = 0;
+  overallMonthlyPurePaymentTotal = 0;
+  overallMonthlyPurePaymentTotalDollar = 0;
+  monthlyPurePaymentLoading = false;
+  monthlyPurePaymentError = '';
+  private monthlyPurePaymentLoadingKey = '';
+  private monthlyPurePaymentRequestVersion = 0;
+  private monthlyPurePaymentsByTeam = new Map<string, number>();
+  private readonly monthlyPurePaymentCache = new Map<
+    string,
+    ReadonlyMap<string, number>
+  >();
   overallMonthlyReserveTotal = 0;
   overallMonthlyReserveTotalDollar = 0;
   overallMonthlyMinimumTotal = 0;
@@ -188,6 +199,10 @@ export class GestionMonthComponent {
   overallMonthlyMinimumProgressPercent = 0;
   overallMonthlyMinimumProgressTone: MonthlyProgressTone = 'red';
   isLoadingMonthlyPayments = false;
+  private monthlyClientsCacheKey = '';
+  private monthlyClientsCache?: Client[][];
+  private monthlyClientsLoadingKey = '';
+  private monthlyClientsRequestVersion = 0;
   monthlyHeatmapMode: MonthlyHeatmapMode = 'paymentMonth';
   readonly monthlyHeatmapOptions: MonthlyHeatmapOption[] = [
     { mode: 'paymentMonth', label: 'Paiement du mois' },
@@ -410,7 +425,12 @@ export class GestionMonthComponent {
   }
 
   async takeMonthlyPaymentSnapshot(): Promise<void> {
-    if (this.isLoadingMonthlyPayments || this.isSavingMonthlyPaymentSnapshot) {
+    if (
+      this.isLoadingMonthlyPayments ||
+      this.monthlyPurePaymentLoading ||
+      !!this.monthlyPurePaymentError ||
+      this.isSavingMonthlyPaymentSnapshot
+    ) {
       return;
     }
 
@@ -478,6 +498,8 @@ export class GestionMonthComponent {
         expectedDollar: this.overallMonthlyExpectedTotalDollar,
         paymentFc: this.overallMonthlyPaymentTotal,
         paymentDollar: this.overallMonthlyPaymentTotalDollar,
+        purePaymentFc: this.overallMonthlyPurePaymentTotal,
+        purePaymentDollar: this.overallMonthlyPurePaymentTotalDollar,
         reserveFc: this.overallMonthlyReserveTotal,
         reserveDollar: this.overallMonthlyReserveTotalDollar,
         minimumFc: this.overallMonthlyMinimumTotal,
@@ -510,22 +532,184 @@ export class GestionMonthComponent {
   }
 
   loadMonthlyPaymentTotals(): void {
-    if (!this.auth.isAdmin || !this.allUsers.length) return;
+    if (!this.auth.isAdmin || !this.allUsers.length) {
+      if (!this.auth.isAdmin) this.applyMonthlyPurePaymentTotals(new Map());
+      return;
+    }
 
+    void this.loadMonthlyPurePayments();
+
+    const clientsKey = this.monthlyClientTeamCacheKey();
+    if (
+      this.monthlyClientsCache &&
+      this.monthlyClientsCacheKey === clientsKey
+    ) {
+      this.computeMonthlyPaymentTotals(this.monthlyClientsCache);
+      this.isLoadingMonthlyPayments = false;
+      return;
+    }
+    if (
+      this.isLoadingMonthlyPayments &&
+      this.monthlyClientsLoadingKey === clientsKey
+    ) {
+      return;
+    }
+
+    const requestVersion = ++this.monthlyClientsRequestVersion;
     this.isLoadingMonthlyPayments = true;
+    this.monthlyClientsLoadingKey = clientsKey;
     forkJoin(
       this.allUsers.map((user) =>
         this.auth.getClientsOfAUser(user.uid!).pipe(take(1))
       )
     ).subscribe({
       next: (clientsByUser) => {
+        if (
+          requestVersion !== this.monthlyClientsRequestVersion ||
+          clientsKey !== this.monthlyClientTeamCacheKey()
+        ) {
+          return;
+        }
+        this.monthlyClientsCache = clientsByUser;
+        this.monthlyClientsCacheKey = clientsKey;
         this.computeMonthlyPaymentTotals(clientsByUser);
         this.isLoadingMonthlyPayments = false;
+        this.monthlyClientsLoadingKey = '';
       },
       error: (error) => {
+        if (requestVersion !== this.monthlyClientsRequestVersion) return;
         console.error('Unable to load monthly payment totals', error);
         this.isLoadingMonthlyPayments = false;
+        this.monthlyClientsLoadingKey = '';
       },
+    });
+  }
+
+  /**
+   * Loads all locations' real client collections for the selected month in a
+   * single collection-group query. Employee totals exclude savings transfers.
+   */
+  private async loadMonthlyPurePayments(): Promise<void> {
+    if (!this.auth.isAdmin) {
+      this.applyMonthlyPurePaymentTotals(new Map());
+      this.monthlyPurePaymentLoading = false;
+      this.monthlyPurePaymentError = '';
+      return;
+    }
+
+    const teams = (this.allUsers || []).filter((user) => !!user.uid);
+    if (!teams.length) {
+      this.applyMonthlyPurePaymentTotals(new Map());
+      this.monthlyPurePaymentLoading = false;
+      this.monthlyPurePaymentError = '';
+      return;
+    }
+
+    const monthKey = this.selectedPurePaymentMonthKey();
+    const cacheKey = `${monthKey}:${this.monthlyTeamCacheKey()}`;
+    const cachedTotals = this.monthlyPurePaymentCache.get(cacheKey);
+    if (cachedTotals) {
+      this.applyMonthlyPurePaymentTotals(cachedTotals);
+      this.monthlyPurePaymentLoading = false;
+      this.monthlyPurePaymentError = '';
+      return;
+    }
+    if (
+      this.monthlyPurePaymentLoading &&
+      this.monthlyPurePaymentLoadingKey === cacheKey
+    ) {
+      return;
+    }
+
+    const requestVersion = ++this.monthlyPurePaymentRequestVersion;
+    this.monthlyPurePaymentLoading = true;
+    this.monthlyPurePaymentLoadingKey = cacheKey;
+    this.monthlyPurePaymentError = '';
+    this.applyMonthlyPurePaymentTotals(new Map());
+
+    try {
+      const totals = await this.data.getEmployeeMonthTotalsGroupedByTeam(
+        monthKey,
+        teams.map((team) => team.uid!)
+      );
+      if (
+        requestVersion !== this.monthlyPurePaymentRequestVersion ||
+        monthKey !== this.selectedPurePaymentMonthKey() ||
+        !this.auth.isAdmin
+      ) {
+        if (!this.auth.isAdmin) {
+          this.applyMonthlyPurePaymentTotals(new Map());
+        }
+        return;
+      }
+
+      const totalsByTeam = new Map(
+        totals.map(
+          (item) => [item.ownerUid, Number(item.total) || 0] as const
+        )
+      );
+      this.cacheMonthlyPurePaymentTotals(cacheKey, totalsByTeam);
+      this.applyMonthlyPurePaymentTotals(totalsByTeam);
+    } catch (error) {
+      if (requestVersion !== this.monthlyPurePaymentRequestVersion) return;
+      console.error('Unable to load monthly pure payments', error);
+      this.applyMonthlyPurePaymentTotals(new Map());
+      this.monthlyPurePaymentError =
+        'Impossible de charger les paiements purs du mois.';
+    } finally {
+      if (requestVersion === this.monthlyPurePaymentRequestVersion) {
+        this.monthlyPurePaymentLoading = false;
+        this.monthlyPurePaymentLoadingKey = '';
+      }
+    }
+  }
+
+  private selectedPurePaymentMonthKey(): string {
+    return `${this.givenYear}-${String(this.givenMonth).padStart(2, '0')}`;
+  }
+
+  private monthlyTeamCacheKey(): string {
+    return (this.allUsers || [])
+      .map((user) => user.uid || '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+  }
+
+  private monthlyClientTeamCacheKey(): string {
+    return (this.allUsers || [])
+      .map((user) => user.uid || '')
+      .filter(Boolean)
+      .join(',');
+  }
+
+  private cacheMonthlyPurePaymentTotals(
+    cacheKey: string,
+    totalsByTeam: ReadonlyMap<string, number>
+  ): void {
+    this.monthlyPurePaymentCache.set(cacheKey, new Map(totalsByTeam));
+    if (this.monthlyPurePaymentCache.size <= 12) return;
+
+    const oldestKey = this.monthlyPurePaymentCache.keys().next().value;
+    if (oldestKey) this.monthlyPurePaymentCache.delete(oldestKey);
+  }
+
+  private applyMonthlyPurePaymentTotals(
+    totalsByTeam: ReadonlyMap<string, number>
+  ): void {
+    this.monthlyPurePaymentsByTeam = new Map(totalsByTeam);
+    this.overallMonthlyPurePaymentTotal = Array.from(
+      totalsByTeam.values()
+    ).reduce((sum, value) => sum + (Number(value) || 0), 0);
+    this.overallMonthlyPurePaymentTotalDollar = this.toUsd(
+      this.overallMonthlyPurePaymentTotal
+    );
+
+    this.monthlyPaymentTotals.forEach((row) => {
+      const purePaymentFc =
+        Number(totalsByTeam.get(row.trackingId)) || 0;
+      row.purePaymentFc = purePaymentFc;
+      row.purePaymentDollar = this.toUsd(purePaymentFc);
     });
   }
 
@@ -539,6 +723,8 @@ export class GestionMonthComponent {
       const clients = clientsByUser[index] || [];
       const expectedFc = this.computeMonthlyExpectedTotalForUser(clients);
       const totalFc = this.computeMonthlyPaymentTotalForUser(user);
+      const purePaymentFc =
+        Number(this.monthlyPurePaymentsByTeam.get(user.uid!)) || 0;
       const reserveFc = this.computeMonthlyReserveTotalForUser(user);
       const minimumFc = this.computeMonthlyMinimumForUser(user);
       const expectedProgressPercent = this.computeProgressPercent(
@@ -574,6 +760,8 @@ export class GestionMonthComponent {
         expectedDollar: this.toUsd(expectedFc),
         totalFc,
         totalDollar: this.toUsd(totalFc),
+        purePaymentFc,
+        purePaymentDollar: this.toUsd(purePaymentFc),
         reserveFc,
         reserveDollar: this.toUsd(reserveFc),
         minimumFc,

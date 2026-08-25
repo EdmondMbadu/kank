@@ -60,6 +60,8 @@ export interface MonthlyPaymentSnapshotRow {
   expectedDollar: number;
   totalFc: number;
   totalDollar: number;
+  purePaymentFc?: number;
+  purePaymentDollar?: number;
   reserveFc: number;
   reserveDollar: number;
   minimumFc: number;
@@ -79,6 +81,8 @@ export interface MonthlyPaymentSnapshotTotals {
   expectedDollar: number;
   paymentFc: number;
   paymentDollar: number;
+  purePaymentFc?: number;
+  purePaymentDollar?: number;
   reserveFc: number;
   reserveDollar: number;
   minimumFc: number;

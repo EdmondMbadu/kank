@@ -96,6 +96,7 @@
     <a
       *ngFor="let s of summary; let i = index"
       [routerLink]="linkPaths[i]"
+      [style.order]="i < 2 ? i : i + 1"
       class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
     >
       <div class="flex items-start gap-4">
@@ -116,7 +117,7 @@
         </span>
         <div class="min-w-0 flex-1">
           <p class="text-[11px] uppercase tracking-wide text-slate-400">
-            Indicateur #{{ i + 1 }}
+            Indicateur #{{ i + 1 + (auth.isAdmin && i > 1 ? 1 : 0) }}
           </p>
           <h3 class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
             {{ s }}
@@ -209,6 +210,61 @@
         class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
       ></div>
     </a>
+
+    <article
+      *ngIf="auth.isAdmin"
+      [style.order]="2"
+      class="relative overflow-hidden rounded-2xl border border-emerald-200/80 bg-white p-6 shadow-sm dark:border-emerald-800 dark:bg-slate-900"
+      aria-live="polite"
+    >
+      <div class="flex items-start gap-4">
+        <span
+          class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-900/30 dark:ring-emerald-800"
+        >
+          <img
+            src="../../../assets/img/daily-reimbursement.png"
+            alt=""
+            class="h-6 w-6 object-contain"
+            loading="lazy"
+          />
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] uppercase tracking-wide text-slate-400">
+            Indicateur #3
+          </p>
+          <h3 class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
+            Paiement pur du mois
+          </h3>
+          <p class="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+            Cash flow : paiements clients encaissés, transferts d’épargne exclus.
+          </p>
+          <div class="mt-4 space-y-1">
+            <ng-container *ngIf="monthlyPurePaymentLoading; else monthlyPurePaymentCardValue">
+              <p class="text-sm font-semibold text-slate-400">Chargement…</p>
+            </ng-container>
+            <ng-template #monthlyPurePaymentCardValue>
+              <ng-container *ngIf="!monthlyPurePaymentError; else monthlyPurePaymentCardError">
+                <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+                  FC {{ overallMonthlyPurePaymentTotal | number : "1.0-0" }}
+                </p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  ≈ $ {{ overallMonthlyPurePaymentTotalDollar | number : "1.0-0" }}
+                </p>
+              </ng-container>
+            </ng-template>
+            <ng-template #monthlyPurePaymentCardError>
+              <p class="text-sm font-semibold text-rose-600" [title]="monthlyPurePaymentError">
+                Indisponible
+              </p>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+        Cash flow mensuel
+      </div>
+    </article>
   </div>
 </section>
 
@@ -238,7 +294,7 @@
           {{ monthlyPaymentSnapshotMessage }}
         </span>
         <div
-          *ngIf="isLoadingMonthlyPayments"
+          *ngIf="isLoadingMonthlyPayments || monthlyPurePaymentLoading"
           class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200"
         >
           Chargement...
@@ -248,6 +304,8 @@
           (click)="takeMonthlyPaymentSnapshot()"
           [disabled]="
             isLoadingMonthlyPayments ||
+            monthlyPurePaymentLoading ||
+            monthlyPurePaymentError ||
             isSavingMonthlyPaymentSnapshot ||
             !monthlyPaymentTotals.length
           "
@@ -266,7 +324,7 @@
 
     <div class="mt-4 w-full overflow-x-auto">
       <table
-        class="min-w-[1020px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 xl:min-w-full"
+        class="min-w-[1180px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 xl:min-w-full"
       >
         <thead
           class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
@@ -281,8 +339,20 @@
             <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
               Paiement du mois
             </th>
+            <th
+              scope="col"
+              class="px-4 md:px-8 py-3 md:py-4"
+              title="Paiements clients encaissés, transferts d’épargne exclus"
+            >
+              <span class="flex flex-col">
+                <span>Paiement pur</span>
+                <span class="text-[10px] font-medium normal-case text-slate-500 dark:text-slate-400">
+                  Cash flow du mois
+                </span>
+              </span>
+            </th>
             <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
-              Réserve du mois / Cash flow
+              Réserve du mois
             </th>
             <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
               Minimum mois
@@ -389,6 +459,28 @@
                   {{ +s.totalFc || 0 | number : "1.0-0" }} FC
                 </span>
               </div>
+            </td>
+
+            <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+              <ng-container *ngIf="!monthlyPurePaymentLoading; else monthlyPurePaymentLoadingCell">
+                <div
+                  *ngIf="!monthlyPurePaymentError; else monthlyPurePaymentErrorCell"
+                  class="flex flex-col items-end"
+                >
+                  <span class="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+                    ${{ +(s.purePaymentDollar ?? 0) | number : "1.0-0" }}
+                  </span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ +(s.purePaymentFc ?? 0) | number : "1.0-0" }} FC
+                  </span>
+                </div>
+              </ng-container>
+              <ng-template #monthlyPurePaymentLoadingCell>
+                <span class="text-xs font-medium text-slate-400">Chargement…</span>
+              </ng-template>
+              <ng-template #monthlyPurePaymentErrorCell>
+                <span class="text-xs font-medium text-rose-600" [title]="monthlyPurePaymentError">—</span>
+              </ng-template>
             </td>
 
             <td class="px-4 md:px-8 py-4 md:py-5 text-right">
@@ -535,6 +627,27 @@
               </div>
             </td>
             <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+              <ng-container *ngIf="!monthlyPurePaymentLoading; else monthlyPurePaymentLoadingTotal">
+                <div
+                  *ngIf="!monthlyPurePaymentError; else monthlyPurePaymentErrorTotal"
+                  class="flex flex-col items-end"
+                >
+                  <span class="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+                    ${{ +overallMonthlyPurePaymentTotalDollar || 0 | number : "1.0-0" }}
+                  </span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ +overallMonthlyPurePaymentTotal || 0 | number : "1.0-0" }} FC
+                  </span>
+                </div>
+              </ng-container>
+              <ng-template #monthlyPurePaymentLoadingTotal>
+                <span class="text-xs font-medium text-slate-400">Chargement…</span>
+              </ng-template>
+              <ng-template #monthlyPurePaymentErrorTotal>
+                <span class="text-xs font-medium text-rose-600" [title]="monthlyPurePaymentError">—</span>
+              </ng-template>
+            </td>
+            <td class="px-4 md:px-8 py-3 md:py-4 text-right">
               <div class="flex flex-col items-end">
                 <span class="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
                   ${{ +overallMonthlyReserveTotalDollar || 0 | number : "1.0-0" }}
@@ -634,7 +747,7 @@
       class="mt-4 w-full overflow-x-auto"
     >
       <table
-        class="min-w-[1020px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 xl:min-w-full"
+        class="min-w-[1180px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 xl:min-w-full"
       >
         <thead
           class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
@@ -650,7 +763,10 @@
               Paiement du mois
             </th>
             <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
-              Réserve du mois / Cash flow
+              Paiement pur
+            </th>
+            <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
+              Réserve du mois
             </th>
             <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
               Minimum mois
@@ -755,6 +871,17 @@
                 </span>
                 <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                   {{ +s.totalFc || 0 | number : "1.0-0" }} FC
+                </span>
+              </div>
+            </td>
+
+            <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+              <div class="flex flex-col items-end">
+                <span class="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+                  ${{ +(s.purePaymentDollar ?? 0) | number : "1.0-0" }}
+                </span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {{ +(s.purePaymentFc ?? 0) | number : "1.0-0" }} FC
                 </span>
               </div>
             </td>
@@ -897,6 +1024,16 @@
                 </span>
                 <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                   {{ +snapshot.totals.paymentFc || 0 | number : "1.0-0" }} FC
+                </span>
+              </div>
+            </td>
+            <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+              <div class="flex flex-col items-end">
+                <span class="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+                  ${{ +(snapshot.totals.purePaymentDollar ?? 0) | number : "1.0-0" }}
+                </span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {{ +(snapshot.totals.purePaymentFc ?? 0) | number : "1.0-0" }} FC
                 </span>
               </div>
             </td>
