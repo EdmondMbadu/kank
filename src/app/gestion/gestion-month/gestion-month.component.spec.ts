@@ -72,9 +72,18 @@ describe('GestionMonthComponent management hydration', () => {
       { uid: 'two', firstName: 'Matadikibala' } as any,
     ];
     component.monthlyPaymentTotals = [
-      { trackingId: 'one', firstName: 'Masangambila' } as any,
-      { trackingId: 'two', firstName: 'Matadikibala' } as any,
+      {
+        trackingId: 'one',
+        firstName: 'Masangambila',
+        expectedFc: 500000,
+      } as any,
+      {
+        trackingId: 'two',
+        firstName: 'Matadikibala',
+        expectedFc: 500000,
+      } as any,
     ];
+    component.overallMonthlyExpectedTotal = 1000000;
 
     await (component as any).loadMonthlyPurePayments();
     await (component as any).loadMonthlyPurePayments();
@@ -90,6 +99,12 @@ describe('GestionMonthComponent management hydration', () => {
     expect(component.overallMonthlyPurePaymentTotalDollar).toBeCloseTo(
       166.6667,
       3
+    );
+    expect(
+      component.monthlyPaymentTotals[0].purePaymentExpectedProgressPercent
+    ).toBeCloseTo(79.75, 2);
+    expect(component.overallMonthlyPurePaymentExpectedProgressPercent).toBe(
+      50
     );
   });
 

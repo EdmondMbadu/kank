@@ -194,6 +194,8 @@ export class GestionMonthComponent {
   overallMonthlyMinimumTotalDollar = 0;
   overallMonthlyExpectedProgressPercent = 0;
   overallMonthlyExpectedProgressTone: MonthlyProgressTone = 'red';
+  overallMonthlyPurePaymentExpectedProgressPercent = 0;
+  overallMonthlyPurePaymentExpectedProgressTone: MonthlyProgressTone = 'red';
   overallMonthlyReserveExpectedProgressPercent = 0;
   overallMonthlyReserveExpectedProgressTone: MonthlyProgressTone = 'red';
   overallMonthlyMinimumProgressPercent = 0;
@@ -506,6 +508,10 @@ export class GestionMonthComponent {
         minimumDollar: this.overallMonthlyMinimumTotalDollar,
         expectedProgressPercent: this.overallMonthlyExpectedProgressPercent,
         expectedProgressTone: this.overallMonthlyExpectedProgressTone,
+        purePaymentExpectedProgressPercent:
+          this.overallMonthlyPurePaymentExpectedProgressPercent,
+        purePaymentExpectedProgressTone:
+          this.overallMonthlyPurePaymentExpectedProgressTone,
         reserveExpectedProgressPercent:
           this.overallMonthlyReserveExpectedProgressPercent,
         reserveExpectedProgressTone:
@@ -704,12 +710,28 @@ export class GestionMonthComponent {
     this.overallMonthlyPurePaymentTotalDollar = this.toUsd(
       this.overallMonthlyPurePaymentTotal
     );
+    this.overallMonthlyPurePaymentExpectedProgressPercent =
+      this.computeProgressPercent(
+        this.overallMonthlyPurePaymentTotal,
+        this.overallMonthlyExpectedTotal
+      );
+    this.overallMonthlyPurePaymentExpectedProgressTone =
+      this.resolveProgressTone(
+        this.overallMonthlyPurePaymentExpectedProgressPercent
+      );
 
     this.monthlyPaymentTotals.forEach((row) => {
       const purePaymentFc =
         Number(totalsByTeam.get(row.trackingId)) || 0;
       row.purePaymentFc = purePaymentFc;
       row.purePaymentDollar = this.toUsd(purePaymentFc);
+      row.purePaymentExpectedProgressPercent = this.computeProgressPercent(
+        purePaymentFc,
+        row.expectedFc
+      );
+      row.purePaymentExpectedProgressTone = this.resolveProgressTone(
+        row.purePaymentExpectedProgressPercent
+      );
     });
   }
 
@@ -731,6 +753,10 @@ export class GestionMonthComponent {
         totalFc,
         expectedFc
       );
+      const purePaymentExpectedProgressPercent = this.computeProgressPercent(
+        purePaymentFc,
+        expectedFc
+      );
       const reserveExpectedProgressPercent = this.computeProgressPercent(
         reserveFc,
         expectedFc
@@ -741,6 +767,9 @@ export class GestionMonthComponent {
       );
       const expectedProgressTone = this.resolveProgressTone(
         expectedProgressPercent
+      );
+      const purePaymentExpectedProgressTone = this.resolveProgressTone(
+        purePaymentExpectedProgressPercent
       );
       const reserveExpectedProgressTone = this.resolveProgressTone(
         reserveExpectedProgressPercent
@@ -768,6 +797,8 @@ export class GestionMonthComponent {
         minimumDollar: this.toUsd(minimumFc),
         expectedProgressPercent,
         expectedProgressTone,
+        purePaymentExpectedProgressPercent,
+        purePaymentExpectedProgressTone,
         reserveExpectedProgressPercent,
         reserveExpectedProgressTone,
         minimumProgressPercent,
@@ -797,6 +828,15 @@ export class GestionMonthComponent {
     this.overallMonthlyExpectedProgressTone = this.resolveProgressTone(
       this.overallMonthlyExpectedProgressPercent
     );
+    this.overallMonthlyPurePaymentExpectedProgressPercent =
+      this.computeProgressPercent(
+        this.overallMonthlyPurePaymentTotal,
+        this.overallMonthlyExpectedTotal
+      );
+    this.overallMonthlyPurePaymentExpectedProgressTone =
+      this.resolveProgressTone(
+        this.overallMonthlyPurePaymentExpectedProgressPercent
+      );
     this.overallMonthlyReserveExpectedProgressPercent =
       this.computeProgressPercent(
         this.overallMonthlyReserveTotal,

@@ -421,6 +421,36 @@
                     <div
                       class="mb-1 flex items-center justify-between text-[11px] font-semibold"
                       [ngClass]="{
+                        'text-red-600': s.purePaymentExpectedProgressTone === 'red',
+                        'text-amber-600': s.purePaymentExpectedProgressTone === 'yellow',
+                        'text-orange-600': s.purePaymentExpectedProgressTone === 'orange',
+                        'text-emerald-600': s.purePaymentExpectedProgressTone === 'green'
+                      }"
+                    >
+                      <span>Paiement pur</span>
+                      <span>{{ s.purePaymentExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+                    </div>
+                    <div
+                      class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                      title="Progression basée sur le paiement pur du mois divisé par l'attendu mois"
+                    >
+                      <div
+                        class="h-1.5 rounded-full transition-all duration-300"
+                        [ngClass]="{
+                          'bg-red-500': s.purePaymentExpectedProgressTone === 'red',
+                          'bg-amber-400': s.purePaymentExpectedProgressTone === 'yellow',
+                          'bg-orange-500': s.purePaymentExpectedProgressTone === 'orange',
+                          'bg-emerald-500': s.purePaymentExpectedProgressTone === 'green'
+                        }"
+                        [style.width.%]="s.purePaymentExpectedProgressPercent || 0"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div
+                      class="mb-1 flex items-center justify-between text-[11px] font-semibold"
+                      [ngClass]="{
                         'text-red-600': s.reserveExpectedProgressTone === 'red',
                         'text-amber-600': s.reserveExpectedProgressTone === 'yellow',
                         'text-orange-600': s.reserveExpectedProgressTone === 'orange',
@@ -580,6 +610,36 @@
                           'bg-emerald-500': overallMonthlyExpectedProgressTone === 'green'
                         }"
                         [style.width.%]="overallMonthlyExpectedProgressPercent || 0"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div
+                      class="mb-1 flex items-center justify-between text-xs font-bold"
+                      [ngClass]="{
+                        'text-red-600': overallMonthlyPurePaymentExpectedProgressTone === 'red',
+                        'text-amber-600': overallMonthlyPurePaymentExpectedProgressTone === 'yellow',
+                        'text-orange-600': overallMonthlyPurePaymentExpectedProgressTone === 'orange',
+                        'text-emerald-600': overallMonthlyPurePaymentExpectedProgressTone === 'green'
+                      }"
+                    >
+                      <span>Paiement pur</span>
+                      <span>{{ overallMonthlyPurePaymentExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+                    </div>
+                    <div
+                      class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+                      title="Progression totale basée sur le paiement pur du mois divisé par attendu mois"
+                    >
+                      <div
+                        class="h-2.5 rounded-full transition-all duration-300"
+                        [ngClass]="{
+                          'bg-red-500': overallMonthlyPurePaymentExpectedProgressTone === 'red',
+                          'bg-amber-400': overallMonthlyPurePaymentExpectedProgressTone === 'yellow',
+                          'bg-orange-500': overallMonthlyPurePaymentExpectedProgressTone === 'orange',
+                          'bg-emerald-500': overallMonthlyPurePaymentExpectedProgressTone === 'green'
+                        }"
+                        [style.width.%]="overallMonthlyPurePaymentExpectedProgressPercent || 0"
                       ></div>
                     </div>
                   </div>
@@ -835,6 +895,36 @@
                     <div
                       class="mb-1 flex items-center justify-between text-[11px] font-semibold"
                       [ngClass]="{
+                        'text-red-600': s.purePaymentExpectedProgressTone === 'red',
+                        'text-amber-600': s.purePaymentExpectedProgressTone === 'yellow',
+                        'text-orange-600': s.purePaymentExpectedProgressTone === 'orange',
+                        'text-emerald-600': s.purePaymentExpectedProgressTone === 'green'
+                      }"
+                    >
+                      <span>Paiement pur</span>
+                      <span>{{ s.purePaymentExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+                    </div>
+                    <div
+                      class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                      title="Progression snapshot basée sur le paiement pur du mois divisé par l'attendu mois"
+                    >
+                      <div
+                        class="h-1.5 rounded-full transition-all duration-300"
+                        [ngClass]="{
+                          'bg-red-500': s.purePaymentExpectedProgressTone === 'red',
+                          'bg-amber-400': s.purePaymentExpectedProgressTone === 'yellow',
+                          'bg-orange-500': s.purePaymentExpectedProgressTone === 'orange',
+                          'bg-emerald-500': s.purePaymentExpectedProgressTone === 'green'
+                        }"
+                        [style.width.%]="s.purePaymentExpectedProgressPercent || 0"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div
+                      class="mb-1 flex items-center justify-between text-[11px] font-semibold"
+                      [ngClass]="{
                         'text-red-600': s.reserveExpectedProgressTone === 'red',
                         'text-amber-600': s.reserveExpectedProgressTone === 'yellow',
                         'text-orange-600': s.reserveExpectedProgressTone === 'orange',
@@ -982,6 +1072,35 @@
                           'bg-emerald-500': snapshot.totals.expectedProgressTone === 'green'
                         }"
                         [style.width.%]="snapshot.totals.expectedProgressPercent || 0"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div
+                      class="mb-1 flex items-center justify-between text-xs font-bold"
+                      [ngClass]="{
+                        'text-red-600': snapshot.totals.purePaymentExpectedProgressTone === 'red',
+                        'text-amber-600': snapshot.totals.purePaymentExpectedProgressTone === 'yellow',
+                        'text-orange-600': snapshot.totals.purePaymentExpectedProgressTone === 'orange',
+                        'text-emerald-600': snapshot.totals.purePaymentExpectedProgressTone === 'green'
+                      }"
+                    >
+                      <span>Paiement pur</span>
+                      <span>{{ snapshot.totals.purePaymentExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+                    </div>
+                    <div
+                      class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+                    >
+                      <div
+                        class="h-2.5 rounded-full transition-all duration-300"
+                        [ngClass]="{
+                          'bg-red-500': snapshot.totals.purePaymentExpectedProgressTone === 'red',
+                          'bg-amber-400': snapshot.totals.purePaymentExpectedProgressTone === 'yellow',
+                          'bg-orange-500': snapshot.totals.purePaymentExpectedProgressTone === 'orange',
+                          'bg-emerald-500': snapshot.totals.purePaymentExpectedProgressTone === 'green'
+                        }"
+                        [style.width.%]="snapshot.totals.purePaymentExpectedProgressPercent || 0"
                       ></div>
                     </div>
                   </div>

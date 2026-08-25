@@ -68,6 +68,8 @@ export interface MonthlyPaymentSnapshotRow {
   minimumDollar: number;
   expectedProgressPercent: number;
   expectedProgressTone: 'red' | 'yellow' | 'orange' | 'green';
+  purePaymentExpectedProgressPercent?: number;
+  purePaymentExpectedProgressTone?: 'red' | 'yellow' | 'orange' | 'green';
   reserveExpectedProgressPercent: number;
   reserveExpectedProgressTone: 'red' | 'yellow' | 'orange' | 'green';
   minimumProgressPercent: number;
@@ -89,6 +91,8 @@ export interface MonthlyPaymentSnapshotTotals {
   minimumDollar: number;
   expectedProgressPercent: number;
   expectedProgressTone: 'red' | 'yellow' | 'orange' | 'green';
+  purePaymentExpectedProgressPercent?: number;
+  purePaymentExpectedProgressTone?: 'red' | 'yellow' | 'orange' | 'green';
   reserveExpectedProgressPercent: number;
   reserveExpectedProgressTone: 'red' | 'yellow' | 'orange' | 'green';
   minimumProgressPercent: number;
