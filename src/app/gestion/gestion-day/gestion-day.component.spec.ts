@@ -80,6 +80,10 @@ describe('GestionDayComponent optimized audit view', () => {
     spyOn(adminComponent, 'initalizeInputs');
     spyOn(adminComponent, 'getAuditOperationalTables');
     spyOn(adminComponent, 'getAllClients');
+    const loadPurePayments = spyOn<any>(
+      adminComponent,
+      'loadPurePaymentsForSelectedDay'
+    ).and.resolveTo();
     spyOn(adminComponent, 'updateWeeklyPaymentDate');
     spyOn(adminComponent, 'updateReserveGraphics');
     spyOn(adminComponent, 'updateServeGraphics');
@@ -89,6 +93,7 @@ describe('GestionDayComponent optimized audit view', () => {
 
     expect(adminComponent.getAuditOperationalTables).not.toHaveBeenCalled();
     expect(adminComponent.getAllClients).toHaveBeenCalledTimes(1);
+    expect(loadPurePayments).toHaveBeenCalledTimes(1);
     expect(adminComponent.updateWeeklyPaymentDate).toHaveBeenCalledTimes(1);
     expect(adminComponent.updateReserveGraphics).toHaveBeenCalledTimes(1);
     expect(adminComponent.updateServeGraphics).toHaveBeenCalledTimes(1);
@@ -254,6 +259,71 @@ describe('GestionDayComponent optimized audit view', () => {
           query.field === 'requestDate' && query.value === '8-24-2026'
       )
     ).toHaveSize(2);
+  });
+
+  it('loads and caches one admin-only pure-payment query for all teams', async () => {
+    const getPurePayments = jasmine
+      .createSpy('getEmployeeDayTotalsGroupedByTeam')
+      .and.resolveTo([
+        { ownerUid: 'one', total: 398750, count: 4 },
+        { ownerUid: 'two', total: 101250, count: 2 },
+      ]);
+    const component = createComponent(
+      { isAdmin: true, isAuditTeamViewer: false },
+      {},
+      buildCompute(),
+      { getEmployeeDayTotalsGroupedByTeam: getPurePayments }
+    );
+    component.allUsers = [
+      { uid: 'one', firstName: 'Masangambila' } as any,
+      { uid: 'two', firstName: 'Matadikibala' } as any,
+    ];
+    component.reserveTotals = [
+      { trackingId: 'one', firstName: 'Masangambila' } as any,
+      { trackingId: 'two', firstName: 'Matadikibala' } as any,
+    ];
+
+    await (component as any).loadPurePaymentsForSelectedDay();
+    await (component as any).loadPurePaymentsForSelectedDay();
+
+    expect(getPurePayments).toHaveBeenCalledOnceWith('8-22-2026', [
+      'one',
+      'two',
+    ]);
+    expect(component.reserveTotals.map((row) => row.purePayment)).toEqual([
+      398750,
+      101250,
+    ]);
+    expect(component.purePaymentTotal).toBe(500000);
+    expect(component.purePaymentTotalDollar).toBeCloseTo(166.6667, 3);
+  });
+
+  it('never requests or retains pure payments for a non-admin', async () => {
+    const getPurePayments = jasmine.createSpy(
+      'getEmployeeDayTotalsGroupedByTeam'
+    );
+    const component = createComponent(
+      { isAdmin: false, isAuditTeamViewer: true },
+      {},
+      buildCompute(),
+      { getEmployeeDayTotalsGroupedByTeam: getPurePayments }
+    );
+    component.allUsers = [{ uid: 'one' } as any];
+    component.reserveTotals = [
+      {
+        trackingId: 'one',
+        firstName: 'Masangambila',
+        purePayment: 100,
+        purePaymentDollar: 1,
+      } as any,
+    ];
+    component.purePaymentTotal = 100;
+
+    await (component as any).loadPurePaymentsForSelectedDay();
+
+    expect(getPurePayments).not.toHaveBeenCalled();
+    expect(component.reserveTotals[0].purePayment).toBe(0);
+    expect(component.purePaymentTotal).toBe(0);
   });
 });
 

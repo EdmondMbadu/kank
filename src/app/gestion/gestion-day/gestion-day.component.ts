@@ -175,6 +175,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         // this.getAllClientsCard();
       }
       if (this.auth.isAdmin && this.allUsers.length > 0) {
+        void this.loadPurePaymentsForSelectedDay();
         this.updateWeeklyPaymentDate();
       }
     });
@@ -359,6 +360,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     firstName: string;
     payment?: number;
     paymentDollar?: number;
+    purePayment?: number;
+    purePaymentDollar?: number;
     total: number;
     totalInDollar: number;
     actual?: number;
@@ -386,6 +389,17 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   upcomingRequestsReady = false;
   private upcomingRequestsByDate = new Map<string, number>();
   paymentTotal: number = 0;
+  purePaymentTotal = 0;
+  purePaymentTotalDollar = 0;
+  purePaymentLoading = false;
+  purePaymentError = '';
+  private purePaymentLoadingKey = '';
+  private purePaymentRequestVersion = 0;
+  private purePaymentsByTeam = new Map<string, number>();
+  private readonly purePaymentCache = new Map<
+    string,
+    ReadonlyMap<string, number>
+  >();
   overallTotalReserveInDollars: number = 0;
   overallTransportAmount: number = 0;
   overallMissingReasons: number = 0;
@@ -1071,6 +1085,123 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+   * Loads the selected day's real client collections for every location with
+   * one collection-group query. Employee day totals intentionally exclude
+   * savings-to-payment transfers, unlike the location reimbursement aggregate.
+   */
+  private async loadPurePaymentsForSelectedDay(): Promise<void> {
+    if (!this.auth.isAdmin) {
+      this.applyPurePaymentTotals(new Map());
+      this.purePaymentLoading = false;
+      this.purePaymentError = '';
+      return;
+    }
+
+    const teams = (this.allUsers || []).filter((user) => !!user.uid);
+    if (!teams.length) {
+      this.applyPurePaymentTotals(new Map());
+      this.purePaymentLoading = false;
+      this.purePaymentError = '';
+      return;
+    }
+
+    const dayKey = this.requestDateCorrectFormat;
+    const cacheKey = this.purePaymentCacheKey(dayKey);
+    const cachedTotals = this.purePaymentCache.get(cacheKey);
+    if (cachedTotals) {
+      this.applyPurePaymentTotals(cachedTotals);
+      this.purePaymentLoading = false;
+      this.purePaymentError = '';
+      return;
+    }
+    if (
+      this.purePaymentLoading &&
+      this.purePaymentLoadingKey === cacheKey
+    ) {
+      return;
+    }
+
+    const requestVersion = ++this.purePaymentRequestVersion;
+    this.purePaymentLoading = true;
+    this.purePaymentLoadingKey = cacheKey;
+    this.purePaymentError = '';
+    this.applyPurePaymentTotals(new Map());
+
+    try {
+      const totals = await this.data.getEmployeeDayTotalsGroupedByTeam(
+        dayKey,
+        teams.map((team) => team.uid!)
+      );
+      if (
+        requestVersion !== this.purePaymentRequestVersion ||
+        dayKey !== this.requestDateCorrectFormat ||
+        !this.auth.isAdmin
+      ) {
+        if (!this.auth.isAdmin) this.applyPurePaymentTotals(new Map());
+        return;
+      }
+
+      const totalsByTeam = new Map(
+        totals.map(
+          (item) =>
+            [item.ownerUid, Number(item.total) || 0] as const
+        )
+      );
+      this.cachePurePaymentTotals(cacheKey, totalsByTeam);
+      this.applyPurePaymentTotals(totalsByTeam);
+    } catch (error) {
+      if (requestVersion !== this.purePaymentRequestVersion) return;
+      console.error('Unable to load pure payments for the selected day', error);
+      this.applyPurePaymentTotals(new Map());
+      this.purePaymentError = 'Impossible de charger les paiements purs.';
+    } finally {
+      if (requestVersion === this.purePaymentRequestVersion) {
+        this.purePaymentLoading = false;
+        this.purePaymentLoadingKey = '';
+      }
+    }
+  }
+
+  private purePaymentCacheKey(dayKey: string): string {
+    const teamIds = (this.allUsers || [])
+      .map((user) => user.uid || '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    return `${dayKey}:${teamIds}`;
+  }
+
+  private cachePurePaymentTotals(
+    cacheKey: string,
+    totalsByTeam: ReadonlyMap<string, number>
+  ): void {
+    this.purePaymentCache.set(cacheKey, new Map(totalsByTeam));
+    if (this.purePaymentCache.size <= 12) return;
+
+    const oldestKey = this.purePaymentCache.keys().next().value;
+    if (oldestKey) this.purePaymentCache.delete(oldestKey);
+  }
+
+  private applyPurePaymentTotals(
+    totalsByTeam: ReadonlyMap<string, number>
+  ): void {
+    this.purePaymentsByTeam = new Map(totalsByTeam);
+    this.purePaymentTotal = Array.from(totalsByTeam.values()).reduce(
+      (sum, value) => sum + (Number(value) || 0),
+      0
+    );
+    this.purePaymentTotalDollar = this.convertFcToDollar(
+      this.purePaymentTotal
+    );
+
+    this.reserveTotals.forEach((row) => {
+      const purePayment = Number(totalsByTeam.get(row.trackingId)) || 0;
+      row.purePayment = purePayment;
+      row.purePaymentDollar = this.convertFcToDollar(purePayment);
+    });
+  }
+
   getAllClients() {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
@@ -1276,6 +1407,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
               ),
             0
           );
+          const purePayment =
+            Number(this.purePaymentsByTeam.get(user.uid!)) || 0;
 
           const transportReceipts: TransportReceipt[] = receipts ?? [];
           const transportAmount = transportReceipts.reduce(
@@ -1309,6 +1442,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
             ),
             payment,
             paymentDollar,
+            purePayment,
+            purePaymentDollar: this.convertFcToDollar(purePayment),
             actual: todayKeys.reduce(
               (sum, key) => sum + Number(user.reserve![key]),
               0
@@ -1376,8 +1511,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
               const t = row.total ?? 0;
               const a = row.actual ?? 0;
               const p = row.payment ?? 0; // optional: keep if a payment was recorded
+              const pp = row.purePayment ?? 0;
               const tr = row.transportAmount ?? 0;
-              return t > 0 || a > 0 || p > 0 || tr > 0;
+              return t > 0 || a > 0 || p > 0 || pp > 0 || tr > 0;
             });
             const reasonsTotals = this.reserveTotals.reduce(
               (acc, row) => {
@@ -1794,6 +1930,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     if (this.isAuditTeamViewer) {
       this.getAuditOperationalTables();
     } else {
+      if (this.auth.isAdmin) {
+        void this.loadPurePaymentsForSelectedDay();
+      }
       this.getAllClients();
     }
   }

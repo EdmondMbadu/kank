@@ -793,7 +793,7 @@
         class="text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
         [ngClass]="
           auth.isAdmin
-            ? 'min-w-[1220px] xl:min-w-full'
+            ? 'min-w-[1380px] xl:min-w-full'
             : isAuditTeamViewer
               ? 'min-w-[760px]'
               : 'min-w-full'
@@ -815,6 +815,19 @@
           </th>
           <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">
             Paiement donné
+          </th>
+          <th
+            *ngIf="auth.isAdmin"
+            scope="col"
+            class="px-6 py-3"
+            title="Paiements clients encaissés, transferts d’épargne exclus"
+          >
+            <span class="flex flex-col">
+              <span>Paiement pur</span>
+              <span class="text-[10px] font-medium normal-case text-slate-500 dark:text-slate-400">
+                Cash flow
+              </span>
+            </span>
           </th>
           <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">
             Argent en main
@@ -944,6 +957,28 @@
                 Dépense du jour: {{ +(s.dayExpense ?? 0) | number : "1.0-0" }} FC
               </span>
             </div>
+          </td>
+
+          <td *ngIf="auth.isAdmin" class="px-4 py-4 text-right">
+            <ng-container *ngIf="!purePaymentLoading; else purePaymentLoadingCell">
+              <div
+                *ngIf="!purePaymentError; else purePaymentErrorCell"
+                class="flex flex-col items-end"
+              >
+                <span class="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+                  ${{ +(s.purePaymentDollar ?? 0) | number : "1.0-0" }}
+                </span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {{ +(s.purePayment ?? 0) | number : "1.0-0" }} FC
+                </span>
+              </div>
+            </ng-container>
+            <ng-template #purePaymentLoadingCell>
+              <span class="text-xs font-medium text-slate-400">Chargement…</span>
+            </ng-template>
+            <ng-template #purePaymentErrorCell>
+              <span class="text-xs font-medium text-rose-600" [title]="purePaymentError">—</span>
+            </ng-template>
           </td>
 
           <td *ngIf="auth.isAdmin" class="px-4 py-4 text-right">
@@ -1182,6 +1217,27 @@
                 {{ +paymentTotal || 0 | number : "1.0-0" }} FC
               </span>
             </div>
+          </td>
+          <td *ngIf="auth.isAdmin" class="px-4 py-3 text-right">
+            <ng-container *ngIf="!purePaymentLoading; else purePaymentLoadingTotal">
+              <div
+                *ngIf="!purePaymentError; else purePaymentErrorTotal"
+                class="flex flex-col items-end"
+              >
+                <span class="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+                  ${{ +purePaymentTotalDollar || 0 | number : "1.0-0" }}
+                </span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {{ +purePaymentTotal || 0 | number : "1.0-0" }} FC
+                </span>
+              </div>
+            </ng-container>
+            <ng-template #purePaymentLoadingTotal>
+              <span class="text-xs font-medium text-slate-400">Chargement…</span>
+            </ng-template>
+            <ng-template #purePaymentErrorTotal>
+              <span class="text-xs font-medium text-rose-600" [title]="purePaymentError">—</span>
+            </ng-template>
           </td>
           <td *ngIf="auth.isAdmin" class="px-4 py-3 text-right">
             <div class="flex flex-col items-end">
