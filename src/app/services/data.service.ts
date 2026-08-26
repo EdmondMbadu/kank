@@ -230,6 +230,12 @@ export class DataService {
     this.auth.managementInfo = management;
     return management;
   }
+
+  private canonicalManagementDocument(): AngularFirestoreDocument<Management> {
+    return this.afs.doc<Management>(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
+  }
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   todayFull = this.time.todaysDate();
   url: string = '';
@@ -2473,12 +2479,11 @@ export class DataService {
     });
   }
 
-  updateManagementInfoForAddToInvestment(amount: string) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+  async updateManagementInfoForAddToInvestment(amount: string) {
+    const managementInfo = await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
-    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const previousMoneyInHands = Number(managementInfo.moneyInHands || 0);
     const newMoneyInHands = previousMoneyInHands + Number(amount);
     const dateKey = this.time.todaysDate();
     const data = {
@@ -2502,14 +2507,8 @@ export class DataService {
     entryKey: string,
     deductFromMoneyInHands: boolean
   ): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     await this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -2550,13 +2549,12 @@ export class DataService {
     });
   }
 
-  updateManagementInfoForMoneyGiven(amount: string) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+  async updateManagementInfoForMoneyGiven(amount: string) {
+    const managementInfo = await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
     const dateKey = this.time.reserveTargetDateKey();
-    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const previousMoneyInHands = Number(managementInfo.moneyInHands || 0);
     const newMoneyInHands = previousMoneyInHands - Number(amount);
     const data = {
       moneyInHands: newMoneyInHands.toString(),
@@ -2575,10 +2573,9 @@ export class DataService {
     return managementRef.set(data, { merge: true });
   }
 
-  updateManagementReserveRevealTimeKinshasa(timeValue: string) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+  async updateManagementReserveRevealTimeKinshasa(timeValue: string) {
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
 
     return managementRef.set(
       { reserveRevealTimeKinshasa: timeValue },
@@ -2586,13 +2583,12 @@ export class DataService {
     );
   }
 
-  updateManagementMonthlyPaymentSnapshot(
+  async updateManagementMonthlyPaymentSnapshot(
     snapshotKey: string,
     snapshot: MonthlyPaymentSnapshot
   ) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
 
     return managementRef.set(
       { monthlyPaymentSnapshots: { [snapshotKey]: snapshot } },
@@ -2613,28 +2609,21 @@ export class DataService {
       : null;
   }
 
-  updateManagementNotPaidThresholds(
+  async updateManagementNotPaidThresholds(
     thresholds: {
       notPaidCycleMonthsThreshold?: number;
       notPaidNoPaymentMonthsThreshold?: number;
     }
   ) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
 
     return managementRef.set(thresholds, { merge: true });
   }
 
-  setManagementMoneyInHands(amount: string) {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+  async setManagementMoneyInHands(amount: string) {
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     return this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -2659,16 +2648,15 @@ export class DataService {
       );
     });
   }
-  updateManagementInfoToAddMoneyInTheBank(
+  async updateManagementInfoToAddMoneyInTheBank(
     amountFrancs: string,
     amountDollars: string,
     loss: string
   ) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+    const managementInfo = await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
-    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const previousMoneyInHands = Number(managementInfo.moneyInHands || 0);
     const newMoneyInHands = previousMoneyInHands - Number(amountFrancs);
     const dateKey = this.time.todaysDate();
     const data = {
@@ -2690,10 +2678,9 @@ export class DataService {
     return managementRef.set(data, { merge: true });
   }
 
-  updateBankDepositDollarEntry(dateKey: string, amountDollars: string) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+  async updateBankDepositDollarEntry(dateKey: string, amountDollars: string) {
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
 
     const data = {
       bankDepositDollars: { [dateKey]: amountDollars },
@@ -2702,14 +2689,13 @@ export class DataService {
     return managementRef.set(data, { merge: true });
   }
 
-  updateBankDepositEntry(
+  async updateBankDepositEntry(
     dateKey: string,
     amountDollars: string,
     amountFrancs: string
   ) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
 
     const data = {
       bankDepositDollars: { [dateKey]: amountDollars },
@@ -2723,14 +2709,8 @@ export class DataService {
     dateKey: string,
     restoreMoneyInHands: boolean
   ): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     await this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -2781,13 +2761,11 @@ export class DataService {
       tx.update(managementRef, payload);
     });
   }
-  updateManagementInfoForMoneyLoss(amount: string) {
-    console.log('data from management', this.auth.managementInfo);
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+  async updateManagementInfoForMoneyLoss(amount: string) {
+    const managementInfo = await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
-    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const previousMoneyInHands = Number(managementInfo.moneyInHands || 0);
     const newMoneyInHands = previousMoneyInHands - Number(amount);
     const dateKey = this.time.todaysDate();
     const data = {
@@ -2812,14 +2790,8 @@ export class DataService {
     amount: string,
     adjustMoneyInHands: boolean
   ): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     await this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -2866,14 +2838,8 @@ export class DataService {
     entryKey: string,
     restoreMoneyInHands: boolean
   ): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     await this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -2914,18 +2880,12 @@ export class DataService {
     });
   }
 
-  updateManagementDollarTransferLossEntry(
+  async updateManagementDollarTransferLossEntry(
     entryKey: string,
     amount: string
   ): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${managementId}`
-    );
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
 
     return managementRef.set(
       {
@@ -2938,14 +2898,8 @@ export class DataService {
   async deleteManagementDollarTransferLossEntry(
     entryKey: string
   ): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     await this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -2999,11 +2953,10 @@ export class DataService {
 
     return userRef.set(data, { merge: true });
   }
-  updateManagementInfoForAddExpense(amount: string, reason: string) {
-    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
-    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+  async updateManagementInfoForAddExpense(amount: string, reason: string) {
+    const managementInfo = await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
+    const previousMoneyInHands = Number(managementInfo.moneyInHands || 0);
     const newMoneyInHands = previousMoneyInHands - Number(amount);
     const dateKey = this.time.todaysDate();
     const data = {
@@ -3020,17 +2973,16 @@ export class DataService {
       ),
     };
 
-    return userRef.set(data, { merge: true });
+    return managementRef.set(data, { merge: true });
   }
 
-  addManagementOtherExpense(
+  async addManagementOtherExpense(
     amount: string,
     reason: string,
     dateKey = this.time.todaysDate()
   ) {
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
 
     const data: Partial<Management> = {
       otherExpenses: { [dateKey]: `${amount}:${reason.trim()}` },
@@ -3043,14 +2995,8 @@ export class DataService {
     entryKey: string,
     deductFromMoneyInHands: boolean
   ): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     await this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -3093,14 +3039,8 @@ export class DataService {
   }
 
   async deleteManagementBudgetedExpenseEntry(entryKey: string): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     await this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -3121,14 +3061,8 @@ export class DataService {
   }
 
   async deleteManagementOtherExpenseEntry(entryKey: string): Promise<void> {
-    const managementId = this.auth.managementInfo?.id;
-    if (!managementId) {
-      throw new Error('Management introuvable.');
-    }
-
-    const managementRef = this.afs.doc<Management>(
-      `management/${managementId}`
-    ).ref;
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument().ref;
 
     await this.afs.firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(managementRef);
@@ -3152,47 +3086,44 @@ export class DataService {
    * Add a fraud tracking entry without changing moneyInHands or any other totals.
    * Stored as "amount:reason:location" so runtime totals can keep using numeric prefix parsing.
    */
-  updateManagementInfoForAddFraud(
+  async updateManagementInfoForAddFraud(
     amount: string,
     reason: string,
     location: string = 'Total'
   ) {
-    const userRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
     const data = {
       fraudes: { [this.time.todaysDate()]: `${amount}:${reason}:${location}` },
     };
 
-    return userRef.set(data, { merge: true });
+    return managementRef.set(data, { merge: true });
   }
 
-  updateManagementFraudEntry(
+  async updateManagementFraudEntry(
     entryKey: string,
     amount: string,
     reason: string,
     location: string = 'Total'
   ) {
-    const userRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
     const data = {
       fraudes: { [entryKey]: `${amount}:${reason}:${location}` },
     };
-    return userRef.set(data, { merge: true });
+    return managementRef.set(data, { merge: true });
   }
 
-  deleteManagementFraudEntry(entryKey: string) {
-    const userRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
-    );
-    return userRef.ref.get().then((snapshot) => {
+  async deleteManagementFraudEntry(entryKey: string) {
+    await this.canonicalManagementInfoForWrite();
+    const managementRef = this.canonicalManagementDocument();
+    return managementRef.ref.get().then((snapshot) => {
       const current = (snapshot.data() || {}) as Management;
       const nextFraudes = { ...(current.fraudes || {}) } as {
         [key: string]: string;
       };
       delete nextFraudes[entryKey];
-      return userRef.set({ fraudes: nextFraudes }, { merge: true });
+      return managementRef.set({ fraudes: nextFraudes }, { merge: true });
     });
   }
 
@@ -4818,8 +4749,8 @@ export class DataService {
     reason: string,
     mode: 'set' | 'add' = 'set'
   ) {
-    const docId = this.auth.managementInfo.id!;
-    const docRef = this.afs.doc<Management>(`management/${docId}`);
+    await this.canonicalManagementInfoForWrite();
+    const docRef = this.canonicalManagementDocument();
 
     if (mode === 'set') {
       return docRef.set(
@@ -4850,9 +4781,9 @@ export class DataService {
     });
   }
   async addBudgetPlannedExpense(amountFC: number, reason: string) {
-    const docId = this.auth.managementInfo.id!;
+    await this.canonicalManagementInfoForWrite();
     const key = this.time.todaysDate(); // timestamp (seconds)
-    const docRef = this.afs.doc(`management/${docId}`);
+    const docRef = this.canonicalManagementDocument();
 
     return docRef.set(
       {

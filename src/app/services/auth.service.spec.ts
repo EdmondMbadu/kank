@@ -54,4 +54,19 @@ describe('AuthService management ledger', () => {
     expect(result).toEqual([]);
     expect(firestoreV2.hydrateDocument).not.toHaveBeenCalled();
   });
+
+  it('refuses global management writes when the resolved id is not canonical', async () => {
+    const { afs, service } = managementService({});
+    (service as any).managementDocId = 'undefined';
+
+    await expectAsync(
+      service.updateRolePasswords({
+        admin: 'admin-secret',
+        gestion: 'gestion-secret',
+        investigator: 'investigator-secret',
+      })
+    ).toBeRejectedWith('Aucun document management trouvé.');
+
+    expect(afs.doc).not.toHaveBeenCalled();
+  });
 });

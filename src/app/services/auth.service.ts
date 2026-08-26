@@ -2158,7 +2158,7 @@ export class AuthService {
   }
 
   updateRolePasswords(payload: RolePasswords): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
     const normalizedPayload: RolePasswords = {
@@ -2166,7 +2166,9 @@ export class AuthService {
       gestion: payload.gestion,
       investigator: payload.investigator,
     };
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set({ rolePasswords: normalizedPayload }, { merge: true })
       .then(() => {
@@ -2180,10 +2182,12 @@ export class AuthService {
   }
 
   updateWeeklyPaymentTargetGlobal(targetFc: number): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set(
         {
@@ -2218,12 +2222,14 @@ export class AuthService {
   updateWeeklyPaymentTargetPeriodsGlobal(
     periods: WeeklyPaymentTargetPeriod[]
   ): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
     const normalizedPeriods =
       this.normalizeWeeklyPaymentTargetPeriods(periods);
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set({ weeklyPaymentTargetPeriods: normalizedPeriods }, { merge: true })
       .then(() => {
@@ -2238,12 +2244,14 @@ export class AuthService {
   updateWeeklyDeductionTargetVersionsGlobal(
     versions: WeeklyDeductionTargetVersion[]
   ): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
     const normalizedVersions =
       this.normalizeWeeklyDeductionTargetVersions(versions);
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set(
         { weeklyDeductionTargetVersions: normalizedVersions },
@@ -2279,12 +2287,14 @@ export class AuthService {
   }
 
   updateTeamWeeklyBonusThresholdGlobal(thresholdFc: number): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
     const normalizedThreshold =
       this.normalizeTeamWeeklyBonusThreshold(thresholdFc);
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set({ teamWeeklyBonusThresholdFc: normalizedThreshold }, { merge: true })
       .then(() => {
@@ -2296,12 +2306,14 @@ export class AuthService {
   }
 
   updateProfitabilityThresholdGlobal(thresholdUsd: number): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
     const normalizedThreshold =
       this.normalizeProfitabilityThresholdUsd(thresholdUsd);
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set({ profitabilityThresholdUsd: normalizedThreshold }, { merge: true })
       .then(() => {
@@ -2317,10 +2329,12 @@ export class AuthService {
     effectiveDateIso: string,
     isVisible = true
   ): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set(
         {
@@ -2346,10 +2360,12 @@ export class AuthService {
   updateWeeklyPaymentProjectionVisibilityGlobal(
     isVisible: boolean
   ): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set({ projectedWeeklyPaymentVisible: isVisible }, { merge: true })
       .then(() => {
@@ -2366,12 +2382,14 @@ export class AuthService {
   updateWeeklyObjectiveDeductionConfigGlobal(
     config: WeeklyObjectiveDeductionConfig
   ): Promise<void> {
-    if (!this.managementDocId) {
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
       return Promise.reject('Aucun document management trouvé.');
     }
     const normalizedConfig =
       this.normalizeWeeklyObjectiveDeductionConfig(config);
-    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    const docRef = this.afs.doc(
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+    );
     return docRef
       .set(
         { weeklyObjectiveDeductionConfig: normalizedConfig },

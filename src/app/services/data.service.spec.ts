@@ -816,6 +816,9 @@ describe('DataService', () => {
       const managementRef = {
         path: `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`,
       };
+      const managementSet = jasmine
+        .createSpy('managementSet')
+        .and.returnValue(Promise.resolve());
       const tx = {
         get: jasmine.createSpy('transactionGet').and.callFake((ref: any) => {
           if (ref.path === userRef.path) {
@@ -851,7 +854,9 @@ describe('DataService', () => {
         firestore: { runTransaction },
         doc: jasmine.createSpy('doc').and.callFake((path: string) => {
           if (path === userRef.path) return { ref: userRef };
-          if (path === managementRef.path) return { ref: managementRef };
+          if (path === managementRef.path) {
+            return { ref: managementRef, set: managementSet };
+          }
           throw new Error(`Unexpected Firestore path: ${path}`);
         }),
       };
@@ -880,6 +885,7 @@ describe('DataService', () => {
         {
           getTomorrowsDateMonthDayYear: () => '8-27-2026',
           todaysDate: () => '8-26-2026-16-15-45',
+          reserveTargetDateKey: () => '8-27-2026',
         } as any,
         {
           convertCongoleseFrancToUsDollars: () => 46,
@@ -887,7 +893,16 @@ describe('DataService', () => {
         {} as any
       );
 
-      return { afs, auth, managementRef, runTransaction, service, tx, userRef };
+      return {
+        afs,
+        auth,
+        managementRef,
+        managementSet,
+        runTransaction,
+        service,
+        tx,
+        userRef,
+      };
     }
 
     it('waits for the canonical management document and writes both sides atomically', async () => {
@@ -969,6 +984,37 @@ describe('DataService', () => {
         userRef,
         jasmine.objectContaining({
           reserve: { '8-26-2026-16-15-45': '135000' },
+        }),
+        { merge: true }
+      );
+    });
+
+    it('waits for canonical data before writing Argent à servir', async () => {
+      const { afs, auth, managementRef, managementSet, service } =
+        setupReserveTransaction({
+          cachedManagement: { id: 'undefined' },
+          managementDocuments: [
+            {
+              id: CANONICAL_MANAGEMENT_DOCUMENT_ID,
+              moneyInHands: '100000',
+              moneyGiven: {},
+            },
+          ],
+        });
+
+      await service.updateManagementInfoForMoneyGiven('35000');
+
+      expect(auth.getManagementInfo).toHaveBeenCalledTimes(1);
+      expect(auth.managementInfo['id']).toBe(
+        CANONICAL_MANAGEMENT_DOCUMENT_ID
+      );
+      expect(afs.doc).toHaveBeenCalledOnceWith(managementRef.path);
+      expect(afs.doc).not.toHaveBeenCalledWith('management/undefined');
+      expect(managementSet).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({
+          moneyInHands: '65000',
+          moneyGiven: { '8-27-2026': '35000' },
+          moneyInHandsTracking: { '8-27-2026': '65000' },
         }),
         { merge: true }
       );
