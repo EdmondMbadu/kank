@@ -267,6 +267,7 @@ export class TrackingMonthCentralComponent {
   remainingLoanTotal = 0;
   remainingLoanTotalUsd = 0;
   remainingLoanActiveClientCount = 0;
+  remainingLoanMaxFc = 1;
   remainingLoanLocationRows: RemainingLoanLocationRow[] = [];
   isRemainingLoanModalOpen = false;
 
@@ -555,6 +556,10 @@ export class TrackingMonthCentralComponent {
         (total, row) => total + row.activeClientCount,
         0
       );
+    this.remainingLoanMaxFc = Math.max(
+      1,
+      ...this.remainingLoanLocationRows.map((row) => row.totalDebtLeft)
+    );
     this.updateRemainingLoanCard();
   }
 
@@ -562,6 +567,7 @@ export class TrackingMonthCentralComponent {
     this.remainingLoanTotal = 0;
     this.remainingLoanTotalUsd = 0;
     this.remainingLoanActiveClientCount = 0;
+    this.remainingLoanMaxFc = 1;
     this.remainingLoanLocationRows = [];
     this.updateRemainingLoanCard();
   }

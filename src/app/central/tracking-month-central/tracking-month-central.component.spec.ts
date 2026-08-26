@@ -108,6 +108,7 @@ describe('TrackingMonthCentralComponent', () => {
     expect(component.remainingLoanTotal).toBe(150000);
     expect(component.remainingLoanTotalUsd).toBe(60);
     expect(component.remainingLoanActiveClientCount).toBe(2);
+    expect(component.remainingLoanMaxFc).toBe(100000);
     expect(
       component.remainingLoanLocationRows.map((row) => ({
         site: row.locationName,
