@@ -6,6 +6,7 @@ import { User, UserDailyField } from 'src/app/models/user';
 
 type RangeKey = '3M' | '6M' | '9M' | '1A' | 'MAX';
 type TrackingMonthCentralCard = {
+  kind?: 'lending-month' | 'remaining-loan';
   title: string;
   value: string;
   valueUsd: string;
@@ -22,6 +23,15 @@ type CentralLendingBorrower = {
   dateLabel: string;
   timestamp: number;
   paymentPeriodRange: string;
+};
+
+type RemainingLoanLocationRow = {
+  locationId: string;
+  locationName: string;
+  totalDebtLeft: number;
+  totalDebtLeftUsd: number;
+  activeClientCount: number;
+  sharePercent: number;
 };
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -254,6 +264,11 @@ export class TrackingMonthCentralComponent {
   isLoadingLendingBorrowers = false;
   lendingBorrowerSiteFilter = 'all';
   lendingBorrowerSearchQuery = '';
+  remainingLoanTotal = 0;
+  remainingLoanTotalUsd = 0;
+  remainingLoanActiveClientCount = 0;
+  remainingLoanLocationRows: RemainingLoanLocationRow[] = [];
+  isRemainingLoanModalOpen = false;
 
   sortedPaymentPreviousMonth: {
     firstName: string;
@@ -368,15 +383,26 @@ export class TrackingMonthCentralComponent {
   }
 
   isLendingMonthCard(card: TrackingMonthCentralCard): boolean {
-    return card.title.trim().toLowerCase() === 'emprunts du mois';
+    return card.kind === 'lending-month';
+  }
+
+  isRemainingLoanCard(card: TrackingMonthCentralCard): boolean {
+    return card.kind === 'remaining-loan';
+  }
+
+  isInteractiveMonthlyCard(card: TrackingMonthCentralCard): boolean {
+    return this.isLendingMonthCard(card) || this.isRemainingLoanCard(card);
   }
 
   handleMonthlyCardClick(card: TrackingMonthCentralCard): void {
-    if (!this.isLendingMonthCard(card)) {
+    if (this.isLendingMonthCard(card)) {
+      this.openLendingBorrowersModal();
       return;
     }
 
-    this.openLendingBorrowersModal();
+    if (this.isRemainingLoanCard(card)) {
+      this.openRemainingLoanModal();
+    }
   }
 
   openLendingBorrowersModal(): void {
@@ -386,6 +412,21 @@ export class TrackingMonthCentralComponent {
 
   closeLendingBorrowersModal(): void {
     this.isLendingBorrowersModalOpen = false;
+  }
+
+  openRemainingLoanModal(): void {
+    this.isRemainingLoanModalOpen = true;
+  }
+
+  closeRemainingLoanModal(): void {
+    this.isRemainingLoanModalOpen = false;
+  }
+
+  trackRemainingLoanLocation(
+    _: number,
+    row: RemainingLoanLocationRow
+  ): string {
+    return row.locationId;
   }
 
   resetLendingBorrowerFilters(): void {
@@ -433,13 +474,111 @@ export class TrackingMonthCentralComponent {
 
       this.allLendingClients = Array.from(uniqueClients.values());
       this.updateLendingBorrowersForSelectedPeriod();
+      this.updateRemainingLoanSummary();
     } catch (error) {
       console.error('Unable to load central lending borrowers', error);
       this.allLendingClients = [];
       this.lendingBorrowersForMonth = [];
+      this.resetRemainingLoanSummary();
     } finally {
       this.isLoadingLendingBorrowers = false;
     }
+  }
+
+  private updateRemainingLoanSummary(): void {
+    // Match home-central's de-duplication so a transferred/copied client cannot
+    // be counted twice in the network total or in two location rows.
+    const uniqueClients = new Map<string, Client>();
+    this.allLendingClients.forEach((client) => {
+      const key =
+        client.uid ||
+        client.trackingId ||
+        `${client.firstName}-${client.lastName}-${client.phoneNumber}`;
+      if (!uniqueClients.has(key)) uniqueClients.set(key, client);
+    });
+    const remainingLoanClients = Array.from(uniqueClients.values());
+
+    const totalDebtLeft = Number(
+      this.data.findTotalDebtLeft(remainingLoanClients)
+    );
+    this.remainingLoanTotal = Number.isFinite(totalDebtLeft)
+      ? Math.max(0, totalDebtLeft)
+      : 0;
+    this.remainingLoanTotalUsd = this.toFiniteAmount(
+      this.compute.convertCongoleseFrancToUsDollars(
+        this.remainingLoanTotal.toString()
+      )
+    );
+
+    const clientsByLocation = new Map<string, Client[]>();
+    remainingLoanClients.forEach((client) => {
+      const locationId = client.locationOwnerId || '';
+      if (!locationId) return;
+      const clients = clientsByLocation.get(locationId) || [];
+      clients.push(client);
+      clientsByLocation.set(locationId, clients);
+    });
+
+    this.remainingLoanLocationRows = this.allUsers
+      .filter((user) => !!user.uid)
+      .map((user) => {
+        const clients = clientsByLocation.get(user.uid!) || [];
+        const locationDebt = this.toFiniteAmount(
+          this.data.findTotalDebtLeft(clients)
+        );
+        const activeClientCount = this.data.findClientsWithDebts(clients).length;
+
+        return {
+          locationId: user.uid!,
+          locationName: user.firstName || 'Site',
+          totalDebtLeft: locationDebt,
+          totalDebtLeftUsd: this.toFiniteAmount(
+            this.compute.convertCongoleseFrancToUsDollars(
+              locationDebt.toString()
+            )
+          ),
+          activeClientCount,
+          sharePercent:
+            this.remainingLoanTotal > 0
+              ? (locationDebt / this.remainingLoanTotal) * 100
+              : 0,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.totalDebtLeft - a.totalDebtLeft ||
+          a.locationName.localeCompare(b.locationName)
+      );
+
+    this.remainingLoanActiveClientCount =
+      this.remainingLoanLocationRows.reduce(
+        (total, row) => total + row.activeClientCount,
+        0
+      );
+    this.updateRemainingLoanCard();
+  }
+
+  private resetRemainingLoanSummary(): void {
+    this.remainingLoanTotal = 0;
+    this.remainingLoanTotalUsd = 0;
+    this.remainingLoanActiveClientCount = 0;
+    this.remainingLoanLocationRows = [];
+    this.updateRemainingLoanCard();
+  }
+
+  private updateRemainingLoanCard(): void {
+    const card = this.monthlyCards.find(
+      (monthlyCard) => monthlyCard.kind === 'remaining-loan'
+    );
+    if (!card) return;
+
+    card.value = this.remainingLoanTotal.toString();
+    card.valueUsd = this.remainingLoanTotalUsd.toString();
+  }
+
+  private toFiniteAmount(value: unknown): number {
+    const amount = Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(amount) ? Math.max(0, amount) : 0;
   }
 
   private updateLendingBorrowersForSelectedPeriod(): void {
@@ -644,12 +783,21 @@ export class TrackingMonthCentralComponent {
         imagePath: '../../../assets/img/daily-reimbursement.png',
       },
       {
+        kind: 'lending-month',
         title: 'Emprunts Du Mois',
         value: this.givenMonthTotalLendingAmount,
         valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
           this.givenMonthTotalLendingAmount
         )}`,
         imagePath: '../../../assets/img/lending-date.png',
+      },
+      {
+        kind: 'remaining-loan',
+        title: 'Prêt Restant',
+        subtitle: 'Solde actuel · Tous les sites',
+        value: this.remainingLoanTotal.toString(),
+        valueUsd: this.remainingLoanTotalUsd.toString(),
+        imagePath: '../../../assets/img/debt.png',
       },
       {
         title: 'Benefice Du Mois ',
