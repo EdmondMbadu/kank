@@ -10,6 +10,7 @@ const {
 
 const PROJECT_ID = 'demo-kank-storage-rules';
 const BUCKET_URL = `gs://${PROJECT_ID}.appspot.com`;
+const CANONICAL_MANAGEMENT_ID = 'CWGXCLYchpm95b3KjoDJ';
 const ROOT = path.resolve(__dirname, '..');
 
 let testEnv;
@@ -38,10 +39,27 @@ before(async () => {
   await testEnv.clearFirestore();
   await testEnv.clearStorage();
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await context.firestore().doc('users/admin-user').set({
+    const firestore = context.firestore();
+    await firestore.doc('users/admin-user').set({
       admin: 'true',
       roles: ['admin'],
     });
+    await firestore
+      .doc(`management/${CANONICAL_MANAGEMENT_ID}`)
+      .set({
+        id: CANONICAL_MANAGEMENT_ID,
+        moneyInHands: '100000',
+        reserve: {},
+      });
+    await firestore.doc('management/undefined').set({
+      moneyInHands: '-445000',
+      reserve: { '8-26-2026-16-15-45': '135000' },
+    });
+    await firestore
+      .doc(
+        `management/${CANONICAL_MANAGEMENT_ID}/firestoreV2ReadMonths/2026-08`
+      )
+      .set({ monthKey: '2026-08', maps: { reserve: {} } });
   });
 });
 
@@ -216,4 +234,58 @@ test('only admins can read month-end remaining-loan snapshots', async () => {
   await assertFails(staff.doc(path).get());
   await assertFails(portal.doc(path).get());
   await assertFails(admin.doc(path).set({ totalDebtLeftFc: 200000 }));
+});
+
+test('staff can update only the canonical management ledger', async () => {
+  const staff = testEnv.authenticatedContext('staff-user').firestore();
+  const canonical = staff.doc(`management/${CANONICAL_MANAGEMENT_ID}`);
+
+  await assertSucceeds(canonical.get());
+  await assertSucceeds(staff.collection('management').get());
+  await assertSucceeds(
+    canonical.set(
+      { reserve: { '8-26-2026-16-15-45': '135000' } },
+      { merge: true }
+    )
+  );
+  await assertFails(
+    staff.doc('management/undefined').set({
+      reserve: { '8-26-2026-16-15-45': '135000' },
+    })
+  );
+  await assertFails(
+    staff.doc('management/another-ledger').set({ moneyInHands: '0' })
+  );
+});
+
+test('staff can continue updating the existing exchange-rate settings', async () => {
+  const staff = testEnv.authenticatedContext('staff-user').firestore();
+
+  await assertSucceeds(
+    staff.doc('management/singleton').set({
+      rateDollar: 2900,
+      rateFranc: 0.00034,
+    })
+  );
+});
+
+test('staff can read canonical v2 projections but cannot write them', async () => {
+  const staff = testEnv.authenticatedContext('staff-user').firestore();
+  const projection = staff.doc(
+    `management/${CANONICAL_MANAGEMENT_ID}/firestoreV2ReadMonths/2026-08`
+  );
+
+  await assertSucceeds(projection.get());
+  await assertFails(projection.set({ monthKey: 'tampered' }, { merge: true }));
+});
+
+test('portal and unauthenticated sessions cannot read management data', async () => {
+  const portal = testEnv
+    .authenticatedContext('portal-user', { portalClient: true })
+    .firestore();
+  const unauthenticated = testEnv.unauthenticatedContext().firestore();
+  const path = `management/${CANONICAL_MANAGEMENT_ID}`;
+
+  await assertFails(portal.doc(path).get());
+  await assertFails(unauthenticated.doc(path).get());
 });

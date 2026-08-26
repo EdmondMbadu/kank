@@ -2,6 +2,8 @@ import { Client } from './client';
 import { WeeklyDeductionTargetVersion } from './weekly-deduction-target';
 import { WeeklyPaymentTargetPeriod } from './weekly-payment-target';
 
+export const CANONICAL_MANAGEMENT_DOCUMENT_ID = 'CWGXCLYchpm95b3KjoDJ';
+
 export class Management {
   id?: string;
   moneyInHands?: string;

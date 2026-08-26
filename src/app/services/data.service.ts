@@ -25,6 +25,7 @@ import {
 import { doc, increment, writeBatch } from 'firebase/firestore';
 import {
   Audit,
+  CANONICAL_MANAGEMENT_DOCUMENT_ID,
   Management,
   MoneyInHandsActivity,
   MonthlyPaymentSnapshot,
@@ -205,6 +206,29 @@ export class DataService {
     return {
       [`moneyInHandsActivities.${activity.key}`]: activity.entry,
     };
+  }
+
+  private async canonicalManagementInfoForWrite(): Promise<Management> {
+    const cached = this.auth.managementInfo as Management | undefined;
+    if (cached?.id === CANONICAL_MANAGEMENT_DOCUMENT_ID) {
+      return cached;
+    }
+
+    const managementDocuments = await firstValueFrom(
+      this.auth.getManagementInfo()
+    );
+    const management = managementDocuments.find(
+      (document) => document?.id === CANONICAL_MANAGEMENT_DOCUMENT_ID
+    );
+
+    if (!management) {
+      throw new Error(
+        'The canonical management document is unavailable. No data was written.'
+      );
+    }
+
+    this.auth.managementInfo = management;
+    return management;
   }
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   todayFull = this.time.todaysDate();
@@ -2302,12 +2326,13 @@ export class DataService {
     return userRef.set(data, { merge: true });
   }
 
-  updateManagementInfoForAddToReserve(amount: string) {
+  async updateManagementInfoForAddToReserve(amount: string) {
+    const managementInfo = await this.canonicalManagementInfoForWrite();
     const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
-      `management/${this.auth.managementInfo.id}`
+      `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
     );
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
-    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const previousMoneyInHands = Number(managementInfo.moneyInHands || 0);
     const newMoneyInHands = previousMoneyInHands + Number(amount);
     const dateKey = this.time.todaysDate();
     const data = {
@@ -2344,10 +2369,16 @@ export class DataService {
     const dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
     const dateKey = this.time.todaysDate();
 
+    if (includeManagement) {
+      await this.canonicalManagementInfoForWrite();
+    }
+
     // Document references
     const userRef = this.afs.doc(`users/${this.auth.currentUser.uid}`).ref;
     const managementRef = includeManagement
-      ? this.afs.doc(`management/${this.auth.managementInfo.id}`).ref
+      ? this.afs.doc(
+          `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`
+        ).ref
       : null;
 
     return db.runTransaction(async (tx) => {
@@ -2358,6 +2389,11 @@ export class DataService {
       let managementData: Management | null = null;
       if (managementRef) {
         const managementSnap = await tx.get(managementRef);
+        if (!managementSnap.exists) {
+          throw new Error(
+            'The canonical management document does not exist. No data was written.'
+          );
+        }
         managementData = managementSnap.data() as Management;
       }
 
@@ -2401,15 +2437,15 @@ export class DataService {
       );
 
       // Update management document (if applicable)
-      if (managementRef && managementData) {
+      if (managementRef) {
         const previousManagementMoneyInHands = Number(
-          managementData.moneyInHands || 0
+          managementData?.moneyInHands || 0
         );
         const newManagementMoneyInHands =
           previousManagementMoneyInHands + amountNum;
 
         // Merge management reserve map entries
-        const existingMgmtReserve = managementData.reserve || {};
+        const existingMgmtReserve = managementData?.reserve || {};
         const existingMgmtReserveKey = existingMgmtReserve[dateKey];
         const newMgmtReserveValue = existingMgmtReserveKey
           ? (Number(existingMgmtReserveKey) + amountNum).toString()

@@ -27,7 +27,11 @@ import { TimeService } from './time.service';
 import { ComputationService } from '../shrink/services/computation.service';
 import { Employee } from '../models/employee';
 import { Card } from '../models/card';
-import { Audit, Management } from '../models/management';
+import {
+  Audit,
+  CANONICAL_MANAGEMENT_DOCUMENT_ID,
+  Management,
+} from '../models/management';
 import { WeeklyDeductionTargetVersion } from '../models/weekly-deduction-target';
 import { WeeklyPaymentTargetPeriod } from '../models/weekly-payment-target';
 import {
@@ -373,9 +377,23 @@ export class AuthService {
   }
   getManagementInfo() {
     if (!this.managementInfo$) {
-      this.managementInfo$ = (
-        this.hydrateCollection('management', false) as Observable<Management[]>
-      ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+      const documentPath = `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`;
+      this.managementInfo$ = this.afs
+        .doc<Management>(documentPath)
+        .valueChanges()
+        .pipe(
+          switchMap((management) =>
+            management
+              ? this.firestoreV2
+                  .hydrateDocument(documentPath, {
+                    ...management,
+                    id: CANONICAL_MANAGEMENT_DOCUMENT_ID,
+                  })
+                  .pipe(map((hydrated) => [hydrated]))
+              : of([])
+          ),
+          shareReplay({ bufferSize: 1, refCount: true })
+        );
     }
     return this.managementInfo$;
   }

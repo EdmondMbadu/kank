@@ -52,6 +52,7 @@ service cloud.firestore {
         topCollection == 'clientLoginOtps' ||
         topCollection == 'clientPortalSessions' ||
         topCollection == 'mobileMoneyTransactionLookup' ||
+        topCollection == 'management' ||
         topCollection == 'remainingLoanMonthEnds' ||
         topCollection == 'card_sms_settings' ||
         topCollection == 'moneyAvailabilityPolicies' ||
@@ -248,6 +249,24 @@ service cloud.firestore {
     match /remainingLoanMonthEnds/{periodKey} {
       allow read: if isAppAdmin();
       allow write: if false;
+    }
+
+    // There is one production ledger plus the existing exchange-rate settings
+    // document. Staff configuration streams query this collection, so staff
+    // may read it while writes are restricted to those two known documents.
+    match /management/{documentId} {
+      allow read: if signedIn() && !isPortalClient();
+      allow write: if signedIn() &&
+        !isPortalClient() &&
+        (
+          documentId == 'CWGXCLYchpm95b3KjoDJ' ||
+          documentId == 'singleton'
+        );
+
+      match /{subPath=**} {
+        allow read: if signedIn() && !isPortalClient();
+        allow write: if false;
+      }
     }
 
     // Reusable blank PDFs for the investigation team. Investigators can read

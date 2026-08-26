@@ -1,4 +1,6 @@
 import { Client } from '../models/client';
+import { CANONICAL_MANAGEMENT_DOCUMENT_ID } from '../models/management';
+import { of } from 'rxjs';
 import { DataService } from './data.service';
 
 describe('DataService', () => {
@@ -802,5 +804,174 @@ describe('DataService', () => {
     expect(secondBatch.commit).toHaveBeenCalledTimes(1);
     expect(firstBatch.set).toHaveBeenCalledTimes(3);
     expect(secondBatch.set).toHaveBeenCalledTimes(3);
+  });
+
+  describe('reserve transaction integrity', () => {
+    function setupReserveTransaction(options?: {
+      cachedManagement?: Record<string, any>;
+      managementDocuments?: Array<Record<string, any>>;
+      managementExists?: boolean;
+    }) {
+      const userRef = { path: 'users/site-1' };
+      const managementRef = {
+        path: `management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`,
+      };
+      const tx = {
+        get: jasmine.createSpy('transactionGet').and.callFake((ref: any) => {
+          if (ref.path === userRef.path) {
+            return Promise.resolve({
+              exists: true,
+              data: () => ({
+                reserveAmount: '1000',
+                reserveAmountDollar: '1',
+                moneyInHands: '500000',
+                reserve: {},
+                reserveinDollar: {},
+              }),
+            });
+          }
+
+          return Promise.resolve({
+            exists: options?.managementExists !== false,
+            data: () => ({
+              id: CANONICAL_MANAGEMENT_DOCUMENT_ID,
+              moneyInHands: '100000',
+              reserve: {},
+            }),
+          });
+        }),
+        set: jasmine.createSpy('transactionSet'),
+      };
+      const runTransaction = jasmine
+        .createSpy('runTransaction')
+        .and.callFake((callback: (transaction: any) => Promise<void>) =>
+          callback(tx)
+        );
+      const afs = {
+        firestore: { runTransaction },
+        doc: jasmine.createSpy('doc').and.callFake((path: string) => {
+          if (path === userRef.path) return { ref: userRef };
+          if (path === managementRef.path) return { ref: managementRef };
+          throw new Error(`Unexpected Firestore path: ${path}`);
+        }),
+      };
+      const canonicalManagement = {
+        id: CANONICAL_MANAGEMENT_DOCUMENT_ID,
+        moneyInHands: '100000',
+        reserve: {},
+      };
+      const auth = {
+        currentUser: {
+          uid: 'site-1',
+          firstName: 'Pumbu',
+          mode: 'production',
+        },
+        managementInfo: options?.cachedManagement ?? {},
+        getManagementInfo: jasmine
+          .createSpy('getManagementInfo')
+          .and.returnValue(
+            of(options?.managementDocuments ?? [canonicalManagement])
+          ),
+      };
+      const service = new DataService(
+        afs as any,
+        {} as any,
+        auth as any,
+        {
+          getTomorrowsDateMonthDayYear: () => '8-27-2026',
+          todaysDate: () => '8-26-2026-16-15-45',
+        } as any,
+        {
+          convertCongoleseFrancToUsDollars: () => 46,
+        } as any,
+        {} as any
+      );
+
+      return { afs, auth, managementRef, runTransaction, service, tx, userRef };
+    }
+
+    it('waits for the canonical management document and writes both sides atomically', async () => {
+      const { afs, auth, managementRef, service, tx, userRef } =
+        setupReserveTransaction({ cachedManagement: {} });
+
+      await service.atomicAddToReserve('135000', true);
+
+      expect(auth.getManagementInfo).toHaveBeenCalledTimes(1);
+      expect(auth.managementInfo['id']).toBe(
+        CANONICAL_MANAGEMENT_DOCUMENT_ID
+      );
+      expect(afs.doc).toHaveBeenCalledWith(userRef.path);
+      expect(afs.doc).toHaveBeenCalledWith(managementRef.path);
+      expect(afs.doc).not.toHaveBeenCalledWith('management/undefined');
+      expect(tx.set).toHaveBeenCalledTimes(2);
+      expect(tx.set).toHaveBeenCalledWith(
+        userRef,
+        jasmine.objectContaining({
+          moneyInHands: '365000',
+          reserve: { '8-26-2026-16-15-45': '135000' },
+        }),
+        { merge: true }
+      );
+      expect(tx.set).toHaveBeenCalledWith(
+        managementRef,
+        jasmine.objectContaining({
+          moneyInHands: '235000',
+          reserve: { '8-26-2026-16-15-45': '135000' },
+        }),
+        { merge: true }
+      );
+    });
+
+    it('fails before starting a transaction when canonical management data is unavailable', async () => {
+      const { afs, runTransaction, service, tx } = setupReserveTransaction({
+        cachedManagement: {},
+        managementDocuments: [],
+      });
+
+      await expectAsync(service.atomicAddToReserve('135000', true)).toBeRejectedWithError(
+        /canonical management document is unavailable/i
+      );
+
+      expect(runTransaction).not.toHaveBeenCalled();
+      expect(afs.doc).not.toHaveBeenCalled();
+      expect(tx.set).not.toHaveBeenCalled();
+    });
+
+    it('aborts without queuing either write when the canonical document does not exist', async () => {
+      const { service, tx } = setupReserveTransaction({
+        cachedManagement: {
+          id: CANONICAL_MANAGEMENT_DOCUMENT_ID,
+          moneyInHands: '100000',
+        },
+        managementExists: false,
+      });
+
+      await expectAsync(service.atomicAddToReserve('135000', true)).toBeRejectedWithError(
+        /canonical management document does not exist/i
+      );
+
+      expect(tx.get).toHaveBeenCalledTimes(2);
+      expect(tx.set).not.toHaveBeenCalled();
+    });
+
+    it('keeps testing-mode writes isolated from the management ledger', async () => {
+      const { auth, service, tx, userRef } = setupReserveTransaction({
+        cachedManagement: {},
+        managementDocuments: [],
+      });
+
+      await service.atomicAddToReserve('135000', false);
+
+      expect(auth.getManagementInfo).not.toHaveBeenCalled();
+      expect(tx.get).toHaveBeenCalledOnceWith(userRef);
+      expect(tx.set).toHaveBeenCalledTimes(1);
+      expect(tx.set).toHaveBeenCalledWith(
+        userRef,
+        jasmine.objectContaining({
+          reserve: { '8-26-2026-16-15-45': '135000' },
+        }),
+        { merge: true }
+      );
+    });
   });
 });
