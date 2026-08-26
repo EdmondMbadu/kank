@@ -44,6 +44,7 @@ import {
   countPositiveCardDeposits,
 } from '../utils/card-lifecycle-event.util';
 import { isLoanBudgetExempt } from '../utils/pending-loan-budget.util';
+import { RemainingLoanMonthEndSnapshot } from '../models/remaining-loan-month-end';
 import firebase from 'firebase/compat/app'; // ① NEW
 import 'firebase/compat/firestore'; // ②
 
@@ -2561,6 +2562,19 @@ export class DataService {
       { monthlyPaymentSnapshots: { [snapshotKey]: snapshot } },
       { merge: true }
     );
+  }
+
+  async getRemainingLoanMonthEnd(
+    periodKey: string
+  ): Promise<RemainingLoanMonthEndSnapshot | null> {
+    const snapshot = await this.afs.firestore
+      .collection('remainingLoanMonthEnds')
+      .doc(periodKey)
+      .get();
+
+    return snapshot.exists
+      ? (snapshot.data() as RemainingLoanMonthEndSnapshot)
+      : null;
   }
 
   updateManagementNotPaidThresholds(

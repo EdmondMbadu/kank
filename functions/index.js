@@ -13,6 +13,9 @@ const {
   syncClientSavingsAggregate,
 } = require("./client-savings-aggregate");
 const {
+  captureRemainingLoanMonthEnd,
+} = require("./remaining-loan-month-end");
+const {
   buildEmployeeSummaryMessage,
   buildCardLifecycleMessage,
   buildLoanActivationMessage,
@@ -44,6 +47,22 @@ const atConfig = legacyRuntimeConfig.africastalking || {};
 const apiKey = atConfig.api_key || process.env.AFRICASTALKING_API_KEY || "";
 const username = atConfig.username || process.env.AFRICASTALKING_USERNAME || "";
 const db = admin.firestore();
+
+// Capture one immutable portfolio closing per month. Historical screens read
+// this single aggregate document instead of scanning every client again.
+exports.captureRemainingLoanMonthEnd = functions
+    .runWith({timeoutSeconds: 540, memory: "512MB", maxInstances: 1})
+    .pubsub.schedule("0 0 1 * *")
+    .timeZone("Africa/Kinshasa")
+    .onRun(async () => {
+      const result = await captureRemainingLoanMonthEnd({
+        db,
+        fieldValue: admin.firestore.FieldValue,
+        now: new Date(),
+      });
+      console.info("Remaining-loan month-end capture completed", result);
+      return result;
+    });
 
 // Additive, kill-switch-controlled shadow migration. These triggers never
 // mutate a legacy source document; they only maintain deterministic v2 entry

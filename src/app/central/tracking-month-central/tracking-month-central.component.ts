@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { User, UserDailyField } from 'src/app/models/user';
+import { RemainingLoanMonthEndSnapshot } from 'src/app/models/remaining-loan-month-end';
 
 type RangeKey = '3M' | '6M' | '9M' | '1A' | 'MAX';
 type TrackingMonthCentralCard = {
@@ -32,7 +33,17 @@ type RemainingLoanLocationRow = {
   totalDebtLeftUsd: number;
   activeClientCount: number;
   sharePercent: number;
+  previousClosingFc?: number;
+  growthPercent?: number | null;
 };
+
+type RemainingLoanViewStatus =
+  | 'current'
+  | 'loading'
+  | 'final'
+  | 'reconstructed'
+  | 'unavailable'
+  | 'error';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
@@ -270,6 +281,20 @@ export class TrackingMonthCentralComponent {
   remainingLoanMaxFc = 1;
   remainingLoanLocationRows: RemainingLoanLocationRow[] = [];
   isRemainingLoanModalOpen = false;
+  remainingLoanViewStatus: RemainingLoanViewStatus = 'current';
+  remainingLoanClosingDate = '';
+  remainingLoanGrowthPercent: number | null = null;
+  remainingLoanDataAvailable = false;
+  private liveRemainingLoanTotal = 0;
+  private liveRemainingLoanTotalUsd = 0;
+  private liveRemainingLoanActiveClientCount = 0;
+  private liveRemainingLoanMaxFc = 1;
+  private liveRemainingLoanLocationRows: RemainingLoanLocationRow[] = [];
+  private remainingLoanSnapshotRequestId = 0;
+  private readonly remainingLoanSnapshotCache = new Map<
+    string,
+    RemainingLoanMonthEndSnapshot | null
+  >();
 
   sortedPaymentPreviousMonth: {
     firstName: string;
@@ -383,6 +408,67 @@ export class TrackingMonthCentralComponent {
     );
   }
 
+  get isRemainingLoanCurrentPeriod(): boolean {
+    const current = this.remainingLoanCurrentKinshasaPeriod();
+    return (
+      this.givenMonth === current.month && this.givenYear === current.year
+    );
+  }
+
+  get isRemainingLoanLoading(): boolean {
+    return (
+      this.remainingLoanViewStatus === 'loading' ||
+      (this.isRemainingLoanCurrentPeriod && this.isLoadingLendingBorrowers)
+    );
+  }
+
+  get remainingLoanPeriodLabel(): string {
+    return `${this.time.monthFrenchNames[this.givenMonth - 1]} ${
+      this.givenYear
+    }`;
+  }
+
+  get remainingLoanEyebrow(): string {
+    if (this.isRemainingLoanCurrentPeriod) return 'Situation actuelle';
+    if (this.remainingLoanViewStatus === 'final') return 'Clôture mensuelle';
+    if (this.remainingLoanViewStatus === 'reconstructed') {
+      return 'Clôture reconstruite';
+    }
+    return 'Historique mensuel';
+  }
+
+  get remainingLoanSubtitle(): string {
+    if (this.isRemainingLoanCurrentPeriod) {
+      return 'Solde actuel par site · Situation provisoire';
+    }
+    if (
+      this.remainingLoanViewStatus === 'final' ||
+      this.remainingLoanViewStatus === 'reconstructed'
+    ) {
+      return `Solde final par site au ${this.formatRemainingLoanClosingDate(
+        this.remainingLoanClosingDate
+      )} · Heure de Kinshasa`;
+    }
+    if (this.remainingLoanViewStatus === 'loading') {
+      return `Chargement de la clôture de ${this.remainingLoanPeriodLabel}...`;
+    }
+    if (this.remainingLoanViewStatus === 'error') {
+      return 'Impossible de charger cette clôture pour le moment';
+    }
+    return `Clôture historique indisponible pour ${this.remainingLoanPeriodLabel}`;
+  }
+
+  get remainingLoanStatusLabel(): string {
+    if (this.isRemainingLoanCurrentPeriod) return 'ACTUEL · PROVISOIRE';
+    if (this.remainingLoanViewStatus === 'final') return 'CLÔTURE FINALE';
+    if (this.remainingLoanViewStatus === 'reconstructed') {
+      return 'CLÔTURE RECONSTRUITE';
+    }
+    if (this.remainingLoanViewStatus === 'loading') return 'CHARGEMENT';
+    if (this.remainingLoanViewStatus === 'error') return 'ERREUR DE CHARGEMENT';
+    return 'HISTORIQUE INDISPONIBLE';
+  }
+
   isLendingMonthCard(card: TrackingMonthCentralCard): boolean {
     return card.kind === 'lending-month';
   }
@@ -483,6 +569,9 @@ export class TrackingMonthCentralComponent {
       this.resetRemainingLoanSummary();
     } finally {
       this.isLoadingLendingBorrowers = false;
+      if (this.isRemainingLoanCurrentPeriod) {
+        this.applyLiveRemainingLoanSummary();
+      }
     }
   }
 
@@ -502,12 +591,12 @@ export class TrackingMonthCentralComponent {
     const totalDebtLeft = Number(
       this.data.findTotalDebtLeft(remainingLoanClients)
     );
-    this.remainingLoanTotal = Number.isFinite(totalDebtLeft)
+    const remainingLoanTotal = Number.isFinite(totalDebtLeft)
       ? Math.max(0, totalDebtLeft)
       : 0;
-    this.remainingLoanTotalUsd = this.toFiniteAmount(
+    const remainingLoanTotalUsd = this.toFiniteAmount(
       this.compute.convertCongoleseFrancToUsDollars(
-        this.remainingLoanTotal.toString()
+        remainingLoanTotal.toString()
       )
     );
 
@@ -520,7 +609,7 @@ export class TrackingMonthCentralComponent {
       clientsByLocation.set(locationId, clients);
     });
 
-    this.remainingLoanLocationRows = this.allUsers
+    const locationRows = this.allUsers
       .filter((user) => !!user.uid)
       .map((user) => {
         const clients = clientsByLocation.get(user.uid!) || [];
@@ -540,8 +629,8 @@ export class TrackingMonthCentralComponent {
           ),
           activeClientCount,
           sharePercent:
-            this.remainingLoanTotal > 0
-              ? (locationDebt / this.remainingLoanTotal) * 100
+            remainingLoanTotal > 0
+              ? (locationDebt / remainingLoanTotal) * 100
               : 0,
         };
       })
@@ -551,25 +640,196 @@ export class TrackingMonthCentralComponent {
           a.locationName.localeCompare(b.locationName)
       );
 
-    this.remainingLoanActiveClientCount =
-      this.remainingLoanLocationRows.reduce(
+    const activeClientCount = locationRows.reduce(
         (total, row) => total + row.activeClientCount,
         0
       );
-    this.remainingLoanMaxFc = Math.max(
+    const maxFc = Math.max(
       1,
-      ...this.remainingLoanLocationRows.map((row) => row.totalDebtLeft)
+      ...locationRows.map((row) => row.totalDebtLeft)
     );
-    this.updateRemainingLoanCard();
+
+    this.liveRemainingLoanTotal = remainingLoanTotal;
+    this.liveRemainingLoanTotalUsd = remainingLoanTotalUsd;
+    this.liveRemainingLoanActiveClientCount = activeClientCount;
+    this.liveRemainingLoanMaxFc = maxFc;
+    this.liveRemainingLoanLocationRows = locationRows;
+
+    if (this.isRemainingLoanCurrentPeriod) {
+      this.applyLiveRemainingLoanSummary();
+    }
   }
 
   private resetRemainingLoanSummary(): void {
+    this.liveRemainingLoanTotal = 0;
+    this.liveRemainingLoanTotalUsd = 0;
+    this.liveRemainingLoanActiveClientCount = 0;
+    this.liveRemainingLoanMaxFc = 1;
+    this.liveRemainingLoanLocationRows = [];
+    if (this.isRemainingLoanCurrentPeriod) {
+      this.applyLiveRemainingLoanSummary();
+    }
+  }
+
+  private applyLiveRemainingLoanSummary(): void {
+    this.remainingLoanTotal = this.liveRemainingLoanTotal;
+    this.remainingLoanTotalUsd = this.liveRemainingLoanTotalUsd;
+    this.remainingLoanActiveClientCount =
+      this.liveRemainingLoanActiveClientCount;
+    this.remainingLoanMaxFc = this.liveRemainingLoanMaxFc;
+    this.remainingLoanLocationRows = this.liveRemainingLoanLocationRows;
+    this.remainingLoanClosingDate = '';
+    this.remainingLoanGrowthPercent = null;
+    this.remainingLoanViewStatus = 'current';
+    this.remainingLoanDataAvailable = !this.isLoadingLendingBorrowers;
+    this.updateRemainingLoanCard();
+  }
+
+  private async updateRemainingLoanForSelectedPeriod(): Promise<void> {
+    const requestId = ++this.remainingLoanSnapshotRequestId;
+
+    if (this.isRemainingLoanCurrentPeriod) {
+      this.applyLiveRemainingLoanSummary();
+      return;
+    }
+
+    if (this.isSelectedRemainingLoanPeriodInFuture()) {
+      this.applyMissingRemainingLoanSnapshot('unavailable');
+      return;
+    }
+
+    const key = `${this.givenYear}-${String(this.givenMonth).padStart(2, '0')}`;
+    if (this.remainingLoanSnapshotCache.has(key)) {
+      this.applyRemainingLoanSnapshot(
+        this.remainingLoanSnapshotCache.get(key) || null
+      );
+      return;
+    }
+
+    this.remainingLoanViewStatus = 'loading';
+    this.remainingLoanDataAvailable = false;
     this.remainingLoanTotal = 0;
     this.remainingLoanTotalUsd = 0;
     this.remainingLoanActiveClientCount = 0;
     this.remainingLoanMaxFc = 1;
     this.remainingLoanLocationRows = [];
+    this.remainingLoanClosingDate = '';
+    this.remainingLoanGrowthPercent = null;
     this.updateRemainingLoanCard();
+
+    try {
+      const snapshot = await this.data.getRemainingLoanMonthEnd(key);
+      this.remainingLoanSnapshotCache.set(key, snapshot);
+      if (requestId !== this.remainingLoanSnapshotRequestId) return;
+      this.applyRemainingLoanSnapshot(snapshot);
+    } catch (error) {
+      console.error('Unable to load remaining-loan month-end snapshot', error);
+      if (requestId !== this.remainingLoanSnapshotRequestId) return;
+      this.applyMissingRemainingLoanSnapshot('error');
+    }
+  }
+
+  private applyRemainingLoanSnapshot(
+    snapshot: RemainingLoanMonthEndSnapshot | null
+  ): void {
+    if (!snapshot) {
+      this.applyMissingRemainingLoanSnapshot('unavailable');
+      return;
+    }
+
+    const total = this.toFiniteAmount(snapshot.totalDebtLeftFc);
+    const rows = (snapshot.sites || [])
+      .map((site) => {
+        const siteTotal = this.toFiniteAmount(site.debtLeftFc);
+        return {
+          locationId: site.ownerUid,
+          locationName: site.siteName || 'Site',
+          totalDebtLeft: siteTotal,
+          totalDebtLeftUsd: this.toFiniteAmount(
+            this.compute.convertCongoleseFrancToUsDollars(siteTotal.toString())
+          ),
+          activeClientCount: this.toFiniteAmount(site.activeClientCount),
+          sharePercent:
+            total > 0 ? (siteTotal / total) * 100 : site.sharePercent || 0,
+          previousClosingFc: site.previousClosingFc,
+          growthPercent: site.growthPercent,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.totalDebtLeft - a.totalDebtLeft ||
+          a.locationName.localeCompare(b.locationName)
+      );
+
+    this.remainingLoanTotal = total;
+    this.remainingLoanTotalUsd = this.toFiniteAmount(
+      this.compute.convertCongoleseFrancToUsDollars(total.toString())
+    );
+    this.remainingLoanActiveClientCount = this.toFiniteAmount(
+      snapshot.activeClientCount
+    );
+    this.remainingLoanMaxFc = Math.max(
+      1,
+      ...rows.map((row) => row.totalDebtLeft)
+    );
+    this.remainingLoanLocationRows = rows;
+    this.remainingLoanClosingDate = snapshot.closingDate || '';
+    this.remainingLoanGrowthPercent =
+      typeof snapshot.growthPercent === 'number'
+        ? snapshot.growthPercent
+        : null;
+    this.remainingLoanViewStatus =
+      snapshot.status === 'reconstructed' ? 'reconstructed' : 'final';
+    this.remainingLoanDataAvailable = true;
+    this.updateRemainingLoanCard();
+  }
+
+  private applyMissingRemainingLoanSnapshot(
+    status: 'unavailable' | 'error'
+  ): void {
+    this.remainingLoanTotal = 0;
+    this.remainingLoanTotalUsd = 0;
+    this.remainingLoanActiveClientCount = 0;
+    this.remainingLoanMaxFc = 1;
+    this.remainingLoanLocationRows = [];
+    this.remainingLoanClosingDate = '';
+    this.remainingLoanGrowthPercent = null;
+    this.remainingLoanViewStatus = status;
+    this.remainingLoanDataAvailable = false;
+    this.updateRemainingLoanCard();
+  }
+
+  private isSelectedRemainingLoanPeriodInFuture(): boolean {
+    const current = this.remainingLoanCurrentKinshasaPeriod();
+    return (
+      this.givenYear > current.year ||
+      (this.givenYear === current.year && this.givenMonth > current.month)
+    );
+  }
+
+  private remainingLoanCurrentKinshasaPeriod(): {
+    month: number;
+    year: number;
+  } {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Kinshasa',
+      month: 'numeric',
+      year: 'numeric',
+    }).formatToParts(this.currentDate);
+    const month = Number(parts.find((part) => part.type === 'month')?.value);
+    const year = Number(parts.find((part) => part.type === 'year')?.value);
+    return {
+      month: Number.isFinite(month) ? month : this.currentMonth,
+      year: Number.isFinite(year) ? year : this.year,
+    };
+  }
+
+  private formatRemainingLoanClosingDate(value: string): string {
+    const [year, month, day] = String(value || '').split('-').map(Number);
+    const monthName = this.time.monthFrenchNames[month - 1];
+    return day && monthName && year
+      ? `${day} ${monthName.toLowerCase()} ${year}`
+      : this.remainingLoanPeriodLabel;
   }
 
   private updateRemainingLoanCard(): void {
@@ -580,6 +840,7 @@ export class TrackingMonthCentralComponent {
 
     card.value = this.remainingLoanTotal.toString();
     card.valueUsd = this.remainingLoanTotalUsd.toString();
+    card.subtitle = this.remainingLoanSubtitle;
   }
 
   private toFiniteAmount(value: unknown): number {
@@ -920,6 +1181,7 @@ export class TrackingMonthCentralComponent {
     
     // Update mini graphs for tables
     this.updateMiniGraphs();
+    void this.updateRemainingLoanForSelectedPeriod();
   }
 
   onRankingModeChange(mode: 'month' | 'year' | 'all'): void {

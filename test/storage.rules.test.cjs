@@ -193,3 +193,27 @@ test('authenticated staff can run dayTotals collection-group queries', async () 
   await assertFails(queryFor(portalFirestore));
   await assertFails(monthQueryFor(portalFirestore));
 });
+
+test('only admins can read month-end remaining-loan snapshots', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context
+      .firestore()
+      .doc('remainingLoanMonthEnds/2026-08')
+      .set({
+        periodKey: '2026-08',
+        totalDebtLeftFc: 100000,
+      });
+  });
+
+  const admin = testEnv.authenticatedContext('admin-user').firestore();
+  const staff = testEnv.authenticatedContext('staff-user').firestore();
+  const portal = testEnv
+    .authenticatedContext('portal-user', { portalClient: true })
+    .firestore();
+  const path = 'remainingLoanMonthEnds/2026-08';
+
+  await assertSucceeds(admin.doc(path).get());
+  await assertFails(staff.doc(path).get());
+  await assertFails(portal.doc(path).get());
+  await assertFails(admin.doc(path).set({ totalDebtLeftFc: 200000 }));
+});

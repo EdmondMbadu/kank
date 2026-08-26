@@ -182,7 +182,10 @@
           >
             {{ card.subtitle }}
           </p>
-          <div class="mt-4 space-y-1">
+          <div
+            *ngIf="!isRemainingLoanCard(card) || remainingLoanDataAvailable"
+            class="mt-4 space-y-1"
+          >
             <p
               class="text-2xl font-semibold"
               [ngClass]="
@@ -204,6 +207,12 @@
               ≈ $ {{ card.valueUsd | number : "1.0-0" }}
             </p>
           </div>
+          <p
+            *ngIf="isRemainingLoanCard(card) && !remainingLoanDataAvailable"
+            class="mt-4 text-2xl font-semibold text-slate-400 dark:text-slate-500"
+          >
+            —
+          </p>
         </div>
       </div>
 
@@ -451,16 +460,19 @@
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
           <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300">
-            Situation actuelle
+            {{ remainingLoanEyebrow }}
           </p>
           <h2
             id="remaining-loan-modal-title"
             class="mt-1 text-xl font-semibold text-slate-900 dark:text-white"
           >
             Prêt Restant par site
+            <span *ngIf="!isRemainingLoanCurrentPeriod">
+              — {{ remainingLoanPeriodLabel }}
+            </span>
           </h2>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Solde des prêts actifs dans tout le réseau, indépendamment du mois sélectionné.
+            {{ remainingLoanSubtitle }}
           </p>
         </div>
 
@@ -491,12 +503,17 @@
           <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
             Total central
           </p>
-          <p class="mt-1 text-xl font-bold text-slate-900 dark:text-white">
-            FC {{ remainingLoanTotal | number : "1.0-0" }}
-          </p>
-          <p class="text-xs text-slate-500 dark:text-slate-400">
-            ≈ $ {{ remainingLoanTotalUsd | number : "1.0-0" }}
-          </p>
+          <ng-container *ngIf="remainingLoanDataAvailable; else noModalRemainingLoanTotal">
+            <p class="mt-1 text-xl font-bold text-slate-900 dark:text-white">
+              FC {{ remainingLoanTotal | number : "1.0-0" }}
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              ≈ $ {{ remainingLoanTotalUsd | number : "1.0-0" }}
+            </p>
+          </ng-container>
+          <ng-template #noModalRemainingLoanTotal>
+            <p class="mt-1 text-xl font-bold text-slate-900 dark:text-white">—</p>
+          </ng-template>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
@@ -504,7 +521,7 @@
             Sites
           </p>
           <p class="mt-1 text-xl font-bold text-slate-900 dark:text-white">
-            {{ remainingLoanLocationRows.length }}
+            {{ remainingLoanDataAvailable ? remainingLoanLocationRows.length : "—" }}
           </p>
           <p class="text-xs text-slate-500">Tous les sites affichés</p>
         </div>
@@ -514,7 +531,7 @@
             Clients actifs
           </p>
           <p class="mt-1 text-xl font-bold text-slate-900 dark:text-white">
-            {{ remainingLoanActiveClientCount }}
+            {{ remainingLoanDataAvailable ? remainingLoanActiveClientCount : "—" }}
           </p>
           <p class="text-xs text-slate-500">Avec un prêt restant positif</p>
         </div>
@@ -529,14 +546,14 @@
         </div>
 
         <div
-          *ngIf="isLoadingLendingBorrowers"
+          *ngIf="isRemainingLoanLoading"
           class="px-4 py-10 text-center text-sm text-slate-500"
         >
           Chargement des prêts restants...
         </div>
 
         <div
-          *ngIf="!isLoadingLendingBorrowers && remainingLoanLocationRows.length; else noRemainingLoanLocations"
+          *ngIf="!isRemainingLoanLoading && remainingLoanLocationRows.length; else noRemainingLoanLocations"
           class="divide-y divide-slate-100 dark:divide-slate-800"
         >
           <div
@@ -584,10 +601,16 @@
 
         <ng-template #noRemainingLoanLocations>
           <div
-            *ngIf="!isLoadingLendingBorrowers"
+            *ngIf="!isRemainingLoanLoading"
             class="px-4 py-10 text-center text-sm text-slate-500"
           >
-            Aucun site disponible.
+            {{
+              remainingLoanViewStatus === "error"
+                ? "Impossible de charger cette clôture. Réessayez plus tard."
+                : remainingLoanViewStatus === "unavailable"
+                ? "Aucune clôture officielle disponible pour cette période."
+                : "Aucun site disponible."
+            }}
           </div>
         </ng-template>
       </div>
@@ -2271,7 +2294,7 @@
     >
     <div class="mb-4">
       <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
-        Situation actuelle
+        {{ remainingLoanEyebrow }}
       </p>
       <h2 class="mt-1 text-xl font-semibold tracking-tight dark:text-slate-100">
         Classement
@@ -2280,15 +2303,19 @@
         >
           Prêt Restant
         </span>
+        <span *ngIf="!isRemainingLoanCurrentPeriod">
+          — {{ remainingLoanPeriodLabel }}
+        </span>
       </h2>
       <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Solde actuel par site · Indépendant du mois sélectionné
+        {{ remainingLoanSubtitle }}
       </p>
 
       <div
         class="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300"
       >
         <div
+          *ngIf="remainingLoanDataAvailable"
           class="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
         >
           Total:
@@ -2296,6 +2323,7 @@
           {{ remainingLoanTotalUsd | number : "1.0-0" }} $
         </div>
         <div
+          *ngIf="remainingLoanDataAvailable"
           class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           Clients actifs: {{ remainingLoanActiveClientCount }}
@@ -2304,6 +2332,27 @@
           class="rounded-full bg-cyan-50 px-2.5 py-1 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-200 dark:ring-cyan-800"
         >
           Barre = % du site le plus élevé
+        </div>
+        <div
+          class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+          [ngClass]="{
+            'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-800':
+              isRemainingLoanCurrentPeriod,
+            'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800':
+              remainingLoanViewStatus === 'final',
+            'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700':
+              !isRemainingLoanCurrentPeriod && remainingLoanViewStatus !== 'final'
+          }"
+        >
+          {{ remainingLoanStatusLabel }}
+        </div>
+        <div
+          *ngIf="remainingLoanGrowthPercent !== null"
+          class="rounded-full bg-violet-50 px-2.5 py-1 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/30 dark:text-violet-200 dark:ring-violet-800"
+        >
+          Variation:
+          {{ remainingLoanGrowthPercent >= 0 ? "+" : ""
+          }}{{ remainingLoanGrowthPercent | number : "1.0-1" }}%
         </div>
       </div>
     </div>
@@ -2337,14 +2386,14 @@
           </thead>
 
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr *ngIf="isLoadingLendingBorrowers">
+            <tr *ngIf="isRemainingLoanLoading">
               <td colspan="6" class="px-4 py-10 text-center text-slate-500">
                 Chargement des prêts restants...
               </td>
             </tr>
 
             <ng-container
-              *ngIf="!isLoadingLendingBorrowers && remainingLoanLocationRows.length; else noRemainingLoanRanking"
+              *ngIf="!isRemainingLoanLoading && remainingLoanLocationRows.length; else noRemainingLoanRanking"
             >
               <tr
                 *ngFor="let row of remainingLoanLocationRows; let i = index; trackBy: trackRemainingLoanLocation"
@@ -2424,7 +2473,7 @@
           </tbody>
 
           <tfoot
-            *ngIf="!isLoadingLendingBorrowers && remainingLoanLocationRows.length"
+            *ngIf="!isRemainingLoanLoading && remainingLoanLocationRows.length"
             class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
           >
             <tr>
@@ -2450,10 +2499,16 @@
 
       <ng-template #noRemainingLoanRanking>
         <div
-          *ngIf="!isLoadingLendingBorrowers"
+          *ngIf="!isRemainingLoanLoading"
           class="px-4 py-10 text-center text-sm text-slate-500"
         >
-          Aucun site disponible.
+          {{
+            remainingLoanViewStatus === "error"
+              ? "Impossible de charger cette clôture. Réessayez plus tard."
+              : remainingLoanViewStatus === "unavailable"
+              ? "Aucune clôture officielle disponible pour cette période."
+              : "Aucun site disponible."
+          }}
         </div>
       </ng-template>
     </div>

@@ -3,7 +3,10 @@ import { TrackingMonthCentralComponent } from './tracking-month-central.componen
 describe('TrackingMonthCentralComponent', () => {
   const createComponent = (
     isAdmin: boolean,
-    getEmployeeMonthTotalsGroupedByTeamForMonths: jasmine.Spy
+    getEmployeeMonthTotalsGroupedByTeamForMonths: jasmine.Spy,
+    getRemainingLoanMonthEnd: jasmine.Spy = jasmine
+      .createSpy('getRemainingLoanMonthEnd')
+      .and.resolveTo(null)
   ) =>
     new TrackingMonthCentralComponent(
       { isAdmin } as any,
@@ -32,6 +35,7 @@ describe('TrackingMonthCentralComponent', () => {
       } as any,
       {
         getEmployeeMonthTotalsGroupedByTeamForMonths,
+        getRemainingLoanMonthEnd,
         findClientsWithDebts: (clients: any[]) =>
           clients.filter((client) => {
             const status = String(client.vitalStatus || '')
@@ -144,6 +148,97 @@ describe('TrackingMonthCentralComponent', () => {
 
     expect(component.isRemainingLoanModalOpen).toBeTrue();
     expect(getClientsOfAUser).not.toHaveBeenCalled();
+  });
+
+  it('loads a closed-month snapshot once and reuses it when selected again', async () => {
+    const getSnapshot = jasmine
+      .createSpy('getRemainingLoanMonthEnd')
+      .and.resolveTo({
+        periodKey: '2026-07',
+        month: 7,
+        year: 2026,
+        status: 'final',
+        timeZone: 'Africa/Kinshasa',
+        closingDate: '2026-07-31',
+        definitionVersion: 'active-contractual-debt-v1',
+        totalDebtLeftFc: 300000,
+        activeClientCount: 3,
+        siteCount: 2,
+        growthPercent: -10,
+        sites: [
+          {
+            ownerUid: 'site-a',
+            siteName: 'Alpha',
+            debtLeftFc: 200000,
+            activeClientCount: 2,
+            sharePercent: 66.67,
+          },
+          {
+            ownerUid: 'site-b',
+            siteName: 'Beta',
+            debtLeftFc: 100000,
+            activeClientCount: 1,
+            sharePercent: 33.33,
+          },
+        ],
+      });
+    const component = createComponent(
+      true,
+      jasmine.createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths'),
+      getSnapshot
+    );
+    component.currentMonth = 8;
+    component.year = 2026;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+
+    await (component as any).updateRemainingLoanForSelectedPeriod();
+    await (component as any).updateRemainingLoanForSelectedPeriod();
+
+    expect(getSnapshot).toHaveBeenCalledOnceWith('2026-07');
+    expect(component.remainingLoanViewStatus).toBe('final');
+    expect(component.remainingLoanClosingDate).toBe('2026-07-31');
+    expect(component.remainingLoanTotal).toBe(300000);
+    expect(component.remainingLoanTotalUsd).toBe(120);
+    expect(component.remainingLoanGrowthPercent).toBe(-10);
+    expect(component.remainingLoanLocationRows.map((row) => row.locationName))
+      .toEqual(['Alpha', 'Beta']);
+  });
+
+  it('restores the live cache without another snapshot read', async () => {
+    const getSnapshot = jasmine
+      .createSpy('getRemainingLoanMonthEnd')
+      .and.resolveTo(null);
+    const component = createComponent(
+      true,
+      jasmine.createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths'),
+      getSnapshot
+    );
+    component.currentMonth = 8;
+    component.year = 2026;
+    component.givenMonth = 8;
+    component.givenYear = 2026;
+    component.allUsers = [{ uid: 'site-a', firstName: 'Alpha' } as any];
+    component.allLendingClients = [
+      {
+        uid: 'client-a',
+        locationOwnerId: 'site-a',
+        debtLeft: '125000',
+      } as any,
+    ];
+    (component as any).updateRemainingLoanSummary();
+
+    component.givenMonth = 7;
+    await (component as any).updateRemainingLoanForSelectedPeriod();
+    expect(component.remainingLoanViewStatus).toBe('unavailable');
+
+    component.givenMonth = 8;
+    await (component as any).updateRemainingLoanForSelectedPeriod();
+
+    expect(component.remainingLoanViewStatus).toBe('current');
+    expect(component.remainingLoanTotal).toBe(125000);
+    expect(component.remainingLoanLocationRows[0].locationName).toBe('Alpha');
+    expect(getSnapshot).toHaveBeenCalledTimes(1);
   });
 
   it('loads, ranks and caches the monthly admin cash-flow totals', async () => {

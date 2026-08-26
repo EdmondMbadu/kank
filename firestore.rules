@@ -52,6 +52,7 @@ service cloud.firestore {
         topCollection == 'clientLoginOtps' ||
         topCollection == 'clientPortalSessions' ||
         topCollection == 'mobileMoneyTransactionLookup' ||
+        topCollection == 'remainingLoanMonthEnds' ||
         topCollection == 'card_sms_settings' ||
         topCollection == 'moneyAvailabilityPolicies' ||
         topCollection == 'performanceMetricSettings' ||
@@ -242,6 +243,11 @@ service cloud.firestore {
     match /performanceMetricSettings/{settingsId} {
       allow read: if signedIn() && !isPortalClient();
       allow write: if isAppAdmin();
+    }
+
+    match /remainingLoanMonthEnds/{periodKey} {
+      allow read: if isAppAdmin();
+      allow write: if false;
     }
 
     // Reusable blank PDFs for the investigation team. Investigators can read
