@@ -147,4 +147,23 @@ describe('TeamPageComponent', () => {
     expect(clients$.observers.length).toBe(0);
     expect(employees$.observers.length).toBe(0);
   });
+
+  it('keeps sick employees visible with the current team', () => {
+    const { component, employees$ } = createComponent();
+    const workingEmployee = employee('working');
+    const sickEmployee = { ...employee('sick'), status: 'Malade' };
+    const formerEmployee = { ...employee('former'), status: 'Quitté' };
+
+    employees$.next([workingEmployee, sickEmployee, formerEmployee]);
+    component.ngOnInit();
+
+    expect(component.workingEmployees.map((entry) => entry.uid)).toEqual([
+      'working',
+      'sick',
+    ]);
+    expect(component.currentEmployeeCount).toBe(2);
+    expect(component.employees).not.toContain(formerEmployee);
+
+    component.ngOnDestroy();
+  });
 });

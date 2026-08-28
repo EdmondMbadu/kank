@@ -183,12 +183,13 @@
             </svg>
           </button>
 
-          <!-- status badge (unchanged) -->
+          <!-- status badge -->
           <span
             class="absolute top-2 right-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white"
             [ngClass]="{
               'bg-emerald-600/90': em.status === 'Travaille',
               'bg-yellow-500/90': em.status === 'Vacance',
+              'bg-orange-600/90': em.status === 'Malade',
               'bg-red-600/90': em.status === 'Quitté'
             }"
             >{{ em.status }}</span

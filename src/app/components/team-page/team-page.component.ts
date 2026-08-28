@@ -39,6 +39,9 @@ export class TeamPageComponent implements OnInit, OnDestroy {
     'vacance',
     'vacances',
     'vacation',
+    'malade',
+    'malades',
+    'sick',
   ];
 
   // ===== Trophy Modal state =====
