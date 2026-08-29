@@ -211,6 +211,47 @@ describe('RegisterClientComponent', () => {
     expect(disabledFeeInputs[1].value.replace(/\s+/g, '')).toBe('FC10000');
   });
 
+  it('uses the standardized product and service list without changing the stored field', () => {
+    const select = query<HTMLSelectElement>('#profession');
+
+    expect(normalizedText()).toContain('Produit / Service');
+    expect(select.options.length).toBe(14);
+    expect(select.options[0].disabled).toBeTrue();
+    expect(select.options[select.options.length - 1].textContent).toContain(
+      'Autres produits ou services'
+    );
+
+    selectOption('#profession', 'Vêtements et chaussures');
+
+    expect(component.profession).toBe('Vêtements et chaussures');
+    expect(
+      fixture.nativeElement.querySelector('#otherProductService')
+    ).toBeNull();
+  });
+
+  it('requires and stores a precise description for another product or service', () => {
+    selectOption('#profession', 'Autres produits ou services');
+
+    expect(component.profession).toBe('');
+    expect(query<HTMLInputElement>('#otherProductService')).toBeTruthy();
+
+    setInput('#otherProductService', 'Vente de charbon');
+
+    expect(component.profession).toBe('Vente de charbon');
+  });
+
+  it('blocks registration when another product or service is not described', () => {
+    populateValidSubmissionFields('50 000');
+    selectOption('#profession', 'Autres produits ou services');
+    const alertSpy = spyOn(window, 'alert');
+
+    component.addNewClient();
+
+    expect(alertSpy).toHaveBeenCalled();
+    expect(alertSpy.calls.mostRecent().args[0]).toContain('Produit / Service');
+    expect(component.showConfirmation).toBeFalse();
+  });
+
   it('starts every new client at score 50 with an automatic three-open-day date', () => {
     const dateInput = query<HTMLInputElement>('#requestDate');
 

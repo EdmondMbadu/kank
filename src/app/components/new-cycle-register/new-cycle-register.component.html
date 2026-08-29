@@ -138,16 +138,51 @@
             </p>
           </label>
 
-          <label class="space-y-2">
-            <span class="cycle-label">Profession</span>
-            <input
-              type="text"
+          <div class="space-y-2">
+            <label for="profession" class="cycle-label">
+              Produit / Service
+            </label>
+            <select
               id="profession"
               class="cycle-input"
-              placeholder="Vendeuse"
-              [(ngModel)]="client.profession"
-            />
-          </label>
+              [(ngModel)]="productServiceSelection"
+              (ngModelChange)="onProductServiceSelectionChange()"
+            >
+              <option value="" disabled>Sélectionner le produit ou service</option>
+              <option *ngFor="let option of productServiceOptions" [value]="option">
+                {{ option }}
+              </option>
+              <option [value]="otherProductServiceOption">
+                Autres produits ou services — à préciser
+              </option>
+            </select>
+            <p class="text-xs leading-5 text-slate-500">
+              Vérifiez ce que le client vend principalement pour ce nouveau cycle.
+            </p>
+
+            <div
+              *ngIf="showOtherProductServiceInput"
+              class="rounded-xl border border-amber-200 bg-amber-50 p-3"
+            >
+              <label
+                for="otherProductService"
+                class="block text-xs font-semibold text-amber-900"
+              >
+                Précisez le produit ou service <span class="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                id="otherProductService"
+                class="cycle-input mt-2"
+                placeholder="Ex. Vente de charbon"
+                [(ngModel)]="otherProductService"
+                (ngModelChange)="onOtherProductServiceChange()"
+              />
+              <p class="mt-2 text-xs text-amber-800">
+                Écrivez précisément ce que le client vend, pas seulement « commerce ».
+              </p>
+            </div>
+          </div>
 
           <label class="space-y-2">
             <span class="cycle-label">Capital (FC)</span>

@@ -28,6 +28,12 @@ import {
   calculateLoanBudgetAvailability,
   isLoanBudgetExempt,
 } from 'src/app/utils/pending-loan-budget.util';
+import {
+  OTHER_PRODUCT_SERVICE_OPTION,
+  PRODUCT_SERVICE_OPTIONS,
+  productServiceSelectionFromStoredValue,
+  productServiceStoredValue,
+} from 'src/app/utils/product-service.util';
 @Component({
   selector: 'app-new-cycle-register',
   templateUrl: './new-cycle-register.component.html',
@@ -42,6 +48,10 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
   amountToPayDisplay: boolean = false;
   debtCycleDisplay: boolean = false;
   client = new Client();
+  readonly productServiceOptions = PRODUCT_SERVICE_OPTIONS;
+  readonly otherProductServiceOption = OTHER_PRODUCT_SERVICE_OPTION;
+  productServiceSelection: string = '';
+  otherProductService: string = '';
   applicationFee: string = '0';
   memberShipFee: string = '0';
   savings: string = '';
@@ -170,6 +180,7 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
       this.allClients = clients.filter(Boolean);
       this.clientsLoaded = Array.isArray(data);
       this.client = clients[Number(this.id)];
+      this.initializeProductServiceSelection(this.client?.profession);
       this.homePictureUrl = this.client?.homePicture?.downloadURL || '';
       this.originalPhoneNumberAtLoad = this.client?.phoneNumber || '';
       this.originalHomePictureAtLoad = this.client?.homePicture
@@ -278,6 +289,7 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.syncProfessionFromProductService();
     this.syncMoneyAvailability();
     const normalizedLoanAmount = coerceToNumber(this.loanAmount);
     let inputValid = this.data.numbersValid(
@@ -296,7 +308,8 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
     if (!this.middleName?.trim()) missingFields.push('Post-nom');
     if (!this.client.lastName?.trim()) missingFields.push('Nom');
     if (!this.client.phoneNumber?.trim()) missingFields.push('Téléphone');
-    if (!this.client.profession?.trim()) missingFields.push('Profession');
+    if (!this.client.profession?.trim())
+      missingFields.push('Produit / Service');
     if (!this.client.businessCapital?.toString().trim())
       missingFields.push('Capital');
     if (this.homePictureUploading)
@@ -552,6 +565,7 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
   }
 
   private setClientNewDebtCycleValues(): void {
+    this.syncProfessionFromProductService();
     /* ----- DATE FIELDS (use new helper) ----- */
     this.requestDate = toAppDate(this.requestDate);
     const today = toAppDateFull(new Date());
@@ -602,6 +616,42 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
     this.client.applicationFeePayments = { [today]: this.applicationFee };
     this.client.membershipFeePayments = { [today]: this.memberShipFee };
     this.client.comments = [];
+  }
+
+  get showOtherProductServiceInput(): boolean {
+    return this.productServiceSelection === this.otherProductServiceOption;
+  }
+
+  onProductServiceSelectionChange(): void {
+    if (!this.showOtherProductServiceInput) {
+      this.otherProductService = '';
+    }
+    this.syncProfessionFromProductService();
+  }
+
+  onOtherProductServiceChange(): void {
+    this.syncProfessionFromProductService();
+  }
+
+  private initializeProductServiceSelection(
+    storedValue: string | null | undefined
+  ): void {
+    const state = productServiceSelectionFromStoredValue(storedValue);
+    this.productServiceSelection = state.selection;
+    this.otherProductService = state.customValue;
+    this.syncProfessionFromProductService();
+  }
+
+  private syncProfessionFromProductService(): void {
+    if (!this.productServiceSelection) {
+      this.client.profession = (this.client.profession ?? '').trim();
+      return;
+    }
+
+    this.client.profession = productServiceStoredValue(
+      this.productServiceSelection,
+      this.otherProductService
+    );
   }
   proceed() {
     this.toggle('showConfirmation');

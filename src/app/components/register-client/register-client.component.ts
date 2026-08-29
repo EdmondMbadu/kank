@@ -26,6 +26,11 @@ import {
   calculateLoanBudgetAvailability,
   isLoanBudgetExempt,
 } from 'src/app/utils/pending-loan-budget.util';
+import {
+  OTHER_PRODUCT_SERVICE_OPTION,
+  PRODUCT_SERVICE_OPTIONS,
+  productServiceStoredValue,
+} from 'src/app/utils/product-service.util';
 
 @Component({
   selector: 'app-register-client',
@@ -138,6 +143,10 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
   lastName: string = '';
   middleName: string = '';
   profession: string = '';
+  readonly productServiceOptions = PRODUCT_SERVICE_OPTIONS;
+  readonly otherProductServiceOption = OTHER_PRODUCT_SERVICE_OPTION;
+  productServiceSelection: string = '';
+  otherProductService: string = '';
   bussinessCapital: string = '';
   homeAddress: string = '';
   homeAvenue: string = '';
@@ -214,6 +223,7 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.syncProfessionFromProductService();
     let date = this.time.todaysDateMonthDayYear();
     const today = new Date(); // current computer date
     // only for testing.
@@ -235,7 +245,7 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
     if (!this.firstName?.trim()) missingFields.push('Prénom');
     if (!this.phoneNumber?.trim()) missingFields.push('Téléphone');
     if (!this.birthDate?.trim()) missingFields.push('Date de naissance');
-    if (!this.profession?.trim()) missingFields.push('Profession');
+    if (!this.profession?.trim()) missingFields.push('Produit / Service');
     if (!this.bussinessCapital?.toString().trim())
       missingFields.push('Capital');
     if (this.homePictureUploading)
@@ -550,6 +560,8 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
     this.lastName = '';
     this.middleName = '';
     this.profession = '';
+    this.productServiceSelection = '';
+    this.otherProductService = '';
     this.bussinessCapital = '';
     this.homeAddress = '';
     this.homeAvenue = '';
@@ -569,6 +581,7 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
     this.homePictureUploading = false;
   }
   setNewClientValues() {
+    this.syncProfessionFromProductService();
     this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
 
     this.client.firstName = this.firstName;
@@ -624,6 +637,33 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
     // New: Calculate and include creditworthiness score
     this.client.creditworthinessScore =
       this.calculateCreditworthiness().toFixed(0);
+  }
+
+  get showOtherProductServiceInput(): boolean {
+    return this.productServiceSelection === this.otherProductServiceOption;
+  }
+
+  onProductServiceSelectionChange(): void {
+    if (!this.showOtherProductServiceInput) {
+      this.otherProductService = '';
+    }
+    this.syncProfessionFromProductService();
+  }
+
+  onOtherProductServiceChange(): void {
+    this.syncProfessionFromProductService();
+  }
+
+  private syncProfessionFromProductService(): void {
+    if (!this.productServiceSelection) {
+      this.profession = (this.profession ?? '').trim();
+      return;
+    }
+
+    this.profession = productServiceStoredValue(
+      this.productServiceSelection,
+      this.otherProductService
+    );
   }
 
   addReference(): void {

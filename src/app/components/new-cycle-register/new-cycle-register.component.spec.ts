@@ -242,6 +242,51 @@ describe('NewCycleRegisterComponent', () => {
     expect(disabledFeeInputs[1].value.replace(/\s+/g, '')).toBe('FC0');
   });
 
+  it('preserves a legacy custom profession in the other product input', () => {
+    const select = query<HTMLSelectElement>('#profession');
+    const otherInput = query<HTMLInputElement>('#otherProductService');
+
+    expect(normalizedText()).toContain('Produit / Service');
+    expect(select.options.length).toBe(14);
+    expect(select.options[select.options.length - 1].textContent).toContain(
+      'Autres produits ou services'
+    );
+    expect(component.productServiceSelection).toBe(
+      component.otherProductServiceOption
+    );
+    expect(otherInput.value).toBe('Vendeuse');
+    expect(component.client.profession).toBe('Vendeuse');
+  });
+
+  it('stores a standard product selection in the existing profession field', () => {
+    selectOption('#profession', 'Alimentation et boissons');
+
+    expect(component.client.profession).toBe('Alimentation et boissons');
+    expect(
+      fixture.nativeElement.querySelector('#otherProductService')
+    ).toBeNull();
+  });
+
+  it('requires and stores a precise custom product for a new cycle', () => {
+    selectOption('#profession', 'Autres produits ou services');
+    setInput('#otherProductService', 'Vente de charbon');
+
+    expect(component.client.profession).toBe('Vente de charbon');
+  });
+
+  it('blocks a new cycle when another product or service is not described', () => {
+    populateValidSubmissionFields('50 000');
+    selectOption('#profession', 'Autres produits ou services');
+    setInput('#otherProductService', '');
+    const alertSpy = spyOn(window, 'alert');
+
+    component.registerClientNewDebtCycle();
+
+    expect(alertSpy).toHaveBeenCalled();
+    expect(alertSpy.calls.mostRecent().args[0]).toContain('Produit / Service');
+    expect(component.showConfirmation).toBeFalse();
+  });
+
   it('shows best-client next-open-day service and selects the date automatically', () => {
     const dateInput = query<HTMLInputElement>('#requestDate');
 
