@@ -129,7 +129,8 @@ service cloud.firestore {
             'galleryPictures',
             'recoveredAwayDebts',
             'debtRecognized',
-            'notifiedForPolice'
+            'notifiedForPolice',
+            'profession'
           ]) &&
           (!('comments' in request.resource.data) ||
             request.resource.data.comments is list) &&
@@ -138,7 +139,9 @@ service cloud.firestore {
           (!('debtRecognized' in request.resource.data) ||
             request.resource.data.debtRecognized is string) &&
           (!('notifiedForPolice' in request.resource.data) ||
-            request.resource.data.notifiedForPolice is bool) ||
+            request.resource.data.notifiedForPolice is bool) &&
+          (!('profession' in request.resource.data) ||
+            request.resource.data.profession is string) ||
           (
             isAppAdmin() &&
             resource != null &&

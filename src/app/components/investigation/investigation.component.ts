@@ -271,6 +271,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   phoneEditValue = '';
   phoneEditSaving = false;
   phoneEditOpen = false;
+  professionEditValue = '';
+  professionEditSaving = false;
+  professionEditError = '';
+  showProfessionEditModal = false;
   showPhoneHistory = false;
   showRecentPaymentsExpanded = false;
   showRecentSavingsExpanded = false;
@@ -2511,6 +2515,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.selectedClientCommentPresetId = '';
     this.phoneEditValue = client.phoneNumber ?? '';
     this.phoneEditOpen = false;
+    this.professionEditValue = client.profession ?? '';
+    this.professionEditError = '';
+    this.showProfessionEditModal = false;
     this.showPhoneHistory = false;
     this.showRecentPaymentsExpanded = false;
     this.showRecentSavingsExpanded = false;
@@ -2527,6 +2534,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.selectedActiveClientGalleryPicture = undefined;
     this.resetPaymentResponsibilityDraft();
     this.phoneEditOpen = false;
+    this.professionEditValue = '';
+    this.professionEditError = '';
+    this.showProfessionEditModal = false;
     this.showPhoneHistory = false;
     this.showRecentPaymentsExpanded = false;
     this.showRecentSavingsExpanded = false;
@@ -3192,6 +3202,91 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     if (!this.activeClient) return;
     this.phoneEditValue = this.activeClient.phoneNumber ?? '';
     this.phoneEditOpen = !this.phoneEditOpen;
+  }
+
+  get canEditClientProfession(): boolean {
+    return this.auth.isAdmin || this.auth.isInvestigator;
+  }
+
+  openProfessionEditModal(): void {
+    if (!this.canEditClientProfession || !this.activeClient) return;
+    this.professionEditValue = this.activeClient.profession ?? '';
+    this.professionEditError = '';
+    this.showProfessionEditModal = true;
+  }
+
+  closeProfessionEditModal(): void {
+    if (this.professionEditSaving) return;
+    this.professionEditError = '';
+    this.showProfessionEditModal = false;
+  }
+
+  saveClientProfession(): void {
+    if (!this.canEditClientProfession || !this.activeClient?.uid) return;
+
+    const profession = this.professionEditValue.trim();
+    if (!profession) {
+      this.professionEditError = 'Veuillez saisir la profession du client.';
+      return;
+    }
+
+    if (profession === (this.activeClient.profession ?? '').trim()) {
+      this.closeProfessionEditModal();
+      return;
+    }
+
+    const clientId = this.activeClient.uid;
+    const ownerId =
+      this.activeClient.locationOwnerId ||
+      this.selectedLocationId ||
+      this.currentUserId;
+    const update = ownerId
+      ? this.data.updateClientInvestigationFieldsForUser(ownerId, clientId, {
+          profession,
+        })
+      : this.data.updateClientInvestigationFields(clientId, { profession });
+
+    this.professionEditSaving = true;
+    this.professionEditError = '';
+    update
+      .then(() => {
+        this.applyProfessionLocal(clientId, profession, ownerId);
+        if (this.activeClient?.uid === clientId) {
+          this.activeClient.profession = profession;
+        }
+        this.professionEditValue = profession;
+        this.showProfessionEditModal = false;
+      })
+      .catch((err) => {
+        console.error('Failed to update client profession:', err);
+        this.professionEditError =
+          'Impossible de mettre à jour la profession. Réessayez.';
+      })
+      .finally(() => {
+        this.professionEditSaving = false;
+      });
+  }
+
+  private applyProfessionLocal(
+    clientId: string,
+    profession: string,
+    ownerId: string
+  ): void {
+    const updateList = (list: Client[]) => {
+      list.forEach((client) => {
+        if (
+          client.uid === clientId &&
+          (client.locationOwnerId
+            ? client.locationOwnerId === ownerId
+            : true)
+        ) {
+          client.profession = profession;
+        }
+      });
+    };
+
+    updateList(this.clients);
+    updateList(this.allClients);
   }
 
   get allActivePhones(): string[] {

@@ -168,6 +168,36 @@ test('staff can read investigation PDFs while portal clients cannot', async () =
   await assertFails(storageFor(portalClient).ref(objectPath).getMetadata());
 });
 
+test('investigation staff can update a client profession without changing financial fields', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context
+      .firestore()
+      .doc('users/site-1/clients/client-1')
+      .set({
+        profession: 'Commerce',
+        loanAmount: '100000',
+      });
+  });
+
+  const staff = testEnv.authenticatedContext('staff-user').firestore();
+  const portal = testEnv
+    .authenticatedContext('portal-user', {
+      portalClient: true,
+      ownerUid: 'site-1',
+      clientUid: 'client-1',
+    })
+    .firestore();
+  const clientPath = 'users/site-1/clients/client-1';
+
+  await assertSucceeds(
+    staff.doc(clientPath).update({ profession: 'Vente de vêtements' })
+  );
+  await assertFails(staff.doc(clientPath).update({ loanAmount: '50000' }));
+  await assertFails(
+    portal.doc(clientPath).update({ profession: 'Vente de chaussures' })
+  );
+});
+
 test('authenticated staff can run dayTotals collection-group queries', async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await context
