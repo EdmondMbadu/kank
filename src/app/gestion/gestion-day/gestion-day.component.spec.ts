@@ -140,6 +140,18 @@ describe('GestionDayComponent optimized audit view', () => {
           requestType: 'savings',
           requestAmount: '800000',
         },
+        {
+          requestDate: '8-24-2026',
+          requestType: 'savings',
+          requestStatus: '',
+          requestAmount: '700000',
+        },
+        {
+          requestDate: '8-24-2026',
+          requestType: 'savings',
+          requestStatus: 'pending',
+          requestAmount: '-100000',
+        },
       ],
       'users/one/cards|requestDate|8-24-2026': [],
       'users/two/clients|paymentDay|Saturday': [],
@@ -159,6 +171,12 @@ describe('GestionDayComponent optimized audit view', () => {
           requestDate: '8-24-2026',
           requestType: 'card',
           requestAmount: '100000',
+        },
+        {
+          requestStatus: '',
+          requestDate: '8-24-2026',
+          requestType: 'card',
+          requestAmount: '600000',
         },
       ],
     };
@@ -290,6 +308,134 @@ describe('GestionDayComponent optimized audit view', () => {
           query.field === 'requestDate' && query.value === '8-24-2026'
       )
     ).toHaveSize(2);
+  });
+
+  it('keeps the real UPN request at $136 and 400,000 FC', () => {
+    const clients = [
+      {
+        requestStatus: 'pending',
+        requestDate: '8-24-2026',
+        requestType: 'lending',
+        agentSubmittedVerification: 'true',
+        requestAmount: '250000',
+      },
+      {
+        requestStatus: 'pending',
+        requestDate: '8-24-2026',
+        requestType: 'savings',
+        requestAmount: '100000',
+      },
+      {
+        requestStatus: 'pending',
+        requestDate: '8-24-2026',
+        requestType: 'rejection',
+        requestAmount: '25000',
+      },
+      {
+        requestStatus: 'pending',
+        requestDate: '8-24-2026',
+        requestType: 'lending',
+        agentSubmittedVerification: 'false',
+        requestAmount: '900000',
+      },
+      {
+        requestStatus: '',
+        requestDate: '8-24-2026',
+        requestType: 'savings',
+        requestAmount: '800000',
+      },
+      {
+        requestStatus: '   ',
+        requestDate: '8-24-2026',
+        requestType: 'savings',
+        requestAmount: '700000',
+      },
+      {
+        requestStatus: 'pending',
+        requestDate: '8-24-2026',
+        requestType: 'savings',
+        requestAmount: 'not-a-number',
+      },
+      {
+        requestStatus: 'pending',
+        requestDate: '8-24-2026',
+        requestType: 'savings',
+        requestAmount: '-50000',
+      },
+      {
+        requestStatus: 'pending',
+        requestDate: '8-25-2026',
+        requestType: 'savings',
+        requestAmount: '600000',
+      },
+    ];
+    const cards = [
+      {
+        requestStatus: 'pending',
+        requestDate: '8-24-2026',
+        requestType: 'card',
+        requestAmount: '25000',
+      },
+      {
+        requestStatus: '',
+        requestDate: '8-24-2026',
+        requestType: 'card',
+        requestAmount: '500000',
+      },
+      {
+        requestStatus: 'pending',
+        requestDate: '8-24-2026',
+        requestType: 'card',
+        requestAmount: '-25000',
+      },
+    ];
+    const auth = {
+      isAdmin: true,
+      isAuditTeamViewer: false,
+      getClientsOfAUser: () => of(clients),
+      getClientsCardOfAUser: () => of(cards),
+    };
+    const compute = {
+      ...buildCompute(),
+      findTodayTotalResultsGivenField: () => 0,
+      findTotalForToday: () => 0,
+      computeExpectedPerDate: () => 0,
+      convertCongoleseFrancToUsDollars: (amount: string) =>
+        ((Number(amount) * 136) / 400000).toString(),
+    };
+    const afs = {
+      collection: () => ({ valueChanges: () => of([]) }),
+    };
+    const component = createComponent(auth, afs, compute, {
+      findClientsWithDebts: () => [],
+      didClientStartThisWeek: () => false,
+    });
+    component.allUsers = [
+      {
+        uid: 'upn',
+        firstName: 'UPN',
+        reserve: {},
+        dailyReimbursement: {},
+        expenses: {},
+        moneyInHands: '0',
+        cardsMoney: '0',
+      } as any,
+    ];
+    spyOn<any>(component, 'computeWeeklyPaymentTotals');
+    spyOn(component, 'setGraphics');
+
+    component.getAllClients();
+
+    expect(component.userRequestTotals).toEqual([
+      {
+        firstName: 'UPN',
+        total: 400000,
+        totalInDollar: 136,
+        trackingId: 'upn',
+      },
+    ]);
+    expect(component.overallTotal).toBe(400000);
+    expect(component.overallTotalInDollars).toBe(136);
   });
 
   it('loads and caches one admin-only pure-payment query for all teams', async () => {

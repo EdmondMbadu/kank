@@ -1050,23 +1050,34 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     requestDate: string,
     source: 'client' | 'card'
   ): number {
-    return records.reduce((sum, record) => {
-      if (
-        record.requestDate !== requestDate ||
-        !this.isEligibleScheduledRequest(record, source)
-      ) {
-        return sum;
-      }
+    return records.reduce(
+      (sum, record) =>
+        sum + this.scheduledRequestAmount(record, requestDate, source),
+      0
+    );
+  }
 
-      return sum + this.auditFiniteAmount(record.requestAmount);
-    }, 0);
+  private scheduledRequestAmount(
+    record: Client | Card,
+    requestDate: string,
+    source: 'client' | 'card'
+  ): number {
+    if (
+      record.requestDate !== requestDate ||
+      !this.isEligibleScheduledRequest(record, source)
+    ) {
+      return 0;
+    }
+
+    const amount = this.auditFiniteAmount(record.requestAmount);
+    return amount > 0 ? amount : 0;
   }
 
   private isEligibleScheduledRequest(
     record: Client | Card,
     source: 'client' | 'card'
   ): boolean {
-    if (record.requestStatus === undefined) return false;
+    if (!String(record.requestStatus ?? '').trim()) return false;
 
     if (source === 'card') return record.requestType === 'card';
 
@@ -1288,13 +1299,17 @@ export class GestionDayComponent implements OnInit, OnDestroy {
               }
 
               // existing target date (tomorrow / requestDateRigthFormat)
-              if (client.requestDate === targetDate) {
-                userTotal += Number(client.requestAmount);
-              }
+              userTotal += this.scheduledRequestAmount(
+                client,
+                targetDate,
+                'client'
+              );
               // NEW: selected date (today or selected date)
-              if (client.requestDate === this.requestDateCorrectFormat) {
-                userTotalToday += Number(client.requestAmount);
-              }
+              userTotalToday += this.scheduledRequestAmount(
+                client,
+                this.requestDateCorrectFormat,
+                'client'
+              );
             }
           }
 
@@ -1344,13 +1359,17 @@ export class GestionDayComponent implements OnInit, OnDestroy {
               const cardTargetDate = this.requestDateRigthFormat === this.tomorrow 
                 ? this.effectiveTomorrowDate 
                 : this.requestDateRigthFormat;
-              if (card.requestDate === cardTargetDate) {
-                userTotal += Number(card.requestAmount);
-              }
+              userTotal += this.scheduledRequestAmount(
+                card,
+                cardTargetDate,
+                'card'
+              );
               // NEW: selected date (today or selected date)
-              if (card.requestDate === this.requestDateCorrectFormat) {
-                userTotalToday += Number(card.requestAmount);
-              }
+              userTotalToday += this.scheduledRequestAmount(
+                card,
+                this.requestDateCorrectFormat,
+                'card'
+              );
             }
           }
 
