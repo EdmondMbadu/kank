@@ -29,6 +29,13 @@ const {
   stableHash,
   toGsmSafe,
 } = require("./sms-utils");
+const {
+  empLocation,
+  hasPhone,
+  isAllowedRecipient,
+  isFollowupManager,
+  isWorkingEmployee,
+} = require("./employee-followup-routing");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -4767,8 +4774,8 @@ exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>
 
 // ───────────────────────────────────────────────────────────
 // DAILY (08:05 Kinshasa) — Send agent/manager follow-ups per *location*
-// Non-working agents' clients → managers of *that* location only
-// Only send to roles: manager, agent, agent marketing/marketting
+// Non-working agents' clients → follow-up managers of *that* location only
+// Audit/region roles are eligible only on an explicit rotation placement.
 // ───────────────────────────────────────────────────────────
 exports.scheduledSendAgentFollowups = functions.pubsub
     .schedule("5 8 * * *")
@@ -4865,11 +4872,12 @@ exports.scheduledSendAgentFollowups = functions.pubsub
               }
             }
 
-            // Index managers by location (only working managers)
+            // Index fallback managers by location. A regional manager is a
+            // fallback manager only at an explicit rotation destination.
             const managersByLoc = new Map(); // loc -> Employee[]
             const workingManagersByLoc = new Map(); // loc -> boolean (has working manager)
             for (const e of employees) {
-              if (roleOf(e) === "manager") {
+              if (isFollowupManager(e)) {
                 const loc = empLocation(e, defaultLocation);
                 if (!managersByLoc.has(loc)) managersByLoc.set(loc, []);
                 managersByLoc.get(loc).push(e);
@@ -4897,7 +4905,7 @@ exports.scheduledSendAgentFollowups = functions.pubsub
                 away: [],
                 location: empLocation(e, defaultLocation),
               };
-              const isMgr = roleOf(e) === "manager";
+              const isMgr = isFollowupManager(e);
               const myLoc = empLocation(e, defaultLocation);
 
               // Get aggregated load for this location
@@ -4967,8 +4975,7 @@ exports.scheduledSendAgentFollowups = functions.pubsub
               // Check if there are any working agents at this location
                 let hasWorkingAgent = false;
                 for (const e of employees) {
-                  const empRole = roleOf(e);
-                  if (isAllowedRecipient(e) && isWorkingEmployee(e) && empRole !== "manager" && empLocation(e, defaultLocation) === loc) {
+                  if (isAllowedRecipient(e) && isWorkingEmployee(e) && !isFollowupManager(e) && empLocation(e, defaultLocation) === loc) {
                     hasWorkingAgent = true;
                     break;
                   }
@@ -4993,32 +5000,6 @@ exports.scheduledSendAgentFollowups = functions.pubsub
       });
     });
 
-/** ── helpers (reuse variants from your component/other functions) */
-function roleOf(e) {
-  return String((e && (e.role || e.position)) || "").trim().toLowerCase();
-}
-function isAllowedRecipient(e) {
-  const r = roleOf(e);
-  // Allowed roles ONLY
-  if (r === "manager") return true;
-  if (r === "agent") return true;
-  // accept common spellings for marketing agents
-  if (r === "agent marketing" || r === "agent marketting") return true;
-  if (r === "stagaire" || r === "stagaire marketting") return true;
-  // everything else (e.g., "auditrice", "auditor", etc.) is excluded
-  return false;
-}
-function isWorkingEmployee(e) {
-  if (!e) return false;
-  const raw = String(e.status || e.workStatus || e.employmentStatus || "").trim().toLowerCase();
-  return ["travaille", "tavaille", "en travail", "working", "work"].includes(raw);
-}
-function hasPhone(e) {
-  return (e && (e.phoneNumber || e.telephone)) || "";
-}
-function empLocation(e, fallback) {
-  return String(e.location || e.site || e.office || e.branch || fallback || "").trim();
-}
 function isLeftQuitte(c) {
   const fields = [
     c.vitalStatus, c.vital_status, c.status, c.clientStatus,
