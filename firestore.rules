@@ -250,7 +250,11 @@ service cloud.firestore {
     }
 
     match /remainingLoanMonthEnds/{periodKey} {
-      allow read: if isAppAdmin();
+      // Central admin access is selected with the application's authenticated
+      // session role, which Firestore rules cannot inspect. Match the other
+      // Central reporting reads: authenticated staff may read the immutable
+      // month-end aggregate, while portal clients remain excluded.
+      allow read: if signedIn() && !isPortalClient();
       allow write: if false;
     }
 

@@ -1,4 +1,5 @@
 import { TrackingMonthCentralComponent } from './tracking-month-central.component';
+import { of } from 'rxjs';
 
 describe('TrackingMonthCentralComponent', () => {
   const createComponent = (
@@ -64,6 +65,36 @@ describe('TrackingMonthCentralComponent', () => {
             .toString(),
       } as any
     );
+
+  it('starts the central monthly loaders when initialized as an administrator', () => {
+    const component = createComponent(
+      true,
+      jasmine.createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths')
+    );
+    const users = [{ uid: 'site-a', firstName: 'Alpha' } as any];
+    const getAllUsersInfo = jasmine
+      .createSpy('getAllUsersInfo')
+      .and.returnValue(of(users));
+    (component.auth as any).getAllUsersInfo = getAllUsersInfo;
+    (component.auth as any).profitabilityConfig$ = of({
+      thresholdUsd: 3000,
+    });
+    const initializeInputs = spyOn(
+      component as any,
+      'initalizeInputs'
+    ).and.stub();
+    const loadLendingClients = spyOn(
+      component as any,
+      'loadLendingClientsForAllLocations'
+    ).and.stub();
+
+    component.ngOnInit();
+
+    expect(getAllUsersInfo).toHaveBeenCalledTimes(1);
+    expect(component.allUsers).toEqual(users);
+    expect(initializeInputs).toHaveBeenCalledTimes(1);
+    expect(loadLendingClients).toHaveBeenCalledTimes(1);
+  });
 
   it('reuses the loaded client cache to calculate prêt restant by site', () => {
     const component = createComponent(
@@ -214,6 +245,7 @@ describe('TrackingMonthCentralComponent', () => {
       jasmine.createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths'),
       getSnapshot
     );
+    component.currentDate = new Date('2026-08-22T12:00:00Z');
     component.currentMonth = 8;
     component.year = 2026;
     component.givenMonth = 8;

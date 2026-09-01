@@ -242,7 +242,7 @@ test('authenticated staff can run dayTotals collection-group queries', async () 
   await assertFails(monthQueryFor(portalFirestore));
 });
 
-test('only admins can read month-end remaining-loan snapshots', async () => {
+test('authenticated staff can read immutable month-end remaining-loan snapshots', async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await context
       .firestore()
@@ -261,8 +261,11 @@ test('only admins can read month-end remaining-loan snapshots', async () => {
   const path = 'remainingLoanMonthEnds/2026-08';
 
   await assertSucceeds(admin.doc(path).get());
-  await assertFails(staff.doc(path).get());
+  await assertSucceeds(staff.doc(path).get());
   await assertFails(portal.doc(path).get());
+  await assertFails(
+    staff.doc(path).set({ totalDebtLeftFc: 200000 })
+  );
   await assertFails(admin.doc(path).set({ totalDebtLeftFc: 200000 }));
 });
 
