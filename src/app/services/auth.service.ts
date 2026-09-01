@@ -1135,8 +1135,15 @@ export class AuthService {
       currentTotalPoints: 0,
       // Set rotation fields
       isRotation: isRotation,
+      // Preserve one logical identity even though each location has its own
+      // employee document UID.
+      canonicalEmployeeId:
+        sourceEmployeeDoc.canonicalEmployeeId || sourceEmployeeId,
       // Only include rotationSourceLocationId for rotations (not for affectations)
-      ...(isRotation && { rotationSourceLocationId: sourceUserId }),
+      ...(isRotation && {
+        rotationSourceLocationId: sourceUserId,
+        rotationSourceEmployeeId: sourceEmployeeId,
+      }),
     };
 
     // Save the copied employee

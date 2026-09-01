@@ -62,6 +62,15 @@ describe('TeamRankingMonthComponent', () => {
           signedAmountUsd: -2,
           bandCount: 2,
         }),
+      filterClientsWithoutDebtFollowedByEmployee: () => [],
+      roundNumber: (value: number) => Math.floor(value),
+      convertCongoleseFrancToUsDollars: (value: string) =>
+        Number(value) / 3000,
+    } as any;
+    const data = {
+      getEmployeeDayTotalsForDay: jasmine
+        .createSpy('getEmployeeDayTotalsForDay')
+        .and.resolveTo({ total: 0, count: 0 }),
     } as any;
     const performanceMetricSettings = {
       employeeMode$: of('legacy'),
@@ -76,14 +85,14 @@ describe('TeamRankingMonthComponent', () => {
       time,
       {} as any,
       compute,
-      {} as any,
+      data,
       {} as any,
       {} as any,
       {} as any,
       {} as any,
       performanceMetricSettings
     );
-    return { component, auth, compute, performanceMetricSettings };
+    return { component, auth, compute, data, performanceMetricSettings };
   }
 
   beforeEach(() => {
@@ -206,6 +215,154 @@ describe('TeamRankingMonthComponent', () => {
     expect(component.employeePerformanceVisualPercent(verifier)).toBe(46);
   });
 
+  it('shows one rotation row and computes legacy performance once per person', () => {
+    const { component } = createComponent();
+    const auditSite = { uid: 'audit-site', firstName: 'Audit' } as any;
+    const upnSite = { uid: 'upn-site', firstName: 'UPN' } as any;
+    const sourceEmployee = {
+      uid: 'audit-employee',
+      firstName: 'Alice',
+      lastName: 'Test',
+      phoneNumber: '+243 999 000 111',
+      paymentCode: 'ALICE-01',
+      role: 'Agent Marketing',
+      status: 'Travaille',
+      dailyPoints: { '7-1-2026': '8' },
+      totalDailyPoints: { '7-1-2026': '10' },
+      tempUser: auditSite,
+    } as any;
+    const rotationEmployee = {
+      uid: 'upn-rotation',
+      firstName: 'Alice',
+      lastName: 'Test',
+      phoneNumber: '+243 999 000 111',
+      paymentCode: 'ALICE-01',
+      role: 'Agent Marketing',
+      status: 'Travaille',
+      isRotation: true,
+      rotationSourceLocationId: 'audit-site',
+      rotationSourceEmployeeId: 'audit-employee',
+      canonicalEmployeeId: 'audit-employee',
+      dailyPoints: { '7-1-2026': '8', '7-2-2026': '9' },
+      totalDailyPoints: { '7-1-2026': '10', '7-2-2026': '10' },
+      tempUser: upnSite,
+    } as any;
+    const manager = {
+      uid: 'upn-manager',
+      firstName: 'Manager',
+      role: 'Manager',
+      status: 'Travaille',
+      performancePercentageMonth: '100',
+      dailyPoints: { '7-1-2026': '10' },
+      totalDailyPoints: { '7-1-2026': '10' },
+      tempUser: upnSite,
+    } as any;
+
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    component.filterAndInitializeEmployees(
+      [sourceEmployee, rotationEmployee, manager],
+      []
+    );
+
+    expect(
+      component.allEmployees.filter((employee) =>
+        ['audit-employee', 'upn-rotation'].includes(employee.uid || '')
+      ).map((employee) => employee.uid)
+    ).toEqual(['upn-rotation']);
+    expect(rotationEmployee.performancePercentageMonth).toBe('85');
+    expect(component.averagePerformancePercentage).toBe('85');
+    expect(component.currentPerformancePercent).toBe(85);
+  });
+
+  it('shows unavailable performance as a dash instead of a false zero', () => {
+    const { component } = createComponent();
+    component.filterAndInitializeEmployees(
+      [
+        {
+          uid: 'no-data',
+          role: 'Agent Marketing',
+          status: 'Travaille',
+          dailyPoints: {},
+          totalDailyPoints: {},
+          tempUser: { uid: 'site-a' },
+        } as any,
+      ],
+      []
+    );
+
+    expect(component.averagePerformancePercentage).toBe('');
+    expect(component.currentPerformancePercent).toBeNull();
+    expect(component.performanceEmployees).toEqual([]);
+    expect(component.excludedEmployees.map((employee) => employee.uid)).toEqual([
+      'no-data',
+    ]);
+  });
+
+  it('combines source and rotation payment totals into one monthly row', async () => {
+    const { component, data } = createComponent();
+    const auditSite = { uid: 'audit-site', firstName: 'Audit' } as any;
+    const upnSite = { uid: 'upn-site', firstName: 'UPN' } as any;
+    const sourceEmployee = {
+      uid: 'audit-employee',
+      firstName: 'Alice',
+      lastName: 'Test',
+      paymentCode: 'ALICE-01',
+      role: 'Agent Marketing',
+      status: 'Travaille',
+      dailyPoints: {},
+      totalDailyPoints: {},
+      tempUser: auditSite,
+    } as any;
+    const rotationEmployee = {
+      uid: 'upn-rotation',
+      firstName: 'Alice',
+      lastName: 'Test',
+      paymentCode: 'ALICE-01',
+      role: 'Agent Marketing',
+      status: 'Travaille',
+      isRotation: true,
+      rotationSourceLocationId: 'audit-site',
+      rotationSourceEmployeeId: 'audit-employee',
+      canonicalEmployeeId: 'audit-employee',
+      dailyPoints: {},
+      totalDailyPoints: {},
+      tempUser: upnSite,
+    } as any;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    component.allEmployeesAll = [sourceEmployee, rotationEmployee];
+    component.filterAndInitializeEmployees(component.allEmployeesAll, []);
+    data.getEmployeeDayTotalsForDay.and.callFake(
+      (ownerUid: string, employeeUid: string, dayKey: string) => {
+        if (
+          ownerUid === 'audit-site' &&
+          employeeUid === 'audit-employee' &&
+          dayKey === '7-1-2026'
+        ) {
+          return Promise.resolve({ total: 100000, count: 1 });
+        }
+        if (
+          ownerUid === 'upn-site' &&
+          employeeUid === 'upn-rotation' &&
+          dayKey === '7-2-2026'
+        ) {
+          return Promise.resolve({ total: 200000, count: 2 });
+        }
+        return Promise.resolve({ total: 0, count: 0 });
+      }
+    );
+
+    await (component as any).loadMonthlyTotalsForEmployees();
+
+    expect(component.paidEmployeesMonth.map((employee) => employee.uid)).toEqual([
+      'upn-rotation',
+    ]);
+    expect(component.paidEmployeesMonth[0]._monthTotal).toBe(300000);
+    expect(component.paidEmployeesMonth[0]._monthCount).toBe(3);
+    expect(component.totalMonthlyAmount).toBe(300000);
+  });
+
   it('publishes the global employee mode and mirrors it in the admin preview', async () => {
     const { component, auth, performanceMetricSettings } = createComponent();
     auth.isAdmin = true;
@@ -313,6 +470,99 @@ describe('TeamRankingMonthComponent', () => {
       })
     );
     expect(component.currentPerformancePercent).toBeCloseTo(66.67, 2);
+  });
+
+  it('deduplicates rotation history in global amount performance', async () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    const auditSite = {
+      uid: 'audit-site',
+      firstName: 'Audit',
+      dailyReimbursement: { '7-1-2026': '50' },
+    } as any;
+    const upnSite = {
+      uid: 'upn-site',
+      firstName: 'UPN',
+      dailyReimbursement: { '7-2-2026': '100' },
+    } as any;
+    const sourceEmployee = {
+      uid: 'audit-employee',
+      firstName: 'Alice',
+      lastName: 'Test',
+      paymentCode: 'ALICE-01',
+      role: 'Agent Marketing',
+      status: 'Travaille',
+      dailyPoints: {},
+      totalDailyPoints: {},
+      tempUser: auditSite,
+    } as any;
+    const rotationEmployee = {
+      uid: 'upn-rotation',
+      firstName: 'Alice',
+      lastName: 'Test',
+      paymentCode: 'ALICE-01',
+      role: 'Agent Marketing',
+      status: 'Travaille',
+      isRotation: true,
+      rotationSourceLocationId: 'audit-site',
+      rotationSourceEmployeeId: 'audit-employee',
+      canonicalEmployeeId: 'audit-employee',
+      dailyPoints: {},
+      totalDailyPoints: {},
+      tempUser: upnSite,
+    } as any;
+    component.allUsers = [auditSite, upnSite];
+    component.allEmployeesAll = [sourceEmployee, rotationEmployee];
+    component.filterAndInitializeEmployees(component.allEmployeesAll, []);
+    spyOn<any>(
+      component as any,
+      'fetchEmployeeAmountRecordsForMonth'
+    ).and.callFake((_ownerUid: string, employeeUid: string) =>
+      Promise.resolve(
+        employeeUid === 'audit-employee'
+          ? [
+              {
+                dayKey: '7-1-2026',
+                expected: 100,
+                total: 50,
+                expectedPresent: true,
+                totalPresent: true,
+                employeeUid,
+              },
+            ]
+          : [
+              {
+                dayKey: '7-1-2026',
+                expected: 100,
+                total: 50,
+                expectedPresent: true,
+                totalPresent: true,
+                employeeUid,
+              },
+              {
+                dayKey: '7-2-2026',
+                expected: 100,
+                total: 100,
+                expectedPresent: true,
+                totalPresent: true,
+                employeeUid,
+              },
+            ]
+      )
+    );
+
+    await component.setPerformanceMetricMode('amount');
+
+    expect(component.amountPerformanceSummary).toEqual(
+      jasmine.objectContaining({
+        collectedFc: 150,
+        expectedFc: 200,
+        percent: 75,
+      })
+    );
+    expect(component.currentPerformancePercent).toBe(75);
   });
 
   it('uses site totals as the global numerator and exposes reconciliation gaps', async () => {

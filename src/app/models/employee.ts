@@ -64,6 +64,10 @@ export class Employee {
   contractSignatureImage?: string | null;
   isRotation?: boolean; // Indicates if employee is in rotation (temporary transfer)
   rotationSourceLocationId?: string; // Original location ID for rotation employees
+  /** Stable human identity shared by source, rotation, and affectation records. */
+  canonicalEmployeeId?: string;
+  /** Employee document UID from which this rotation was created. */
+  rotationSourceEmployeeId?: string;
   vacationRequestNumberOfDays?: string;
   vacationAcceptedNumberOfDays?: string;
   vacationTotalDays?: string;
