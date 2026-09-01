@@ -100,7 +100,7 @@ describe('GestionDayComponent optimized audit view', () => {
     expect(adminComponent.updateCombinedGraphics).toHaveBeenCalledTimes(1);
   });
 
-  it('computes the three audit tables from bounded queries and location aggregates', () => {
+  it('computes the three audit tables from bounded source-record queries', () => {
     const queryLog: Array<{ path: string; field: string; value: string }> = [];
     const queryData: Record<string, any[]> = {
       'users/one/clients|paymentDay|Saturday': [
@@ -120,6 +120,28 @@ describe('GestionDayComponent optimized audit view', () => {
         },
       ],
       'users/one/cards|requestDate|8-22-2026': [],
+      'users/one/clients|requestDate|8-24-2026': [
+        {
+          requestStatus: 'pending',
+          requestDate: '8-24-2026',
+          requestType: 'lending',
+          agentSubmittedVerification: 'true',
+          requestAmount: '400000',
+        },
+        {
+          requestStatus: 'pending',
+          requestDate: '8-24-2026',
+          requestType: 'lending',
+          agentSubmittedVerification: 'false',
+          requestAmount: '900000',
+        },
+        {
+          requestDate: '8-24-2026',
+          requestType: 'savings',
+          requestAmount: '800000',
+        },
+      ],
+      'users/one/cards|requestDate|8-24-2026': [],
       'users/two/clients|paymentDay|Saturday': [],
       'users/two/clients|requestDate|8-22-2026': [],
       'users/two/cards|requestDate|8-22-2026': [
@@ -128,6 +150,15 @@ describe('GestionDayComponent optimized audit view', () => {
           requestDate: '8-22-2026',
           requestType: 'card',
           requestAmount: '50000',
+        },
+      ],
+      'users/two/clients|requestDate|8-24-2026': [],
+      'users/two/cards|requestDate|8-24-2026': [
+        {
+          requestStatus: 'pending',
+          requestDate: '8-24-2026',
+          requestType: 'card',
+          requestAmount: '100000',
         },
       ],
     };
@@ -160,7 +191,7 @@ describe('GestionDayComponent optimized audit view', () => {
       {
         uid: 'one',
         firstName: 'Masangambila',
-        dailyMoneyRequests: { '8-24-2026': '400000' },
+        dailyMoneyRequests: { '8-24-2026': '9900000' },
         reserve: { '8-22-2026-10-0-0': '175000' },
         moneyInHands: '0',
         cardsMoney: '0',
@@ -168,7 +199,7 @@ describe('GestionDayComponent optimized audit view', () => {
       {
         uid: 'two',
         firstName: 'Matadikibala',
-        dailyMoneyRequests: { '8-24-2026': '100000' },
+        dailyMoneyRequests: { '8-24-2026': '8800000' },
         reserve: {},
         moneyInHands: '50000',
         cardsMoney: '10000',
@@ -194,18 +225,18 @@ describe('GestionDayComponent optimized audit view', () => {
       'Matadikibala',
     ]);
     expect(component.reserveTotals[1].moneyInHands).toBe(60000);
-    expect(queryLog).toHaveSize(6);
+    expect(queryLog).toHaveSize(10);
     expect(queryLog.some((query) => query.path.includes('transportReceipts')))
       .toBeFalse();
     expect(
-      queryLog.some(
+      queryLog.filter(
         (query) =>
           query.field === 'requestDate' && query.value === '8-24-2026'
       )
-    ).toBeFalse();
+    ).toHaveSize(4);
   });
 
-  it('queries tomorrow directly only when a location aggregate is absent', () => {
+  it('queries tomorrow directly even when a stale location aggregate exists', () => {
     const queryLog: Array<{ path: string; field: string; value: string }> = [];
     const afs = {
       collection: (path: string, queryFactory: (ref: any) => any) => {
@@ -245,7 +276,7 @@ describe('GestionDayComponent optimized audit view', () => {
       {
         uid: 'missing',
         firstName: 'Fallback',
-        dailyMoneyRequests: {},
+        dailyMoneyRequests: { '8-24-2026': '999999' },
         reserve: {},
       },
     ];

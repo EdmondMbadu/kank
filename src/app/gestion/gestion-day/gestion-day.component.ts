@@ -6,7 +6,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin, of, Subscription } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { map, take } from 'rxjs/operators';
 import { Management } from 'src/app/models/management';
 import { AuthService } from 'src/app/services/auth.service';
@@ -817,9 +817,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
   /**
    * Lightweight audit path. The audit tables need only today's outstanding
-   * requests, today's scheduled reserve clients, and each location's existing
-   * daily aggregate for tomorrow. Admin keeps the complete historical path in
-   * getAllClients().
+   * requests and today's scheduled reserve clients. Tomorrow's requests are
+   * always recalculated from the same client/card records and eligibility
+   * rules used by the admin view so a stale aggregate cannot change the audit
+   * table.
    */
   getAuditOperationalTables(): void {
     const requestVersion = ++this.auditTablesRequestVersion;
@@ -856,34 +857,26 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       const userId = user.uid!;
       const clientsPath = `users/${userId}/clients`;
       const cardsPath = `users/${userId}/cards`;
-      const dailyRequests = user.dailyMoneyRequests || {};
-      const hasTomorrowAggregate = Object.prototype.hasOwnProperty.call(
-        dailyRequests,
-        targetDate
+      const tomorrowTotal$ = forkJoin({
+        clients: this.afs
+          .collection<Client>(clientsPath, (ref) =>
+            ref.where('requestDate', '==', targetDate)
+          )
+          .valueChanges()
+          .pipe(take(1)),
+        cards: this.afs
+          .collection<Card>(cardsPath, (ref) =>
+            ref.where('requestDate', '==', targetDate)
+          )
+          .valueChanges()
+          .pipe(take(1)),
+      }).pipe(
+        map(
+          ({ clients, cards }) =>
+            this.sumAuditOutstandingRequests(clients, targetDate, 'client') +
+            this.sumAuditOutstandingRequests(cards, targetDate, 'card')
+        )
       );
-
-      const tomorrowTotal$ = hasTomorrowAggregate
-        ? of(this.auditFiniteAmount(dailyRequests[targetDate]))
-        : forkJoin({
-            clients: this.afs
-              .collection<Client>(clientsPath, (ref) =>
-                ref.where('requestDate', '==', targetDate)
-              )
-              .valueChanges()
-              .pipe(take(1)),
-            cards: this.afs
-              .collection<Card>(cardsPath, (ref) =>
-                ref.where('requestDate', '==', targetDate)
-              )
-              .valueChanges()
-              .pipe(take(1)),
-          }).pipe(
-            map(
-              ({ clients, cards }) =>
-                this.sumAuditOutstandingRequests(clients, targetDate) +
-                this.sumAuditOutstandingRequests(cards, targetDate)
-            )
-          );
 
       return forkJoin({
         reserveClients: this.afs
@@ -921,11 +914,13 @@ export class GestionDayComponent implements OnInit, OnDestroy {
           const todayTotal =
             this.sumAuditOutstandingRequests(
               todayClients,
-              this.requestDateCorrectFormat
+              this.requestDateCorrectFormat,
+              'client'
             ) +
             this.sumAuditOutstandingRequests(
               todayCards,
-              this.requestDateCorrectFormat
+              this.requestDateCorrectFormat,
+              'card'
             );
           const todayReserveKeys = Object.keys(user.reserve || {}).filter(
             (key) => key.startsWith(this.requestDateCorrectFormat)
@@ -1052,26 +1047,35 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
   private sumAuditOutstandingRequests(
     records: Array<Client | Card>,
-    requestDate: string
+    requestDate: string,
+    source: 'client' | 'card'
   ): number {
     return records.reduce((sum, record) => {
       if (
-        record.requestStatus === undefined ||
-        record.requestDate !== requestDate
+        record.requestDate !== requestDate ||
+        !this.isEligibleScheduledRequest(record, source)
       ) {
         return sum;
       }
 
-      const validType =
-        record.requestType === 'card' ||
-        record.requestType === 'savings' ||
-        record.requestType === 'rejection' ||
-        (record.requestType === 'lending' &&
-          (record as Client).agentSubmittedVerification === 'true');
-      return validType
-        ? sum + this.auditFiniteAmount(record.requestAmount)
-        : sum;
+      return sum + this.auditFiniteAmount(record.requestAmount);
     }, 0);
+  }
+
+  private isEligibleScheduledRequest(
+    record: Client | Card,
+    source: 'client' | 'card'
+  ): boolean {
+    if (record.requestStatus === undefined) return false;
+
+    if (source === 'card') return record.requestType === 'card';
+
+    return (
+      record.requestType === 'savings' ||
+      record.requestType === 'rejection' ||
+      (record.requestType === 'lending' &&
+        (record as Client).agentSubmittedVerification === 'true')
+    );
   }
 
   private auditFiniteAmount(value: unknown): number {
@@ -1275,14 +1279,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
           // Process clients
           for (let client of clients) {
-            const meetsTypeGate =
-              client.requestStatus !== undefined &&
-              ((client.requestType === 'lending' &&
-                client.agentSubmittedVerification === 'true') ||
-                client.requestType === 'savings' ||
-                client.requestType === 'rejection');
-
-            if (meetsTypeGate) {
+            if (this.isEligibleScheduledRequest(client, 'client')) {
               if (this.auth.isAdmin) {
                 this.addUpcomingRequest(
                   client.requestDate,
@@ -1338,10 +1335,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
           // Process cards
           for (let card of cards) {
-            if (
-              card.requestStatus !== undefined &&
-              card.requestType === 'card'
-            ) {
+            if (this.isEligibleScheduledRequest(card, 'card')) {
               if (this.auth.isAdmin) {
                 this.addUpcomingRequest(card.requestDate, card.requestAmount);
               }
