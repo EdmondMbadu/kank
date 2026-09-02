@@ -53,7 +53,7 @@
       </div>
 
       <div
-        class="w-full max-w-sm rounded-3xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-md"
+        class="w-full max-w-lg rounded-3xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-md"
       >
         <p class="text-[11px] uppercase tracking-[0.25em] text-white/60">
           Sélection de la période
@@ -93,10 +93,10 @@
             Moyennes Quotidiennes
           </p>
           
-          <div class="grid grid-cols-2 gap-4 md:gap-6">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-6">
             <!-- Average Reserve -->
             <div>
-              <div class="mb-1 md:mb-2">
+              <div class="mb-1 flex min-h-10 items-end md:mb-2">
                 <span class="text-xs md:text-sm text-white/70">Réserve Moyenne</span>
               </div>
               <div class="text-xl md:text-2xl lg:text-3xl font-semibold text-white">
@@ -109,7 +109,7 @@
 
             <!-- Average Payment -->
             <div>
-              <div class="mb-1 md:mb-2">
+              <div class="mb-1 flex min-h-10 items-end md:mb-2">
                 <span class="text-xs md:text-sm text-white/70">Paiement Moyen</span>
               </div>
               <div class="text-xl md:text-2xl lg:text-3xl font-semibold text-white">
@@ -117,6 +117,24 @@
               </div>
               <div class="text-xs md:text-sm text-white/50 mt-1">
                 FC {{ averageDailyPayment | number : "1.0-0" }}
+              </div>
+            </div>
+
+            <!-- Average cash payment (excludes savings transfers) -->
+            <div>
+              <div class="mb-1 flex min-h-10 items-end md:mb-2">
+                <span
+                  class="text-xs md:text-sm text-white/70"
+                  title="Paiements clients encaissés, hors transferts d’épargne"
+                >
+                  Cash-flow
+                </span>
+              </div>
+              <div class="text-xl md:text-2xl lg:text-3xl font-semibold text-white">
+                ${{ cashFlowMonthAverageDollars | number : "1.0-0" }}
+              </div>
+              <div class="text-xs md:text-sm text-white/50 mt-1">
+                FC {{ cashFlowMonthAverageFc | number : "1.0-0" }}
               </div>
             </div>
           </div>
@@ -130,6 +148,11 @@
           <div class="flex items-center gap-2">
             <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
             Données rafraîchies après chaque sélection
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-cyan-300"></span>
+            Cash-flow&nbsp;: paiements clients encaissés, hors transferts
+            d’épargne
           </div>
           <div class="flex items-center gap-2">
             <span class="h-2 w-2 rounded-full bg-white/60"></span>
