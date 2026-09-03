@@ -11,9 +11,11 @@ import { TimeService } from 'src/app/services/time.service';
 import { FormControl } from '@angular/forms';
 import {
   Subscription,
+  combineLatest,
   debounceTime,
   distinctUntilChanged,
   firstValueFrom,
+  map,
 } from 'rxjs';
 import { MessagingService } from 'src/app/services/messaging.service';
 import {
@@ -198,6 +200,9 @@ export class SummaryCardCentralComponent implements OnDestroy {
   cardSmsSettingsError = '';
   cardSmsSettingsSuccess = '';
   private cardSmsSettingsSub?: Subscription;
+  private allUsersSub?: Subscription;
+  private cardsDataSub?: Subscription;
+  private creditClientsSub?: Subscription;
 
   cardUniqueLocations: string[] = [];
   cardSelectedLocations = new Set<string>();
@@ -205,6 +210,8 @@ export class SummaryCardCentralComponent implements OnDestroy {
   excludeDuplicatePhones = false;
   cardsPotentialDuplicateCount = 0;
   cardsDuplicateCount = 0;
+  cardsInvalidPhoneCount = 0;
+  cardsBelowSmsThresholdCount = 0;
   excludeCreditOverlap = false;
   cardsCreditOverlapCount = 0;
   cardsCreditOverlapRemoved = 0;
@@ -260,7 +267,7 @@ export class SummaryCardCentralComponent implements OnDestroy {
 
   ngOnInit(): void {
     this.listenToCardSmsSettings();
-    this.auth.getAllUsersInfo().subscribe((data) => {
+    this.allUsersSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.getAllClientsCard();
       this.getAllCreditClients();
@@ -273,6 +280,9 @@ export class SummaryCardCentralComponent implements OnDestroy {
     this.bulkLogsSub?.unsubscribe();
     this.scheduledBulkSub?.unsubscribe();
     this.cardSmsSettingsSub?.unsubscribe();
+    this.allUsersSub?.unsubscribe();
+    this.cardsDataSub?.unsubscribe();
+    this.creditClientsSub?.unsubscribe();
   }
 
   private listenToCardSmsSettings(): void {
@@ -355,51 +365,91 @@ export class SummaryCardCentralComponent implements OnDestroy {
   isCardSmsEligible(card: Card): boolean {
     return (
       this.cardSmsSettings.enabled &&
+      this.cardMeetsSmsThreshold(card) &&
+      this.hasValidCardPhone(card)
+    );
+  }
+
+  private cardMeetsSmsThreshold(card: Card): boolean {
+    return (
       Number(card.amountToPay) >= this.cardSmsSettings.minimumAmountToPayFc
     );
   }
 
+  hasValidCardPhone(card: Card): boolean {
+    return (
+      String(card?.phoneNumber || '')
+        .replace(/\D/g, '')
+        .length === 10
+    );
+  }
+
+  cardSmsIneligibilityReason(card: Card): string {
+    if (!this.cardSmsSettings.enabled) return 'Les envois SMS sont en pause.';
+    if (!this.cardMeetsSmsThreshold(card)) {
+      return `Sous le seuil SMS global de ${this.toFcDisplay(
+        this.cardSmsSettings.minimumAmountToPayFc
+      )} FC.`;
+    }
+    if (!this.hasValidCardPhone(card)) {
+      return 'Numéro invalide : exactement 10 chiffres sont requis.';
+    }
+    return '';
+  }
+
+  get cardBulkEligibleCount(): number {
+    return this.cardsFiltered.filter((card) => this.isCardSmsEligible(card))
+      .length;
+  }
+
   // ======== FETCH & SUMMARY =========
   getAllClientsCard() {
-    let tempClients: Card[] = [];
-    this.allClientsCard = [];
-    let completedRequests = 0;
+    this.cardsDataSub?.unsubscribe();
+    if (!this.allUsers.length) {
+      this.filterAndInitializeClientsCard([]);
+      return;
+    }
 
-    this.allUsers.forEach((user) => {
-      this.auth.getClientsCardOfAUser(user.uid!).subscribe((clients) => {
-        // tag with locationName, and normalize likely fields used downstream
-        const tagged = clients.map((c: any) => ({
-          ...c,
-          locationName: c.locationName || user.firstName,
-          ownerUid: user.uid,
-        }));
-        tempClients = tempClients.concat(tagged);
-        completedRequests++;
-        if (completedRequests === this.allUsers.length) {
-          this.filterAndInitializeClientsCard(tempClients);
-        }
-      });
-    });
+    const siteCardStreams = this.allUsers.map((user) =>
+      this.auth.getClientsCardOfAUser(user.uid!).pipe(
+        map((clients) =>
+          clients.map((card: any) => ({
+            ...card,
+            locationName: card.locationName || user.firstName,
+            ownerUid: user.uid,
+          }))
+        )
+      )
+    );
+
+    this.cardsDataSub = combineLatest(siteCardStreams).subscribe(
+      (cardsBySite) =>
+        this.filterAndInitializeClientsCard(cardsBySite.flat() as Card[])
+    );
   }
 
   getAllCreditClients() {
-    if (!this.allUsers.length) return;
-    let tempClients: Client[] = [];
-    let completedRequests = 0;
+    this.creditClientsSub?.unsubscribe();
+    if (!this.allUsers.length) {
+      this.initializeCreditClients([]);
+      return;
+    }
 
-    this.allUsers.forEach((user) => {
-      this.auth.getClientsOfAUser(user.uid!).subscribe((clients) => {
-        const tagged = clients.map((c) => ({
-          ...c,
-          locationName: user.firstName,
-        }));
-        tempClients = tempClients.concat(tagged);
-        completedRequests++;
-        if (completedRequests === this.allUsers.length) {
-          this.initializeCreditClients(tempClients);
-        }
-      });
-    });
+    const siteCreditStreams = this.allUsers.map((user) =>
+      this.auth.getClientsOfAUser(user.uid!).pipe(
+        map((clients) =>
+          clients.map((client) => ({
+            ...client,
+            locationName: user.firstName,
+          }))
+        )
+      )
+    );
+
+    this.creditClientsSub = combineLatest(siteCreditStreams).subscribe(
+      (clientsBySite) =>
+        this.initializeCreditClients(clientsBySite.flat() as Client[])
+    );
   }
 
   filterAndInitializeClientsCard(allClients: Card[]) {
@@ -572,33 +622,24 @@ export class SummaryCardCentralComponent implements OnDestroy {
       base = base.filter((c) => this.isCardDone(c));
     } // 'all' → leave base as-is
 
-    // 3) amountToPay filter
-    const effectiveMinimum = Math.max(
-      Number(this.minAmountToPay) || 0,
-      this.cardSmsSettings.minimumAmountToPayFc
-    );
+    // 3) amountToPay visibility filter. SMS eligibility is intentionally
+    // evaluated separately so lowering this value can reveal every card.
+    const effectiveMinimum = Math.max(Number(this.minAmountToPay) || 0, 0);
     const withAmount = base.filter(
       (c) => this.amountToPay(c) >= effectiveMinimum
     );
 
-    // 4) valid phone
-    const withPhone = withAmount.filter(
-      (c) =>
-        !!(
-          c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length === 10
-        )
-    );
-
-    // 5) search
+    // 4) search. Keep invalid/missing phone numbers visible so staff can
+    // identify and correct them; the SMS action remains disabled for them.
     const afterSearch = term
-      ? ((withPhone as any[]).filter(
+      ? ((withAmount as any[]).filter(
           (c) =>
             `${c.firstName || ''} ${c.middleName || ''} ${c.lastName || ''}`
               .toLowerCase()
               .includes(term) ||
             (c.phoneNumber || '').includes(term)
         ) as Card[])
-      : (withPhone as Card[]);
+      : (withAmount as Card[]);
 
     const duplicateInfo = this.partitionCardDuplicates(afterSearch);
     this.cardsPotentialDuplicateCount = duplicateInfo.totalDuplicateCount;
@@ -617,6 +658,12 @@ export class SummaryCardCentralComponent implements OnDestroy {
 
     const baseFiltered = creditInfo.filtered;
     this.cardsFiltered = this.applyDuplicateViewSelection(baseFiltered);
+    this.cardsInvalidPhoneCount = this.cardsFiltered.filter(
+      (card) => !this.hasValidCardPhone(card)
+    ).length;
+    this.cardsBelowSmsThresholdCount = this.cardsFiltered.filter(
+      (card) => !this.cardMeetsSmsThreshold(card)
+    ).length;
 
     if (this.cardBulkModal.open) {
       this.updateCardBulkRecipients();
@@ -831,9 +878,7 @@ export class SummaryCardCentralComponent implements OnDestroy {
   // ======== SINGLE SMS (CARDS) =========
   openCardSmsModal(c: Card) {
     if (!this.isCardSmsEligible(c)) {
-      window.alert(
-        'Cette carte ne respecte pas le seuil SMS global ou les envois sont en pause.'
-      );
+      window.alert(this.cardSmsIneligibilityReason(c));
       return;
     }
     const anyC: any = c;
@@ -926,11 +971,8 @@ export class SummaryCardCentralComponent implements OnDestroy {
     let excludedNoPhone = 0;
 
     for (const c of this.cardsFiltered as any[]) {
-      if (!this.isCardSmsEligible(c)) continue;
-      const okPhone = !!(
-        c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length === 10
-      );
-      if (!okPhone) {
+      if (!this.cardMeetsSmsThreshold(c)) continue;
+      if (!this.hasValidCardPhone(c)) {
         excludedNoPhone += 1;
         continue;
       }

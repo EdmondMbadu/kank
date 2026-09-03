@@ -308,7 +308,7 @@
           type="button"
           (click)="openCardBulkModal()"
           class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-60"
-          [disabled]="cardsFiltered.length === 0 || !cardSmsSettings.enabled"
+          [disabled]="cardBulkEligibleCount === 0"
           title="Inviter en masse les clients Carte"
         >
           <svg
@@ -321,7 +321,7 @@
             <path d="M3 10v4a3 3 0 0 0 3 3h1l7 4v-18l-7 4H6a3 3 0 0 0-3 3z" />
             <path d="M14 7s5-2 7-3v16c-2-1-7-3-7-3" />
           </svg>
-          Inviter ({{ cardsFiltered.length }})
+          Inviter ({{ cardBulkEligibleCount }})
         </button>
       </div>
 
@@ -391,6 +391,16 @@
                 class="flex-1 accent-emerald-600"
               />
             </div>
+            <p
+              class="mt-1.5 text-[11px] leading-4 text-slate-500 dark:text-slate-400"
+            >
+              Filtre d’affichage uniquement. Les SMS exigent toujours au moins
+              <strong
+                >{{ toFcDisplay(cardSmsSettings.minimumAmountToPayFc) }}
+                FC</strong
+              >
+              et un numéro de 10 chiffres.
+            </p>
           </div>
 
           <!-- Done tri-state -->
@@ -757,9 +767,33 @@
       <!-- quick stats -->
       <div class="mb-4 text-xs text-slate-500 dark:text-slate-400">
         <span class="font-semibold">{{ cardsFiltered.length }}</span> client(s)
+        visible(s) •
+        <span class="font-semibold">{{ cardBulkEligibleCount }}</span>
+        joignable(s) par SMS
         • Sites actifs :
         <span class="font-semibold">{{ cardSelectedLocations.size }}</span> /
         {{ cardUniqueLocations.length }}
+      </div>
+
+      <div
+        *ngIf="cardsBelowSmsThresholdCount > 0 || cardsInvalidPhoneCount > 0"
+        class="mb-4 grid gap-2 sm:grid-cols-2"
+      >
+        <div
+          *ngIf="cardsBelowSmsThresholdCount > 0"
+          class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <strong>{{ cardsBelowSmsThresholdCount }}</strong> client(s) visible(s)
+          sous le seuil SMS global de
+          {{ toFcDisplay(cardSmsSettings.minimumAmountToPayFc) }} FC.
+        </div>
+        <div
+          *ngIf="cardsInvalidPhoneCount > 0"
+          class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
+        >
+          <strong>{{ cardsInvalidPhoneCount }}</strong> client(s) visible(s) avec
+          un numéro manquant ou invalide.
+        </div>
       </div>
 
       <!-- list -->
@@ -788,9 +822,11 @@
                     {{ $any(c).middleName }}
                   </p>
                   <div
-                    class="mt-0.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"
+                    class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400"
                   >
-                    <span>{{ formatDisplayPhone($any(c).phoneNumber) }}</span>
+                    <span>{{
+                      formatDisplayPhone($any(c).phoneNumber) || "Numéro absent"
+                    }}</span>
                     <span
                       *ngIf="amountToPay($any(c)) > 0"
                       class="inline-flex items-center gap-1"
@@ -802,6 +838,21 @@
                       class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200 border border-rose-200 dark:border-rose-800"
                     >
                       Terminé
+                    </span>
+                    <span
+                      *ngIf="!hasValidCardPhone(c)"
+                      class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200 border border-rose-200 dark:border-rose-800"
+                    >
+                      Numéro invalide
+                    </span>
+                    <span
+                      *ngIf="
+                        amountToPay($any(c)) <
+                        cardSmsSettings.minimumAmountToPayFc
+                      "
+                      class="text-[10px] px-2 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200 border border-amber-200 dark:border-amber-800"
+                    >
+                      Sous seuil SMS
                     </span>
                   </div>
                 </div>
@@ -827,7 +878,10 @@
                   class="inline-flex items-center gap-1 rounded-md bg-slate-900 text-white dark:bg-slate-700 px-3 py-1.5 text-xs hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
                   (click)="openCardSmsModal(c)"
                   [disabled]="!isCardSmsEligible(c)"
-                  title="Envoyer un SMS à ce client"
+                  [title]="
+                    cardSmsIneligibilityReason(c) ||
+                    'Envoyer un SMS à ce client'
+                  "
                 >
                   <svg
                     class="h-3.5 w-3.5"
