@@ -271,8 +271,9 @@ describe('TeamRankingMonthComponent', () => {
       ).map((employee) => employee.uid)
     ).toEqual(['upn-rotation']);
     expect(rotationEmployee.performancePercentageMonth).toBe('85');
-    expect(component.averagePerformancePercentage).toBe('85');
-    expect(component.currentPerformancePercent).toBe(85);
+    expect(manager.performancePercentageMonth).toBe('90');
+    expect(component.averagePerformancePercentage).toBe('90');
+    expect(component.currentPerformancePercent).toBe(90);
   });
 
   it('shows unavailable performance as a dash instead of a false zero', () => {
@@ -297,6 +298,42 @@ describe('TeamRankingMonthComponent', () => {
     expect(component.excludedEmployees.map((employee) => employee.uid)).toEqual([
       'no-data',
     ]);
+  });
+
+  it('keeps a manager visible and includes former monthly contributors in the site and global percentages', () => {
+    const { component } = createComponent();
+    const site = { uid: 'delvaux-site', firstName: 'Delvaux' } as any;
+    const formerEmployee = {
+      uid: 'former-employee',
+      firstName: 'Former',
+      role: 'Agent Marketing',
+      status: 'Quitté',
+      dailyPoints: { '9-1-2026': '3.9' },
+      totalDailyPoints: { '9-1-2026': '13' },
+      tempUser: site,
+    } as any;
+    const manager = {
+      uid: 'esther-manager',
+      firstName: 'Esther',
+      lastName: 'Thuadi Mvumbi',
+      role: 'Manager',
+      status: 'Travaille',
+      dailyPoints: { '9-1-2026': '1.2' },
+      totalDailyPoints: { '9-1-2026': '9' },
+      tempUser: site,
+    } as any;
+
+    component.givenMonth = 9;
+    component.givenYear = 2026;
+    component.allEmployeesAll = [formerEmployee, manager];
+    component.filterAndInitializeEmployees(component.allEmployeesAll, []);
+
+    expect(manager.performancePercentageMonth).toBe('23');
+    expect(
+      component.performanceEmployees.map((employee) => employee.uid)
+    ).toEqual(['esther-manager']);
+    expect(component.averagePerformancePercentage).toBe('23');
+    expect(component.currentPerformancePercent).toBe(23);
   });
 
   it('combines source and rotation payment totals into one monthly row', async () => {

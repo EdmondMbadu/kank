@@ -5522,6 +5522,19 @@ export class TeamRankingMonthComponent implements OnDestroy {
     string,
     Employee[]
   >();
+  private logicalEmployeeGroups: Employee[][] = [];
+  private monthlyPerformanceByRepresentativeKey = new Map<
+    string,
+    { earned: number; possible: number }
+  >();
+  private monthlyPerformanceByOwner = new Map<
+    string,
+    { earned: number; possible: number }
+  >();
+  private monthlyPerformanceContributorComponents: Array<{
+    earned: number;
+    possible: number;
+  }> = [];
   performanceFallbackActive = false;
   performanceFallbackReason = '';
   public graphMonthPerformance = {
@@ -5812,6 +5825,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.allEmployees = [];
     this.logicalRepresentativeByRecordKey.clear();
     this.logicalEmployeeGroupsByRepresentativeKey.clear();
+    this.logicalEmployeeGroups = [];
+    this.monthlyPerformanceByRepresentativeKey.clear();
+    this.monthlyPerformanceByOwner.clear();
+    this.monthlyPerformanceContributorComponents = [];
 
     allEmployees.forEach((employee) => {
       // Filter out clients without debt for each employee
@@ -5838,6 +5855,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const logicalGroups = this.buildLogicalEmployeeGroups(
       Array.from(uniqueEmployeeRecords.values()).filter((emp) => !!emp?.uid)
     );
+    this.logicalEmployeeGroups = logicalGroups;
     const representatives: Employee[] = [];
 
     logicalGroups.forEach((group) => {
@@ -5878,36 +5896,20 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private refreshLogicalPerformanceMetrics(): void {
+    this.prepareMonthlyPerformanceComponents();
+
     for (const employee of this.allEmployees || []) {
       let components: { earned: number; possible: number } | null = null;
 
       if (this.normalizeRole(employee.role) === 'manager') {
-        const ownerUid = this.employeeOwnerUid(employee);
-        const siteComponents = (this.allEmployees || [])
-          .filter(
-            (candidate) =>
-              this.employeeOwnerUid(candidate) === ownerUid &&
-              this.normalizeRole(candidate.role) !== 'manager'
-          )
-          .map((candidate) => this.monthlyPerformanceComponents(candidate))
-          .filter(
-            (value): value is { earned: number; possible: number } => !!value
-          );
-        const possible = siteComponents.reduce(
-          (sum, value) => sum + value.possible,
-          0
-        );
-        if (possible > 0) {
-          components = {
-            earned: siteComponents.reduce(
-              (sum, value) => sum + value.earned,
-              0
-            ),
-            possible,
-          };
-        }
+        components =
+          this.monthlyPerformanceByOwner.get(this.employeeOwnerUid(employee)) ||
+          null;
       } else {
-        components = this.monthlyPerformanceComponents(employee);
+        components =
+          this.monthlyPerformanceByRepresentativeKey.get(
+            this.employeeRecordKey(employee)
+          ) || null;
       }
 
       employee.performancePercentageMonth = components
@@ -5932,17 +5934,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
       return;
     }
 
-    // Manager percentages already represent their whole site. Including them
-    // beside individual employees would count the same points twice, so the
-    // global percentage is weighted directly from individual earned/possible
-    // totals, one logical person and one date at a time.
-    const validComponents = this.allEmployees
-      .filter((employee) => this.normalizeRole(employee.role) !== 'manager')
-      .map((employee) => this.monthlyPerformanceComponents(employee))
-      .filter(
-        (components): components is { earned: number; possible: number } =>
-          !!components
-      );
+    // Use every person who contributed during the selected month, including
+    // employees who have since left or transferred. Rotation/source documents
+    // are grouped first so the same logical person and date are counted once.
+    const validComponents = this.monthlyPerformanceContributorComponents;
 
     const totalPossible = validComponents.reduce(
       (sum, components) => sum + components.possible,
@@ -5955,7 +5950,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (!Number.isFinite(totalPossible) || totalPossible <= 0) {
       this.averagePerformancePercentage = '';
       this.logDebug(
-        'Average performance unavailable because no logical employee has a valid denominator.'
+        'Average performance unavailable because no monthly contributor has a valid denominator.'
       );
       return;
     }
@@ -7084,14 +7079,87 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return groups;
   }
 
-  private monthlyPerformanceComponents(
-    employee: Employee
+  private prepareMonthlyPerformanceComponents(): void {
+    this.monthlyPerformanceByRepresentativeKey.clear();
+    this.monthlyPerformanceByOwner.clear();
+
+    const byGroup = new Map<
+      Employee[],
+      { earned: number; possible: number } | null
+    >();
+    this.monthlyPerformanceContributorComponents = this.logicalEmployeeGroups
+      .map((group) => {
+        const components = this.monthlyPerformanceComponentsForRecords(group);
+        byGroup.set(group, components);
+        return components;
+      })
+      .filter(
+        (components): components is { earned: number; possible: number } =>
+          !!components
+      );
+
+    this.logicalEmployeeGroupsByRepresentativeKey.forEach((group, key) => {
+      const components = byGroup.get(group);
+      if (components) {
+        this.monthlyPerformanceByRepresentativeKey.set(key, components);
+      }
+    });
+
+    const recordsByOwner = new Map<string, Employee[]>();
+    const records = this.allEmployeesAll?.length
+      ? this.allEmployeesAll
+      : this.allEmployees;
+    records.forEach((employee) => {
+      if (!employee?.uid) return;
+      const ownerUid = this.employeeOwnerUid(employee);
+      if (!ownerUid) return;
+      const ownerRecords = recordsByOwner.get(ownerUid) || [];
+      ownerRecords.push(employee);
+      recordsByOwner.set(ownerUid, ownerRecords);
+    });
+
+    recordsByOwner.forEach((ownerRecords, ownerUid) => {
+      const validComponents = this.buildLogicalEmployeeGroups(ownerRecords)
+        .map((group) => this.monthlyPerformanceComponentsForRecords(group))
+        .filter(
+          (components): components is { earned: number; possible: number } =>
+            !!components
+        );
+      const possible = validComponents.reduce(
+        (sum, components) => sum + components.possible,
+        0
+      );
+      if (!Number.isFinite(possible) || possible <= 0) return;
+      const earned = validComponents.reduce(
+        (sum, components) => sum + components.earned,
+        0
+      );
+      if (Number.isFinite(earned)) {
+        this.monthlyPerformanceByOwner.set(ownerUid, { earned, possible });
+      }
+    });
+  }
+
+  private monthlyPerformanceComponentsForRecords(
+    records: Employee[]
   ): { earned: number; possible: number } | null {
-    const group =
-      this.logicalEmployeeGroupsByRepresentativeKey.get(
-        this.employeeRecordKey(employee)
-      ) || [employee];
-    const ordered = [employee, ...group.filter((item) => item !== employee)];
+    const priority = (employee: Employee): number => {
+      const active = this.isActiveRankingEmployee(employee) ? 100 : 0;
+      const rotation = employee.isRotation ? 50 : 0;
+      const copiedIdentity =
+        employee.canonicalEmployeeId &&
+        employee.canonicalEmployeeId !== employee.uid
+          ? 25
+          : 0;
+      return active + rotation + copiedIdentity;
+    };
+    const ordered = [...records].sort((first, second) => {
+      const scoreDifference = priority(second) - priority(first);
+      if (scoreDifference !== 0) return scoreDifference;
+      return this.employeeRecordKey(first).localeCompare(
+        this.employeeRecordKey(second)
+      );
+    });
     const earnedByDate = new Map<string, number>();
     const possibleByDate = new Map<string, number>();
 
