@@ -806,7 +806,12 @@
           >
             <div
               *ngFor="let c of cardsFiltered"
-              class="px-4 py-3 flex items-center justify-between hover:bg-emerald-50/60 dark:hover:bg-slate-800/60"
+              role="button"
+              tabindex="0"
+              (click)="openCardDetailsModal(c)"
+              (keydown.enter)="openCardDetailsModal(c)"
+              (keydown.space)="openCardDetailsModal(c); $event.preventDefault()"
+              class="cursor-pointer px-4 py-3 flex items-center justify-between hover:bg-emerald-50/60 focus:bg-emerald-50/60 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-400 dark:hover:bg-slate-800/60 dark:focus:bg-slate-800/60"
             >
               <div class="min-w-0 flex items-center gap-3">
                 <div
@@ -866,6 +871,9 @@
                 </span>
                 <a
                   class="text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                  (click)="$event.stopPropagation()"
+                  (keydown.enter)="$event.stopPropagation()"
+                  (keydown.space)="$event.stopPropagation()"
                   [routerLink]="[
                     '/client-portal',
                     $any(c).trackingId || $any(c).uid
@@ -876,7 +884,9 @@
                 <button
                   type="button"
                   class="inline-flex items-center gap-1 rounded-md bg-slate-900 text-white dark:bg-slate-700 px-3 py-1.5 text-xs hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-                  (click)="openCardSmsModal(c)"
+                  (click)="$event.stopPropagation(); openCardSmsModal(c)"
+                  (keydown.enter)="$event.stopPropagation()"
+                  (keydown.space)="$event.stopPropagation()"
                   [disabled]="!isCardSmsEligible(c)"
                   [title]="
                     cardSmsIneligibilityReason(c) ||
@@ -904,6 +914,191 @@
     </div>
   </div>
 </section>
+
+<!-- ==== CARTE CLIENT DETAILS MODAL ==== -->
+<div
+  *ngIf="cardDetailsModal.open"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="card-details-title"
+>
+  <button
+    type="button"
+    class="absolute inset-0 cursor-default bg-slate-950/60 backdrop-blur-sm"
+    aria-label="Fermer les détails du client"
+    (click)="closeCardDetailsModal()"
+  ></button>
+
+  <section
+    *ngIf="cardDetailsModal.client as selectedCard"
+    class="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 dark:bg-slate-900 dark:ring-white/10"
+  >
+    <header
+      class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 dark:border-slate-700"
+    >
+      <div class="flex min-w-0 items-center gap-3">
+        <div
+          class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold uppercase text-emerald-700 dark:bg-emerald-800 dark:text-emerald-100"
+        >
+          {{ selectedCard.firstName || "CL" | slice : 0 : 2 }}
+        </div>
+        <div class="min-w-0">
+          <p
+            class="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300"
+          >
+            Client Carte · {{ $any(selectedCard).locationName || "Site inconnu" }}
+          </p>
+          <h3
+            id="card-details-title"
+            class="truncate text-xl font-semibold text-slate-900 dark:text-white"
+          >
+            {{ cardFullName(selectedCard) }}
+          </h3>
+        </div>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-2">
+        <span
+          class="rounded-full px-2.5 py-1 text-xs font-semibold"
+          [ngClass]="
+            isCardDone(selectedCard)
+              ? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-100'
+              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200'
+          "
+        >
+          {{ isCardDone(selectedCard) ? "Terminé" : "En cours" }}
+        </span>
+        <button
+          type="button"
+          (click)="closeCardDetailsModal()"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:hover:bg-slate-800 dark:hover:text-white"
+          aria-label="Fermer"
+        >
+          ✕
+        </button>
+      </div>
+    </header>
+
+    <div class="space-y-5 px-6 py-5">
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div
+          class="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/40"
+        >
+          <p class="text-xs text-emerald-700 dark:text-emerald-300">
+            Montant perçu
+          </p>
+          <p class="mt-1 text-xl font-bold text-emerald-800 dark:text-emerald-100">
+            {{ toFcDisplay(selectedCard.amountPaid || 0) }} FC
+          </p>
+        </div>
+        <div class="rounded-xl bg-sky-50 p-4 dark:bg-sky-950/40">
+          <p class="text-xs text-sky-700 dark:text-sky-300">
+            Montant à verser
+          </p>
+          <p class="mt-1 text-xl font-bold text-sky-800 dark:text-sky-100">
+            {{ toFcDisplay(selectedCard.amountToPay || 0) }} FC
+          </p>
+        </div>
+        <div class="rounded-xl bg-violet-50 p-4 dark:bg-violet-950/40">
+          <p class="text-xs text-violet-700 dark:text-violet-300">
+            À remettre au client
+          </p>
+          <p class="mt-1 text-xl font-bold text-violet-800 dark:text-violet-100">
+            {{ toFcDisplay(cardAmountToReturn(selectedCard)) }} FC
+          </p>
+        </div>
+      </div>
+
+      <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div>
+          <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Téléphone
+          </dt>
+          <dd class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            {{
+              formatDisplayPhone(selectedCard.phoneNumber) ||
+                "Numéro non renseigné"
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Membre depuis
+          </dt>
+          <dd class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            {{ selectedCard.dateJoined || "—" }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Cycle de carte
+          </dt>
+          <dd class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            {{ selectedCard.cardCycle || "—" }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Paiements reçus
+          </dt>
+          <dd class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            {{ selectedCard.numberOfPaymentsMade || 0 }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Profession
+          </dt>
+          <dd class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            {{ selectedCard.profession || "—" }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Adresse activité
+          </dt>
+          <dd class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            {{ selectedCard.businessAddress || "—" }}
+          </dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Adresse domicile
+          </dt>
+          <dd class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            {{ selectedCard.homeAddress || "—" }}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <footer
+      class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800/60"
+    >
+      <p class="text-xs text-slate-500 dark:text-slate-400">
+        {{ cardSmsIneligibilityReason(selectedCard) || "Client éligible au SMS" }}
+      </p>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          (click)="closeCardDetailsModal()"
+          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+        >
+          Fermer
+        </button>
+        <button
+          type="button"
+          [disabled]="!isCardSmsEligible(selectedCard)"
+          (click)="closeCardDetailsModal(); openCardSmsModal(selectedCard)"
+          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Envoyer un SMS
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>
 
 <ng-template #noCardsFiltered>
   <div class="p-6 text-center text-sm text-slate-500 dark:text-slate-300">

@@ -83,4 +83,20 @@ describe('SummaryCardCentralComponent', () => {
     expect(component.cardBulkEligibleCount).toBe(1);
     expect(component.isCardSmsEligible(component.cardsFiltered[2])).toBeFalse();
   });
+
+  it('opens and closes the selected card details modal', () => {
+    const selectedCard = component.cardsAll[1];
+
+    component.openCardDetailsModal(selectedCard);
+
+    expect(component.cardDetailsModal.open).toBeTrue();
+    expect(component.cardDetailsModal.client).toBe(selectedCard);
+    expect(component.cardFullName(selectedCard)).toBe('Ready');
+    expect(component.cardAmountToReturn(selectedCard)).toBe(0);
+
+    component.closeCardDetailsModal();
+
+    expect(component.cardDetailsModal.open).toBeFalse();
+    expect(component.cardDetailsModal.client).toBeNull();
+  });
 });

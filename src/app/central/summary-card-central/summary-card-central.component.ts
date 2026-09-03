@@ -219,6 +219,11 @@ export class SummaryCardCentralComponent implements OnDestroy {
   cardDuplicateEntries: Card[] = [];
   creditOverlapEntries: Card[] = [];
 
+  cardDetailsModal = {
+    open: false,
+    client: null as Card | null,
+  };
+
   // single SMS modal
   cardSmsModal = {
     open: false,
@@ -400,6 +405,29 @@ export class SummaryCardCentralComponent implements OnDestroy {
   get cardBulkEligibleCount(): number {
     return this.cardsFiltered.filter((card) => this.isCardSmsEligible(card))
       .length;
+  }
+
+  openCardDetailsModal(card: Card): void {
+    this.cardDetailsModal = { open: true, client: card };
+  }
+
+  closeCardDetailsModal(): void {
+    this.cardDetailsModal = { open: false, client: null };
+  }
+
+  cardFullName(card: Card | null): string {
+    if (!card) return 'Client Carte';
+    return [card.firstName, card.lastName, card.middleName]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  cardAmountToReturn(card: Card | null): number {
+    if (!card) return 0;
+    return Math.max(
+      0,
+      Number(card.amountPaid || 0) - Number(card.amountToPay || 0)
+    );
   }
 
   // ======== FETCH & SUMMARY =========
