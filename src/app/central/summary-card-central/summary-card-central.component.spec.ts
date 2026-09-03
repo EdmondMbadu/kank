@@ -41,6 +41,14 @@ describe('SummaryCardCentralComponent', () => {
         amountToPay: '100000',
         locationName: 'Badiadingi',
       } as any,
+      {
+        uid: 'completed',
+        firstName: 'Completed',
+        phoneNumber: '0898765432',
+        amountToPay: '100000',
+        clientCardStatus: 'ended',
+        locationName: 'Badiadingi',
+      } as any,
     ];
     component.cardUniqueLocations = ['Badiadingi'];
     component.cardSelectedLocations.add('Badiadingi');
@@ -53,6 +61,17 @@ describe('SummaryCardCentralComponent', () => {
 
     expect(component.cardsFiltered.length).toBe(3);
     expect(component.cardsBelowSmsThresholdCount).toBe(1);
+  });
+
+  it('shows only current clients by default', () => {
+    component.minAmountToPay = 0;
+
+    component.applyCardsFilters();
+
+    expect(component.doneFilter).toBe('exclude');
+    expect(component.cardsFiltered.map((card) => card.uid)).not.toContain(
+      'completed'
+    );
   });
 
   it('keeps invalid phone numbers visible but excludes them from SMS', () => {

@@ -105,8 +105,8 @@ export class SummaryCardCentralComponent implements OnDestroy {
     private cardSmsSettingsService: CardSmsSettingsService
   ) {}
 
-  // Tri-state filter for finished cards
-  doneFilter: 'exclude' | 'only' | 'all' = 'all';
+  // Default to current clients; staff can still cycle to completed/all cards.
+  doneFilter: 'exclude' | 'only' | 'all' = 'exclude';
 
   cycleDoneFilter() {
     this.doneFilter =
