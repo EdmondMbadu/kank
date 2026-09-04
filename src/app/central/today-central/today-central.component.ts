@@ -135,6 +135,7 @@ export class TodayCentralComponent {
   linkPaths: Array<string | null> = [
     '/daily-payments',
     '/daily-payments',
+    '/daily-payments',
     '/daily-lendings',
     null,
     null,
@@ -146,6 +147,7 @@ export class TodayCentralComponent {
   ];
   summary: string[] = [
     'Paiement Du Jour',
+    'Paiement Cash Flow Du Jour',
     'Paiement Mobile Money Du Jour',
     'Emprunt Du Jour',
     'Reserve Du Jour',
@@ -159,6 +161,7 @@ export class TodayCentralComponent {
   valuesConvertedToDollars: string[] = [];
 
   imagePaths: string[] = [
+    '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-payment.png',
@@ -450,6 +453,7 @@ export class TodayCentralComponent {
     );
     this.summaryContent = [
       ` ${this.dailyPayment}`,
+      `${this.cashFlowPaymentTotalFc}`,
       ` ${this.dailyMobileMoneyPayment}`,
       ` ${this.dailyLending}`,
       `${this.dailyReserve}`,
@@ -463,6 +467,7 @@ export class TodayCentralComponent {
 
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
+      `${this.cashFlowPaymentTotalDollars}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.dailyMobileMoneyPayment
       )}`,
@@ -484,19 +489,31 @@ export class TodayCentralComponent {
       index,
       title,
       icon: this.imagePaths[index] ?? this.imagePaths[0],
-      amountFc: this.toNum(this.summaryContent[index]),
-      amountUsd: this.toNum(this.valuesConvertedToDollars[index]),
+      amountFc:
+        index === 1
+          ? this.cashFlowPaymentTotalFc
+          : this.toNum(this.summaryContent[index]),
+      amountUsd:
+        index === 1
+          ? this.cashFlowPaymentTotalDollars
+          : this.toNum(this.valuesConvertedToDollars[index]),
       link: this.linkPaths[index] ?? null,
     }));
   }
 
   get heroSnapshot() {
-    return [
+    const snapshot = [
       {
         label: 'Paiements',
         value: this.toNum(this.dailyPayment),
         valueUsd: this.toNum(this.dailyPaymentDollars),
         icon: '💸',
+      },
+      {
+        label: 'Paiement cash flow',
+        value: this.cashFlowPaymentTotalFc,
+        valueUsd: this.cashFlowPaymentTotalDollars,
+        icon: '💰',
       },
       {
         label: 'Réserves',
@@ -511,6 +528,10 @@ export class TodayCentralComponent {
         icon: '📅',
       },
     ];
+
+    return this.auth.isAdmin
+      ? snapshot
+      : snapshot.filter((stat) => stat.label !== 'Paiement cash flow');
   }
 
   trackByIndex(index: number): number {

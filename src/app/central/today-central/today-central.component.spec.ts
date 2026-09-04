@@ -96,6 +96,21 @@ describe('TodayCentralComponent management hydration', () => {
     expect(component.cashFlowPaymentTotalFc).toBe(1900);
     expect(component.cashFlowPaymentTotalDollars).toBeCloseTo(0.76, 5);
     expect(component.cashFlowPaymentMaxFc).toBe(1000);
+    expect(component.heroSnapshot[1]).toEqual({
+      label: 'Paiement cash flow',
+      value: 1900,
+      valueUsd: 0.76,
+      icon: '💰',
+    });
+    expect(component.todaySummaryCards[1]).toEqual(
+      jasmine.objectContaining({
+        index: 1,
+        title: 'Paiement Cash Flow Du Jour',
+        amountFc: 1900,
+        amountUsd: 0.76,
+        link: '/daily-payments',
+      })
+    );
     expect(component.getMiniCashFlowPaymentGraph('site-a').data.length).toBe(1);
     expect(
       component.getMiniCashFlowPaymentGraph('site-a').data[0].customdata
