@@ -6,6 +6,10 @@ import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
+import {
+  buildCompletedCardCycleSummaries,
+  CardCycleSummary,
+} from 'src/app/utils/card-payment-activity.util';
 
 /* ✨  NEW imports */
 import {
@@ -49,6 +53,8 @@ export class ClientPortalCardComponent {
   saveMsg = '';
   saveOk = false;
   sendCorrectionSms = false;
+  previousCardCycles: CardCycleSummary[] = [];
+  showPreviousCardCycles = false;
 
   constructor(
     public auth: AuthService,
@@ -123,6 +129,13 @@ export class ClientPortalCardComponent {
       this.dateJoined = this.time.formatDateForDRC(this.clientCard.dateJoined);
       this.status = this.clientCard.clientCardStatus ? 'Terminé' : 'En Cours';
       this.computeAmountToGiveClient();
+      const currentCycle = Math.max(
+        1,
+        Math.floor(Number(this.clientCard.cardCycle) || 1)
+      );
+      this.previousCardCycles = buildCompletedCardCycleSummaries(
+        this.clientCard
+      ).filter((cycle) => cycle.cycle < currentCycle);
 
       // (Re)build or patch the form with fresh data
       if (!this.editForm) this.initEditForm();
@@ -137,6 +150,12 @@ export class ClientPortalCardComponent {
             Number(this.clientCard.amountPaid) -
             Number(this.clientCard.amountToPay)
           ).toString();
+  }
+
+  formatCardCycleDate(dateKey: string): string {
+    return dateKey.split('-').length >= 6
+      ? this.time.convertDateToDesiredFormat(dateKey)
+      : this.time.formatDateForDRC(dateKey);
   }
 
   payClient() {

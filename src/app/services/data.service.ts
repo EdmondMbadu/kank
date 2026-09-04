@@ -679,7 +679,9 @@ export class DataService {
       requestStatus: '',
       requestType: '',
       requestDate: '',
-      payments: {},
+      // Keep the completed cycle visible in Détails Dépôts. A new cycle will
+      // replace this map with its first deposit when it is explicitly started.
+      payments: clientCard.payments || {},
     };
     if (clientCard.totalWithdrawalSnapshot) {
       data.totalWithdrawalSnapshot = clientCard.totalWithdrawalSnapshot;
@@ -4833,7 +4835,10 @@ export class DataService {
     return this.afs.firestore.runTransaction(async (t) => {
       /* ───── 1️⃣  CARD ──── */
       const newCardAmount = +card.amountPaid! - amount;
-      const newCardPayments = { [today]: `-${amount}` };
+      const newCardPayments = {
+        ...(card.payments || {}),
+        [today]: `-${amount}`,
+      };
 
       t.set(
         this.afs.doc(cardPath).ref,

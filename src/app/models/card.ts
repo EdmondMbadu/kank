@@ -1,6 +1,7 @@
 import { ClientGalleryPicture } from './client';
 
 export interface CardTotalWithdrawalSnapshot {
+  cardCycle?: string;
   amountPaid?: string;
   numberOfPaymentsMade?: string;
   depositCount?: string;

@@ -78,6 +78,7 @@ export class PaymentCardComponent {
         Number(this.clientCard.depositCount) + 1
       ).toString();
       this.clientCard.payments = {
+        ...(this.clientCard.payments || {}),
         [this.time.todaysDate()]: this.depositAmount,
       };
     }

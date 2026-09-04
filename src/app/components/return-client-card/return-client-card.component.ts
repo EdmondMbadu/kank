@@ -90,6 +90,7 @@ export class ReturnClientCardComponent {
         ? Math.max(0, Number(this.clientCard.depositCount) || 0)
         : countPositiveCardDeposits(this.clientCard.payments);
     return {
+      cardCycle: this.clientCard.cardCycle ?? '1',
       amountPaid: this.clientCard.amountPaid ?? '0',
       numberOfPaymentsMade: this.clientCard.numberOfPaymentsMade ?? '0',
       depositCount: String(depositCount),

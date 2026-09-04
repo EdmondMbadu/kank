@@ -18,12 +18,12 @@
     <h2
       class="text-center text-lg font-semibold tracking-tight text-gray-800
              dark:text-gray-100 sm:text-2xl">
-      Détails de Paiement Carte
+      Détails Dépôts · Cycle {{ displayedCycle }}
     </h2>
 
     <button
       type="submit"
-      routerLink="/client-info-card/all"
+      [routerLink]="['/client-portal-card', id]"
       class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2
              text-xs sm:text-sm font-medium text-white shadow transition
              duration-150 hover:scale-105 hover:bg-emerald-700 focus:outline-none
@@ -33,7 +33,7 @@
            viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 5v14m7-7H5" />
       </svg>
-      Info Client Carte
+      Retour à la carte
     </button>
   </header>
 
@@ -51,7 +51,7 @@
                px-4 py-4 dark:border-gray-700">
         <h5
           class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
-          Paiements
+          {{ isPreviousCycle ? 'Historique du cycle' : 'Cycle actuel' }}
         </h5>
 
         <!-- Search -->
@@ -71,7 +71,8 @@
               </svg>
             </div>
             <input
-              id="simple-search" type="text" placeholder="Chercher la date…"
+              id="simple-search" type="text" placeholder="Date, type, montant…"
+              [(ngModel)]="searchTerm" name="searchTerm"
               class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10
                      text-xs sm:text-sm text-gray-900 shadow-sm transition
                      focus:border-emerald-500 focus:ring-emerald-500
@@ -85,7 +86,7 @@
       <ul role="list"
           class="divide-y divide-gray-200 dark:divide-gray-700">
         <li
-          *ngFor="let s of payments; let i = index"
+          *ngFor="let activity of filteredActivities"
           [routerLink]="['/client-portal-card', id]"
           class="group cursor-pointer px-4 py-4 transition-colors duration-150
                  hover:bg-emerald-50 dark:hover:bg-slate-700/60">
@@ -100,30 +101,35 @@
               {{ clientCard.firstName?.substring(0,2) }}
             </div>
 
-            <!-- Name & date -->
+            <!-- Movement type & date -->
             <div class="min-w-0 flex-1">
               <p
                 class="whitespace-normal break-words leading-tight
                        text-[11px] sm:text-xs md:text-sm font-medium
                        text-gray-900 dark:text-gray-100">
-                {{ clientCard.firstName }} {{ clientCard.lastName }} {{ clientCard.middleName }}
+                {{ activityLabel(activity) }}
               </p>
               <p
                 class="whitespace-normal break-words leading-tight
                        text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                {{ formattedPaymentsDates[i] }}
+                {{ formatActivityDate(activity.dateKey) }}
               </p>
             </div>
 
            <!-- Amount -->
-            <div class="whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
-              FC {{ s | number:'1.0-0' }}
+            <div
+              class="whitespace-nowrap text-xs sm:text-sm font-semibold"
+              [class.text-emerald-700]="!isMoneyOut(activity)"
+              [class.dark:text-emerald-300]="!isMoneyOut(activity)"
+              [class.text-rose-700]="isMoneyOut(activity)"
+              [class.dark:text-rose-300]="isMoneyOut(activity)">
+              {{ isMoneyOut(activity) ? '−' : '+' }} FC {{ activity.amount | number:'1.0-0' }}
             </div>
 
             <!-- delete (admins) -->
             <button
-              *ngIf="auth.isAdmin"
-              (click)="deletePaymentCard(paymentDates[i], $event)"
+              *ngIf="auth.isAdmin && activity.paymentDateKey"
+              (click)="deletePaymentCard(activity, $event)"
               aria-label="Supprimer"
               class="ml-3 hidden shrink-0 text-red-600 transition hover:text-red-800
                     focus:outline-none group-hover:inline-block dark:text-red-400
@@ -139,6 +145,12 @@
             </button>
 
           </div>
+        </li>
+
+        <li
+          *ngIf="filteredActivities.length === 0"
+          class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          Aucun mouvement enregistré pour cette carte.
         </li>
       </ul>
     </div>

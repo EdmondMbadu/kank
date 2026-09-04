@@ -126,6 +126,7 @@ export class RemoveCardComponent {
       Number(this.clientCard.numberOfPaymentsMade) + 1
     ).toString();
     this.clientCard.payments = {
+      ...(this.clientCard.payments || {}),
       [this.time.todaysDate()]: reverseDeposit,
     };
 
