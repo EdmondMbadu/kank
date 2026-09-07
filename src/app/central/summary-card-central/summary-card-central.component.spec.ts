@@ -3,17 +3,32 @@ import { normalizeCardSmsSettings } from 'src/app/services/card-sms-settings.ser
 
 describe('SummaryCardCentralComponent', () => {
   let component: SummaryCardCentralComponent;
+  let auth: any;
+  let cardSmsSettingsService: any;
 
   beforeEach(() => {
+    auth = {
+      isAdmin: true,
+      isAdmninistrator: true,
+      currentUser: {
+        uid: 'site-user',
+        firstName: 'Site',
+        lastName: 'Admin',
+      },
+      makeAdmin: jasmine.createSpy('makeAdmin').and.resolveTo(),
+    };
+    cardSmsSettingsService = {
+      save: jasmine.createSpy('save').and.resolveTo(),
+    };
     component = new SummaryCardCentralComponent(
       {} as any,
+      auth,
       {} as any,
       {} as any,
       {} as any,
       {} as any,
       {} as any,
-      {} as any,
-      {} as any
+      cardSmsSettingsService
     );
     component.cardSmsSettings = normalizeCardSmsSettings({
       enabled: true,
@@ -52,6 +67,35 @@ describe('SummaryCardCentralComponent', () => {
     ];
     component.cardUniqueLocations = ['Badiadingi'];
     component.cardSelectedLocations.add('Badiadingi');
+  });
+
+  it('persists admin access before saving settings for an admin-session account', async () => {
+    spyOn(window, 'confirm').and.returnValue(true);
+    component.cardSmsEnabledInput = true;
+    component.cardSmsThresholdInput = 75000;
+
+    await component.saveCardSmsSettings();
+
+    expect(auth.makeAdmin).toHaveBeenCalledTimes(1);
+    expect(auth.currentUser.admin).toBe('true');
+    expect(cardSmsSettingsService.save).toHaveBeenCalledWith(true, 75000, {
+      uid: 'site-user',
+      name: 'Site Admin',
+    });
+    expect(component.cardSmsSettingsSuccess).toBe(
+      'Règle SMS cartes sauvegardée.'
+    );
+  });
+
+  it('does not rewrite admin access when the account is already an admin', async () => {
+    spyOn(window, 'confirm').and.returnValue(true);
+    auth.currentUser.roles = ['admin'];
+    component.cardSmsThresholdInput = 100000;
+
+    await component.saveCardSmsSettings();
+
+    expect(auth.makeAdmin).not.toHaveBeenCalled();
+    expect(cardSmsSettingsService.save).toHaveBeenCalled();
   });
 
   it('keeps cards visible below the global SMS threshold', () => {
