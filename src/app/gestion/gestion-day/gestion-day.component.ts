@@ -2038,18 +2038,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     }
 
     const requestId = ++this.weeklyCashFlowRequestVersion;
-    const { start, end } = this.getWeekBounds(
-      this.weeklyPaymentDateCorrectFormat
-    );
     this.weeklyCashFlowLoading = true;
     this.weeklyCashFlowLoadingKey = cacheKey;
     this.weeklyCashFlowError = '';
     this.weeklyCashFlowTotals = [];
 
     try {
-      const totals = await this.data.getEmployeeWeekTotalsGroupedByTeam(
-        start.getTime(),
-        end.getTime(),
+      const totals = await this.data.getEmployeeDayTotalsGroupedByTeamForDays(
+        this.weeklyCashFlowDayKeys(),
         teams.map((team) => team.uid!)
       );
       if (
@@ -2059,9 +2055,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const totalsByTeam = new Map(
-        totals.map((item) => [item.ownerUid, Number(item.total) || 0] as const)
-      );
+      const totalsByTeam = new Map<string, number>();
+      totals.forEach((item) => {
+        totalsByTeam.set(
+          item.ownerUid,
+          (totalsByTeam.get(item.ownerUid) || 0) +
+            (Number(item.total) || 0)
+        );
+      });
       this.cacheWeeklyCashFlowTotals(cacheKey, totalsByTeam);
       this.applyWeeklyCashFlowTotals(totalsByTeam);
     } catch (error) {
@@ -2076,6 +2077,21 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         this.weeklyCashFlowLoadingKey = '';
       }
     }
+  }
+
+  private weeklyCashFlowDayKeys(): string[] {
+    const { start, end } = this.getWeekBounds(
+      this.weeklyPaymentDateCorrectFormat
+    );
+    const dayKeys: string[] = [];
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      dayKeys.push(this.formatDateKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return dayKeys;
   }
 
   private weeklyCashFlowCacheKey(): string {

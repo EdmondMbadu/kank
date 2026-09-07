@@ -988,9 +988,12 @@ describe('GestionDayComponent weekly payment history', () => {
 });
 
 describe('GestionDayComponent weekly cash-flow toggle', () => {
-  function createComponent(getWeeklyTotals: jasmine.Spy): GestionDayComponent {
+  function createComponent(
+    getWeeklyTotals: jasmine.Spy,
+    isAdmin = true
+  ): GestionDayComponent {
     const auth = {
-      isAdmin: true,
+      isAdmin,
       currentUser: { firstName: 'Admin' },
       resolveWeeklyPaymentTargetForDate: () => 1200,
     };
@@ -1018,7 +1021,7 @@ describe('GestionDayComponent weekly cash-flow toggle', () => {
       auth as any,
       time as any,
       compute as any,
-      { getEmployeeWeekTotalsGroupedByTeam: getWeeklyTotals } as any,
+      { getEmployeeDayTotalsGroupedByTeamForDays: getWeeklyTotals } as any,
       {} as any
     );
     component.weeklyPaymentDate = '2026-08-23';
@@ -1043,10 +1046,11 @@ describe('GestionDayComponent weekly cash-flow toggle', () => {
 
   it('loads one authoritative weekly query lazily and caches repeated toggles', async () => {
     const getWeeklyTotals = jasmine
-      .createSpy('getEmployeeWeekTotalsGroupedByTeam')
+      .createSpy('getEmployeeDayTotalsGroupedByTeamForDays')
       .and.resolveTo([
-        { ownerUid: 'pumbu', total: 700, count: 1 },
-        { ownerUid: 'matadi', total: 900, count: 2 },
+        { dayKey: '8-17-2026', ownerUid: 'pumbu', total: 300, count: 1 },
+        { dayKey: '8-18-2026', ownerUid: 'pumbu', total: 400, count: 1 },
+        { dayKey: '8-18-2026', ownerUid: 'matadi', total: 900, count: 2 },
       ]);
     const component = createComponent(getWeeklyTotals);
 
@@ -1057,8 +1061,15 @@ describe('GestionDayComponent weekly cash-flow toggle', () => {
     await component.setWeeklyPaymentSourceMode('cashFlow');
 
     expect(getWeeklyTotals).toHaveBeenCalledOnceWith(
-      new Date(2026, 7, 17).getTime(),
-      new Date(2026, 7, 23).getTime(),
+      [
+        '8-17-2026',
+        '8-18-2026',
+        '8-19-2026',
+        '8-20-2026',
+        '8-21-2026',
+        '8-22-2026',
+        '8-23-2026',
+      ],
       ['pumbu', 'matadi']
     );
     expect(
@@ -1077,6 +1088,18 @@ describe('GestionDayComponent weekly cash-flow toggle', () => {
 
     expect(getWeeklyTotals).toHaveBeenCalledTimes(1);
     expect(component.displayedOverallWeeklyPaymentTotal).toBe(1600);
+  });
+
+  it('does not load or expose the cash-flow view outside an admin session', async () => {
+    const getWeeklyTotals = jasmine.createSpy(
+      'getEmployeeDayTotalsGroupedByTeamForDays'
+    );
+    const component = createComponent(getWeeklyTotals, false);
+
+    await component.setWeeklyPaymentSourceMode('cashFlow');
+
+    expect(component.weeklyPaymentSourceMode).toBe('total');
+    expect(getWeeklyTotals).not.toHaveBeenCalled();
   });
 });
 
