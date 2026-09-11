@@ -1356,7 +1356,10 @@
               </p>
               <div
                 class="mt-2 max-w-[13rem]"
-                *ngIf="weeklyExpectedTotalN > 0 || weeklyPaymentTotalN > 0"
+                *ngIf="
+                  !hasWeeklySavingsPaymentBreakdown &&
+                  (weeklyExpectedTotalN > 0 || weeklyPaymentTotalN > 0)
+                "
                 title="Attendu semaine: somme des attendus journaliers. Progression basée sur paiement semaine divisé par attendu semaine."
               >
                 <div class="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium">
@@ -1397,6 +1400,114 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div
+          *ngIf="hasWeeklySavingsPaymentBreakdown"
+          data-testid="weekly-payment-breakdown"
+          class="mt-4"
+        >
+          <p class="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+            Répartition
+          </p>
+
+          <div class="space-y-2">
+            <div
+              class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs ring-1 ring-inset ring-slate-200/70 dark:bg-slate-800 dark:ring-slate-700"
+            >
+              <span class="flex min-w-0 items-center gap-2 text-slate-700 dark:text-slate-200">
+                <span
+                  aria-hidden="true"
+                  class="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500"
+                ></span>
+                <span class="truncate">Paiements directs</span>
+              </span>
+              <span class="whitespace-nowrap font-semibold text-slate-800 dark:text-slate-100">
+                FC {{ weeklyDirectPaymentN | number : "1.0-0" }}
+              </span>
+              <span class="whitespace-nowrap text-slate-500 dark:text-slate-400">
+                ≈ $ {{ weeklyDirectPaymentDollars | number : "1.0-0" }}
+              </span>
+            </div>
+
+            <div
+              class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs ring-1 ring-inset ring-slate-200/70 dark:bg-slate-800 dark:ring-slate-700"
+            >
+              <span class="flex min-w-0 items-center gap-2 text-slate-700 dark:text-slate-200">
+                <span
+                  aria-hidden="true"
+                  class="h-2.5 w-2.5 shrink-0 rounded-full bg-purple-500"
+                ></span>
+                <span class="truncate">Paiements via l’épargne</span>
+              </span>
+              <span class="whitespace-nowrap font-semibold text-slate-800 dark:text-slate-100">
+                FC {{ weeklySavingsPaymentN | number : "1.0-0" }}
+              </span>
+              <span class="whitespace-nowrap text-slate-500 dark:text-slate-400">
+                ≈ $ {{ weeklySavingsPaymentDollars | number : "1.0-0" }}
+              </span>
+            </div>
+          </div>
+
+          <div
+            class="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+            aria-label="Répartition des paiements de la semaine"
+          >
+            <span
+              class="h-full bg-blue-600"
+              [style.width.%]="weeklyDirectPaymentPercent"
+            ></span>
+            <span
+              class="h-full bg-purple-600"
+              [style.width.%]="weeklySavingsPaymentPercent"
+            ></span>
+          </div>
+        </div>
+
+        <div
+          class="mt-4 max-w-[13rem]"
+          *ngIf="
+            hasWeeklySavingsPaymentBreakdown &&
+            (weeklyExpectedTotalN > 0 || weeklyPaymentTotalN > 0)
+          "
+          title="Attendu semaine: somme des attendus journaliers. Progression basée sur paiement semaine divisé par attendu semaine."
+        >
+          <div class="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium">
+            <span class="text-slate-500 dark:text-slate-400">
+              Attendu:
+              <span class="font-semibold text-slate-700 dark:text-slate-200">
+                {{ weeklyExpectedTotalN | number : "1.0-0" }} FC
+              </span>
+            </span>
+            <span
+              class="font-semibold"
+              [ngClass]="{
+                'text-red-600': weeklyExpectedProgressTone === 'red',
+                'text-amber-600': weeklyExpectedProgressTone === 'yellow',
+                'text-orange-600': weeklyExpectedProgressTone === 'orange',
+                'text-emerald-600': weeklyExpectedProgressTone === 'green'
+              }"
+            >
+              {{ weeklyExpectedProgressPercent | number : "1.0-0" }}%
+            </span>
+          </div>
+          <p class="mb-1 text-[10px] text-slate-400 dark:text-slate-500">
+            ≈ $ {{ weeklyExpectedTotalDollars | number : "1.0-0" }}
+          </p>
+          <div
+            class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+          >
+            <div
+              class="h-1.5 rounded-full transition-all duration-300"
+              [ngClass]="{
+                'bg-red-500': weeklyExpectedProgressTone === 'red',
+                'bg-amber-400': weeklyExpectedProgressTone === 'yellow',
+                'bg-orange-500': weeklyExpectedProgressTone === 'orange',
+                'bg-emerald-500': weeklyExpectedProgressTone === 'green'
+              }"
+              [style.width.%]="weeklyExpectedProgressPercent"
+            ></div>
           </div>
         </div>
 

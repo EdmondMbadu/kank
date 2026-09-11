@@ -151,6 +151,7 @@ export class TodayComponent {
 
       this.recomputeHeaderReasons();
       this.syncDailyPaymentBreakdown();
+      this.syncWeeklyPaymentBreakdown(this.requestDateCorrectFormat);
 
       this.findClientsWithDebts();
       this.computeRequestTotalSameAsRequestToday(); // NEW
@@ -185,6 +186,12 @@ export class TodayComponent {
   dailyPaymentDollars: string = '0';
   weeklyPaymentTotalN: number = 0;
   weeklyPaymentTotalDollars: string = '0';
+  weeklyDirectPaymentN: number = 0;
+  weeklySavingsPaymentN: number = 0;
+  weeklyDirectPaymentDollars: string = '0';
+  weeklySavingsPaymentDollars: string = '0';
+  weeklyDirectPaymentPercent: number = 100;
+  weeklySavingsPaymentPercent: number = 0;
   weeklyExpectedTotalN: number = 0;
   weeklyExpectedTotalDollars: string = '0';
   weeklyExpectedProgressPercent: number = 0;
@@ -537,6 +544,7 @@ export class TodayComponent {
     this.weeklyPaymentTotalDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.weeklyPaymentTotalN.toString())
       .toString();
+    this.syncWeeklyPaymentBreakdown(this.requestDateCorrectFormat);
     this.weeklyExpectedTotalN = this.computeWeeklyExpectedTotal(
       this.requestDateCorrectFormat
     );
@@ -581,6 +589,10 @@ export class TodayComponent {
     return this.dailySavingsPaymentN > 0;
   }
 
+  get hasWeeklySavingsPaymentBreakdown(): boolean {
+    return this.weeklySavingsPaymentN > 0;
+  }
+
   private syncDailyPaymentBreakdown(): void {
     const total = this.nonNegativeFiniteNumber(this.dailyPayment);
     const savingsTotals = this.auth.currentUser?.dailySavingsToPayment;
@@ -612,6 +624,51 @@ export class TodayComponent {
       total > 0 ? (this.dailyDirectPaymentN / total) * 100 : 100;
     this.dailySavingsPaymentPercent =
       total > 0 ? (this.dailySavingsPaymentN / total) * 100 : 0;
+  }
+
+  private syncWeeklyPaymentBreakdown(dateKey: string): void {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const payments = this.auth.currentUser?.dailyReimbursement || {};
+    const savingsTotals = this.auth.currentUser?.dailySavingsToPayment;
+    const hasSourceTracking = savingsTotals !== undefined;
+    let recordedSavings = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const dayKey = this.formatDateKey(cursor);
+      const dayTotal = this.nonNegativeFiniteNumber(
+        (payments as Record<string, unknown>)[dayKey]
+      );
+      const daySavings = dayTotal === 0
+        ? 0
+        : hasSourceTracking
+        ? this.nonNegativeFiniteNumber(savingsTotals?.[dayKey])
+        : this.deriveSavingsPaymentFromClients(dayKey);
+
+      recordedSavings += Math.min(dayTotal, daySavings);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const total = this.nonNegativeFiniteNumber(this.weeklyPaymentTotalN);
+    this.weeklySavingsPaymentN = Math.min(total, recordedSavings);
+    this.weeklyDirectPaymentN = Math.max(
+      0,
+      total - this.weeklySavingsPaymentN
+    );
+    this.weeklyDirectPaymentDollars = this.compute
+      .convertCongoleseFrancToUsDollars(
+        this.weeklyDirectPaymentN.toString()
+      )
+      .toString();
+    this.weeklySavingsPaymentDollars = this.compute
+      .convertCongoleseFrancToUsDollars(
+        this.weeklySavingsPaymentN.toString()
+      )
+      .toString();
+    this.weeklyDirectPaymentPercent =
+      total > 0 ? (this.weeklyDirectPaymentN / total) * 100 : 100;
+    this.weeklySavingsPaymentPercent =
+      total > 0 ? (this.weeklySavingsPaymentN / total) * 100 : 0;
   }
 
   private deriveSavingsPaymentFromClients(dateKey: string): number {

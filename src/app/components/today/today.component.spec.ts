@@ -168,6 +168,9 @@ describe('TodayComponent', () => {
     expect(component.hasSavingsPaymentBreakdown).toBeFalse();
     expect(component.dailyDirectPaymentN).toBe(55000);
     expect(component.dailySavingsPaymentN).toBe(0);
+    expect(component.hasWeeklySavingsPaymentBreakdown).toBeFalse();
+    expect(component.weeklyDirectPaymentN).toBe(55000);
+    expect(component.weeklySavingsPaymentN).toBe(0);
     expect(legacyFallback).not.toHaveBeenCalled();
   });
 
@@ -189,6 +192,75 @@ describe('TodayComponent', () => {
     expect(component.dailySavingsPaymentN).toBe(20000);
     expect(component.dailyDirectPaymentPercent).toBeCloseTo(63.64, 1);
     expect(component.dailySavingsPaymentPercent).toBeCloseTo(36.36, 1);
+  });
+
+  it('splits the weekly total across direct and savings-funded payments', () => {
+    const { component } = createComponent({
+      currentUser: {
+        uid: 'user-1',
+        teamCode: '',
+        dailyReimbursement: {
+          '3-30-2026': '400000',
+          '4-1-2026': '350000',
+          '4-5-2026': '200000',
+        },
+        dailySavingsToPayment: {
+          '3-30-2026': '100000',
+          '4-1-2026': '200000',
+        },
+        weeklyPaymentTargetPeriods: [],
+      },
+    });
+
+    component.initalizeInputs();
+
+    expect(component.hasWeeklySavingsPaymentBreakdown).toBeTrue();
+    expect(component.weeklyPaymentTotalN).toBe(950000);
+    expect(component.weeklyDirectPaymentN).toBe(650000);
+    expect(component.weeklySavingsPaymentN).toBe(300000);
+    expect(component.weeklyDirectPaymentPercent).toBeCloseTo(68.42, 1);
+    expect(component.weeklySavingsPaymentPercent).toBeCloseTo(31.58, 1);
+    expect(Number(component.weeklyDirectPaymentDollars)).toBeCloseTo(
+      224.14,
+      1
+    );
+    expect(Number(component.weeklySavingsPaymentDollars)).toBeCloseTo(
+      103.45,
+      1
+    );
+  });
+
+  it('derives the weekly savings breakdown from legacy client history', () => {
+    const { component } = createComponent({
+      currentUser: {
+        uid: 'user-1',
+        teamCode: '',
+        dailyReimbursement: {
+          '3-30-2026': '30000',
+          '4-2-2026': '25000',
+        },
+        weeklyPaymentTargetPeriods: [],
+      },
+    });
+    component.clients = [
+      Object.assign(new Client(), {
+        payments: {
+          '3-30-2026-9-0-0': '10000',
+          '4-2-2026-10-0-0': '15000',
+        },
+        savingsPayments: {
+          '3-30-2026-9-0-0': '-10000',
+          '4-2-2026-10-0-0': '-15000',
+        },
+      }),
+    ];
+
+    component.initalizeInputs();
+
+    expect(component.hasWeeklySavingsPaymentBreakdown).toBeTrue();
+    expect(component.weeklyPaymentTotalN).toBe(55000);
+    expect(component.weeklySavingsPaymentN).toBe(25000);
+    expect(component.weeklyDirectPaymentN).toBe(30000);
   });
 
   it('detects a pre-existing savings transfer from matching client history', () => {
