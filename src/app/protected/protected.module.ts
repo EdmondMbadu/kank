@@ -3,6 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PlotlyModule } from 'angular-plotly.js';
 import * as PlotlyJS from 'plotly.js-basic-dist';
+import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
+import { AngularFireAuthModule } from '@angular/fire/compat/auth';
+import { AngularFireStorageModule } from '@angular/fire/compat/storage';
+import { AngularFireFunctionsModule } from '@angular/fire/compat/functions';
 import { ProtectedRoutingModule } from './protected-routing.module';
 import { SharedModule } from '../shared/shared.module';
 import { InvestementsSummaryComponent } from '../components/investements-summary/investements-summary.component';
@@ -178,6 +182,12 @@ PlotlyModule.plotlyjs = PlotlyJS;
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    // Root-scoped services can create Firestore before this lazy module loads.
+    // Do not apply different persistence settings in this child injector.
+    AngularFirestoreModule,
+    AngularFireAuthModule,
+    AngularFireStorageModule,
+    AngularFireFunctionsModule,
     PlotlyModule,
     SharedModule,
     ProtectedRoutingModule,
