@@ -29,7 +29,11 @@ import {
   PerformanceMetricSettingsService,
 } from 'src/app/services/performance-metric-settings.service';
 
-import { DataService } from 'src/app/services/data.service';
+import {
+  AttendancePhotoVerificationResult,
+  DataService,
+  FinalizedAttendancePhotoResult,
+} from 'src/app/services/data.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { LocationCoordinates, User } from 'src/app/models/user';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
@@ -7592,6 +7596,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     em._attendancePreparedSize = null;
     em._attendanceOriginalSize = null;
     em._uploadedAttendanceAttachment = null;
+    em._attendanceVerificationContext = null;
+    em._attendanceVerificationPromise = null;
+    em._attendanceVerificationResult = null;
+    em._attendanceVerificationState = '';
+    em._attendanceVerificationError = null;
     em._uploading = false;
   }
 
@@ -7622,9 +7631,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       const target = targetDay ? new Date(targetDay.getTime()) : new Date();
       const label =
         dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate();
-      const dateISO = targetDay
-        ? this.isoFromKinDate(target)
-        : target.toISOString().slice(0, 10);
+      const dateISO = this.isoFromKinDate(target);
       const plainLabel = this.normalizeLabel(label, dateISO);
 
       const originalFile = employee._attachmentFile as File | null;
@@ -7651,6 +7658,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       const fingerprint = attendanceFileFingerprint(originalFile);
       const reusable = employee._uploadedAttendanceAttachment;
       let attMeta: any = null;
+      let finalizedStatus = attendanceValue as 'P' | 'A' | 'L' | 'N' | 'F';
+      let finalizedAttachment: any = null;
 
       attMeta = await uploadFirstThenFinalizeAttendance(
         async () => {
@@ -7670,6 +7679,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               label
             );
           }
+          const verification = await this.ensureAttendancePhotoVerified(
+            employee,
+            uploaded,
+            dateISO,
+            fingerprint
+          );
+          finalizedStatus =
+            verification.verdict === 'duplicate'
+              ? 'F'
+              : (attendanceValue as 'P' | 'A' | 'L' | 'N' | 'F');
           const enriched = {
             ...uploaded,
             ...(employee._attachmentTakenAt
@@ -7683,6 +7702,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             softDeviceId:
               employee._attachmentSoftId || this.ensureSoftDeviceId(),
             photoHash: employee._attachmentHash || null,
+            photoVerification: verification,
           };
 
           // Keep the successful upload available if Firestore is temporarily
@@ -7695,17 +7715,35 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           };
           return enriched;
         },
-        (uploaded) =>
-          this.data.finalizeAttendanceWithAttachment(
-            this.auth.currentUser.uid,
-            employee.uid!,
-            dateISO,
-            attendanceValue as 'P' | 'A' | 'L' | 'N' | 'F',
-            label,
-            this.auth.currentUser?.uid || 'unknown',
-            uploaded
-          )
+        async (uploaded) => {
+          const verification = employee
+            ._attendanceVerificationResult as AttendancePhotoVerificationResult;
+          const result: FinalizedAttendancePhotoResult =
+            await this.data.finalizeVerifiedAttendance(this.fns, {
+              employeeId: employee.uid!,
+              dateISO,
+              dateLabel: label,
+              requestedStatus: attendanceValue as
+                | 'P'
+                | 'A'
+                | 'L'
+                | 'N'
+                | 'F',
+              verificationId: verification.verificationId,
+              auditMetadata: {
+                takenAt: uploaded.takenAt,
+                takenAtSource: uploaded.takenAtSource,
+                device: uploaded.device,
+                ua: uploaded.ua,
+                softDeviceId: uploaded.softDeviceId,
+                photoHash: uploaded.photoHash,
+              },
+            });
+          finalizedStatus = result.status;
+          finalizedAttachment = result.attachment;
+        }
       );
+      attMeta = finalizedAttachment || attMeta;
 
       employee.attendanceAttachments = {
         ...(employee.attendanceAttachments ?? {}),
@@ -7714,7 +7752,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
       // local refresh (existing) ...
       this.employee.attendance = this.employee.attendance || {};
-      this.employee.attendance[label] = attendanceValue;
+      this.employee.attendance[label] = finalizedStatus;
       this.invalidateAttendanceRuleCaches();
       if (attMeta) {
         this.monthAttachmentsByLabel[plainLabel] = [
@@ -8885,6 +8923,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         };
         em._attendanceUploadPhase = 'ready';
         em._attendanceUploadProgress = 100;
+        void this.startAttendancePhotoVerification(
+          em,
+          attachment,
+          dateISO,
+          fingerprint,
+          generation
+        );
         return attachment;
       })
       .catch((error) => {
@@ -8947,6 +8992,88 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return retried;
   }
 
+  private startAttendancePhotoVerification(
+    em: any,
+    attachment: any,
+    dateISO: string,
+    fingerprint: string,
+    generation = Number(em._attendanceUploadGeneration || 0)
+  ): Promise<AttendancePhotoVerificationResult | null> {
+    const contextKey = `${dateISO}|${fingerprint}|${attachment?.path || ''}`;
+    if (
+      em._attendanceVerificationContext === contextKey &&
+      em._attendanceVerificationPromise &&
+      em._attendanceVerificationState === 'checking'
+    ) {
+      return em._attendanceVerificationPromise;
+    }
+
+    em._attendanceVerificationContext = contextKey;
+    em._attendanceVerificationState = 'checking';
+    em._attendanceVerificationError = null;
+    const promise = this.data
+      .verifyAttendancePhoto(
+        this.fns,
+        em.uid!,
+        dateISO,
+        attachment.path
+      )
+      .then((result) => {
+        if (Number(em._attendanceUploadGeneration || 0) !== generation) {
+          return null;
+        }
+        em._attendanceVerificationResult = result;
+        em._attendanceVerificationState = result.verdict;
+        return result;
+      })
+      .catch((error) => {
+        if (Number(em._attendanceUploadGeneration || 0) === generation) {
+          em._attendanceVerificationError = error;
+          em._attendanceVerificationState = 'error';
+        }
+        console.error('Attendance photo verification failed:', error);
+        return null;
+      })
+      .finally(() => {
+        if (
+          Number(em._attendanceUploadGeneration || 0) === generation &&
+          em._attendanceVerificationState === 'error'
+        ) {
+          em._attendanceVerificationPromise = null;
+        }
+      });
+    em._attendanceVerificationPromise = promise;
+    return promise;
+  }
+
+  private async ensureAttendancePhotoVerified(
+    em: any,
+    attachment: any,
+    dateISO: string,
+    fingerprint: string
+  ): Promise<AttendancePhotoVerificationResult> {
+    const contextKey = `${dateISO}|${fingerprint}|${attachment?.path || ''}`;
+    if (
+      em._attendanceVerificationContext === contextKey &&
+      em._attendanceVerificationResult
+    ) {
+      return em._attendanceVerificationResult;
+    }
+    const result = await this.startAttendancePhotoVerification(
+      em,
+      attachment,
+      dateISO,
+      fingerprint
+    );
+    if (!result) {
+      throw (
+        em._attendanceVerificationError ||
+        new Error('La vérification de la photo a échoué. Réessayez.')
+      );
+    }
+    return result;
+  }
+
   onAttachmentSelected(em: any, evt: Event) {
     const input = evt.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -8958,11 +9085,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (!file) return;
 
     // validate type/size (existing code)
-    const isOkType =
-      file.type.startsWith('image/') || file.type.startsWith('video/');
+    const isOkType = file.type.startsWith('image/');
     const maxBytes = 10 * 1024 * 1024;
     if (!isOkType) {
-      em._attachmentError = 'Seuls les fichiers image ou vidéo sont autorisés.';
+      em._attachmentError = 'Seuls les fichiers image sont autorisés.';
       return;
     }
     if (file.size > maxBytes) {

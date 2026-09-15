@@ -137,6 +137,12 @@ export class Employee {
   _attendanceUploadProgress?: number;
   _attendanceOriginalSize?: number | null;
   _attendancePreparedSize?: number | null;
+  _attendanceVerificationState?:
+    | ''
+    | 'checking'
+    | 'clear'
+    | 'duplicate'
+    | 'error';
 
   // 🆕 Daily payments ranking (transient)
   _dailyTotal?: number;

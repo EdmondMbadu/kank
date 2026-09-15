@@ -58,6 +58,24 @@ export interface AttendanceAttachmentUploadOptions {
   onTask?: (task: { cancel?: () => Promise<boolean> } | null) => void;
 }
 
+export type AttendancePhotoVerificationVerdict = 'clear' | 'duplicate';
+
+export interface AttendancePhotoVerificationResult {
+  verificationId: string;
+  verdict: AttendancePhotoVerificationVerdict;
+  reason: 'unique' | 'exact_hash' | 'near_exact_visual';
+  matchedDateISO?: string | null;
+  possibleReuse?: boolean;
+  algorithmVersion: string;
+}
+
+export interface FinalizedAttendancePhotoResult {
+  status: 'P' | 'A' | 'L' | 'N' | 'F';
+  verdict: AttendancePhotoVerificationVerdict;
+  reason: AttendancePhotoVerificationResult['reason'];
+  attachment: AttendanceAttachment & Record<string, any>;
+}
+
 export interface EmployeeDayTeamTotal {
   ownerUid: string;
   total: number;
@@ -3410,6 +3428,46 @@ export class DataService {
       uploadedAt: Date.now(), // ⟵ change from ISO string to number
       uploaderId,
     };
+  }
+
+  async verifyAttendancePhoto(
+    functions: AngularFireFunctions,
+    employeeId: string,
+    dateISO: string,
+    storagePath: string
+  ): Promise<AttendancePhotoVerificationResult> {
+    const callable = functions.httpsCallable('verifyAttendancePhoto');
+    const result = await firstValueFrom(
+      callable({ employeeId, dateISO, storagePath })
+    );
+    const value = result as AttendancePhotoVerificationResult;
+    if (
+      !value?.verificationId ||
+      (value.verdict !== 'clear' && value.verdict !== 'duplicate')
+    ) {
+      throw new Error("La réponse de vérification de la photo est invalide.");
+    }
+    return value;
+  }
+
+  async finalizeVerifiedAttendance(
+    functions: AngularFireFunctions,
+    input: {
+      employeeId: string;
+      dateISO: string;
+      dateLabel: string;
+      requestedStatus: 'P' | 'A' | 'L' | 'N' | 'F';
+      verificationId: string;
+      auditMetadata?: Record<string, any>;
+    }
+  ): Promise<FinalizedAttendancePhotoResult> {
+    const callable = functions.httpsCallable('finalizeVerifiedAttendance');
+    const result = await firstValueFrom(callable(input));
+    const value = result as FinalizedAttendancePhotoResult;
+    if (!value?.attachment || !['P', 'A', 'L', 'N', 'F'].includes(value.status)) {
+      throw new Error("La réponse d'enregistrement de présence est invalide.");
+    }
+    return value;
   }
 
   addAttendanceAttachmentDoc(

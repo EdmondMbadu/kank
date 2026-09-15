@@ -1,9 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { AngularFireAuthModule } from '@angular/fire/compat/auth';
-import { AngularFireFunctionsModule } from '@angular/fire/compat/functions';
-import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
-import { AngularFireStorageModule } from '@angular/fire/compat/storage';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PlotlyModule } from 'angular-plotly.js';
 import { RotationScheduleComponent } from '../components/rotation-schedule/rotation-schedule.component';
@@ -34,10 +30,6 @@ import { TrackingMonthCentralComponent } from './tracking-month-central/tracking
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    AngularFirestoreModule,
-    AngularFireAuthModule,
-    AngularFireStorageModule,
-    AngularFireFunctionsModule,
     PlotlyModule,
     SharedModule,
     CentralRoutingModule,

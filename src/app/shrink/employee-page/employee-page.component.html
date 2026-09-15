@@ -4918,6 +4918,56 @@
         </div>
 
         <div
+          *ngIf="
+            employee._attachmentTakenAt &&
+            computeAttendanceFromPhoto($any(employee._attachmentTakenAt)) ===
+              'F'
+          "
+          class="mt-3 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-100"
+          role="alert"
+        >
+          <strong>Date de photo incorrecte.</strong>
+          Cette photo ne correspond pas au jour de présence sélectionné.
+          Choisissez une nouvelle photo. Si vous continuez, elle sera
+          enregistrée comme anomalie.
+        </div>
+
+        <div
+          *ngIf="employee._attendanceVerificationState === 'checking'"
+          class="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100"
+          aria-live="polite"
+        >
+          Vérification rapide de la photo sur ce site…
+        </div>
+
+        <div
+          *ngIf="employee._attendanceVerificationState === 'clear'"
+          class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100"
+          aria-live="polite"
+        >
+          Photo vérifiée — vous pouvez confirmer votre présence.
+        </div>
+
+        <div
+          *ngIf="employee._attendanceVerificationState === 'duplicate'"
+          class="mt-3 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-100"
+          role="alert"
+        >
+          <strong>Photo déjà utilisée sur ce site.</strong>
+          Choisissez une nouvelle photo. Si vous continuez, elle sera
+          enregistrée comme anomalie.
+        </div>
+
+        <div
+          *ngIf="employee._attendanceVerificationState === 'error'"
+          class="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-100"
+          role="alert"
+        >
+          La vérification a été interrompue. Cliquez sur Réessayer pour la
+          relancer; aucune présence ne sera enregistrée sans vérification.
+        </div>
+
+        <div
           *ngIf="employee._attendanceUploadPhase as uploadPhase"
           class="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100"
         >
@@ -4931,7 +4981,9 @@
                   : uploadPhase === "recovering"
                   ? "Connexion lente — sécurisation du téléversement…"
                   : uploadPhase === "ready"
-                  ? "Photo prête — vous pouvez confirmer."
+                  ? employee._attendanceVerificationState === "checking"
+                    ? "Photo prête — vérification en cours…"
+                    : "Photo prête."
                   : "Téléversement interrompu — cliquez sur Confirmer pour réessayer."
               }}
             </span>
@@ -4985,13 +5037,28 @@
         <button
           type="button"
           [disabled]="
-            savingAttendance || employee._uploading || !employee._attachmentFile
+            savingAttendance ||
+            employee._uploading ||
+            employee._attendanceVerificationState === 'checking' ||
+            !employee._attachmentFile
           "
           (click)="confirmPhotoAttendance(employee)"
-          class="inline-flex items-center gap-2 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="inline-flex items-center gap-2 text-white focus:ring-4 focus:outline-none font-medium rounded-full text-sm px-5 py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+          [ngClass]="
+            employee._attendanceVerificationState === 'duplicate' ||
+            (employee._attachmentTakenAt &&
+              computeAttendanceFromPhoto($any(employee._attachmentTakenAt)) ===
+                'F')
+              ? 'bg-rose-700 hover:bg-rose-800 focus:ring-rose-300'
+              : 'bg-green-700 hover:bg-green-800 focus:ring-green-300'
+          "
         >
           <svg
-            *ngIf="savingAttendance || employee._uploading"
+            *ngIf="
+              savingAttendance ||
+              employee._uploading ||
+              employee._attendanceVerificationState === 'checking'
+            "
             class="animate-spin h-4 w-4"
             viewBox="0 0 24 24"
             fill="none"
@@ -5018,6 +5085,16 @@
                 ? employee._attendanceUploadPhase === "recovering"
                   ? "Connexion lente…"
                   : "Téléversement…"
+                : employee._attendanceVerificationState === "checking"
+                ? "Vérification…"
+                : employee._attendanceVerificationState === "error"
+                ? "Réessayer"
+                : employee._attendanceVerificationState === "duplicate" ||
+                  (employee._attachmentTakenAt &&
+                    computeAttendanceFromPhoto(
+                      $any(employee._attachmentTakenAt)
+                    ) === "F")
+                ? "Enregistrer l’anomalie"
                 : "Confirmer"
             }}
           </span>

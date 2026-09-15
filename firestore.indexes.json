@@ -1,6 +1,24 @@
 {
   "indexes": [
     {
+      "collectionGroup": "attendancePhotoFingerprints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "committed",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "bandKeys",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "serverUploadedAtMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "mobileMoneyTransactionLookup",
       "queryScope": "COLLECTION",
       "fields": [
@@ -52,6 +70,27 @@
     }
   ],
   "fieldOverrides": [
+    {
+      "collectionGroup": "attendancePhotoFingerprints",
+      "fieldPath": "luma64Base64",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "attendancePhotoFingerprints",
+      "fieldPath": "bandKeys",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "attendancePhotoFingerprints",
+      "fieldPath": "downloadURL",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "attendancePhotoFingerprints",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
     {
       "collectionGroup": "dayTotals",
       "fieldPath": "dayKey",

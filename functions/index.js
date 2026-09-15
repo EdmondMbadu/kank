@@ -16,6 +16,10 @@ const {
   captureRemainingLoanMonthEnd,
 } = require("./remaining-loan-month-end");
 const {
+  finalizeVerifiedAttendance,
+  verifyAttendancePhotoForSite,
+} = require("./attendance-photo-verification");
+const {
   buildEmployeeSummaryMessage,
   buildCardLifecycleMessage,
   buildLoanActivationMessage,
@@ -442,6 +446,73 @@ exports.uploadClientPhotoChunkFallback = functions
         downloadURL,
         size: String(photoBuffer.length),
       };
+    });
+
+function attendancePhotoHttpsError(error) {
+  const message = String((error && error.message) || "");
+  const invalid = /invalid|must be an image|too large|dimensions/i.test(message);
+  return new functions.https.HttpsError(
+      invalid ? "invalid-argument" : "failed-precondition",
+      message || "La vérification de la photo de présence a échoué.",
+  );
+}
+
+exports.verifyAttendancePhoto = functions
+    .runWith({timeoutSeconds: 60, memory: "512MB", maxInstances: 20})
+    .https.onCall(async (data, context) => {
+      if (!context.auth) {
+        throw new functions.https.HttpsError(
+            "unauthenticated",
+            "Authentication is required to verify an attendance photo.",
+        );
+      }
+      try {
+        return await verifyAttendancePhotoForSite({
+          db,
+          bucket: admin.storage().bucket(),
+          siteId: context.auth.uid,
+          employeeId: data && data.employeeId,
+          dateISO: data && data.dateISO,
+          storagePath: data && data.storagePath,
+        });
+      } catch (error) {
+        console.warn("Attendance photo verification failed", {
+          uid: context.auth.uid,
+          employeeId: String((data && data.employeeId) || "").slice(0, 200),
+          error: String((error && error.message) || error).slice(0, 500),
+        });
+        throw attendancePhotoHttpsError(error);
+      }
+    });
+
+exports.finalizeVerifiedAttendance = functions
+    .runWith({timeoutSeconds: 60, memory: "256MB", maxInstances: 40})
+    .https.onCall(async (data, context) => {
+      if (!context.auth) {
+        throw new functions.https.HttpsError(
+            "unauthenticated",
+            "Authentication is required to finalize attendance.",
+        );
+      }
+      try {
+        return await finalizeVerifiedAttendance({
+          db,
+          siteId: context.auth.uid,
+          employeeId: data && data.employeeId,
+          dateISO: data && data.dateISO,
+          dateLabel: data && data.dateLabel,
+          requestedStatus: data && data.requestedStatus,
+          verificationId: data && data.verificationId,
+          auditMetadata: data && data.auditMetadata,
+        });
+      } catch (error) {
+        console.warn("Verified attendance finalization failed", {
+          uid: context.auth.uid,
+          employeeId: String((data && data.employeeId) || "").slice(0, 200),
+          error: String((error && error.message) || error).slice(0, 500),
+        });
+        throw attendancePhotoHttpsError(error);
+      }
     });
 
 // Initialize Africa's Talking SDK (deferred if credentials are missing in emulator)

@@ -10,6 +10,7 @@
     "firestore-v2:cutover-smoke": "node scripts/firestore-v2-cutover-smoke.js",
     "firestore-v2:cutover": "node scripts/firestore-v2-cutover.js",
     "firestore-v2:benchmark": "node scripts/firestore-v2-benchmark.js",
+    "attendance-photo:backfill": "node scripts/attendance-photo-fingerprint-backfill.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
@@ -25,6 +26,7 @@
     "africastalking": "^0.7.3",
     "firebase-admin": "^11.8.0",
     "firebase-functions": "^4.3.1",
+    "sharp": "^0.35.4",
     "twilio": "^5.4.0"
   },
   "devDependencies": {

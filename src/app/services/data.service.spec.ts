@@ -1021,3 +1021,91 @@ describe('DataService', () => {
     });
   });
 });
+
+describe('DataService attendance photo verification callables', () => {
+  function createService(): DataService {
+    return new DataService(
+      {} as any,
+      {} as any,
+      {} as any,
+      {
+        getTomorrowsDateMonthDayYear: () => '3-29-2026',
+        todaysDate: () => '3-28-2026-9-0-0',
+      } as any,
+      {} as any,
+      {} as any
+    );
+  }
+
+  it('requests site-side photo verification before attendance is committed', async () => {
+    const callable = jasmine.createSpy('callable').and.returnValue(
+      of({
+        verificationId: 'verification-1',
+        verdict: 'clear',
+        reason: 'unique',
+        algorithmVersion: 'test-v1',
+      })
+    );
+    const functions = {
+      httpsCallable: jasmine.createSpy('httpsCallable').and.returnValue(callable),
+    } as any;
+
+    const result = await createService().verifyAttendancePhoto(
+      functions,
+      'employee-1',
+      '2026-03-28',
+      'attendance_proofs/site-1/employee-1/2026-03-28/photo.jpg'
+    );
+
+    expect(functions.httpsCallable).toHaveBeenCalledOnceWith(
+      'verifyAttendancePhoto'
+    );
+    expect(callable).toHaveBeenCalledOnceWith({
+      employeeId: 'employee-1',
+      dateISO: '2026-03-28',
+      storagePath:
+        'attendance_proofs/site-1/employee-1/2026-03-28/photo.jpg',
+    });
+    expect(result.verdict).toBe('clear');
+  });
+
+  it('uses the authoritative status returned by verified finalization', async () => {
+    const attachment = {
+      url: 'https://firebase.test/photo',
+      path: 'attendance_proofs/site-1/employee-1/2026-03-28/photo.jpg',
+      size: 20,
+      contentType: 'image/jpeg',
+      uploadedAt: 1774688400000,
+      uploaderId: 'site-1',
+    };
+    const callable = jasmine.createSpy('callable').and.returnValue(
+      of({
+        status: 'F',
+        verdict: 'duplicate',
+        reason: 'exact_hash',
+        attachment,
+      })
+    );
+    const functions = {
+      httpsCallable: jasmine.createSpy('httpsCallable').and.returnValue(callable),
+    } as any;
+    const input = {
+      employeeId: 'employee-1',
+      dateISO: '2026-03-28',
+      dateLabel: '3-28-2026-9-0-0',
+      requestedStatus: 'P' as const,
+      verificationId: 'verification-1',
+    };
+
+    const result = await createService().finalizeVerifiedAttendance(
+      functions,
+      input
+    );
+
+    expect(functions.httpsCallable).toHaveBeenCalledOnceWith(
+      'finalizeVerifiedAttendance'
+    );
+    expect(callable).toHaveBeenCalledOnceWith(input);
+    expect(result.status).toBe('F');
+  });
+});

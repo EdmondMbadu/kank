@@ -1236,8 +1236,9 @@ describe('EmployeePageComponent', () => {
       uploadAttendanceAttachment: jasmine
         .createSpy('uploadAttendanceAttachment')
         .and.rejectWith(new Error('offline')),
-      finalizeAttendanceWithAttachment: jasmine.createSpy(
-        'finalizeAttendanceWithAttachment'
+      verifyAttendancePhoto: jasmine.createSpy('verifyAttendancePhoto'),
+      finalizeVerifiedAttendance: jasmine.createSpy(
+        'finalizeVerifiedAttendance'
       ),
       updateEmployeeAttendanceForUser: jasmine.createSpy(
         'updateEmployeeAttendanceForUser'
@@ -1260,7 +1261,8 @@ describe('EmployeePageComponent', () => {
     await component.addAttendanceForEmployee(employee, 'P');
 
     expect(data.uploadAttendanceAttachment).toHaveBeenCalledTimes(1);
-    expect(data.finalizeAttendanceWithAttachment).not.toHaveBeenCalled();
+    expect(data.verifyAttendancePhoto).not.toHaveBeenCalled();
+    expect(data.finalizeVerifiedAttendance).not.toHaveBeenCalled();
     expect(data.updateEmployeeAttendanceForUser).not.toHaveBeenCalled();
     expect(data.setAttendanceEntry).not.toHaveBeenCalled();
     expect(employee._attachmentFile).toBeTruthy();
@@ -1287,6 +1289,14 @@ describe('EmployeePageComponent', () => {
       uploadAttendanceAttachment: jasmine
         .createSpy('uploadAttendanceAttachment')
         .and.resolveTo(attachment),
+      verifyAttendancePhoto: jasmine
+        .createSpy('verifyAttendancePhoto')
+        .and.resolveTo({
+          verificationId: 'verification-1',
+          verdict: 'clear',
+          reason: 'unique',
+          algorithmVersion: 'test-v1',
+        }),
     };
     const component = createComponent({ currentUser: { uid: 'site-1' } });
     (component as any).data = data;
@@ -1314,6 +1324,7 @@ describe('EmployeePageComponent', () => {
     component.onAttachmentSelected(employee, { target: input } as any);
     await employee._attendancePreparationPromise;
     await employee._attendanceUploadPromise;
+    await employee._attendanceVerificationPromise;
     await employee._attachmentMetadataPromise;
 
     expect(data.uploadAttendanceAttachment).toHaveBeenCalledWith(
@@ -1330,6 +1341,7 @@ describe('EmployeePageComponent', () => {
     expect(employee._attachmentHash).toBe('original-photo-hash');
     expect(employee._attendancePreparedSize).toBe(optimized.size);
     expect(employee._attendanceUploadPhase).toBe('ready');
+    expect(employee._attendanceVerificationState).toBe('clear');
   });
 
   it('cancels and removes an uploaded proof when the modal is abandoned', async () => {
@@ -1371,11 +1383,24 @@ describe('EmployeePageComponent', () => {
       uploadAttendanceAttachment: jasmine
         .createSpy('uploadAttendanceAttachment')
         .and.resolveTo(attachment),
-      finalizeAttendanceWithAttachment: jasmine
-        .createSpy('finalizeAttendanceWithAttachment')
+      verifyAttendancePhoto: jasmine
+        .createSpy('verifyAttendancePhoto')
+        .and.resolveTo({
+          verificationId: 'verification-1',
+          verdict: 'clear',
+          reason: 'unique',
+          algorithmVersion: 'test-v1',
+        }),
+      finalizeVerifiedAttendance: jasmine
+        .createSpy('finalizeVerifiedAttendance')
         .and.returnValues(
           Promise.reject(new Error('firestore unavailable')),
-          Promise.resolve()
+          Promise.resolve({
+            status: 'P',
+            verdict: 'clear',
+            reason: 'unique',
+            attachment,
+          })
         ),
     };
     const component = createComponent({ currentUser: { uid: 'site-1' } });
@@ -1399,8 +1424,69 @@ describe('EmployeePageComponent', () => {
     await component.addAttendanceForEmployee(employee, 'P');
 
     expect(data.uploadAttendanceAttachment).toHaveBeenCalledTimes(1);
-    expect(data.finalizeAttendanceWithAttachment).toHaveBeenCalledTimes(2);
+    expect(data.verifyAttendancePhoto).toHaveBeenCalledTimes(1);
+    expect(data.finalizeVerifiedAttendance).toHaveBeenCalledTimes(2);
     expect(employee.attendance['3-28-2026-9-0-0']).toBe('P');
     expect(employee._attachmentFile).toBeNull();
+  });
+
+  it('records a reused site photo as an anomaly even for another employee', async () => {
+    const attachment = {
+      url: 'https://firebase.test/reused-presence',
+      path: 'attendance_proofs/site-1/employee-2/2026-03-28/photo.jpg',
+      size: 5,
+      contentType: 'image/jpeg',
+      uploadedAt: 1774688400000,
+      uploaderId: 'site-1',
+    };
+    const data = {
+      uploadAttendanceAttachment: jasmine
+        .createSpy('uploadAttendanceAttachment')
+        .and.resolveTo(attachment),
+      verifyAttendancePhoto: jasmine
+        .createSpy('verifyAttendancePhoto')
+        .and.resolveTo({
+          verificationId: 'verification-duplicate',
+          verdict: 'duplicate',
+          reason: 'near_exact_visual',
+          matchedDateISO: '2026-03-27',
+          algorithmVersion: 'test-v1',
+        }),
+      finalizeVerifiedAttendance: jasmine
+        .createSpy('finalizeVerifiedAttendance')
+        .and.resolveTo({
+          status: 'F',
+          verdict: 'duplicate',
+          reason: 'near_exact_visual',
+          attachment,
+        }),
+    };
+    const component = createComponent({ currentUser: { uid: 'site-1' } });
+    (component as any).data = data;
+    const employee: any = {
+      uid: 'employee-2',
+      attendance: {},
+      attendanceAttachments: {},
+      _attachmentFile: new File(['photo'], 'presence.jpg', {
+        type: 'image/jpeg',
+        lastModified: 1774688400000,
+      }),
+    };
+    component.employee = employee;
+    spyOn<any>(component, 'invalidateAttendanceRuleCaches').and.stub();
+    spyOn(component, 'generateAttendanceTable').and.stub();
+    spyOn(window, 'alert');
+
+    await component.addAttendanceForEmployee(employee, 'P');
+
+    expect(data.finalizeVerifiedAttendance).toHaveBeenCalledWith(
+      jasmine.anything(),
+      jasmine.objectContaining({
+        employeeId: 'employee-2',
+        requestedStatus: 'P',
+        verificationId: 'verification-duplicate',
+      })
+    );
+    expect(employee.attendance['3-28-2026-9-0-0']).toBe('F');
   });
 });
