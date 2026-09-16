@@ -4819,7 +4819,7 @@ exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>
 
     const msg = toGsmSafe(
         `${e.firstName || "Employe"} ${e.lastName || ""}: ${type} disponible. ` +
-        "Signez dans l'application pour le virement. Probleme? 0825333567. " +
+        "Signez dans l'application pour le virement. Probleme? +12156877614. " +
         "Fondation Gervais.",
     );
 
