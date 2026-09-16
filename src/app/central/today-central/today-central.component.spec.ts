@@ -538,8 +538,10 @@ describe('TodayCentralComponent daily modal template', () => {
   let component: TodayCentralComponent;
   let getClients: jasmine.Spy;
   let getCashPayments: jasmine.Spy;
+  let dollarRate: number;
 
   beforeEach(async () => {
+    dollarRate = 0.01;
     getCashPayments = jasmine.createSpy('getEmployeeCashPaymentsForDay').and.resolveTo([
       { id: 'cash-b', ownerUid: 'b', clientUid: 'b', fullName: 'Paul', dayKey: '9-1-2026',
         amount: 200, createdAtMs: 1, source: 'manual' },
@@ -559,7 +561,9 @@ describe('TodayCentralComponent daily modal template', () => {
           getAllUsersInfo: () => of([{ uid: 'b', firstName: 'Zongo' }, { uid: 'a', firstName: 'Bandal' }]),
         } },
         { provide: DataService, useValue: { getEmployeeCashPaymentsForDay: getCashPayments } },
-        { provide: ComputationService, useValue: {} },
+        { provide: ComputationService, useValue: {
+          convertCongoleseFrancToUsDollars: (amount: string) => Math.ceil(Number(amount) * dollarRate),
+        } },
         { provide: TimeService, useValue: {
           getTomorrowsDateMonthDayYear: () => '9-2-2026', todaysDateMonthDayYear: () => '9-1-2026',
           convertDateToDayMonthYear: () => '01/09/2026', getTodaysDateYearMonthDay: () => '2026-09-01',
@@ -575,6 +579,53 @@ describe('TodayCentralComponent daily modal template', () => {
   });
 
   afterEach(() => component.ngOnDestroy());
+
+  for (const modal of [
+    {index: 0, totalFc: 200, totalUsd: 2, amountsUsd: [1, 1]},
+    {index: 1, totalFc: 300, totalUsd: 3, amountsUsd: [1, 2]},
+    {index: 3, totalFc: 2000, totalUsd: 20, amountsUsd: [10, 10]},
+  ]) {
+    it(`shows dollar estimates for every amount and total in modal ${modal.index}, without extra reads`, async () => {
+      component.dailyPayment = '200';
+      component.dailyLending = '2000';
+      component.cashFlowPaymentTotalFc = 300;
+      component.openDailyActivityModal(modal.index);
+      await component.loadDailyActivityDetails();
+      fixture.detectChanges();
+      const dialog: HTMLElement = fixture.nativeElement.querySelector('[role="dialog"]');
+      const summary = dialog.querySelector('.grid')!;
+      const text = (element: Element) => element.textContent!.replace(/\s+/g, ' ').trim();
+      expect(text(summary.children[0])).toContain(`≈ $ ${modal.totalUsd}`);
+      expect(text(summary.children[2])).toContain(`≈ $ ${modal.totalUsd}`);
+      expect(text(summary.children[2])).toContain(`Liste complète : FC ${modal.totalFc.toLocaleString('en-US')} · ≈ $ ${modal.totalUsd}`);
+      const sites = Array.from(dialog.querySelectorAll('h3')).map(heading => heading.parentElement!.parentElement!);
+      sites.forEach((site, index) => {
+        expect(text(site.querySelector('h3')!.parentElement!)).toContain(`≈ $ ${modal.amountsUsd[index]}`);
+        const row = site.querySelector('.border-t')!;
+        expect(text(row)).toContain(`≈ $ ${modal.amountsUsd[index]}`);
+      });
+      const reads = [getClients.calls.count(), getCashPayments.calls.count()];
+      component.dailyActivitySearch = 'Esther';
+      component.applyDailyActivityFilters();
+      fixture.detectChanges();
+      expect(text(summary.children[2])).toContain(`≈ $ ${modal.amountsUsd[0]}`);
+      expect(text(summary.children[2])).toContain(`Liste complète : FC ${modal.totalFc.toLocaleString('en-US')} · ≈ $ ${modal.totalUsd}`);
+      expect(dialog.querySelectorAll('h3').length).toBe(1);
+      // Rate changes are read locally, even for already cached rows.
+      dollarRate = 0.02;
+      fixture.detectChanges();
+      expect(text(summary.children[0])).toContain(`≈ $ ${modal.totalUsd * 2}`);
+      expect([getClients.calls.count(), getCashPayments.calls.count()]).toEqual(reads);
+    });
+  }
+
+  it('converts FC totals directly with existing rounding; zero stays zero', () => {
+    dollarRate = 0.00034;
+    expect(component.dailyActivityAmountDollars(700500)).toBe(239);
+    expect(component.dailyActivityAmountDollars(0)).toBe(0);
+    expect(component.dailyActivityAmountDollars(1000)).toBe(1);
+    expect(component.dailyActivityAmountDollars(2000)).toBe(1);
+  });
 
   it('opens cash flow on click and Space, explains exclusions, and searches without more reads', async () => {
     const card = fixture.nativeElement.querySelector('article[aria-label="Voir Paiement Cash Flow Du Jour par site"]');

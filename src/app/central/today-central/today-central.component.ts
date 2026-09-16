@@ -581,6 +581,12 @@ export class TodayCentralComponent implements OnDestroy {
     return Number(this.dailyActivityKind === 'payment' ? this.dailyPayment : this.dailyLending) || 0;
   }
 
+  dailyActivityAmountDollars(amountFc: number): number {
+    // Same local rate/rounding as the summary cards. Convert each FC total
+    // directly, rather than summing individually rounded dollar estimates.
+    return this.toNum(this.compute.convertCongoleseFrancToUsDollars(String(amountFc)));
+  }
+
   get dailyActivityPageCount(): number {
     return Math.max(1, Math.ceil(this.dailyActivityFilteredRows.length / this.dailyActivityPageSize));
   }

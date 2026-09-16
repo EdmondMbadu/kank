@@ -197,6 +197,7 @@
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-900/30">
           <p class="text-xs font-medium text-emerald-700 dark:text-emerald-300">Total central</p>
           <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">FC {{ dailyActivityCentralTotal | number : '1.0-0' }}</p>
+          <p class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">≈ $ {{ dailyActivityAmountDollars(dailyActivityCentralTotal) | number : '1.0-0' }}</p>
           <p *ngIf="dailyActivityKind === 'cash-payment' && cashFlowPaymentLoading" class="mt-1 text-xs text-slate-500">Actualisation du total central…</p>
           <p *ngIf="dailyActivityKind === 'cash-payment' && cashFlowPaymentError" class="mt-1 text-xs text-red-600">{{ cashFlowPaymentError }}</p>
         </div>
@@ -207,7 +208,8 @@
         <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
           <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total filtré</p>
           <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">FC {{ dailyActivityFilteredTotal | number : '1.0-0' }}</p>
-          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Liste complète : FC {{ dailyActivityTotal | number : '1.0-0' }}</p>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">≈ $ {{ dailyActivityAmountDollars(dailyActivityFilteredTotal) | number : '1.0-0' }}</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Liste complète : FC {{ dailyActivityTotal | number : '1.0-0' }} · ≈ $ {{ dailyActivityAmountDollars(dailyActivityTotal) | number : '1.0-0' }}</p>
         </div>
         <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
           <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Sites avec opérations listées</p>
@@ -250,7 +252,7 @@
         <div *ngFor="let site of dailyActivityPageGroups; trackBy: trackDailyActivity" class="mt-5 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
           <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-50 px-4 py-3 dark:bg-emerald-900/20">
             <h3 class="font-semibold text-emerald-800 dark:text-emerald-200">{{ site.name }}</h3>
-            <p class="text-xs text-emerald-700 dark:text-emerald-300">Total filtré de ce site : FC {{ site.total | number : '1.0-0' }}</p>
+            <p class="text-xs text-emerald-700 dark:text-emerald-300">Total filtré de ce site : FC {{ site.total | number : '1.0-0' }} · ≈ $ {{ dailyActivityAmountDollars(site.total) | number : '1.0-0' }}</p>
           </div>
           <div class="hidden grid-cols-[1.5fr_1fr_0.8fr] gap-4 bg-slate-50 px-4 py-2 text-xs font-medium uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400 md:grid">
             <span>Client</span><span>Date / heure</span><span class="text-right">Montant</span>
@@ -261,7 +263,10 @@
               <p *ngIf="row.detail" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ row.detail }}</p>
             </div>
             <p class="text-sm text-slate-500 dark:text-slate-400">{{ row.dateLabel }}</p>
-            <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300 md:text-right">FC {{ row.amount | number : '1.0-0' }}</p>
+            <div class="md:text-right">
+              <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">FC {{ row.amount | number : '1.0-0' }}</p>
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">≈ $ {{ dailyActivityAmountDollars(row.amount) | number : '1.0-0' }}</p>
+            </div>
           </div>
         </div>
         <p *ngIf="!dailyActivityFilteredRows.length" class="py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune opération pour cette date ou ces filtres.</p>
