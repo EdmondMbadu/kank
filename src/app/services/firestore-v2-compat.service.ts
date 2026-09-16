@@ -38,20 +38,28 @@ export class FirestoreV2CompatService {
 
   constructor(private afs: AngularFirestore) {}
 
+  private projectionDocuments<T>(
+    sourcePath: string, collectionName: string, monthKey?: string
+  ): Observable<T[]> {
+    if (monthKey) {
+      return this.afs.doc<T>(`${sourcePath}/${collectionName}/${monthKey}`)
+        .valueChanges().pipe(map((document) => document ? [document] : []));
+    }
+    return this.afs.collection<T>(`${sourcePath}/${collectionName}`).valueChanges();
+  }
+
   private hydrateFromIntegrityProjection<T extends Record<string, any>>(
     sourcePath: string,
     baseData: T,
-    compactError?: unknown
+    compactError?: unknown,
+    monthKey?: string
   ): Observable<T> {
-    return this.afs
-      .collection<FirestoreV2ProjectionDocument>(
-        `${sourcePath}/firestoreV2Months`
-      )
-      .valueChanges()
-      .pipe(
+    return this.projectionDocuments<FirestoreV2ProjectionDocument>(
+      sourcePath, 'firestoreV2Months', monthKey
+    ).pipe(
         retry({ count: 3, delay: 1000 }),
         switchMap((documents) => {
-          if (!documents.length || hasChunkedProjection(sourcePath, documents)) {
+          if ((!documents.length && !monthKey) || hasChunkedProjection(sourcePath, documents)) {
             return throwError(() => new Error(
               `No complete Firestore v2 fallback exists for ${sourcePath}.`
             ));
@@ -86,8 +94,14 @@ export class FirestoreV2CompatService {
 
   hydrateDocument<T extends Record<string, any>>(
     sourcePath: string,
-    baseData: T
+    baseData: T,
+    // Opt-in partial history for read-only daily details. Existing consumers
+    // still receive the complete history by leaving this argument undefined.
+    monthKey?: string
   ): Observable<T> {
+    if (monthKey !== undefined && !/^\d{4}-(0[1-9]|1[0-2])$/.test(monthKey)) {
+      return throwError(() => new Error('Invalid Firestore history month.'));
+    }
     return this.readControl$.pipe(
       switchMap((control) => {
         const kind = this.kindForPath(sourcePath);
@@ -96,17 +110,14 @@ export class FirestoreV2CompatService {
           Array.isArray(control?.readKinds) && control.readKinds.includes(kind!);
         if (!enabled) return of(baseData);
         const archived = Boolean(baseData?.['_firestoreV2Archive']);
-        return this.afs
-          .collection<FirestoreV2CompactProjectionDocument>(
-            `${sourcePath}/firestoreV2ReadMonths`
-          )
-          .valueChanges()
-          .pipe(
+        return this.projectionDocuments<FirestoreV2CompactProjectionDocument>(
+          sourcePath, 'firestoreV2ReadMonths', monthKey
+        ).pipe(
             retry({ count: 3, delay: 1000 }),
             switchMap((documents) => {
               if (!documents.length) {
                 return archived
-                  ? this.hydrateFromIntegrityProjection(sourcePath, baseData)
+                  ? this.hydrateFromIntegrityProjection(sourcePath, baseData, undefined, monthKey)
                   : of(baseData);
               }
               return of(
@@ -123,8 +134,8 @@ export class FirestoreV2CompatService {
                 error
               );
               return archived
-                ? this.hydrateFromIntegrityProjection(sourcePath, baseData, error)
-                : of(baseData);
+                ? this.hydrateFromIntegrityProjection(sourcePath, baseData, error, monthKey)
+                : monthKey ? throwError(() => error) : of(baseData);
             })
           );
       })

@@ -70,3 +70,23 @@ describe('AuthService management ledger', () => {
     expect(afs.doc).not.toHaveBeenCalled();
   });
 });
+
+describe('AuthService daily central snapshots', () => {
+  it('uses a one-shot client query and hydrates only the requested month with document ids', async () => {
+    const get = jasmine.createSpy('get').and.returnValue(of({
+      empty: false, docs: [{ id: 'client-a', data: () => ({ firstName: 'Esther' }) }],
+    }));
+    const afs = { collection: jasmine.createSpy('collection').and.returnValue({ get }) };
+    const firestoreV2 = { hydrateDocument: jasmine.createSpy('hydrateDocument')
+      .and.callFake((_path: string, base: any) => of(base)) };
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service as any, { afs, firestoreV2 });
+    const result = await firstValueFrom(service.getClientsOfAUserForMonth('site-a', '2026-09'));
+    expect(afs.collection).toHaveBeenCalledOnceWith('users/site-a/clients');
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(firestoreV2.hydrateDocument).toHaveBeenCalledOnceWith(
+      'users/site-a/clients/client-a', { firstName: 'Esther', uid: 'client-a' }, '2026-09'
+    );
+    expect(result[0].uid).toBe('client-a');
+  });
+});

@@ -330,6 +330,22 @@ export class AuthService {
         })
       );
   }
+
+  /** Read-only snapshot for the daily central modal, not full client histories. */
+  getClientsOfAUserForMonth(userId: string, monthKey: string) {
+    return this.afs.collection<Client>(`users/${userId}/clients`).get().pipe(
+      switchMap((snapshot) => {
+        if (snapshot.empty) return of([] as Client[]);
+        return combineLatest(snapshot.docs.map((doc) =>
+          this.firestoreV2.hydrateDocument(
+            `users/${userId}/clients/${doc.id}`,
+            { ...doc.data(), uid: doc.data().uid || doc.id },
+            monthKey
+          )
+        ));
+      })
+    );
+  }
   getReviews(): Observable<any[]> {
     return this.user$.pipe(
       switchMap((user) => {

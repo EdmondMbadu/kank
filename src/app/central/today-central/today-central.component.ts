@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin, map, take, timeout } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { Management } from 'src/app/models/management';
@@ -10,6 +10,7 @@ import { DataService } from 'src/app/services/data.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { selectWinnerTeamMembers } from '../winner-team-members';
+import { buildDailyActivityRows, DailyActivityKind, DailyActivityRow, parseActivityDate } from './daily-activity-details';
 
 type AuditPaymentPerformanceMode = 'day' | 'week' | 'month';
 type AuditPaymentPerformanceTone = 'red' | 'yellow' | 'orange' | 'green';
@@ -49,7 +50,7 @@ interface CashFlowPaymentAnalysis {
   templateUrl: './today-central.component.html',
   styleUrls: ['./today-central.component.css'],
 })
-export class TodayCentralComponent {
+export class TodayCentralComponent implements OnDestroy {
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -179,6 +180,28 @@ export class TodayCentralComponent {
   requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
   summaryContent: string[] = [];
+  dailyActivityKind: DailyActivityKind = 'payment';
+  isDailyActivityModalOpen = false;
+  dailyActivityLoading = false;
+  dailyActivityError = '';
+  dailyActivityRows: DailyActivityRow[] = [];
+  dailyActivityFilteredRows: DailyActivityRow[] = [];
+  dailyActivitySiteOptions: Array<{ id: string; name: string }> = [];
+  dailyActivityPageGroups: Array<{
+    id: string; name: string; total: number; rows: DailyActivityRow[];
+  }> = [];
+  dailyActivitySiteFilter = 'all';
+  dailyActivitySearch = '';
+  dailyActivityTotal = 0;
+  dailyActivityFilteredTotal = 0;
+  dailyActivityPage = 1;
+  readonly dailyActivityPageSize = 50;
+  private dailyActivityRequestId = 0;
+  private readonly dailyActivityCache = new Map<string, Client[]>();
+  private readonly dailyActivityPending = new Map<string, Promise<Client[]>>();
+  private dailyActivityPreviousFocus: HTMLElement | null = null;
+  private dailyActivityPreviousOverflow = '';
+  @ViewChild('dailyActivityDialog') dailyActivityDialog?: ElementRef<HTMLElement>;
   copyPaymentsMessage: string | null = null;
   isCopyingPayments = false;
   copyCashFlowPaymentsMessage: string | null = null;
@@ -542,6 +565,207 @@ export class TodayCentralComponent {
     return item.label;
   }
 
+  isDailyActivityCard(index: number): boolean {
+    return index === 0 || index === 3;
+  }
+
+  get dailyActivityTitle(): string {
+    return this.dailyActivityKind === 'payment' ? 'Paiements du jour' : 'Emprunts du jour';
+  }
+
+  get dailyActivityCentralTotal(): number {
+    return Number(this.dailyActivityKind === 'payment' ? this.dailyPayment : this.dailyLending) || 0;
+  }
+
+  get dailyActivityPageCount(): number {
+    return Math.max(1, Math.ceil(this.dailyActivityFilteredRows.length / this.dailyActivityPageSize));
+  }
+
+  openDailyActivityModal(index: number): void {
+    if (!this.isDailyActivityCard(index) || this.isAuditOnlyTodayCentral) return;
+    this.dailyActivityKind = index === 0 ? 'payment' : 'lending';
+    if (!this.isDailyActivityModalOpen) {
+      this.dailyActivityPreviousFocus = document.activeElement as HTMLElement | null;
+      this.dailyActivityPreviousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
+    this.isDailyActivityModalOpen = true;
+    this.resetDailyActivityFilters();
+    void this.loadDailyActivityDetails();
+    setTimeout(() => {
+      if (this.isDailyActivityModalOpen) {
+        this.dailyActivityDialog?.nativeElement.querySelector<HTMLElement>('button')?.focus();
+      }
+    });
+  }
+
+  closeDailyActivityModal(): void {
+    if (!this.isDailyActivityModalOpen) return;
+    this.isDailyActivityModalOpen = false;
+    this.dailyActivityRequestId++;
+    this.dailyActivityLoading = false;
+    document.body.style.overflow = this.dailyActivityPreviousOverflow;
+    this.dailyActivityPreviousFocus?.focus();
+  }
+
+  ngOnDestroy(): void {
+    this.closeDailyActivityModal();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onDailyActivityKeydown(event: KeyboardEvent): void {
+    if (!this.isDailyActivityModalOpen) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeDailyActivityModal();
+    } else if (event.key === 'Tab') {
+      const controls = this.dailyActivityDialog?.nativeElement.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]'
+      );
+      if (!controls?.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    }
+  }
+
+  async loadDailyActivityDetails(refresh = false): Promise<void> {
+    if (!this.isDailyActivityModalOpen) return;
+    const requestId = ++this.dailyActivityRequestId;
+    const monthKey = parseActivityDate(this.requestDateCorrectFormat)?.monthKey;
+    this.dailyActivityLoading = true;
+    this.dailyActivityError = '';
+    this.dailyActivityRows = [];
+    this.dailyActivitySiteOptions = [];
+    this.dailyActivityTotal = 0;
+    this.applyDailyActivityFilters();
+    try {
+      if (!monthKey) throw new Error('Invalid selected day');
+      const users = [...new Map(this.allUsers.filter((user) => !!user.uid)
+        .map((user) => [user.uid!, user])).values()];
+      if (!users.length) throw new Error('Locations are not loaded yet');
+      // Aggregate changes invalidate the snapshot on the next open/refresh.
+      // Date switches within an unchanged month reuse the same client data.
+      const signature = users.map((user) => {
+        const entries = ['dailyReimbursement', 'dailyLending'].map((field) =>
+          Object.entries((user as any)[field] || {})
+            .filter(([key]) => parseActivityDate(key)?.monthKey === monthKey)
+            .sort(([a], [b]) => a.localeCompare(b))
+        );
+        return [user.uid, user.firstName, entries];
+      }).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+      const cacheKey = `${monthKey}:${JSON.stringify(signature)}`;
+      if (refresh) this.dailyActivityCache.delete(cacheKey);
+      let clients = this.dailyActivityCache.get(cacheKey);
+      if (!clients) {
+        let pending = this.dailyActivityPending.get(cacheKey);
+        if (!pending) {
+          const [year, month] = monthKey.split('-');
+          const monthPrefix = new RegExp(`^(?:0?${Number(month)}-\\d{1,2}-${year}(?:-|$)|${year}-0?${Number(month)}-\\d{1,2}(?:T|$))`);
+          const monthOnly = <T>(values?: Record<string, T>): Record<string, T> =>
+            Object.fromEntries(Object.entries(values || {}).filter(([key]) => monthPrefix.test(key)));
+          // One-shot parallel reads. A failed site cancels the other readers,
+          // rather than leaving listeners running behind an error message.
+          pending = firstValueFrom(forkJoin(users.map((user) =>
+            this.auth.getClientsOfAUserForMonth(user.uid!, monthKey).pipe(
+              timeout(30000), take(1),
+              map((siteClients) => siteClients.map((client) => ({
+                uid: client.uid, name: client.name,
+                firstName: client.firstName, lastName: client.lastName, middleName: client.middleName,
+                transferStatus: client.transferStatus,
+                payments: monthOnly(client.payments), previousPayments: monthOnly(client.previousPayments),
+                paymentSources: monthOnly(client.paymentSources), previousPaymentSources: monthOnly(client.previousPaymentSources),
+                loanAmount: client.loanAmount, debtCycleStartDate: client.debtCycleStartDate,
+                paymentPeriodRange: client.paymentPeriodRange,
+                // Keep only fields needed by the list, not galleries and other
+                // unrelated histories. The collection owner defines the site.
+                locationOwnerId: user.uid,
+                locationName: user.firstName || client.locationName || 'Site',
+              })))
+            )
+          ))).then((bySite) => {
+            const result = bySite.flat();
+            this.dailyActivityCache.set(cacheKey, result);
+            // Bound in-memory history; do not accumulate every visited month.
+            while (this.dailyActivityCache.size > 2) {
+              this.dailyActivityCache.delete(this.dailyActivityCache.keys().next().value!);
+            }
+            return result;
+          }).finally(() => this.dailyActivityPending.delete(cacheKey));
+          this.dailyActivityPending.set(cacheKey, pending);
+        }
+        clients = await pending;
+      }
+      if (requestId !== this.dailyActivityRequestId || !this.isDailyActivityModalOpen) return;
+      this.dailyActivityRows = buildDailyActivityRows(
+        clients, this.dailyActivityKind, this.requestDateCorrectFormat
+      );
+      this.dailyActivityTotal = this.dailyActivityRows.reduce((sum, row) => sum + row.amount, 0);
+      this.dailyActivitySiteOptions = [...new Map(this.dailyActivityRows.map((row) =>
+        [row.locationId, { id: row.locationId, name: row.locationName }]
+      )).values()];
+      if (!this.dailyActivitySiteOptions.some((site) => site.id === this.dailyActivitySiteFilter)) {
+        this.dailyActivitySiteFilter = 'all';
+      }
+      this.applyDailyActivityFilters();
+    } catch (error) {
+      if (requestId !== this.dailyActivityRequestId || !this.isDailyActivityModalOpen) return;
+      console.error('Unable to load daily central details', error);
+      this.dailyActivityTotal = 0;
+      this.dailyActivityError = 'Impossible de charger tous les sites. Réessayez; aucune liste partielle ne sera affichée.';
+    } finally {
+      if (requestId === this.dailyActivityRequestId) this.dailyActivityLoading = false;
+    }
+  }
+
+  resetDailyActivityFilters(): void {
+    this.dailyActivitySiteFilter = 'all';
+    this.dailyActivitySearch = '';
+    this.applyDailyActivityFilters();
+  }
+
+  applyDailyActivityFilters(): void {
+    const normalize = (value: string) => value.toLocaleLowerCase('fr')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const search = normalize(this.dailyActivitySearch.trim());
+    this.dailyActivityFilteredRows = this.dailyActivityRows.filter((row) =>
+      (this.dailyActivitySiteFilter === 'all' || row.locationId === this.dailyActivitySiteFilter) &&
+      (!search || normalize(`${row.fullName} ${row.locationName} ${row.dateLabel} ${row.amount} ${row.detail}`).includes(search))
+    );
+    this.dailyActivityFilteredTotal = this.dailyActivityFilteredRows.reduce((sum, row) => sum + row.amount, 0);
+    this.dailyActivityPage = 1;
+    this.updateDailyActivityPage();
+  }
+
+  changeDailyActivityPage(delta: number): void {
+    this.dailyActivityPage = Math.min(this.dailyActivityPageCount, Math.max(1, this.dailyActivityPage + delta));
+    this.updateDailyActivityPage();
+  }
+
+  private updateDailyActivityPage(): void {
+    const totals = new Map<string, number>();
+    this.dailyActivityFilteredRows.forEach((row) =>
+      totals.set(row.locationId, (totals.get(row.locationId) || 0) + row.amount)
+    );
+    const groups = new Map<string, { id: string; name: string; total: number; rows: DailyActivityRow[] }>();
+    const start = (this.dailyActivityPage - 1) * this.dailyActivityPageSize;
+    this.dailyActivityFilteredRows.slice(start, start + this.dailyActivityPageSize).forEach((row) => {
+      if (!groups.has(row.locationId)) groups.set(row.locationId, {
+        id: row.locationId, name: row.locationName, total: totals.get(row.locationId) || 0, rows: [],
+      });
+      groups.get(row.locationId)!.rows.push(row);
+    });
+    this.dailyActivityPageGroups = [...groups.values()];
+  }
+
+  trackDailyActivity(_index: number, row: { id: string }): string {
+    return row.id;
+  }
+
   findDailyActivitiesCentralAmount() {
     this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
       this.requestDate
@@ -555,6 +779,7 @@ export class TodayCentralComponent {
       void this.loadCashFlowPaymentRanking();
     }
     this.computeAuditPaymentPerformanceRows();
+    if (this.isDailyActivityModalOpen) void this.loadDailyActivityDetails();
     // Graph will be updated in initalizeInputs via updateMonthlyReserveGraph
   }
 
