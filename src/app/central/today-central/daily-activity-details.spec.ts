@@ -1,6 +1,24 @@
-import { buildDailyActivityRows, parseActivityDate } from './daily-activity-details';
+import { buildDailyActivityRows, buildDailyCashPaymentRows, parseActivityDate } from './daily-activity-details';
 
 describe('Daily central activity extraction', () => {
+  it('groups cash ledgers by site, retains distinct payments and labels confirmed Mobile Money', () => {
+    const payment = { id: 'a', ownerUid: 'a', clientUid: 'c', fullName: 'Esther',
+      amount: 100, dayKey: '9-1-2026', createdAtMs: 1, source: 'manual' };
+    const rows = buildDailyCashPaymentRows([
+      payment, payment, { ...payment, id: 'mobile', source: 'mobile_money', createdAtMs: 2, amount: 200 },
+      { ...payment, id: 'b', ownerUid: 'b', amount: 300 },
+      { ...payment, id: 'other-day', dayKey: '9-10-2026' },
+      { ...payment, id: 'other-site', ownerUid: 'other' },
+      { ...payment, id: 'zero', amount: 0 }, { ...payment, id: 'invalid', amount: NaN },
+    ], new Map([['b', 'Zongo'], ['a', 'Bandal']]), '9-1-2026');
+    expect(rows.map((row) => row.amount)).toEqual([200, 100, 300]);
+    expect(rows.map((row) => row.locationName)).toEqual(['Bandal', 'Bandal', 'Zongo']);
+    expect(rows[0].detail).toBe('Mobile Money confirmé');
+    expect(rows[1].detail).toBe('Paiement direct');
+    expect(rows.every((row) => row.dateLabel === '01/09/2026')).toBeTrue();
+    expect(buildDailyCashPaymentRows([payment], new Map([['a', 'Bandal']]), 'invalid')).toEqual([]);
+  });
+
   it('matches exact calendar dates, with padded/legacy/ISO keys, without timezone shifts', () => {
     expect(parseActivityDate('09-01-2026-8-2-3')?.dayKey).toBe('9-1-2026');
     expect(parseActivityDate('2026-09-01T00:30:00Z')?.dayKey).toBe('9-1-2026');

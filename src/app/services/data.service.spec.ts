@@ -4,6 +4,158 @@ import { of } from 'rxjs';
 import { DataService } from './data.service';
 
 describe('DataService', () => {
+  describe('on-demand employee cash payment details', () => {
+    const dayKey = '9-1-2026';
+    let totals: any[];
+    let ledgers: Record<string, any[]>;
+    let clients: Record<string, any>;
+    let collectionGroup: jasmine.Spy;
+    let collection: jasmine.Spy;
+    let doc: jasmine.Spy;
+    let queries: any[][];
+    let readSources: unknown[];
+    let service: DataService;
+    const snapshot = (docs: any[]) => ({ forEach: (callback: (doc: any) => void) => docs.forEach(callback) });
+    const stored = (path: string, data: any) => ({ ref: { path }, data: () => data });
+    const employee = (owner: string, id: string, day = dayKey) =>
+      stored(`users/${owner}/employees/${id}/dayTotals/${day}`, { dayKey: day, total: 999 });
+    const payment = (owner: string, employeeId: string, id: string, data: any) =>
+      stored(`users/${owner}/employees/${employeeId}/payments/${id}`, { dayKey, createdAtMs: 123, ...data });
+
+    beforeEach(() => {
+      totals = [employee('a', 'e1'), employee('a', 'e1'), employee('b', 'e2'),
+        employee('not-selected', 'e3'), employee('a', 'e4', '9-10-2026'),
+        stored('other/a/employees/e5/dayTotals/9-1-2026', { dayKey })];
+      ledgers = {
+        'users/a/employees/e1/payments': [
+          payment('a', 'e1', 'mixed', { clientUid: 'c1', amount: 100, savings: 50 }),
+          payment('a', 'e1', 'mobile', { clientUid: 'c1', amount: '200', savings: 80, source: 'mobile_money' }),
+          payment('a', 'e1', 'savings-only', { clientUid: 'c2', amount: 0, savings: 5000 }),
+          payment('a', 'e1', 'deleted-client', { clientUid: 'c3', trackingId: 'A-42', amount: 10 }),
+          payment('a', 'e1', 'correction', { clientUid: 'c1', amount: -20 }),
+          payment('a', 'e1', 'other-day', { clientUid: 'c1', amount: 8888, dayKey: '9-10-2026' }),
+          payment('not-selected', 'e1', 'wrong-path', { clientUid: 'c1', amount: 9999 }),
+        ],
+        'users/b/employees/e2/payments': [payment('b', 'e2', 'cash', { clientUid: 'c1', amount: 300 })],
+      };
+      clients = {
+        'users/a/clients/c1': { firstName: 'Esther', lastName: 'Mvumbi', payments: { '9-1-2026': '50000' } },
+        'users/b/clients/c1': { name: 'Paul' },
+      };
+      queries = [];
+      readSources = [];
+      collectionGroup = jasmine.createSpy('collectionGroup').and.returnValue({
+        where: (...args: any[]) => {
+          queries.push(['dayTotals', ...args]);
+          return { get: async (options: unknown) => { readSources.push(options); return snapshot(totals); } };
+        },
+      });
+      collection = jasmine.createSpy('collection').and.callFake((path: string) => ({
+        where: (...args: any[]) => {
+          queries.push([path, ...args]);
+          return { get: async (options: unknown) => { readSources.push(options); return snapshot(ledgers[path] || []); } };
+        },
+      }));
+      doc = jasmine.createSpy('doc').and.callFake((path: string) => ({ get: async (options: unknown) => {
+        readSources.push(options); return { data: () => clients[path] };
+      } }));
+      service = new DataService({ firestore: { collectionGroup, collection, doc } } as any,
+        {} as any, {} as any, {
+          getTomorrowsDateMonthDayYear: () => '9-2-2026', todaysDate: () => '9-1-2026-12-0-0',
+        } as any,
+        {} as any, {} as any);
+    });
+
+    it('counts repayment amount only, including Mobile Money and signed corrections, never savings', async () => {
+      const rows = await service.getEmployeeCashPaymentsForDay(dayKey, ['a', 'b']);
+      expect(rows.length).toBe(5);
+      expect(rows.reduce((sum, row) => sum + row.amount, 0)).toBe(590);
+      expect(rows.find((row) => row.id.endsWith('/mixed'))?.amount).toBe(100);
+      expect(rows.find((row) => row.id.endsWith('/mobile'))?.source).toBe('mobile_money');
+      expect(rows.filter((row) => row.ownerUid === 'a' && row.clientUid === 'c1')
+        .every((row) => row.fullName === 'Esther Mvumbi')).toBeTrue();
+      expect(rows.find((row) => row.ownerUid === 'b')?.fullName).toBe('Paul');
+      expect(rows.find((row) => row.clientUid === 'c3')?.fullName).toBe('Client A-42');
+    });
+
+    it('queries exact selected-day ledgers once per employee and names once per unique site/client', async () => {
+      await service.getEmployeeCashPaymentsForDay(dayKey, ['a', 'b', 'a']);
+      expect(collectionGroup).toHaveBeenCalledOnceWith('dayTotals');
+      expect(collection.calls.allArgs()).toEqual([
+        ['users/a/employees/e1/payments'], ['users/b/employees/e2/payments'],
+      ]);
+      expect(queries).toEqual([
+        ['dayTotals', 'dayKey', '==', dayKey],
+        ['users/a/employees/e1/payments', 'dayKey', '==', dayKey],
+        ['users/b/employees/e2/payments', 'dayKey', '==', dayKey],
+      ]);
+      expect(doc.calls.allArgs()).toEqual([
+        ['users/a/clients/c1'], ['users/a/clients/c3'], ['users/b/clients/c1'],
+      ]);
+      expect(readSources).toEqual(Array.from({ length: 6 }, () => ({ source: 'server' })));
+    });
+
+    it('keeps real ledger entries after a client is deleted or has no safe identity path', async () => {
+      ledgers['users/a/employees/e1/payments'] = [
+        payment('a', 'e1', 'deleted', { clientUid: 'deleted', amount: 100 }),
+        payment('a', 'e1', 'unsafe', { clientUid: 'bad/path', trackingId: 'A-1', amount: 200 }),
+      ];
+      const rows = await service.getEmployeeCashPaymentsForDay(dayKey, ['a']);
+      expect(rows.map((row) => row.fullName)).toEqual(['Client deleted', 'Client A-1']);
+      expect(rows.reduce((sum, row) => sum + row.amount, 0)).toBe(300);
+      expect(doc).toHaveBeenCalledOnceWith('users/a/clients/deleted');
+    });
+
+    it('fails rather than displaying partial finances when an employee or identity read fails', async () => {
+      collection.and.callFake((path: string) => ({ where: () => ({ get: async () => {
+        if (path.includes('/b/')) throw new Error('offline');
+        return snapshot(ledgers[path]);
+      } }) }));
+      await expectAsync(service.getEmployeeCashPaymentsForDay(dayKey, ['a', 'b'])).toBeRejected();
+      expect(doc).not.toHaveBeenCalled();
+      collection.and.callFake((path: string) => ({ where: () => ({ get: async () => snapshot(ledgers[path] || []) }) }));
+      doc.and.returnValue({ get: async () => { throw new Error('offline'); } });
+      await expectAsync(service.getEmployeeCashPaymentsForDay(dayKey, ['a'])).toBeRejected();
+    });
+
+    it('rejects malformed financial values instead of silently changing a payment', async () => {
+      for (const amount of [NaN, Infinity, 'invalid', '', ' ', true, undefined]) {
+        ledgers['users/a/employees/e1/payments'] = [payment('a', 'e1', 'bad', { amount })];
+        await expectAsync(service.getEmployeeCashPaymentsForDay(dayKey, ['a'])).toBeRejected();
+      }
+      expect(doc).not.toHaveBeenCalled();
+    });
+
+    it('does no reads without selected sites or a valid calendar date', async () => {
+      expect(await service.getEmployeeCashPaymentsForDay(dayKey, [])).toEqual([]);
+      for (const day of ['invalid', '2-30-2026', '13-1-2026', '9-0-2026']) {
+        expect(await service.getEmployeeCashPaymentsForDay(day, ['a'])).toEqual([]);
+      }
+      expect(collectionGroup).not.toHaveBeenCalled();
+    });
+
+    it('caps simultaneous ledger reads at eight on large days', async () => {
+      totals = Array.from({ length: 30 }, (_, index) => employee('a', `e${index}`));
+      let active = 0;
+      let max = 0;
+      collection.and.returnValue({ where: () => ({ get: async () => {
+        active++; max = Math.max(max, active);
+        await Promise.resolve(); active--;
+        return snapshot([]);
+      } }) });
+      expect(await service.getEmployeeCashPaymentsForDay(dayKey, ['a'])).toEqual([]);
+      expect(collection).toHaveBeenCalledTimes(30);
+      expect(max).toBe(8);
+    });
+
+    it('does not start queued ledger reads after a stalled query exceeds the UI timeout', async () => {
+      spyOn(Date, 'now').and.returnValues(0, 30001);
+      await expectAsync(service.getEmployeeCashPaymentsForDay(dayKey, ['a', 'b'])).toBeRejected();
+      expect(collection).not.toHaveBeenCalled();
+      expect(doc).not.toHaveBeenCalled();
+    });
+  });
+
   it('accumulates savings-to-payment totals independently from daily payments', () => {
     const service = new DataService(
       {} as any,

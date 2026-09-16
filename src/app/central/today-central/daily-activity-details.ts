@@ -1,6 +1,7 @@
 import { Client } from '../../models/client';
+import { EmployeeCashPayment } from '../../models/employee-cash-payment';
 
-export type DailyActivityKind = 'payment' | 'lending';
+export type DailyActivityKind = 'payment' | 'lending' | 'cash-payment';
 
 export interface DailyActivityRow {
   id: string;
@@ -45,7 +46,7 @@ export function parseActivityDate(raw: string): {
 }
 
 export function buildDailyActivityRows(
-  clients: Client[], kind: DailyActivityKind, dayKey: string
+  clients: Client[], kind: Exclude<DailyActivityKind, 'cash-payment'>, dayKey: string
 ): DailyActivityRow[] {
   const selectedDay = parseActivityDate(dayKey)?.dayKey;
   if (!selectedDay) return [];
@@ -85,9 +86,33 @@ export function buildDailyActivityRows(
       );
     }
   });
+  return sortDailyActivityRows([...rows.values()]);
+}
+
+export function buildDailyCashPaymentRows(
+  payments: EmployeeCashPayment[], sites: ReadonlyMap<string, string>, dayKey: string
+): DailyActivityRow[] {
+  const selectedDay = parseActivityDate(dayKey);
+  if (!selectedDay) return [];
+  const rows = new Map<string, DailyActivityRow>();
+  payments.forEach((payment) => {
+    if (payment.dayKey !== selectedDay.dayKey || !sites.has(payment.ownerUid) ||
+        !Number.isFinite(payment.amount) || payment.amount === 0) return;
+    rows.set(payment.id, {
+      id: payment.id, fullName: payment.fullName,
+      locationId: payment.ownerUid, locationName: sites.get(payment.ownerUid) || 'Site',
+      amount: payment.amount, dateLabel: selectedDay.label,
+      timestamp: payment.createdAtMs,
+      detail: payment.source === 'mobile_money' ? 'Mobile Money confirmé' : 'Paiement direct',
+    });
+  });
+  return sortDailyActivityRows([...rows.values()]);
+}
+
+function sortDailyActivityRows(rows: DailyActivityRow[]): DailyActivityRow[] {
   const locations = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
   const names = new Intl.Collator('fr');
-  return [...rows.values()].sort((a, b) =>
+  return rows.sort((a, b) =>
     locations.compare(a.locationName, b.locationName) ||
     a.locationId.localeCompare(b.locationId) || b.timestamp - a.timestamp ||
     names.compare(a.fullName, b.fullName) || a.id.localeCompare(b.id)

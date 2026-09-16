@@ -185,6 +185,7 @@
         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Tous les sites · Liste triée par site, puis par heure.
           <span *ngIf="dailyActivityKind === 'lending'">Cycles d'emprunt actuels commençant à cette date.</span>
+          <span *ngIf="dailyActivityKind === 'cash-payment'">Remboursements réellement encaissés, Mobile Money confirmé inclus. Hors transferts d'épargne et dépôts d'épargne.</span>
         </p>
       </div>
       <button type="button" (click)="closeDailyActivityModal()" aria-label="Fermer"
@@ -196,9 +197,11 @@
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-900/30">
           <p class="text-xs font-medium text-emerald-700 dark:text-emerald-300">Total central</p>
           <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">FC {{ dailyActivityCentralTotal | number : '1.0-0' }}</p>
+          <p *ngIf="dailyActivityKind === 'cash-payment' && cashFlowPaymentLoading" class="mt-1 text-xs text-slate-500">Actualisation du total central…</p>
+          <p *ngIf="dailyActivityKind === 'cash-payment' && cashFlowPaymentError" class="mt-1 text-xs text-red-600">{{ cashFlowPaymentError }}</p>
         </div>
         <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-          <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ dailyActivityKind === 'payment' ? 'Paiements listés' : 'Emprunts listés' }}</p>
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ dailyActivityKind === 'lending' ? 'Emprunts listés' : 'Paiements listés' }}</p>
           <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ dailyActivityFilteredRows.length }} / {{ dailyActivityRows.length }}</p>
         </div>
         <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
@@ -230,7 +233,7 @@
       </div>
 
       <div class="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
-        <p>Détails chargés à l'ouverture, puis mis en cache pour ce mois. Actualisez pour les dernières opérations.</p>
+        <p>Détails chargés à l'ouverture, puis mis en cache pour {{ dailyActivityKind === 'cash-payment' ? 'cette date' : 'ce mois' }}. Actualisez pour les dernières opérations.</p>
         <button type="button" (click)="loadDailyActivityDetails(true)" [disabled]="dailyActivityLoading"
           class="shrink-0 rounded-lg border border-slate-300 px-3 py-2 font-medium disabled:opacity-40 dark:border-slate-600">
           {{ dailyActivityError ? 'Réessayer' : 'Actualiser' }}
@@ -240,8 +243,9 @@
       <p *ngIf="dailyActivityError" role="alert" class="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">{{ dailyActivityError }}</p>
 
       <ng-container *ngIf="!dailyActivityLoading && !dailyActivityError">
-        <p *ngIf="dailyActivityCentralTotal !== dailyActivityTotal" class="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-          Le total des dossiers listés diffère du total central. Des dossiers modifiés, transférés ou des cycles renouvelés peuvent expliquer cet écart. Vous pouvez actualiser la liste.
+        <p *ngIf="dailyActivityCentralTotal !== dailyActivityTotal && (dailyActivityKind !== 'cash-payment' || (!cashFlowPaymentLoading && !cashFlowPaymentError))" class="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+          <ng-container *ngIf="dailyActivityKind === 'cash-payment'; else dossierTotalWarning">Le détail des encaissements diffère du total central. Les opérations ou les totaux peuvent avoir changé depuis leur chargement. Actualisez la liste et, si l'écart persiste, vérifiez les encaissements et les totaux des employés.</ng-container>
+          <ng-template #dossierTotalWarning>Le total des dossiers listés diffère du total central. Des dossiers modifiés, transférés ou des cycles renouvelés peuvent expliquer cet écart. Vous pouvez actualiser la liste.</ng-template>
         </p>
         <div *ngFor="let site of dailyActivityPageGroups; trackBy: trackDailyActivity" class="mt-5 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
           <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-50 px-4 py-3 dark:bg-emerald-900/20">

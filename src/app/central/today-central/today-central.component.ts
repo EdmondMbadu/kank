@@ -1,6 +1,6 @@
 import { Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom, forkJoin, map, take, timeout } from 'rxjs';
+import { firstValueFrom, forkJoin, from, map, take, timeout } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { Management } from 'src/app/models/management';
@@ -10,7 +10,7 @@ import { DataService } from 'src/app/services/data.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { selectWinnerTeamMembers } from '../winner-team-members';
-import { buildDailyActivityRows, DailyActivityKind, DailyActivityRow, parseActivityDate } from './daily-activity-details';
+import { buildDailyActivityRows, buildDailyCashPaymentRows, DailyActivityKind, DailyActivityRow, parseActivityDate } from './daily-activity-details';
 
 type AuditPaymentPerformanceMode = 'day' | 'week' | 'month';
 type AuditPaymentPerformanceTone = 'red' | 'yellow' | 'orange' | 'green';
@@ -199,6 +199,8 @@ export class TodayCentralComponent implements OnDestroy {
   private dailyActivityRequestId = 0;
   private readonly dailyActivityCache = new Map<string, Client[]>();
   private readonly dailyActivityPending = new Map<string, Promise<Client[]>>();
+  private readonly dailyCashActivityCache = new Map<string, DailyActivityRow[]>();
+  private readonly dailyCashActivityPending = new Map<string, Promise<DailyActivityRow[]>>();
   private dailyActivityPreviousFocus: HTMLElement | null = null;
   private dailyActivityPreviousOverflow = '';
   @ViewChild('dailyActivityDialog') dailyActivityDialog?: ElementRef<HTMLElement>;
@@ -566,14 +568,16 @@ export class TodayCentralComponent implements OnDestroy {
   }
 
   isDailyActivityCard(index: number): boolean {
-    return index === 0 || index === 3;
+    return index === 0 || index === 3 || (index === 1 && this.auth.isAdmin);
   }
 
   get dailyActivityTitle(): string {
+    if (this.dailyActivityKind === 'cash-payment') return 'Paiements cash flow du jour';
     return this.dailyActivityKind === 'payment' ? 'Paiements du jour' : 'Emprunts du jour';
   }
 
   get dailyActivityCentralTotal(): number {
+    if (this.dailyActivityKind === 'cash-payment') return this.cashFlowPaymentTotalFc;
     return Number(this.dailyActivityKind === 'payment' ? this.dailyPayment : this.dailyLending) || 0;
   }
 
@@ -583,7 +587,7 @@ export class TodayCentralComponent implements OnDestroy {
 
   openDailyActivityModal(index: number): void {
     if (!this.isDailyActivityCard(index) || this.isAuditOnlyTodayCentral) return;
-    this.dailyActivityKind = index === 0 ? 'payment' : 'lending';
+    this.dailyActivityKind = index === 0 ? 'payment' : index === 1 ? 'cash-payment' : 'lending';
     if (!this.isDailyActivityModalOpen) {
       this.dailyActivityPreviousFocus = document.activeElement as HTMLElement | null;
       this.dailyActivityPreviousOverflow = document.body.style.overflow;
@@ -636,7 +640,9 @@ export class TodayCentralComponent implements OnDestroy {
   async loadDailyActivityDetails(refresh = false): Promise<void> {
     if (!this.isDailyActivityModalOpen) return;
     const requestId = ++this.dailyActivityRequestId;
-    const monthKey = parseActivityDate(this.requestDateCorrectFormat)?.monthKey;
+    const selectedDay = this.requestDateCorrectFormat;
+    const kind = this.dailyActivityKind;
+    const monthKey = parseActivityDate(selectedDay)?.monthKey;
     this.dailyActivityLoading = true;
     this.dailyActivityError = '';
     this.dailyActivityRows = [];
@@ -648,6 +654,12 @@ export class TodayCentralComponent implements OnDestroy {
       const users = [...new Map(this.allUsers.filter((user) => !!user.uid)
         .map((user) => [user.uid!, user])).values()];
       if (!users.length) throw new Error('Locations are not loaded yet');
+      if (kind === 'cash-payment') {
+        const rows = await this.loadDailyCashActivityRows(selectedDay, users, refresh);
+        if (requestId !== this.dailyActivityRequestId || !this.isDailyActivityModalOpen) return;
+        this.setDailyActivityRows(rows);
+        return;
+      }
       // Aggregate changes invalidate the snapshot on the next open/refresh.
       // Date switches within an unchanged month reuse the same client data.
       const signature = users.map((user) => {
@@ -701,17 +713,7 @@ export class TodayCentralComponent implements OnDestroy {
         clients = await pending;
       }
       if (requestId !== this.dailyActivityRequestId || !this.isDailyActivityModalOpen) return;
-      this.dailyActivityRows = buildDailyActivityRows(
-        clients, this.dailyActivityKind, this.requestDateCorrectFormat
-      );
-      this.dailyActivityTotal = this.dailyActivityRows.reduce((sum, row) => sum + row.amount, 0);
-      this.dailyActivitySiteOptions = [...new Map(this.dailyActivityRows.map((row) =>
-        [row.locationId, { id: row.locationId, name: row.locationName }]
-      )).values()];
-      if (!this.dailyActivitySiteOptions.some((site) => site.id === this.dailyActivitySiteFilter)) {
-        this.dailyActivitySiteFilter = 'all';
-      }
-      this.applyDailyActivityFilters();
+      this.setDailyActivityRows(buildDailyActivityRows(clients, kind, selectedDay));
     } catch (error) {
       if (requestId !== this.dailyActivityRequestId || !this.isDailyActivityModalOpen) return;
       console.error('Unable to load daily central details', error);
@@ -720,6 +722,45 @@ export class TodayCentralComponent implements OnDestroy {
     } finally {
       if (requestId === this.dailyActivityRequestId) this.dailyActivityLoading = false;
     }
+  }
+
+  private async loadDailyCashActivityRows(
+    dayKey: string, users: User[], refresh: boolean
+  ): Promise<DailyActivityRow[]> {
+    const signature = users.map((user) => [user.uid, user.firstName,
+      user.dailyReimbursement?.[dayKey], user.dailySavingsToPayment?.[dayKey]])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    const cacheKey = `${dayKey}:${JSON.stringify(signature)}`;
+    if (refresh) this.dailyCashActivityCache.delete(cacheKey);
+    const cached = this.dailyCashActivityCache.get(cacheKey);
+    if (cached) return cached;
+    let pending = this.dailyCashActivityPending.get(cacheKey);
+    if (!pending) {
+      const sites = new Map(users.map((user) => [user.uid!, user.firstName || 'Site']));
+      pending = firstValueFrom(from(this.data.getEmployeeCashPaymentsForDay(dayKey, [...sites.keys()]))
+        .pipe(timeout(30000))).then((payments) => {
+          const rows = buildDailyCashPaymentRows(payments, sites, dayKey);
+          this.dailyCashActivityCache.set(cacheKey, rows);
+          while (this.dailyCashActivityCache.size > 2) {
+            this.dailyCashActivityCache.delete(this.dailyCashActivityCache.keys().next().value!);
+          }
+          return rows;
+        }).finally(() => this.dailyCashActivityPending.delete(cacheKey));
+      this.dailyCashActivityPending.set(cacheKey, pending);
+    }
+    return pending;
+  }
+
+  private setDailyActivityRows(rows: DailyActivityRow[]): void {
+    this.dailyActivityRows = rows;
+    this.dailyActivityTotal = rows.reduce((sum, row) => sum + row.amount, 0);
+    this.dailyActivitySiteOptions = [...new Map(rows.map((row) =>
+      [row.locationId, { id: row.locationId, name: row.locationName }]
+    )).values()];
+    if (!this.dailyActivitySiteOptions.some((site) => site.id === this.dailyActivitySiteFilter)) {
+      this.dailyActivitySiteFilter = 'all';
+    }
+    this.applyDailyActivityFilters();
   }
 
   resetDailyActivityFilters(): void {

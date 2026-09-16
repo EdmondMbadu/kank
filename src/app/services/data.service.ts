@@ -9,6 +9,7 @@ import { firstValueFrom, Observable } from 'rxjs';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AuthService } from './auth.service';
 import { Client, ClientGalleryPicture, Comment } from '../models/client';
+import { EmployeeCashPayment } from '../models/employee-cash-payment';
 import { TimeService } from './time.service';
 import {
   AttendanceAttachment,
@@ -1069,6 +1070,99 @@ export class DataService {
           this.parseEmployeeDayKey(b.dayKey) ||
         a.ownerUid.localeCompare(b.ownerUid)
     );
+  }
+
+  /**
+   * On-demand details from the SAME ledger as the cash-flow totals. Query only
+   * employees active on this day, then only their payments for this day. Do not
+   * enumerate clients or hydrate their history projections: those include
+   * savings transfers. Read related client documents only to obtain names.
+   */
+  async getEmployeeCashPaymentsForDay(
+    dayKey: string,
+    allowedOwnerUids: readonly string[]
+  ): Promise<EmployeeCashPayment[]> {
+    const owners = new Set(allowedOwnerUids.filter(Boolean));
+    const match = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(dayKey);
+    if (!owners.size || !match) return [];
+    const [month, day, year] = match.slice(1).map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (year < 1900 || date.getUTCFullYear() !== year ||
+        date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day) return [];
+    const selectedDay = `${month}-${day}-${year}`;
+    const deadline = Date.now() + 30000;
+    // An uncached financial list must be complete, not a potentially partial
+    // offline SDK query cache. Reopening uses the component's validated cache.
+    const totals = await this.afs.firestore.collectionGroup('dayTotals')
+      .where('dayKey', '==', selectedDay).get({ source: 'server' });
+    const employeePaths = new Set<string>();
+    totals.forEach((doc) => {
+      const parts = doc.ref.path.split('/');
+      if (parts.length !== 6 || parts[0] !== 'users' || parts[2] !== 'employees' ||
+          parts[4] !== 'dayTotals' || !owners.has(parts[1]) ||
+          (doc.data()?.['dayKey'] || parts[5]) !== selectedDay) return;
+      employeePaths.add(parts.slice(0, 4).join('/'));
+    });
+    const rows = new Map<string, EmployeeCashPayment>();
+    const clientPaths = new Map<string, string>();
+    // Bound simultaneous requests on weak connections, without serializing
+    // every employee/client. One-shot reads; no new realtime listeners.
+    const parallel = async <T>(items: T[], load: (item: T) => Promise<void>) => {
+      let next = 0;
+      let failed = false;
+      await Promise.all(Array.from({ length: Math.min(8, items.length) }, async () => {
+        while (!failed && next < items.length) {
+          try {
+            // SDK get() cannot cancel an in-flight read, but do not launch
+            // queued reads after the UI's timeout on a stalled connection.
+            if (Date.now() >= deadline) throw new Error('Employee payment details timed out');
+            await load(items[next++]);
+          }
+          catch (error) { failed = true; throw error; }
+        }
+      }));
+    };
+    await parallel([...employeePaths], async (employeePath) => {
+      const payments = await this.afs.firestore.collection(`${employeePath}/payments`)
+        .where('dayKey', '==', selectedDay).get({ source: 'server' });
+      payments.forEach((doc) => {
+        const data = doc.data() || {};
+        if (data['dayKey'] !== selectedDay ||
+            doc.ref.path.slice(0, doc.ref.path.lastIndexOf('/')) !== `${employeePath}/payments`) return;
+        const amount = typeof data['amount'] === 'number' ||
+          (typeof data['amount'] === 'string' && data['amount'].trim() !== '')
+          ? Number(data['amount']) : NaN;
+        if (!Number.isFinite(amount)) throw new Error('Invalid employee payment amount');
+        if (amount === 0) return; // A savings-only deposit is not a repayment.
+        const ownerUid = employeePath.split('/')[1];
+        const clientUid = typeof data['clientUid'] === 'string' ? data['clientUid'] : '';
+        const clientPath = clientUid && !clientUid.includes('/')
+          ? `users/${ownerUid}/clients/${clientUid}` : '';
+        if (clientPath) clientPaths.set(doc.ref.path, clientPath);
+        rows.set(doc.ref.path, {
+          id: doc.ref.path, ownerUid, clientUid,
+          fullName: `Client ${data['trackingId'] || clientUid || 'non identifié'}`,
+          dayKey: selectedDay, amount,
+          createdAtMs: Number.isFinite(Number(data['createdAtMs'])) ? Number(data['createdAtMs']) : 0,
+          source: typeof data['source'] === 'string' ? data['source'] : 'manual',
+        });
+        // amount is the repayment ONLY. Do not add or subtract data.savings:
+        // mixed repayment + savings deposits already store them separately.
+      });
+    });
+    const names = new Map<string, string>();
+    await parallel([...new Set(clientPaths.values())], async (path) => {
+      const client = (await this.afs.firestore.doc(path).get({ source: 'server' })).data() as Client | undefined;
+      if (!client) return; // Retain a payment even after transfer/deletion.
+      const name = [client.firstName, client.lastName, client.middleName]
+        .filter(Boolean).join(' ').trim() || client.name;
+      if (name) names.set(path, name);
+    });
+    rows.forEach((row, id) => {
+      const name = names.get(clientPaths.get(id) || '');
+      if (name) row.fullName = name;
+    });
+    return [...rows.values()];
   }
 
   /**

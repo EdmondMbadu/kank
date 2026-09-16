@@ -217,8 +217,15 @@ describe('TodayCentralComponent management hydration', () => {
 describe('TodayCentralComponent on-demand daily details', () => {
   let component: TodayCentralComponent;
   let getClients: jasmine.Spy;
+  let getCashPayments: jasmine.Spy;
 
   beforeEach(() => {
+    getCashPayments = jasmine.createSpy('getEmployeeCashPaymentsForDay').and.callFake(async (dayKey: string) => [
+      { id: 'cash-b', ownerUid: 'site-b', clientUid: 'b', fullName: 'Paul', dayKey,
+        amount: 200, createdAtMs: 1, source: 'manual' },
+      { id: 'cash-a', ownerUid: 'site-a', clientUid: 'a', fullName: 'Ésther', dayKey,
+        amount: 100, createdAtMs: 2, source: 'mobile_money' },
+    ]);
     getClients = jasmine.createSpy('getClientsOfAUserForMonth').and.callFake((uid: string) => of([{
       uid: 'client-a', firstName: uid === 'site-a' ? 'Ésther' : 'Paul',
       locationName: 'Old location', locationOwnerId: 'old-owner',
@@ -235,7 +242,7 @@ describe('TodayCentralComponent on-demand daily details', () => {
       convertDateToDayMonthYear: (value: string) => value,
       convertDateToMonthDayYear: () => '9-2-2026',
       getTodaysDateYearMonthDay: () => '2026-09-01',
-    } as any, {} as any, {} as any);
+    } as any, {} as any, { getEmployeeCashPaymentsForDay: getCashPayments } as any);
     component.allUsers = [
       { uid: 'site-b', firstName: 'Zongo', dailyReimbursement: { '9-1-2026': '150' } },
       { uid: 'site-a', firstName: 'Bandal', dailyReimbursement: { '9-1-2026': '150' } },
@@ -250,18 +257,103 @@ describe('TodayCentralComponent on-demand daily details', () => {
     await component.loadDailyActivityDetails();
   }
 
-  it('adds no client reads to page initialization and makes only the requested two cards interactive', () => {
+  it('adds no detail reads to page initialization and leaves unrelated cards unchanged', () => {
     spyOn(component, 'initalizeInputs');
     spyOn<any>(component, 'loadCashFlowPaymentRanking');
     spyOn<any>(component, 'loadAuditPaymentPerformance');
     component.ngOnInit();
     expect(getClients).not.toHaveBeenCalled();
-    [1, 2, 4, 8].forEach((index) => {
+    expect(getCashPayments).not.toHaveBeenCalled();
+    [2, 4, 8].forEach((index) => {
       expect(component.isDailyActivityCard(index)).toBeFalse();
       component.openDailyActivityModal(index);
     });
     expect(component.isDailyActivityModalOpen).toBeFalse();
     expect(getClients).not.toHaveBeenCalled();
+  });
+
+  it('opens cash flow from its own ledger, sorts by site, and reuses local filters and cached day data', async () => {
+    component.cashFlowPaymentTotalFc = 300;
+    await open(1);
+    expect(component.dailyActivityKind).toBe('cash-payment');
+    expect(component.dailyActivityTitle).toBe('Paiements cash flow du jour');
+    expect(component.dailyActivityCentralTotal).toBe(300);
+    expect(component.dailyActivityTotal).toBe(300);
+    expect(component.dailyActivityPageGroups.map((site) => site.name)).toEqual(['Bandal', 'Zongo']);
+    expect(getCashPayments).toHaveBeenCalledOnceWith('9-1-2026', ['site-b', 'site-a']);
+    expect(getClients).not.toHaveBeenCalled();
+    component.dailyActivitySearch = 'esther';
+    component.applyDailyActivityFilters();
+    expect(component.dailyActivityFilteredTotal).toBe(100);
+    component.dailyActivitySiteFilter = 'site-b';
+    component.applyDailyActivityFilters();
+    expect(component.dailyActivityFilteredRows.length).toBe(0);
+    component.closeDailyActivityModal();
+    await open(0);
+    await open(1);
+    expect(getCashPayments).toHaveBeenCalledTimes(1);
+    expect(component.dailyActivityTotal).toBe(300);
+  });
+
+  it('invalidates cash details on refresh, selected-day aggregate changes, and day switches only', async () => {
+    await open(1);
+    await component.loadDailyActivityDetails(true);
+    expect(getCashPayments).toHaveBeenCalledTimes(2);
+    component.allUsers.reverse();
+    component.allUsers[0].dailyReimbursement!['8-1-2026'] = '999';
+    await open(1);
+    expect(getCashPayments).toHaveBeenCalledTimes(2);
+    component.allUsers[0].dailyReimbursement!['9-1-2026'] = '999';
+    await open(1);
+    expect(getCashPayments).toHaveBeenCalledTimes(3);
+    component.requestDateCorrectFormat = '9-2-2026';
+    await component.loadDailyActivityDetails();
+    expect(getCashPayments).toHaveBeenCalledTimes(4);
+    expect(component.dailyActivityRows.every((row) => row.dateLabel === '02/09/2026')).toBeTrue();
+    expect((component as any).dailyCashActivityCache.size).toBe(2);
+  });
+
+  it('shows no partial cash list after failed reads and retries instead of caching failure', async () => {
+    getCashPayments.and.rejectWith(new Error('offline'));
+    await open(1);
+    expect(component.dailyActivityRows).toEqual([]);
+    expect(component.dailyActivityError).toContain('aucune liste partielle');
+    expect(component.dailyActivityLoading).toBeFalse();
+    getCashPayments.and.resolveTo([]);
+    await component.loadDailyActivityDetails(true);
+    expect(component.dailyActivityError).toBe('');
+    expect(getCashPayments).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not let a delayed cash response overwrite loans or a closed modal', async () => {
+    let resolve!: (payments: any[]) => void;
+    getCashPayments.and.returnValue(new Promise<any[]>((done) => resolve = done));
+    component.openDailyActivityModal(1);
+    const pending = component.loadDailyActivityDetails();
+    await open(3);
+    resolve([{ id: 'late', ownerUid: 'site-a', clientUid: 'a', fullName: 'Late',
+      dayKey: '9-1-2026', amount: 999, createdAtMs: 1, source: 'manual' }]);
+    await pending;
+    expect(component.dailyActivityKind).toBe('lending');
+    expect(component.dailyActivityTotal).toBe(2000);
+    expect(component.dailyActivityRows.some((row) => row.fullName === 'Late')).toBeFalse();
+    component.requestDateCorrectFormat = '9-2-2026';
+    getCashPayments.and.returnValue(new Promise<any[]>((done) => resolve = done));
+    component.openDailyActivityModal(1);
+    const closedPending = component.loadDailyActivityDetails();
+    component.closeDailyActivityModal();
+    resolve([]);
+    await closedPending;
+    expect(component.isDailyActivityModalOpen).toBeFalse();
+    expect(component.dailyActivityLoading).toBeFalse();
+  });
+
+  it('keeps cash flow details admin-only, matching the cash flow ranking', () => {
+    (component.auth as any).isAdmin = false;
+    expect(component.isDailyActivityCard(1)).toBeFalse();
+    component.openDailyActivityModal(1);
+    expect(component.isDailyActivityModalOpen).toBeFalse();
+    expect(getCashPayments).not.toHaveBeenCalled();
   });
 
   it('shares one cached monthly snapshot between payment/loan modals and date switches', async () => {
@@ -445,8 +537,15 @@ describe('TodayCentralComponent daily modal template', () => {
   let fixture: ComponentFixture<TodayCentralComponent>;
   let component: TodayCentralComponent;
   let getClients: jasmine.Spy;
+  let getCashPayments: jasmine.Spy;
 
   beforeEach(async () => {
+    getCashPayments = jasmine.createSpy('getEmployeeCashPaymentsForDay').and.resolveTo([
+      { id: 'cash-b', ownerUid: 'b', clientUid: 'b', fullName: 'Paul', dayKey: '9-1-2026',
+        amount: 200, createdAtMs: 1, source: 'manual' },
+      { id: 'cash-a', ownerUid: 'a', clientUid: 'a', fullName: 'Esther', dayKey: '9-1-2026',
+        amount: 100, createdAtMs: 2, source: 'mobile_money' },
+    ]);
     getClients = jasmine.createSpy('getClientsOfAUserForMonth').and.callFake((uid: string) => of([{
       uid: 'client-a', firstName: uid === 'a' ? 'Esther' : 'Paul',
       payments: { '9-1-2026-8-0-0': '100' }, debtCycleStartDate: '9-1-2026', loanAmount: '1000',
@@ -459,7 +558,7 @@ describe('TodayCentralComponent daily modal template', () => {
           getManagementInfo: () => of([]),
           getAllUsersInfo: () => of([{ uid: 'b', firstName: 'Zongo' }, { uid: 'a', firstName: 'Bandal' }]),
         } },
-        { provide: DataService, useValue: {} },
+        { provide: DataService, useValue: { getEmployeeCashPaymentsForDay: getCashPayments } },
         { provide: ComputationService, useValue: {} },
         { provide: TimeService, useValue: {
           getTomorrowsDateMonthDayYear: () => '9-2-2026', todaysDateMonthDayYear: () => '9-1-2026',
@@ -476,6 +575,40 @@ describe('TodayCentralComponent daily modal template', () => {
   });
 
   afterEach(() => component.ngOnDestroy());
+
+  it('opens cash flow on click and Space, explains exclusions, and searches without more reads', async () => {
+    const card = fixture.nativeElement.querySelector('article[aria-label="Voir Paiement Cash Flow Du Jour par site"]');
+    expect(card).not.toBeNull();
+    expect(card.querySelector('a')).toBeNull();
+    expect(getCashPayments).not.toHaveBeenCalled();
+    component.cashFlowPaymentTotalFc = 300;
+    card.click();
+    await component.loadDailyActivityDetails();
+    fixture.detectChanges();
+    let dialog = fixture.nativeElement.querySelector('[role="dialog"]');
+    expect(dialog.textContent).toContain('Paiements cash flow du jour');
+    expect(dialog.textContent).toContain("Hors transferts d'épargne et dépôts d'épargne");
+    expect(dialog.textContent).toContain('Mobile Money confirmé');
+    expect(dialog.textContent).toContain('Paiements listés');
+    expect(dialog.textContent).toContain('cache pour cette date');
+    expect(dialog.textContent).not.toContain('diffère du total central');
+    expect([...dialog.querySelectorAll('h3')].map((h: any) => h.textContent)).toEqual(['Bandal', 'Zongo']);
+    const search = dialog.querySelector('input[type="search"]');
+    search.value = 'Esther'; search.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(dialog.textContent).not.toContain('Paul');
+    dialog.querySelector('button[aria-label="Fermer"]').click();
+    fixture.detectChanges();
+    const space = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+    card.dispatchEvent(space);
+    await component.loadDailyActivityDetails();
+    fixture.detectChanges();
+    expect(space.defaultPrevented).toBeTrue();
+    dialog = fixture.nativeElement.querySelector('[role="dialog"]');
+    expect(dialog.textContent).toContain('Paul');
+    expect(getCashPayments).toHaveBeenCalledTimes(1);
+    expect(getClients).not.toHaveBeenCalled();
+  });
 
   it('opens payments on card click, renders grouped records, and filters without reads', async () => {
     const card = fixture.nativeElement.querySelector('article[aria-label="Voir Paiement Du Jour par site"]');
@@ -511,7 +644,7 @@ describe('TodayCentralComponent daily modal template', () => {
     expect(dialog.textContent).toContain('Emprunts du jour');
     expect(dialog.textContent).toContain('1,000');
     const links = fixture.nativeElement.querySelectorAll('article a');
-    expect(links.length).toBe(3);
+    expect(links.length).toBe(2);
     expect(links[0].getAttribute('href')).toBe('/daily-payments');
   });
 
