@@ -1,6 +1,6 @@
 import { TeamRankingMonthComponent } from './team-ranking-month.component';
 import { EmployeePageComponent } from 'src/app/shrink/employee-page/employee-page.component';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 
 describe('TeamRankingMonthComponent', () => {
   function createComponent() {
@@ -106,6 +106,56 @@ describe('TeamRankingMonthComponent', () => {
 
   it('should create', () => {
     expect(createComponent().component).toBeTruthy();
+  });
+
+  it('employee snapshots refresh continuously without duplicate listeners or extra ledger queries', () => {
+    const {component, auth, data} = createComponent();
+    const first = new Subject<any[]>();
+    const second = new Subject<any[]>();
+    auth.getAllEmployeesGivenUser = jasmine.createSpy('employeeStream').and.callFake((owner: any) => owner.uid === 'a' ? first : second);
+    const aggregate = spyOn<any>(component, 'afterEmployeesAggregated');
+    component.allUsers = [{uid: 'a'}, {uid: 'b'}];
+    component.getAllEmployees();
+    first.next([{uid: 'employee', expectedPoints: {'7-23-2026': 10}}]);
+    first.next([{uid: 'employee', expectedPoints: {'7-23-2026': 20}}]);
+    expect(aggregate).not.toHaveBeenCalled();
+    second.next([]);
+    expect((aggregate.calls.mostRecent().args[0] as any[])[0].expectedPoints['7-23-2026']).toBe(20);
+    first.next([{uid: 'employee', expectedPoints: {'7-23-2026': 30}}]);
+    expect((aggregate.calls.mostRecent().args[0] as any[])[0].expectedPoints['7-23-2026']).toBe(30);
+    expect(aggregate.calls.mostRecent().args[1]).toBeFalse();
+    component.allUsers = [{uid: 'a', pointExpectationSince: '7-23-2026'}, {uid: 'b'}];
+    component.getAllEmployees();
+    expect(auth.getAllEmployeesGivenUser.calls.count()).toBe(2);
+    expect(first.observers.length).toBe(1);
+    expect(second.observers.length).toBe(1);
+    expect(data.getEmployeeDayTotalsForDay).not.toHaveBeenCalled();
+    component.ngOnDestroy();
+    expect(first.observers.length).toBe(0);
+    expect(second.observers.length).toBe(0);
+  });
+
+  it('a failed site stream cannot silently restore a cached high average', () => {
+    const { component, auth } = createComponent();
+    const first = new Subject<any[]>();
+    const second = new Subject<any[]>();
+    auth.getAllEmployeesGivenUser = jasmine.createSpy('employeeStream')
+      .and.callFake((owner: any) => owner.uid === 'a' ? first : second);
+    const aggregate = spyOn<any>(component, 'afterEmployeesAggregated');
+    component.allUsers = [{ uid: 'a' }, { uid: 'b' }];
+    component.getAllEmployees();
+    first.next([]);
+    second.next([]);
+    const initialCalls = aggregate.calls.count();
+    spyOn(console, 'error');
+    first.error(new Error('Connection failed'));
+    second.next([]);
+    expect(aggregate.calls.count()).toBe(initialCalls);
+    expect(component.habitualPerformanceIncomplete).toBeTrue();
+    expect(component.averagePerformancePercentage).toBe('');
+    (component as any).prepareMonthlyPerformanceComponents();
+    expect(component.habitualPerformanceIncomplete).toBeTrue();
+    component.ngOnDestroy();
   });
 
   it('does not load the amount performance metric for non-admin users', async () => {
@@ -276,6 +326,73 @@ describe('TeamRankingMonthComponent', () => {
     expect(component.currentPerformancePercent).toBe(90);
   });
 
+  it('independent expected-only day lowers employee, manager and global performance without any payment', () => {
+    const {component} = createComponent();
+    const site = {uid: 'site', firstName: 'UPN', pointExpectationSince: '7-22-2026'} as any;
+    const auditor = {uid: 'auditor', firstName: 'Mercisse', role: 'Auditrice', status: 'Travaille', tempUser: site,
+      dailyPoints: {'7-22-2026': '10'}, totalDailyPoints: {'7-22-2026': '0'},
+      expectedPointsSince: '7-22-2026', expectedPoints: {'7-22-2026': 10, '7-23-2026': 10}} as any;
+    const manager = {uid: 'manager', role: 'Manager', status: 'Travaille', tempUser: site, dailyPoints: {},
+      expectedPointsSince: '7-22-2026', expectedPoints: {'7-22-2026': 0, '7-23-2026': 0}} as any;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    component.filterAndInitializeEmployees([auditor, manager], []);
+    expect(auditor.performancePercentageMonth).toBe('50');
+    expect(manager.performancePercentageMonth).toBe('50');
+    expect(component.currentPerformancePercent).toBe(50);
+    expect(component.habitualPerformanceIncomplete).toBeFalse();
+  });
+
+  it('inactive assignments count for the manager and global score, but not the public employee list', () => {
+    const { component } = createComponent();
+    const site = {uid: 'site', firstName: 'UPN', pointExpectationSince: '7-23-2026'} as any;
+    const active = {uid: 'active', role: 'Agent Marketing', status: 'Travaille', tempUser: site,
+      dailyPoints: {'7-23-2026': '5'}, expectedPoints: {'7-23-2026': 5}} as any;
+    const inactive = {uid: 'inactive', role: 'Agent Marketing', status: 'Quitté', tempUser: site,
+      dateLeft: '7-1-2026', dailyPoints: {}, expectedPoints: {'7-23-2026': 7}} as any;
+    const manager = {uid: 'manager', role: 'Manager', status: 'Travaille', tempUser: site,
+      dailyPoints: {}, expectedPoints: {'7-23-2026': 0}} as any;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    const records = [active, inactive, manager];
+    component.allEmployeesAll = records;
+    component.filterAndInitializeEmployees(records, []);
+    expect(active.performancePercentageMonth).toBe('100');
+    // Preserve the existing ranking's floor-to-integer display policy.
+    expect(manager.performancePercentageMonth).toBe('41');
+    expect(component.currentPerformancePercent).toBe(41);
+    expect((component as any).monthlyPerformanceByOwner.get('site')).toEqual({earned: 5, possible: 12});
+    expect(component.habitualPerformanceIncomplete).toBeFalse();
+    expect(component.allEmployees.map(employee => employee.uid)).not.toContain('inactive');
+    inactive.dailyPoints['7-23-2026'] = '7';
+    component.filterAndInitializeEmployees(records, []);
+    expect(manager.performancePercentageMonth).toBe('100');
+    expect(component.currentPerformancePercent).toBe(100);
+    delete inactive.expectedPoints['7-23-2026'];
+    component.filterAndInitializeEmployees(records, []);
+    expect(active.performancePercentageMonth).toBe('100');
+    expect(manager.performancePercentageMonth).toBe('');
+    expect(component.currentPerformancePercent).toBeNull();
+    expect(component.habitualPerformanceIncomplete).toBeTrue();
+  });
+
+  it('missing capture cannot be excluded from the global average leaving a misleading high score', () => {
+    const {component} = createComponent();
+    const site = {uid: 'site', firstName: 'UPN', pointExpectationSince: '7-22-2026'} as any;
+    const auditor = {uid: 'auditor', role: 'Auditrice', status: 'Travaille', tempUser: site,
+      dailyPoints: {'7-22-2026': '10'}, totalDailyPoints: {'7-22-2026': '10'},
+      expectedPointsSince: '7-22-2026', expectedPoints: {'7-22-2026': 10}} as any;
+    const manager = {uid: 'manager', role: 'Manager', status: 'Travaille', tempUser: site,
+      expectedPointsSince: '7-22-2026', expectedPoints: {'7-22-2026': 0, '7-23-2026': 0}} as any;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    component.filterAndInitializeEmployees([auditor, manager], []);
+    expect(auditor.performancePercentageMonth).toBe('');
+    expect(manager.performancePercentageMonth).toBe('');
+    expect(component.currentPerformancePercent).toBeNull();
+    expect(component.habitualPerformanceIncomplete).toBeTrue();
+  });
+
   it('shows unavailable performance as a dash instead of a false zero', () => {
     const { component } = createComponent();
     component.filterAndInitializeEmployees(
@@ -301,6 +418,7 @@ describe('TeamRankingMonthComponent', () => {
   });
 
   it('keeps a manager visible and includes former monthly contributors in the site and global percentages', () => {
+    jasmine.clock().mockDate(new Date(2026, 8, 16));
     const { component } = createComponent();
     const site = { uid: 'delvaux-site', firstName: 'Delvaux' } as any;
     const formerEmployee = {

@@ -48,7 +48,7 @@ const layouts: Record<string, Layout> = {
   },
   employee: {
     mapFields: [
-      'dailyPoints', 'payments', 'totalDailyPoints', 'dailyStatus',
+      'dailyPoints', 'payments', 'totalDailyPoints', 'expectedPoints', 'dailyStatus',
       'attendance', 'attendanceAttachments', 'investigationPerformanceMonthly',
     ],
     arrayFields: [

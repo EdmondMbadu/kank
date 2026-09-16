@@ -1108,6 +1108,8 @@ export class AuthService {
       clients,
       currentClients,
       clientsFinishedPaying,
+      expectedPoints,
+      expectedPointsSince,
       _attachmentFile,
       _attachmentPreview,
       _attachmentType,
@@ -1213,6 +1215,8 @@ export class AuthService {
     // Fields to exclude from merge (clients and UI-only fields)
     const excludeFields = [
       'uid', // Keep Employee A's UID
+      'expectedPoints',
+      'expectedPointsSince',
       'clients',
       'currentClients',
       'clientsFinishedPaying',
@@ -1356,6 +1360,10 @@ export class AuthService {
     }
 
     // Update Employee A with merged data
+    // These maps can be hydrated from archived months; never reinsert or
+    // change the server's independent workload during a browser merge.
+    delete mergedData.expectedPoints;
+    delete mergedData.expectedPointsSince;
     await employeeARef.set(mergedData, { merge: true });
 
     // Also merge granular payment day totals (subcollection) so B's days override A's
@@ -1369,7 +1377,8 @@ export class AuthService {
 
   /**
    * Copy dayTotals subcollection documents from Employee B into Employee A.
-   * Any day present in B fully overwrites the same day in A. Days missing in B remain untouched.
+   * Payment fields in B replace matching fields in A; server-owned point
+   * expectations stay at their original site. Days missing in B are untouched.
    */
   private async mergeEmployeeDayTotals(
     targetUserId: string,
@@ -1401,7 +1410,11 @@ export class AuthService {
             `users/${targetUserId}/employees/${targetEmployeeId}/dayTotals/${doc.id}`
           )
           .ref;
-        batch.set(targetDocRef, doc.data());
+        const data: Record<string, any> = {...(doc.data() as Record<string, any>)};
+        delete data['expectedPoints'];
+        Object.keys(data).filter((key) => key.startsWith('pointExpectation'))
+          .forEach((key) => delete data[key]);
+        batch.set(targetDocRef, data, {merge: true});
       });
 
       await batch.commit();

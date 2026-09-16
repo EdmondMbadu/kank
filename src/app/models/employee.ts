@@ -12,6 +12,10 @@ export class Employee {
   payments?: { [key: string]: string } = {};
   paymentsPicturePath?: string[];
   totalDailyPoints?: { [key: string]: string } = {};
+  /** Server-captured workload. null means the assignment/schedule is unverified. */
+  expectedPoints?: { [dayKey: string]: number | null };
+  /** First independent capture for this location-specific employee record. */
+  expectedPointsSince?: string;
   averagePoints?: string;
   totalPoints?: string;
   salaryPaid?: string;

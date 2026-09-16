@@ -11,6 +11,7 @@
     "firestore-v2:cutover": "node scripts/firestore-v2-cutover.js",
     "firestore-v2:benchmark": "node scripts/firestore-v2-benchmark.js",
     "attendance-photo:backfill": "node scripts/attendance-photo-fingerprint-backfill.js",
+    "performance-points:admin": "node scripts/point-expectations-admin.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",

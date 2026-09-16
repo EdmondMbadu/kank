@@ -14,6 +14,8 @@ export class User {
   investments?: { [key: string]: string } = {};
   investmentsDollar?: { [key: string]: string } = {};
   performances?: { [key: string]: string } = {};
+  /** Server-owned activation date; allows detection of entirely missing days. */
+  pointExpectationSince?: string;
   amountLended?: string;
   clientsSavings?: string;
   clientsSavingsComputed?: number;

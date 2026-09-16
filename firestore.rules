@@ -1,5 +1,13 @@
 rules_version = '2';
 
+// Optional independent-performance schema (Admin SDK owned):
+// users.pointExpectationSince: M-D-YYYY activation string.
+// employees.expectedPointsSince: first capture string;
+// employees.expectedPoints: day -> finite nonnegative number, or null when
+// unverified. dayTotals.pointExpectation* + expectedPoints: frozen capture.
+// pointExpectationDays and FirestoreV2 archives: backend-only writes.
+// Existing operational schemas/reads are unchanged by this scoped guard.
+
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -8,6 +16,27 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return signedIn() && request.auth.uid == userId;
+    }
+
+    // Validator is used by BOTH create and update, including overlapping
+    // owner wildcard grants. Old apps may still write totalDailyPoints, but
+    // they cannot overwrite the new source of truth.
+    function validIndependentExpectationWrite() {
+      let fields = [
+        'expectedPoints', 'expectedPointsSince', 'pointExpectationSince',
+        'pointExpectationVersion', 'pointExpectationIssues',
+        'pointExpectationCapturedAtMs', 'pointExpectationCorrectedAtMs'
+      ];
+      return resource == null
+        ? !request.resource.data.keys().hasAny(fields)
+        : !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isServerArchive(collectionId) {
+      return collectionId in [
+        'firestoreV2Entries', 'firestoreV2Months', 'firestoreV2ReadMonths',
+        'firestoreV2PayloadChunks'
+      ];
     }
 
     function currentUserPath() {
@@ -62,8 +91,9 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId) || (signedIn() && !isPortalClient());
-      allow create, delete: if isOwner(userId);
-      allow update: if isOwner(userId) ||
+      allow create: if isOwner(userId) && validIndependentExpectationWrite();
+      allow delete: if isOwner(userId);
+      allow update: if validIndependentExpectationWrite() && (isOwner(userId) ||
         (
           signedIn() &&
           !isPortalClient() &&
@@ -83,11 +113,11 @@ service cloud.firestore {
           ]) &&
           (!('teamCode' in request.resource.data) ||
             request.resource.data.teamCode is string)
-        );
+        ));
 
       match /employees/{employeeId} {
-        allow create, update: if isOwner(userId) ||
-          (signedIn() && !isPortalClient());
+        allow create, update: if validIndependentExpectationWrite() &&
+          (isOwner(userId) || (signedIn() && !isPortalClient()));
       }
 
       match /employees/{employeeId}/attendance/{dateISO} {
@@ -188,9 +218,22 @@ service cloud.firestore {
             request.resource.data.updatedAt is string);
       }
 
-      match /{document=**} {
+      match /{collectionId}/{documentId} {
         allow read: if isOwner(userId) || (signedIn() && !isPortalClient());
-        allow write: if isOwner(userId);
+        allow create, update: if isOwner(userId) &&
+          collectionId != 'pointExpectationDays' &&
+          !isServerArchive(collectionId) && validIndependentExpectationWrite();
+        allow delete: if isOwner(userId) &&
+          collectionId != 'pointExpectationDays' && !isServerArchive(collectionId);
+
+        match /{nestedCollection}/{nestedDoc}/{remaining=**} {
+          allow read: if isOwner(userId) || (signedIn() && !isPortalClient());
+          allow create, update: if isOwner(userId) &&
+            collectionId != 'pointExpectationDays' &&
+            !isServerArchive(nestedCollection) && validIndependentExpectationWrite();
+          allow delete: if isOwner(userId) &&
+            collectionId != 'pointExpectationDays' && !isServerArchive(nestedCollection);
+        }
       }
     }
 

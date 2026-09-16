@@ -15,6 +15,7 @@ import { RotationSchedule } from '../models/management';
 import { map, Observable, take } from 'rxjs';
 import firebase from 'firebase/compat/app';
 import { arrayRemove, arrayUnion, deleteField } from '@angular/fire/firestore';
+import { pointBusinessDay, pointPerformanceDays, summarizeTeamPoints } from '../utils/point-performance.util';
 
 @Injectable({
   providedIn: 'root',
@@ -28,6 +29,7 @@ export class PerformanceService {
   paidToday: Client[] = [];
   clientPaymentAmount: string = '0';
   today = this.time.todaysDateMonthDayYear();
+  private changedPointEmployees = new Set<string>();
 
   filteredItems?: Client[];
   todaysLending?: Client[] = [];
@@ -62,10 +64,14 @@ export class PerformanceService {
   }
 
   updateUserPerformance(client: Client, paymentAmount: string = '0') {
-    this.retrieveClients();
+    // The constructor already maintains the live client list. A subscription
+    // per payment used to accumulate duplicate listeners/recalculations.
+    this.today = pointBusinessDay();
     this.computePerformance();
     this.clientPaymentAmount = paymentAmount;
-    this.calculateTotalClientsForEachAgent(this.shouldPayToday);
+    if (!this.auth.currentUser.pointExpectationSince && !this.employees?.some((employee) => employee.expectedPointsSince)) {
+      this.calculateTotalClientsForEachAgent(this.shouldPayToday);
+    }
 
     this.updateEmployeesPointsForToday(client);
 
@@ -73,7 +79,7 @@ export class PerformanceService {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
-    let date = this.time.todaysDateMonthDayYear();
+    let date = this.today;
 
     const data = {
       performances: {
@@ -87,8 +93,10 @@ export class PerformanceService {
   callEachEmployeeToUpdatePerformancePerSubmission() {
     if (this.employees) {
       for (let em of this.employees!) {
+        if ((em.expectedPointsSince || this.auth.currentUser.pointExpectationSince) &&
+          !this.changedPointEmployees.has(em.uid || '')) continue;
         if (
-          em.dailyPoints![this.today] === '0' &&
+          em.dailyPoints?.[this.today] === '0' &&
           em.currentTotalPoints === 0
         ) {
           // console.log('entering here');
@@ -102,10 +110,11 @@ export class PerformanceService {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
     );
+    const independent = !!(employee.expectedPointsSince || this.auth.currentUser.pointExpectationSince);
     const data = {
-      totalDailyPoints: {
+      ...(!independent ? {totalDailyPoints: {
         [this.today]: `${employee.currentTotalPoints}`,
-      },
+      }} : {}),
       dailyPoints: {
         [this.today]: `${employee.dailyPoints![`${this.today}`]}`,
       },
@@ -114,11 +123,17 @@ export class PerformanceService {
   }
 
   updateEmployeesPointsForToday(client: Client) {
+    this.changedPointEmployees.clear();
+    for (const employee of this.employees || []) {
+      employee.dailyPoints ??= {};
+      employee.dailyPoints[this.today] ??= '0';
+    }
     const minpay =
       Number(client.amountToPay) / Number(client.paymentPeriodRange);
     let num = Number(this.clientPaymentAmount) / Number(minpay);
 
     let rounded = this.roundFloorToDecimal(num);
+    if (!Number.isFinite(rounded) || rounded <= 0) return;
     // this was added because if a client, paid twice the min amount,
     // it would be as if two people paid. increasing the performance of employees artificially
     // we commented this line because it they paid twice, they should get twice the performance
@@ -129,17 +144,19 @@ export class PerformanceService {
 
     if (this.employees) {
       for (let em of this.employees!) {
+        em.dailyPoints ??= {};
         em.dailyPoints![`${this.today}`] =
           em.dailyPoints![`${this.today}`] === undefined
             ? '0'
             : em.dailyPoints![`${this.today}`];
         if (
-          em.clients!.includes(client.uid!) &&
+          (em.clients || []).includes(client.uid!) &&
           client.debtCycleStartDate !== this.today
         ) {
           em.dailyPoints![`${this.today}`] = (
             Number(em.dailyPoints![`${this.today}`]) + rounded
           ).toString();
+          this.changedPointEmployees.add(em.uid || '');
         }
       }
     }
@@ -155,10 +172,10 @@ export class PerformanceService {
     });
 
     // Iterate over each agent and calculate the total
-    this.employees!.forEach((agent) => {
+    (this.employees || []).forEach((agent) => {
       agent.currentTotalPoints = 0;
 
-      agent.clients!.forEach((clientID: string) => {
+      (agent.clients || []).forEach((clientID: string) => {
         if (
           agent.currentTotalPoints !== undefined &&
           clientAgentMap.get(clientID) === agent.uid
@@ -290,25 +307,8 @@ export class PerformanceService {
     }
   }
   findAverageAndTotal(employee: Employee): [number, number] {
-    let average = 0,
-      total = 0;
-
-    if (employee.dailyPoints && typeof employee.dailyPoints === 'object') {
-      for (let key in employee.dailyPoints) {
-        average += Number(employee.dailyPoints[key]) || 0;
-      }
-    }
-
-    if (
-      employee.totalDailyPoints &&
-      typeof employee.totalDailyPoints === 'object'
-    ) {
-      for (let key in employee.totalDailyPoints) {
-        total += Number(employee.totalDailyPoints[key]) || 0;
-      }
-    }
-
-    return [average, total];
+    const summary = summarizeTeamPoints([employee], undefined, undefined, pointBusinessDay(), this.auth.currentUser.pointExpectationSince);
+    return [summary.earned, summary.complete ? summary.possible : NaN];
   }
 
   findAverageTotalToday(employees: Employee[]): string {
@@ -333,12 +333,9 @@ export class PerformanceService {
 
     if (employees && Array.isArray(employees)) {
       for (let e of employees) {
-        if (e.totalDailyPoints && typeof e.totalDailyPoints === 'object') {
-          const current = Number(e.totalDailyPoints[this.today]);
-          if (!isNaN(current)) {
-            total += current;
-          }
-        }
+        const day = pointPerformanceDays(e, pointBusinessDay(), this.auth.currentUser.pointExpectationSince).find((value) => value.key === this.today);
+        if (day?.independent && day.possible === null) return '';
+        total += day?.possible ?? 0;
       }
     }
 
@@ -346,19 +343,8 @@ export class PerformanceService {
   }
 
   findAverageAndTotalAllEmployee(employees: Employee[]) {
-    let average = 0,
-      total = 0;
-
-    if (employees) {
-      for (let e of employees) {
-        for (let key in e.dailyPoints) {
-          average += Number(e.dailyPoints[key]);
-          total += Number(e.totalDailyPoints![key]);
-        }
-      }
-    }
-
-    return [average, total];
+    const summary = summarizeTeamPoints(employees || [], undefined, undefined, pointBusinessDay(), this.auth.currentUser.pointExpectationSince);
+    return [summary.earned, summary.complete ? summary.possible : NaN];
   }
 
   findLetterGrade(num: number) {

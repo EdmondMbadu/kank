@@ -55,6 +55,7 @@ import {
   sumAmountMapThroughDate,
 } from 'src/app/utils/amount-performance.util';
 import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
+import { pointBusinessDay, pointPerformanceDays, summarizeLogicalEmployeePoints } from 'src/app/utils/point-performance.util';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -311,6 +312,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
   // Empty means that no trustworthy denominator exists. A real 0% remains
   // the string "0" so the UI can distinguish zero performance from no data.
   averagePerformancePercentage: string = '';
+  habitualPerformanceIncomplete = false;
+  private habitualDayTimer?: ReturnType<typeof setInterval>;
+  private habitualLastDay = pointBusinessDay();
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
@@ -4569,6 +4573,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
   totalHouse: string = '0';
   allUsers: User[] = [];
   ngOnInit(): void {
+    this.habitualDayTimer = setInterval(() => {
+      const day = pointBusinessDay();
+      if (day === this.habitualLastDay) return;
+      this.habitualLastDay = day;
+      this.refreshLogicalPerformanceMetrics();
+    }, 60000);
     this.resetAmountPerformancePreview();
     this.performanceMetricSettingsSub =
       this.performanceMetricSettings.employeeMode$.subscribe((mode) => {
@@ -4579,7 +4589,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
     this.updateWeekPickerLabels();
     this.listenToMoneyAvailabilityPolicies();
-    this.auth.getAllUsersInfo().subscribe((data) => {
+    this.rankingUsersSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.initializeMoneyPolicyLocationSelection();
       this.initializeBudgetTeamSelection();
@@ -4608,6 +4618,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.habitualDayTimer) clearInterval(this.habitualDayTimer);
+    this.rankingUsersSub?.unsubscribe();
+    this.rankingEmployeeSubs.forEach((sub) => sub.unsubscribe());
+    this.rankingEmployeeSubs = [];
+    this.rankingAggregationVersion += 1;
     this.ideaSub?.unsubscribe();
     this.transportReceiptSubs.forEach((sub) => sub.unsubscribe());
     this.transportReceiptSubs = [];
@@ -5559,102 +5574,79 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   valuesConvertedToDollars: string[] = [];
 
-  // toggle property in general
-  getAllEmployees() {
-    if (this.isFetchingClients) return;
-    this.isFetchingClients = true;
+  private rankingEmployeeSubs: Subscription[] = [];
+  private rankingUsersSub?: Subscription;
+  private rankingOwners: User[] = [];
+  private rankingOwnerEmployees = new Map<string, Employee[]>();
+  private rankingFailedOwners = new Set<string>();
+  private rankingOwnersKey = '';
+  private rankingAggregationVersion = 0;
+  private rankingInitialSnapshotReady = false;
 
-    const owners =
-      Array.isArray(this.allUsers) && this.allUsers.length > 0
-        ? this.allUsers.filter((u) => !!u?.uid)
-        : this.auth.currentUser
-        ? [this.auth.currentUser as User]
-        : [];
-
-    if (
-      Array.isArray(this.allUsers) &&
-      this.allUsers.length > 0 &&
-      owners.length < this.allUsers.length
-    ) {
-      this.logDebug('Certaines localisations ont été ignorées (UID manquant).', {
-        totalLocations: this.allUsers.length,
-        validLocations: owners.length,
-      });
-    }
-
-    if (!owners.length) {
-      this.logDebug(
-        'Cannot fetch employees because no locations or fallback user are available yet.'
-      );
-      this.isFetchingClients = false;
+  getAllEmployees(): void {
+    const owners = (this.allUsers?.length ? this.allUsers : [this.auth.currentUser])
+      .filter((owner): owner is User => !!owner?.uid);
+    const ownersKey = owners.map((owner) => owner.uid).sort().join('|');
+    this.rankingOwners = owners;
+    // User documents update for every payment. Reuse the employee listeners
+    // instead of re-querying every site and accumulating subscriptions.
+    if (ownersKey === this.rankingOwnersKey && this.rankingEmployeeSubs.length && !this.rankingFailedOwners.size) {
+      this.rebuildRankingEmployeeSnapshot();
       return;
     }
-
-    if (!this.allUsers?.length) {
-      this.logDebug(
-        'No additional locations returned; falling back to current user only.'
-      );
+    this.rankingEmployeeSubs.forEach((sub) => sub.unsubscribe());
+    this.rankingEmployeeSubs = [];
+    this.rankingOwnerEmployees.clear();
+    this.rankingFailedOwners.clear();
+    this.rankingOwnersKey = ownersKey;
+    this.rankingInitialSnapshotReady = false;
+    const version = ++this.rankingAggregationVersion;
+    this.isFetchingClients = owners.length > 0;
+    if (!owners.length) {
+      this.afterEmployeesAggregated([]);
+      return;
     }
-
-    this.logDebug('Starting employee aggregation', {
-      locationCount: owners.length,
+    owners.forEach((owner) => {
+      const sub = this.auth.getAllEmployeesGivenUser(owner).subscribe({
+        next: (employees: unknown) => {
+          if (version !== this.rankingAggregationVersion) return;
+          this.rankingOwnerEmployees.set(owner.uid!, Array.isArray(employees) ? employees : []);
+          this.rebuildRankingEmployeeSnapshot();
+        },
+        error: (error: unknown) => {
+          if (version !== this.rankingAggregationVersion) return;
+          console.error('Ranking employee snapshot failed', {ownerUid: owner.uid, error});
+          this.rankingFailedOwners.add(owner.uid!);
+          this.habitualPerformanceIncomplete = true;
+          this.averagePerformancePercentage = '';
+          this.performanceEmployees = [];
+          this.isFetchingClients = false;
+        },
+      });
+      this.rankingEmployeeSubs.push(sub);
     });
+  }
 
-    let tempEmployees: Employee[] = [];
-    this.allEmployees = [];
-    let completedRequests = 0;
-    const ownerCount = owners.length;
-
-    // reset
+  private rebuildRankingEmployeeSnapshot(): void {
+    if (this.rankingFailedOwners.size) return;
+    if (this.rankingOwners.some((owner) => !this.rankingOwnerEmployees.has(owner.uid!))) return;
     this.total = '0';
     this.totalSalary = '0';
     this.totalHouse = '0';
     this.totalBonus = '0';
     this.payrollRows = [];
-
-    // 1) sum loyer
-    owners.forEach((user) => {
-      if (user?.housePayment) {
-        this.totalHouse = (
-          Number(this.totalHouse) + Number(user.housePayment)
-        ).toString();
-      }
-    });
-
-    // 2) fetch employees and sum salaries/bonus
-    owners.forEach((user) => {
-      this.currentClients = [];
-      this.currentEmployees = [];
-      this.logDebug('Requesting employees for location', {
-        ownerUid: user?.uid,
-        locationName: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
-      });
-
-      this.auth.getAllEmployeesGivenUser(user).subscribe((employees) => {
-        if (!Array.isArray(employees) || !employees.length) {
-          this.logDebug('No employees returned for location', {
-            ownerUid: user?.uid,
-          });
-          completedRequests++;
-          if (completedRequests === ownerCount) {
-            this.afterEmployeesAggregated(tempEmployees);
-          }
-          return;
-        }
-        const employeeList: Employee[] = Array.isArray(employees)
-          ? (employees as Employee[])
-          : [];
-        this.logDebug('Employees received for location', {
-          ownerUid: user?.uid,
-          count: employeeList.length,
-        });
-        this.mergeOwnerEmployees(user, employeeList, tempEmployees);
-        completedRequests++;
-        if (completedRequests === ownerCount) {
-          this.afterEmployeesAggregated(tempEmployees);
-        }
-      });
-    });
+    this.currentClients = [];
+    this.currentEmployees = [];
+    const employees: Employee[] = [];
+    for (const owner of this.rankingOwners) {
+      this.totalHouse = String(Number(this.totalHouse) + (Number(owner.housePayment) || 0));
+      this.mergeOwnerEmployees(owner, this.rankingOwnerEmployees.get(owner.uid!) || [], employees);
+    }
+    const initial = !this.rankingInitialSnapshotReady;
+    this.rankingInitialSnapshotReady = true;
+    // Live point captures/collections refresh calculations, not cash-flow
+    // queries. These ledgers keep their existing explicit load/cache workflow.
+    this.afterEmployeesAggregated(employees, initial);
   }
 
   private resolvePaymentKind(rawKey: string): 'paiement' | 'bonus' {
@@ -5926,6 +5918,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   // Add this method to calculate the average performance percentage
   calculateAveragePerformancePercentage() {
+    if (this.habitualPerformanceIncomplete) {
+      this.averagePerformancePercentage = '';
+      return;
+    }
     if (!this.allEmployees || this.allEmployees.length === 0) {
       this.averagePerformancePercentage = '';
       this.logDebug(
@@ -6056,26 +6052,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
       .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   }
   sortKeysAndValuesPerformance(time: number, employee: Employee) {
-    const sortedKeys = Object.keys(employee.dailyPoints!)
-      .sort((a, b) => +this.time.toDate(a) - +this.time.toDate(b))
-      .slice(-time);
-
-    // to allow for infinity ( when the totalpoint is 0, yet the dailypoint is not zero), add one where the value of total is zero
-    for (let key in employee.dailyPoints) {
-      if (employee.totalDailyPoints![key] === '0') {
-        employee.dailyPoints[key] = (
-          Number(employee.dailyPoints[key]) + 1
-        ).toString();
-        employee.totalDailyPoints![key] = '1';
-      }
-    }
-    const values = sortedKeys.map((key) =>
-      (
-        (Number(employee.dailyPoints![key]) * 100) /
-        Number(employee.totalDailyPoints![key])
-      ).toString()
-    );
-    return [sortedKeys, values];
+    const days = pointPerformanceDays(employee).slice(-time);
+    return [days.map((day) => day.key), days.map((day) =>
+      day.possible !== null && day.possible > 0 ? String(day.earned * 100 / day.possible) : '')];
   }
 
   // In team-ranking-month.component.ts
@@ -7080,6 +7059,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private prepareMonthlyPerformanceComponents(): void {
+    this.habitualPerformanceIncomplete = this.rankingFailedOwners.size > 0;
     this.monthlyPerformanceByRepresentativeKey.clear();
     this.monthlyPerformanceByOwner.clear();
 
@@ -7119,6 +7099,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     });
 
     recordsByOwner.forEach((ownerRecords, ownerUid) => {
+      if (!summarizeLogicalEmployeePoints(ownerRecords, this.givenMonth, this.givenYear).complete) return;
       const validComponents = this.buildLogicalEmployeeGroups(ownerRecords)
         .map((group) => this.monthlyPerformanceComponentsForRecords(group))
         .filter(
@@ -7160,40 +7141,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
         this.employeeRecordKey(second)
       );
     });
-    const earnedByDate = new Map<string, number>();
-    const possibleByDate = new Map<string, number>();
-
-    for (const item of ordered) {
-      const dates = new Set([
-        ...Object.keys(item.dailyPoints || {}),
-        ...Object.keys(item.totalDailyPoints || {}),
-      ]);
-      for (const dateKey of dates) {
-        const [month, , year] = dateKey.split('-').map(Number);
-        if (month !== this.givenMonth || year !== this.givenYear) continue;
-
-        const earned = Number(item.dailyPoints?.[dateKey]);
-        const possible = Number(item.totalDailyPoints?.[dateKey]);
-        if (!earnedByDate.has(dateKey) && Number.isFinite(earned)) {
-          earnedByDate.set(dateKey, earned);
-        }
-        if (!possibleByDate.has(dateKey) && Number.isFinite(possible)) {
-          possibleByDate.set(dateKey, possible);
-        }
-      }
-    }
-
-    const possible = Array.from(possibleByDate.values()).reduce(
-      (sum, value) => sum + value,
-      0
-    );
-    if (!Number.isFinite(possible) || possible <= 0) return null;
-
-    const earned = Array.from(possibleByDate.keys()).reduce(
-      (sum, dateKey) => sum + (earnedByDate.get(dateKey) || 0),
-      0
-    );
-    return Number.isFinite(earned) ? { earned, possible } : null;
+    const summary = summarizeLogicalEmployeePoints(ordered, this.givenMonth, this.givenYear);
+    if (!summary.complete) this.habitualPerformanceIncomplete = true;
+    return summary.percent !== null ? {earned: summary.earned, possible: summary.possible} : null;
   }
 
   private logicalRepresentativeForRecord(
@@ -9009,24 +8959,22 @@ export class TeamRankingMonthComponent implements OnDestroy {
     employees: Employee[],
     accumulator: Employee[]
   ): void {
-    employees.forEach((em: any) => {
+    employees.forEach((source: Employee) => {
+      const previous = this.allEmployeesAll.find((record) => record.uid === source.uid && record.tempUser?.uid === owner.uid) as any;
+      const em = {...source,
+        _dailyTotal: previous?._dailyTotal, _dailyCount: previous?._dailyCount,
+        _dailyTotalUsd: previous?._dailyTotalUsd,
+        _weekTotal: previous?._weekTotal, _weekCount: previous?._weekCount,
+        _weekTotalUsd: previous?._weekTotalUsd,
+        _monthTotal: previous?._monthTotal, _monthCount: previous?._monthCount,
+        _monthTotalUsd: previous?._monthTotalUsd,
+      };
       if (!em?.uid) {
         this.logDebug('Discarded employee without uid', {
           ownerUid: owner?.uid,
           name: `${em?.firstName ?? ''} ${em?.lastName ?? ''}`.trim(),
         });
         return;
-      }
-
-      try {
-        this.computePerformances(employees, em);
-      } catch (err) {
-        console.error('computePerformances failed for employee', {
-          uid: em?.uid,
-          ownerUid: owner?.uid,
-          error: err,
-        });
-        em.performancePercentageMonth = '0';
       }
 
       if (em?.totalBonusThisMonth) {
@@ -9037,12 +8985,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
       em.tempUser = owner;
       em.tempLocationHolder = owner.firstName;
-      em.showAttendance = false;
+      em.showAttendance = previous?.showAttendance ?? false;
       accumulator.push(em);
     });
   }
 
-  private afterEmployeesAggregated(allEmployees: Employee[]): void {
+  private afterEmployeesAggregated(allEmployees: Employee[], refreshLedgers = true): void {
     this.allEmployeesAll = allEmployees;
     this.initializeGlobalFoundationRuleDefaults(allEmployees);
     this.filterAndInitializeEmployees(allEmployees, this.currentClients);
@@ -9053,12 +9001,20 @@ export class TeamRankingMonthComponent implements OnDestroy {
       totalDisplay: this.allEmployees.length,
     });
     this.isFetchingClients = false;
+    if (!refreshLedgers) {
+      const current = new Map(this.allEmployees.map((employee) => [this.employeeRecordKey(employee), employee]));
+      const refresh = (employees: Employee[]) => employees.map((employee) => current.get(this.employeeRecordKey(employee)))
+        .filter((employee): employee is Employee => !!employee);
+      this.paidEmployeesToday = refresh(this.paidEmployeesToday || []);
+      this.paidEmployeesWeek = refresh(this.paidEmployeesWeek || []);
+      this.paidEmployeesMonth = refresh(this.paidEmployeesMonth || []);
+    }
 
-    if (this.rankingMode === 'dailyPayments') {
+    if (refreshLedgers && this.rankingMode === 'dailyPayments') {
       this.loadDailyTotalsForEmployees();
-    } else if (this.rankingMode === 'weeklyPayments') {
+    } else if (refreshLedgers && this.rankingMode === 'weeklyPayments') {
       this.loadWeeklyTotalsForEmployees();
-    } else if (this.rankingMode === 'monthlyPayments') {
+    } else if (refreshLedgers && this.rankingMode === 'monthlyPayments') {
       this.loadMonthlyTotalsForEmployees();
     } else {
       this.sortEmployeesByPerformance();
@@ -9066,7 +9022,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
     this.setGraphics();
 
-    if (this.isAmountPerformanceMode) {
+    if (refreshLedgers && this.isAmountPerformanceMode) {
       void this.loadAmountPerformancePreview();
     }
 

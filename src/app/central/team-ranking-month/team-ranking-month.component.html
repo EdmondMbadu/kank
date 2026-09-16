@@ -138,7 +138,7 @@
               <div
                 class="mt-2 max-w-[150px] text-[10px] font-semibold uppercase leading-tight tracking-[0.08em] text-gray-500"
               >
-                {{ showAmountPerformanceDiagnostics ? "Performance actuelle globale" : "Performance moyenne" }}
+                {{ !isAmountPerformanceMode && habitualPerformanceIncomplete ? "Attentes à vérifier" : showAmountPerformanceDiagnostics ? "Performance actuelle globale" : "Performance moyenne" }}
               </div>
             </div>
 

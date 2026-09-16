@@ -460,6 +460,10 @@
                     </button>
                   </div>
 
+                  <p *ngIf="!isAmountPerformanceMode && habitualPerformanceIncomplete" class="mb-3 text-center text-xs text-amber-700" role="status">
+                    Performance non vérifiée : certaines attentes du mois ne sont pas encore disponibles.
+                  </p>
+
                     <div class="relative flex items-center justify-center">
                       <svg
                       [attr.width]="size"

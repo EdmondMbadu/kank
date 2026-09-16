@@ -4,6 +4,7 @@ import { Client } from '../../models/client';
 // import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TimeService } from '../../services/time.service';
 import { Employee, FoundationWithdrawalRequest } from '../../models/employee';
+import { summarizeTeamPoints } from '../../utils/point-performance.util';
 import { User, UserDailyField } from '../../models/user';
 import { AuthService } from '../../services/auth.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
@@ -873,19 +874,7 @@ export class ComputationService {
     const targetMonth = parseInt(month, 10);
     const targetYear = parseInt(year, 10);
 
-    let total = 0;
-    for (let e of employees) {
-      if (e.dailyPoints) {
-        for (const [date, amount] of Object.entries(e.dailyPoints)) {
-          const [month, day, year] = date.split('-').map(Number);
-          if (month === targetMonth && year === targetYear) {
-            total += parseFloat(amount);
-          }
-        }
-      }
-    }
-
-    return total.toFixed(2);
+    return summarizeTeamPoints(employees, targetMonth, targetYear).earned.toFixed(2);
   }
 
   findTotalForMonthAllTotalDailyPointsEmployees(
@@ -896,19 +885,8 @@ export class ComputationService {
     const targetMonth = parseInt(month, 10);
     const targetYear = parseInt(year, 10);
 
-    let total = 0;
-    for (let e of employees) {
-      if (e.dailyPoints) {
-        for (const [date, amount] of Object.entries(e.totalDailyPoints!)) {
-          const [month, day, year] = date.split('-').map(Number);
-          if (month === targetMonth && year === targetYear) {
-            total += parseFloat(amount); // Changed from parseInt to parseFloat to match histogram calculation
-          }
-        }
-      }
-    }
-
-    return total.toFixed(2); // Changed from toString() to toFixed(2) for consistency with findTotalForMonthAllDailyPointsEmployees
+    const summary = summarizeTeamPoints(employees, targetMonth, targetYear);
+    return summary.complete ? summary.possible.toFixed(2) : '';
   }
   getMonthNameFrench(monthNumber: number) {
     const monthNamesInFrench = [

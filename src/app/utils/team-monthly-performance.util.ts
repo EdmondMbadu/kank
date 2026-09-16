@@ -1,4 +1,4 @@
-import { Employee } from '../models/employee';
+import { PointPerformanceEmployee, pointBusinessDay, pointPerformanceDays, summarizePointDays, PointPerformanceDay } from './point-performance.util';
 
 export interface TeamMonthlyPerformancePoint {
   /** Existing application month key format: M-YYYY. */
@@ -8,20 +8,7 @@ export interface TeamMonthlyPerformancePoint {
   percent: number;
 }
 
-type PerformanceEmployee = Pick<Employee, 'dailyPoints' | 'totalDailyPoints'>;
-
-function performanceNumber(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const parsed = Number.parseFloat(value.replace(/[\s,]/g, ''));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  return 0;
-}
+type PerformanceEmployee = PointPerformanceEmployee;
 
 function monthTime(key: string): number {
   const [month, year] = key.split('-').map(Number);
@@ -34,39 +21,30 @@ function monthTime(key: string): number {
  * every team member's possible points for that month.
  */
 export function buildTeamMonthlyPerformanceSeries(
-  employees: readonly PerformanceEmployee[]
+  employees: readonly PerformanceEmployee[],
+  throughDay = pointBusinessDay(), ownerSince?: string
 ): TeamMonthlyPerformancePoint[] {
-  const months = new Map<string, { achieved: number; total: number }>();
+  const months = new Map<string, PointPerformanceDay[]>();
 
   for (const employee of employees || []) {
-    const dailyPoints = employee?.dailyPoints;
-    if (!dailyPoints) continue;
-
-    for (const [rawDate, rawAchieved] of Object.entries(dailyPoints)) {
-      const dateParts = rawDate.split('-');
-      if (dateParts.length < 3) continue;
-
-      const month = dateParts[0];
-      const year = dateParts[2];
-      if (!month || !year) continue;
-
+    for (const day of pointPerformanceDays(employee, throughDay, ownerSince)) {
+      const [month, , year] = day.key.split('-').map(Number);
       const key = `${month}-${year}`;
-      const previous = months.get(key) ?? { achieved: 0, total: 0 };
-      months.set(key, {
-        achieved: previous.achieved + performanceNumber(rawAchieved),
-        total:
-          previous.total +
-          performanceNumber(employee.totalDailyPoints?.[rawDate]),
-      });
+      const previous = months.get(key) ?? [];
+      previous.push(day);
+      months.set(key, previous);
     }
   }
 
   return Array.from(months.entries())
-    .map(([key, values]) => ({
+    .map(([key, days]) => ({key, summary: summarizePointDays(days)}))
+    // Do not graph an incomplete month as a misleading 100% (or a false zero).
+    .filter(({summary}) => summary.complete)
+    .map(({key, summary}) => ({
       key,
-      achieved: values.achieved,
-      total: values.total,
-      percent: values.total > 0 ? (values.achieved / values.total) * 100 : 0,
+      achieved: summary.earned,
+      total: summary.possible,
+      percent: summary.percent ?? 0,
     }))
     .sort((a, b) => monthTime(a.key) - monthTime(b.key));
 }

@@ -71,6 +71,16 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "employees",
+      "fieldPath": "expectedPoints",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pointExpectationDays",
+      "fieldPath": "employees",
+      "indexes": []
+    },
+    {
       "collectionGroup": "attendancePhotoFingerprints",
       "fieldPath": "luma64Base64",
       "indexes": []

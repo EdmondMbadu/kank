@@ -55,6 +55,7 @@ import {
 } from 'src/app/utils/amount-performance.util';
 import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
 import { buildTeamMonthlyPerformanceSeries } from 'src/app/utils/team-monthly-performance.util';
+import { pointBusinessDay, pointPerformanceDays, summarizeTeamPoints } from 'src/app/utils/point-performance.util';
 import {
   attendanceFileFingerprint,
   uploadFirstThenFinalizeAttendance,
@@ -581,6 +582,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   averagePointsMonth: string = '';
   performancePercentageMonth: string = '';
+  habitualPerformanceIncomplete = false;
+  private habitualDayTimer?: ReturnType<typeof setInterval>;
+  private habitualLastDay = pointBusinessDay();
   performancePercentageTotal: string = '';
   totalToday: string = '';
   today: string = this.time.todaysDateMonthDayYear();
@@ -710,6 +714,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   ngOnInit(): void {
+    this.habitualDayTimer = setInterval(() => {
+      const day = pointBusinessDay();
+      if (day === this.habitualLastDay) return;
+      this.habitualLastDay = day;
+      this.refreshHabitualPerformance();
+      this.updatePerformanceGraphics(this.rangeValueFromPerformanceKey(this.performanceActiveRange));
+    }, 60000);
     this.performanceMetricSettingsSub =
       this.performanceMetricSettings.employeeMode$.subscribe((mode) => {
         const previouslyUsingAmount = this.isAmountPerformanceMode;
@@ -743,6 +754,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.retrieveEmployees();
     this.allUsersSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.allLocations = Array.isArray(data) ? (data as User[]) : [];
+      this.refreshHabitualPerformance();
       this.updateEmployeePaymentPerformanceLocation();
       this.recomputeInvestigationMonthlyPerformance();
     });
@@ -759,6 +771,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       });
   }
   ngOnDestroy(): void {
+    if (this.habitualDayTimer) clearInterval(this.habitualDayTimer);
     this.employeesSub?.unsubscribe();
     this.individualReviewsSub?.unsubscribe();
     this.weeklyTargetSub?.unsubscribe();
@@ -2703,8 +2716,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get currentPerformancePercent(): number | null {
-    const legacyValue = Number(this.performancePercentageMonth);
-    const legacyPercent = Number.isFinite(legacyValue) ? legacyValue : 0;
+    const raw = String(this.performancePercentageMonth ?? '').trim();
+    const legacyValue = raw ? Number(raw) : NaN;
+    const legacyPercent = Number.isFinite(legacyValue) ? legacyValue : null;
     if (this.isAmountPerformanceMode) {
       const amountPercent = this.amountPerformanceSummary?.percent;
       if (amountPercent !== null && amountPercent !== undefined) {
@@ -4601,8 +4615,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             result[1].toString()
           );
 
-          this.averageToday = this.employee!.dailyPoints![this.today];
-          this.totalToday = this.employee.totalDailyPoints![this.today];
+          const today = pointPerformanceDays(this.employee, pointBusinessDay(), this.auth.currentUser.pointExpectationSince)
+            .find((day) => day.key === pointBusinessDay());
+          this.averageToday = String(today?.earned ?? 0);
+          this.totalToday = today?.possible === null || today?.possible === undefined ? '' : String(today.possible);
 
           this.averagePointsMonth = this.compute.findTotalForMonth(
             this.employee.dailyPoints!,
@@ -4610,11 +4626,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             this.givenYear.toString()
           );
 
-          this.totalPointsMonth = this.compute.findTotalForMonth(
-            this.employee.totalDailyPoints!,
-            this.givenMonth.toString(),
-            this.givenYear.toString()
-          );
+          const monthly = summarizeTeamPoints([this.employee], this.givenMonth, this.givenYear,
+            pointBusinessDay(), this.auth.currentUser.pointExpectationSince);
+          this.totalPointsMonth = monthly.complete ? String(monthly.possible) : '';
         }
         this.employee.performancePercantage = this.computePerformancePercentage(
           this.averageToday,
@@ -4625,12 +4639,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             this.setPerformancePercentageMonth(0);
           }
         } else {
-          this.setPerformancePercentageMonth(
-            this.computePerformancePercentage(
-              this.averagePointsMonth,
-              this.totalPointsMonth
-            )
-          );
+          this.refreshHabitualPerformance();
         }
 
         // this.computeThisMonthSalary();
@@ -4821,18 +4830,31 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
   }
   computePerformancePercentage(average: string, total: string) {
-    let result = '';
-    if (
-      (average === '0' || average === undefined || average === '') &&
-      (total === '0' || total === undefined || total === '')
-    ) {
-    } else {
-      let rounded = this.compute.roundNumber(
-        (Number(average) * 100) / Number(total)
-      );
-      result = rounded.toString();
-    }
-    return result;
+    const earned = Number(average);
+    const possible = Number(total);
+    return Number.isFinite(earned) && Number.isFinite(possible) && possible > 0
+      ? String(this.compute.roundNumber(earned * 100 / possible)) : '';
+  }
+
+  private refreshHabitualPerformance(): void {
+    if (!this.employee?.uid || this.usesInvestigationPaymentPerformance) return;
+    const team = this.employee.role === 'Manager' ? this.employees : [this.employee];
+    const throughDay = pointBusinessDay();
+    const ownerSince = this.allLocations.find((owner) => owner.uid === this.auth.currentUser.uid)?.pointExpectationSince ||
+      this.auth.currentUser.pointExpectationSince;
+    const month = summarizeTeamPoints(team || [], this.givenMonth, this.givenYear, throughDay, ownerSince);
+    this.habitualPerformanceIncomplete = !month.complete;
+    this.averagePointsMonth = String(month.earned);
+    this.totalPointsMonth = month.complete ? String(month.possible) : '';
+    this.performancePercentageMonth = month.percent === null ? '' : String(Math.round(month.percent));
+    const lifetime = summarizeTeamPoints(team || [], undefined, undefined, throughDay, ownerSince);
+    this.performancePercentageTotal = lifetime.percent === null ? '' : String(Math.round(lifetime.percent));
+    const today = (team || []).flatMap((employee) => pointPerformanceDays(employee, throughDay, ownerSince))
+      .filter((day) => day.key === throughDay);
+    this.averageToday = String(today.reduce((sum, day) => sum + day.earned, 0));
+    this.totalToday = today.some((day) => day.possible === null && day.independent) ? '' :
+      String(today.reduce((sum, day) => sum + (day.possible || 0), 0));
+    this.employee.performancePercantage = this.computePerformancePercentage(this.averageToday, this.totalToday);
   }
   private applyStoredInvestigationMonthlyPerformance(): boolean {
     const key = this.performanceMonthKey(this.givenMonth, this.givenYear);
@@ -4875,7 +4897,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.employee?.role === 'Manager'
         ? this.employees ?? []
         : [this.employee];
-    const series = buildTeamMonthlyPerformanceSeries(employees);
+    const series = buildTeamMonthlyPerformanceSeries(employees, pointBusinessDay(), this.auth.currentUser.pointExpectationSince);
     const labels = series.map((point) => point.key);
     const values = series.map((point) => point.percent.toString());
 

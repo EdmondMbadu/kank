@@ -86,4 +86,13 @@ describe('buildTeamMonthlyPerformanceSeries', () => {
 
     expect(buildTeamMonthlyPerformanceSeries([employee])[0].percent).toBe(0);
   });
+
+  it('charts include independent expected-only days and ignore the shrinking legacy denominator', () => {
+    const employee = {expectedPointsSince: '8-1-2026', dailyPoints: {'8-1-2026': '10'},
+      totalDailyPoints: {'8-1-2026': '0'}, expectedPoints: {'8-1-2026': 10, '8-3-2026': 10}};
+    expect(buildTeamMonthlyPerformanceSeries([employee], '8-3-2026')).toEqual([
+      {key: '8-2026', achieved: 10, total: 20, percent: 50},
+    ]);
+    expect(buildTeamMonthlyPerformanceSeries([employee], '8-4-2026')).toEqual([]);
+  });
 });

@@ -88,6 +88,18 @@ test("supported maps and arrays make an exact compatibility round trip", () => {
   assert.deepEqual(reconstructed, legacy);
 });
 
+test("independent performance joins an existing points archive and round-trips zero/null expectations", () => {
+  const core = require('../firestore-v2-core');
+  const path = 'users/site/employees/agent';
+  const data = {expectedPoints: {'8-1-2026': 10, '8-3-2026': 0, '8-4-2026': null, '9-1-2026': 10},
+    _firestoreV2Archive: {through: '2026-08', fields: ['dailyPoints', 'totalDailyPoints']}};
+  const archive = core.normalizeArchiveConfig(path, data);
+  assert.ok(archive.fields.includes('expectedPoints'));
+  assert.deepEqual(core.compactLegacyFields(path, data, archive).expectedPoints, {'9-1-2026': 10});
+  const entries = core.materializeEntries(path, data).map(item => item.entry);
+  assert.deepEqual(core.reconstructLegacyFields(path, entries).expectedPoints, data.expectedPoints);
+});
+
 test("month projections preserve exact compatibility values", () => {
   const sourcePath = "management/main";
   const legacy = {

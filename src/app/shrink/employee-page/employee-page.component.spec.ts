@@ -5,6 +5,59 @@ import { computeWeeklyObjectiveAdjustment } from 'src/app/utils/weekly-objective
 import { EmployeePageComponent } from './employee-page.component';
 
 describe('EmployeePageComponent', () => {
+  it('employee and manager metrics include captured no-payment days without a submission', () => {
+    jasmine.clock().mockDate(new Date('2026-09-16T10:00:00Z'));
+    const component = createComponent({currentUser: {uid: 'site', pointExpectationSince: '9-15-2026'}});
+    const employee = {uid: 'employee', role: 'Agent Marketing', status: 'Travaille',
+      expectedPointsSince: '9-15-2026', dailyPoints: {'9-15-2026': '10'},
+      expectedPoints: {'9-15-2026': 10, '9-16-2026': 10}};
+    component.employee = employee;
+    component.employees = [employee];
+    component.givenMonth = 9;
+    component.givenYear = 2026;
+    (component as any).refreshHabitualPerformance();
+    expect(component.currentPerformancePercent).toBe(50);
+    expect(component.employee.performancePercantage).toBe('0');
+    expect(component.totalPointsMonth).toBe('20');
+    component.employee = {uid: 'manager', role: 'Manager'};
+    (component as any).refreshHabitualPerformance();
+    expect(component.currentPerformancePercent).toBe(50);
+    employee.expectedPoints['9-16-2026'] = null as any;
+    (component as any).refreshHabitualPerformance();
+    expect(component.currentPerformancePercent).toBeNull();
+    expect(component.habitualPerformanceIncomplete).toBeTrue();
+  });
+
+  it('manager includes inactive clients in today and month totals, and cannot hide their missing capture', () => {
+    jasmine.clock().mockDate(new Date('2026-09-16T10:00:00Z'));
+    const component = createComponent({currentUser: {uid: 'site', pointExpectationSince: '9-16-2026'}});
+    const active = {uid: 'active', role: 'Agent Marketing', status: 'Travaille',
+      expectedPointsSince: '9-16-2026', dailyPoints: {'9-16-2026': '5'}, expectedPoints: {'9-16-2026': 5}};
+    const inactive: any = {uid: 'inactive', role: 'Agent Marketing', status: 'Quitté', dateLeft: '9-14-2026',
+      expectedPointsSince: '9-16-2026', dailyPoints: {}, expectedPoints: {'9-16-2026': 7}};
+    const manager = {uid: 'manager', role: 'Manager', status: 'Travaille', expectedPointsSince: '9-16-2026',
+      dailyPoints: {}, expectedPoints: {'9-16-2026': 0}};
+    component.employees = [active, inactive, manager];
+    component.givenMonth = 9;
+    component.givenYear = 2026;
+    component.employee = active;
+    (component as any).refreshHabitualPerformance();
+    expect(component.currentPerformancePercent).toBe(100);
+    component.employee = manager;
+    (component as any).refreshHabitualPerformance();
+    expect(component.currentPerformancePercent).toBe(42);
+    expect(component.totalToday).toBe('12');
+    expect(component.totalPointsMonth).toBe('12');
+    expect(component.habitualPerformanceIncomplete).toBeFalse();
+    inactive.dailyPoints['9-16-2026'] = '7';
+    (component as any).refreshHabitualPerformance();
+    expect(component.currentPerformancePercent).toBe(100);
+    delete inactive.expectedPoints['9-16-2026'];
+    (component as any).refreshHabitualPerformance();
+    expect(component.currentPerformancePercent).toBeNull();
+    expect(component.totalToday).toBe('');
+    expect(component.habitualPerformanceIncomplete).toBeTrue();
+  });
   function createComponent(authOverrides: Record<string, any> = {}) {
     const auth: any = {
       currentUser: {
@@ -60,6 +113,7 @@ describe('EmployeePageComponent', () => {
     } as any;
 
     const compute = {
+      roundNumber: (value: number) => Math.round(value),
       getMonthNameFrench: (month: number) =>
         [
           'Janvier',

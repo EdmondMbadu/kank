@@ -35,7 +35,7 @@ const layouts = Object.freeze({
   },
   employee: {
     mapFields: [
-      "dailyPoints", "payments", "totalDailyPoints", "dailyStatus",
+      "dailyPoints", "payments", "totalDailyPoints", "expectedPoints", "dailyStatus",
       "attendance", "attendanceAttachments", "investigationPerformanceMonthly",
     ],
     arrayFields: [
@@ -423,6 +423,12 @@ function normalizeArchiveConfig(sourcePath, data) {
   const allowed = new Set(layouts[descriptor.kind].mapFields);
   const fields = Array.isArray(raw.fields) ?
     raw.fields.map(String).filter((field) => allowed.has(field)) : [];
+  // Extend an already enabled performance archive, not its retention cutoff.
+  // Do not require a second migration/read path or let this daily map grow
+  // indefinitely on employee documents that already archive their points.
+  if (descriptor.kind === "employee" && data.expectedPoints &&
+      (fields.includes("dailyPoints") || fields.includes("totalDailyPoints")) &&
+      !fields.includes("expectedPoints")) fields.push("expectedPoints");
   if (!fields.length) return null;
   return {through: String(raw.through), fields};
 }

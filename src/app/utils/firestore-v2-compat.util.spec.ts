@@ -72,4 +72,14 @@ describe('Firestore v2 compatibility reconstruction', () => {
     expect(result.weeklyPaymentTargetPeriods).toEqual([{ id: 'a' }, { id: 'b' }]);
     expect(result.scalar).toBeTrue();
   });
+
+  it('hydrates archived independent expected points, including zero and unverified markers', () => {
+    const employeePath = 'users/site/employees/employee';
+    const base = {expectedPointsSince: '8-1-2026', expectedPoints: {'9-16-2026': 10}};
+    const result: any = reconstructCompactLegacyDocument(employeePath, [{maps: {
+      expectedPoints: {'8-1-2026': 10, '8-3-2026': 0, '8-4-2026': null},
+    }}], base);
+    expect(result.expectedPoints).toEqual({'8-1-2026': 10, '8-3-2026': 0, '8-4-2026': null, '9-16-2026': 10});
+    expect(result.expectedPointsSince).toBe('8-1-2026');
+  });
 });

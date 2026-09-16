@@ -90,3 +90,31 @@ describe('AuthService daily central snapshots', () => {
     expect(result[0].uid).toBe('client-a');
   });
 });
+
+describe('AuthService independent point expectations', () => {
+  it('rotation copies keep identity/history but do not copy another site\'s frozen workload', async () => {
+    const source = {
+      uid: 'source-agent', clients: ['client'],
+      expectedPoints: { '9-17-2026': 10 }, expectedPointsSince: '9-17-2026',
+      dailyPoints: { '9-16-2026': '5' }, totalDailyPoints: { '9-16-2026': '10' },
+    };
+    const set = jasmine.createSpy('set').and.resolveTo();
+    const afs = {
+      createId: () => 'new-agent',
+      doc: jasmine.createSpy('doc').and.callFake((path: string) =>
+        path === 'users/source/employees/source-agent'
+          ? { valueChanges: () => of(source) } : { set }),
+    };
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service as any, { afs });
+    await service.copyEmployeeToLocation('source', 'source-agent', 'target', true);
+    const payload = set.calls.mostRecent().args[0];
+    expect(payload.expectedPoints).toBeUndefined();
+    expect(payload.expectedPointsSince).toBeUndefined();
+    expect(payload.dailyPoints).toEqual(source.dailyPoints);
+    expect(payload.clients).toEqual([]);
+    expect(payload.canonicalEmployeeId).toBe('source-agent');
+    expect(payload.rotationSourceEmployeeId).toBe('source-agent');
+    expect(source.expectedPoints['9-17-2026']).toBe(10);
+  });
+});
