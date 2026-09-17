@@ -56,6 +56,7 @@ import {
 } from 'src/app/utils/amount-performance.util';
 import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
 import { pointBusinessDay, pointPerformanceDays, summarizeLogicalEmployeePoints } from 'src/app/utils/point-performance.util';
+import { scalePerformanceBudget } from 'src/app/utils/performance-budget.util';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -8286,7 +8287,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   getProjectedBudgetAmount(team?: User): number {
-    return this.getTeamManagerPerformance(team) * 100000;
+    return scalePerformanceBudget(
+      this.getTeamManagerPerformance(team) * 100000,
+      this.auth.performanceBudgetProportionPercent
+    );
+  }
+
+  get budgetPerformanceRateFc(): number {
+    return scalePerformanceBudget(100000, this.auth.performanceBudgetProportionPercent);
   }
 
   getRecommendedBudgetAmount(team?: User): number {
@@ -8367,7 +8375,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
 
     const confirmed = confirm(
-      `Appliquer la formule Performance manager x 100 000 à ${updates.length} équipe${
+      `Appliquer la formule Performance manager x ${this.budgetPerformanceRateFc.toLocaleString('fr-FR')} FC à ${updates.length} équipe${
         updates.length > 1 ? 's' : ''
       } ?`
     );

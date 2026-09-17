@@ -16,7 +16,7 @@ import {
   of,
 } from 'rxjs';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
-import { filter, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
 import { Client, Comment } from '../models/client';
 import { IdeaSubmission } from '../models/idea';
@@ -48,6 +48,10 @@ import {
 } from '../utils/weekly-objective-adjustment.util';
 import { FirestoreV2CompatService } from './firestore-v2-compat.service';
 import { buildCardLifecycleEvent } from '../utils/card-lifecycle-event.util';
+import {
+  DEFAULT_PERFORMANCE_BUDGET_PROPORTION,
+  normalizePerformanceBudgetProportion,
+} from '../utils/performance-budget.util';
 
 const ADMIN_FLAG_KEY = 'kank-admin-flag';
 const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
@@ -107,6 +111,15 @@ export class AuthService {
     this.rolePasswordsState
   );
   rolePasswords$ = this.rolePasswordsSubject.asObservable();
+  private performanceBudgetProportionSubject = new BehaviorSubject<number>(
+    DEFAULT_PERFORMANCE_BUDGET_PROPORTION
+  );
+  readonly performanceBudgetProportion$ = this.performanceBudgetProportionSubject.asObservable()
+    .pipe(distinctUntilChanged());
+
+  get performanceBudgetProportionPercent(): number {
+    return this.performanceBudgetProportionSubject.value;
+  }
   private readonly defaultWeeklyPaymentTargetFc = 600000;
   private weeklyPaymentTargetBaseState = this.defaultWeeklyPaymentTargetFc;
   private readonly defaultWeeklyPaymentProjection: WeeklyPaymentProjection = {
@@ -2098,6 +2111,7 @@ export class AuthService {
       )
       .subscribe((managementDocuments: any[]) => {
         if (!managementDocuments.length) {
+          this.performanceBudgetProportionSubject.next(DEFAULT_PERFORMANCE_BUDGET_PROPORTION);
           this.managementDocId = '';
           this.rolePasswordsState = { ...this.defaultRolePasswords };
           this.rolePasswordsSubject.next(this.rolePasswordsState);
@@ -2136,6 +2150,9 @@ export class AuthService {
           return;
         }
         const data: any = managementDocuments[0] || {};
+        this.performanceBudgetProportionSubject.next(
+          normalizePerformanceBudgetProportion(data.performanceBudgetProportionPercent)
+        );
         this.managementDocId = String(data.id || '');
         const stored = data.rolePasswords || {};
         this.rolePasswordsState = {
@@ -2215,6 +2232,20 @@ export class AuthService {
         this.rolePasswordsSubject.next(this.rolePasswordsState);
         this.syncRoleFlagsWithRolePasswords();
       });
+  }
+
+  async updatePerformanceBudgetProportion(percent: number): Promise<void> {
+    if (!this.isAdmin) throw new Error('Modification réservée aux administrateurs.');
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      throw new Error('Entrez une proportion entre 0 et 100 %.');
+    }
+    if (this.managementDocId !== CANONICAL_MANAGEMENT_DOCUMENT_ID) {
+      throw new Error('Aucun document management trouvé.');
+    }
+    await this.afs.doc(`management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`).set(
+      { performanceBudgetProportionPercent: percent }, { merge: true }
+    );
+    this.performanceBudgetProportionSubject.next(percent);
   }
 
   updateWeeklyPaymentTargetGlobal(targetFc: number): Promise<void> {

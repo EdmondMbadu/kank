@@ -24,6 +24,7 @@ export class Management {
   notPaidCycleMonthsThreshold?: number;
   notPaidNoPaymentMonthsThreshold?: number;
   weeklyPaymentTargetFc?: number;
+  performanceBudgetProportionPercent?: number;
   weeklyPaymentTargetPeriods?: WeeklyPaymentTargetPeriod[];
   weeklyDeductionTargetVersions?: WeeklyDeductionTargetVersion[];
   teamWeeklyBonusThresholdFc?: number;

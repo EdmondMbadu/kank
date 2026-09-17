@@ -7596,7 +7596,7 @@
             Budget Emprunts du Mois
           </h2>
           <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Formule : performance manager x 100 000 FC.
+            Formule : performance manager x {{ budgetPerformanceRateFc | number : "1.0-0" }} FC.
           </p>
         </div>
       </div>
@@ -7655,7 +7655,7 @@
         </div>
 
         <div class="text-sm text-slate-500 dark:text-slate-400">
-          Projeté = performance manager du mois x 100 000 FC
+          Projeté = performance manager du mois x {{ budgetPerformanceRateFc | number : "1.0-0" }} FC
         </div>
       </div>
 

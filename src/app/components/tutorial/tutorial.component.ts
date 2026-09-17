@@ -5,6 +5,10 @@ import {
 } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { Subscription } from 'rxjs';
+import {
+  DEFAULT_PERFORMANCE_BUDGET_PROPORTION,
+  scalePerformanceBudget,
+} from 'src/app/utils/performance-budget.util';
 
 interface WeeklyDeductionGuideRow {
   label: string;
@@ -48,6 +52,15 @@ export class TutorialComponent implements OnInit, OnDestroy {
   dailyActivity: boolean = false;
   criteriaToLend: boolean = false;
   startingBudget: number = 0;
+  budgetProportionPercent = DEFAULT_PERFORMANCE_BUDGET_PROPORTION;
+  budgetProportionInput: number | null = DEFAULT_PERFORMANCE_BUDGET_PROPORTION;
+  budgetProportionSaving = false;
+  budgetProportionMessage = '';
+  readonly performanceBudgetRows = Array.from({ length: 9 }, (_, index) => {
+    const tier = 9 - index;
+    return { range: `${tier * 10}-${tier * 10 + 9} %`, baseFc: tier * 1000000 };
+  });
+  private budgetProportionSub?: Subscription;
 
   numberOfPeople: number = 0;
   percentage: number = 0;
@@ -78,6 +91,10 @@ export class TutorialComponent implements OnInit, OnDestroy {
     public compute: ComputationService
   ) {}
   ngOnInit() {
+    this.budgetProportionSub = this.auth.performanceBudgetProportion$.subscribe((percent) => {
+      this.budgetProportionPercent = percent;
+      this.budgetProportionInput = percent;
+    });
     this.startingBudget = Number(this.auth.currentUser?.startingBudget ?? 0);
     console.log('budget ', this.startingBudget);
     this.syncWeeklyMinimum(this.auth.weeklyPaymentTargetFc || 600000);
@@ -94,10 +111,35 @@ export class TutorialComponent implements OnInit, OnDestroy {
     );
   }
   ngOnDestroy() {
+    this.budgetProportionSub?.unsubscribe();
     this.weeklyTargetSub?.unsubscribe();
     this.weeklyObjectiveConfigSub?.unsubscribe();
   }
   /* === Calcul frais prêt === */
+  budgetTierAmount(baseFc: number): number {
+    return scalePerformanceBudget(baseFc, this.budgetProportionPercent);
+  }
+
+  async saveBudgetProportion(): Promise<void> {
+    if (!this.auth.isAdmin || this.budgetProportionSaving) return;
+    const percent = this.budgetProportionInput;
+    if (percent === null || !Number.isFinite(percent) || percent < 0 || percent > 100) {
+      this.budgetProportionMessage = 'Entrez une proportion entre 0 et 100 %.';
+      return;
+    }
+    this.budgetProportionSaving = true;
+    this.budgetProportionMessage = '';
+    try {
+      await this.auth.updatePerformanceBudgetProportion(percent);
+      this.budgetProportionPercent = percent;
+      this.budgetProportionMessage = 'Proportion enregistrée pour toutes les équipes.';
+    } catch {
+      this.budgetProportionMessage = 'Impossible d’enregistrer la proportion.';
+    } finally {
+      this.budgetProportionSaving = false;
+    }
+  }
+
   isNewClient: boolean = true; // Nouveau = true, Ancien = false
   loanAmount: number | null = null;
 

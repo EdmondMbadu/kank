@@ -108,6 +108,19 @@ describe('TeamRankingMonthComponent', () => {
     expect(createComponent().component).toBeTruthy();
   });
 
+  it('uses the shared admin proportion for projected budgets without modifying current budgets', () => {
+    const { component, auth } = createComponent();
+    spyOn(component, 'getTeamManagerPerformance').and.returnValue(60);
+    const team = { uid: 'site', monthBudget: '8000000' } as any;
+    auth.performanceBudgetProportionPercent = 50;
+    expect(component.getProjectedBudgetAmount(team)).toBe(3000000);
+    expect(component.budgetPerformanceRateFc).toBe(50000);
+    expect(component.getRecommendedBudgetAmount(team)).toBe(8000000);
+    auth.performanceBudgetProportionPercent = 100;
+    expect(component.getProjectedBudgetAmount(team)).toBe(6000000);
+    expect(team.monthBudget).toBe('8000000');
+  });
+
   it('employee snapshots refresh continuously without duplicate listeners or extra ledger queries', () => {
     const {component, auth, data} = createComponent();
     const first = new Subject<any[]>();

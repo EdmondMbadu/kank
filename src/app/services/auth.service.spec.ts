@@ -1,6 +1,48 @@
-import { firstValueFrom, of } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, of } from 'rxjs';
 import { CANONICAL_MANAGEMENT_DOCUMENT_ID } from '../models/management';
 import { AuthService } from './auth.service';
+
+describe('AuthService performance budget settings', () => {
+  function setup(isAdmin = true) {
+    const set = jasmine.createSpy('set').and.resolveTo();
+    const doc = jasmine.createSpy('doc').and.returnValue({ set });
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service, {
+      afs: { doc }, isAdmninistrator: isAdmin,
+      managementDocId: CANONICAL_MANAGEMENT_DOCUMENT_ID,
+      performanceBudgetProportionSubject: new BehaviorSubject(50),
+    });
+    return { service, doc, set };
+  }
+
+  it('persists only the proportion and publishes it after a successful save', async () => {
+    const { service, doc, set } = setup();
+    await service.updatePerformanceBudgetProportion(25);
+    expect(doc).toHaveBeenCalledOnceWith(`management/${CANONICAL_MANAGEMENT_DOCUMENT_ID}`);
+    expect(set).toHaveBeenCalledOnceWith({ performanceBudgetProportionPercent: 25 }, { merge: true });
+    expect(service.performanceBudgetProportionPercent).toBe(25);
+  });
+
+  it('refuses non-admin, invalid, or noncanonical writes', async () => {
+    const staff = setup(false);
+    await expectAsync(staff.service.updatePerformanceBudgetProportion(50)).toBeRejected();
+    expect(staff.doc).not.toHaveBeenCalled();
+    const admin = setup();
+    for (const percent of [-1, 101, NaN, Infinity]) {
+      await expectAsync(admin.service.updatePerformanceBudgetProportion(percent)).toBeRejected();
+    }
+    (admin.service as any).managementDocId = 'undefined';
+    await expectAsync(admin.service.updatePerformanceBudgetProportion(50)).toBeRejected();
+    expect(admin.doc).not.toHaveBeenCalled();
+  });
+
+  it('keeps the saved proportion when Firestore rejects a write', async () => {
+    const { service, set } = setup();
+    set.and.rejectWith(new Error('permission-denied'));
+    await expectAsync(service.updatePerformanceBudgetProportion(25)).toBeRejected();
+    expect(service.performanceBudgetProportionPercent).toBe(50);
+  });
+});
 
 describe('AuthService management ledger', () => {
   function managementService(management: Record<string, any> | undefined) {
