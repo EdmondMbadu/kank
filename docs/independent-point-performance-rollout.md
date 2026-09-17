@@ -3,6 +3,23 @@
 Implemented locally on 2026-09-16. No production deployment, scheduler
 invocation, correction, reassignment, or historical backfill was performed.
 
+## 2026-09-17 debt eligibility correction
+
+Clients without a valid positive `debtLeft` are now excluded before schedule
+validation. Backend regression tests cover missing, null, blank, zero,
+negative, and nonnumeric debt, both alone and mixed with valid clients.
+The full backend suite passes (86 tests).
+Deployed only `scheduleExpectedKinshasaProd` successfully to `kank-4bbbc`;
+no Hosting or Firestore-rule deployment and no manual scheduler invocation.
+
+Today's Badiadingi/Nono expectation was corrected from null to 1 using
+identical PITR workload results at 00:05 and 00:06 Kinshasa; expected FC
+remained 52,500. The original frozen snapshot, actual earned points, and
+client balances were preserved. Correction audit path:
+`users/7HUl3ew69sYfikaIr48SvAqm5N33/pointExpectationDays/9-17-2026/corrections/4f374746-181d-4df6-8fa4-4f7aa039fe3e`.
+The employee root, day ledger, and compact history projection all read 1
+after correction, and all production monthly contributor records are complete.
+
 ## What changes
 
 The existing `scheduleExpectedKinshasaProd` job is extended, not duplicated.
@@ -13,7 +30,10 @@ scheduled-client point count and expected FC before daytime collections.
 An eligible client is alive (blank/`vivant`), still indebted, scheduled for
 that weekday, and has a cycle at least six calendar days old. The habitual
 point rule still requires both `client.agent` and employee roster membership.
-Pending transfer copies do not count. Broken debt/date/payment-day/minimum
+Pending transfer copies do not count. Clients without a valid positive
+`debtLeft` (missing, blank, zero, negative, or nonnumeric) are excluded from
+both expected points and expected FC; they do not invalidate an employee,
+manager, or global score. For positive-debt clients, broken date/payment-day/minimum
 data, contradictory assignments and duplicate
 identities yield **unverified**, not a manufactured exact count.
 

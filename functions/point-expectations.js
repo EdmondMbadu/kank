@@ -66,17 +66,16 @@ function buildExpectations(employees, clients, day) {
     if (!agent) continue;
     const alive = normalize(client.vitalStatus);
     if (alive !== "" && alive !== "vivant") continue;
+    // Only clients with a valid positive outstanding debt belong in the
+    // workload. Blank/incomplete client records must not invalidate their
+    // agent's expectation (and consequently the manager/global average).
+    const debt = Number(client.debtLeft);
+    if (!Number.isFinite(debt) || debt <= 0) continue;
     const start = parseDay(client.debtCycleStartDate);
     if (start !== null && start > day.calendarMs - 6 * DAY_MS) continue;
     const scheduledDay = paymentDayIndex(client.paymentDay);
     if (scheduledDay >= 0 && scheduledDay !== day.dayIndex) continue;
-    const debt = Number(client.debtLeft);
     const value = expected[client.agent];
-    if (!Number.isFinite(debt) || client.debtLeft === null || String(client.debtLeft ?? "").trim() === "") {
-      flagIssue(value, "invalid-debt");
-      continue;
-    }
-    if (debt <= 0) continue;
     if (scheduledDay < 0) {
       flagIssue(value, "invalid-payment-day");
       continue;

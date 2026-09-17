@@ -31,7 +31,7 @@ test("six-day eligibility, French/English days, life status and unpaid debt", ()
 });
 
 test("missing/malformed cycle, invalid minimum or stale assignments are unverified, not guessed", () => {
-  for (const change of [{debtCycleStartDate: ""}, {debtCycleStartDate: "2-31-2026"}, {paymentPeriodRange: "0"}, {amountToPay: "bad"}, {debtLeft: "bad"}, {debtLeft: ""}, {debtLeft: null}, {paymentDay: ""}, {paymentDay: "not-a-day"}, {paymentDay: "Thursday-garbage"}]) {
+  for (const change of [{debtCycleStartDate: ""}, {debtCycleStartDate: "2-31-2026"}, {paymentPeriodRange: "0"}, {amountToPay: "bad"}, {paymentDay: ""}, {paymentDay: "not-a-day"}, {paymentDay: "Thursday-garbage"}]) {
     const value = buildExpectations([employee], [{...client, ...change}], day).agent;
     assert.equal(value.points, null);
     assert.equal(value.issues, 1);
@@ -39,6 +39,22 @@ test("missing/malformed cycle, invalid minimum or stale assignments are unverifi
   assert.equal(buildExpectations([{...employee, clients: []}], [client], day).agent.points, null);
   assert.equal(buildExpectations([employee], [{...client, paymentDay: "Friday", debtLeft: "bad"}], day).agent.points, 0);
   assert.equal(buildExpectations([employee], [{...client, amountToPay: "-1000", paymentPeriodRange: "-10"}], day).agent.points, null);
+});
+
+test("clients without valid positive debt are discarded without invalidating the agent or team workload", () => {
+  for (const debtLeft of [undefined, null, "", "   ", 0, "0", -1, "-100", "bad", NaN, Infinity]) {
+    // Deliberately omit all other eligibility fields, like a partial client
+    // record in production. It must be excluded before schedule validation.
+    const ignored = {id: "ignored", agent: "agent", debtLeft};
+    for (const clients of [[ignored, client], [client, ignored]]) {
+      const values = buildExpectations([employee, {id: "manager", clients: []}], clients, day);
+      assert.deepEqual(values.agent, {points: 1, expectedFc: 1000, issues: 0});
+      assert.deepEqual(values.manager, {points: 0, expectedFc: 0, issues: 0});
+      assert.equal(Object.values(values).reduce((sum, value) => sum + value.points, 0), 1);
+    }
+    assert.deepEqual(buildExpectations([employee], [ignored], day).agent,
+        {points: 0, expectedFc: 0, issues: 0});
+  }
 });
 
 test("inactive assignments remain legitimate workload for the manager, without any payment", () => {
