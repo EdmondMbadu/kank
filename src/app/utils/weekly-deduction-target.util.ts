@@ -1,7 +1,9 @@
 import { WeeklyDeductionTargetVersion } from '../models/weekly-deduction-target';
+import { WeeklyPaymentTargetPeriod } from '../models/weekly-payment-target';
 import {
   formatWeeklyPaymentTargetDateIso,
   parseWeeklyPaymentTargetDate,
+  findMatchingWeeklyPaymentTargetPeriod,
 } from './weekly-payment-target.util';
 
 export function normalizeWeeklyDeductionTargetVersions(
@@ -38,8 +40,11 @@ export function normalizeWeeklyDeductionTargetVersions(
 export function resolveWeeklyDeductionTargetForDate(options: {
   dateInput: string | Date | null | undefined;
   versions?: WeeklyDeductionTargetVersion[] | null | undefined;
+  userPeriods?: WeeklyPaymentTargetPeriod[] | null | undefined;
   fallbackTargetFc: number;
 }): number {
+  const siteOverride = findMatchingWeeklyPaymentTargetPeriod(options.userPeriods || [], options.dateInput);
+  if (siteOverride) return siteOverride.targetFc;
   const date = parseWeeklyPaymentTargetDate(options.dateInput);
   const fallbackTargetFc = Number(options.fallbackTargetFc);
   if (!date) {

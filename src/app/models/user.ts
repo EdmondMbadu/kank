@@ -59,6 +59,7 @@ export class User {
   savingsRequiredPercent?: string;
   weeklyPaymentTargetFc?: string;
   weeklyPaymentTargetPeriods?: WeeklyPaymentTargetPeriod[];
+  weeklyDeductionTargetPeriods?: WeeklyPaymentTargetPeriod[];
   foundationAttendanceRequiredDays?: number;
   foundationAttendanceRuleStartMonth?: number;
   foundationAttendanceRuleStartYear?: number;

@@ -4,7 +4,15 @@ import {
   WeeklyObjectiveDeductionConfig,
 } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
-import { Subscription } from 'rxjs';
+import { combineLatest, Subscription } from 'rxjs';
+import { User } from 'src/app/models/user';
+import { WeeklyPaymentTargetPeriod } from 'src/app/models/weekly-payment-target';
+import { pointBusinessDay } from 'src/app/utils/point-performance.util';
+import {
+  findMatchingWeeklyPaymentTargetPeriod,
+  formatWeeklyPaymentTargetDateIso,
+  parseWeeklyPaymentTargetDate,
+} from 'src/app/utils/weekly-payment-target.util';
 import {
   DEFAULT_PERFORMANCE_BUDGET_PROPORTION,
   scalePerformanceBudget,
@@ -74,6 +82,8 @@ export class TutorialComponent implements OnInit, OnDestroy {
   weeklyMinimumInput: string = '';
   weeklyDeductionGuide: WeeklyDeductionGuideRow[] = [];
   weeklyMinimumSaving = false;
+  weeklyMinimumHasSiteOverride = false;
+  private tutorialUser: User | null = null;
   teamWeeklyBonusThresholdFc = 600000;
   teamWeeklyBonusTotalInput = '';
   teamWeeklyBonusGuide: TeamWeeklyBonusGuideRow[] = [];
@@ -97,16 +107,17 @@ export class TutorialComponent implements OnInit, OnDestroy {
     });
     this.startingBudget = Number(this.auth.currentUser?.startingBudget ?? 0);
     console.log('budget ', this.startingBudget);
-    this.syncWeeklyMinimum(this.auth.weeklyPaymentTargetFc || 600000);
-    this.weeklyTargetSub = this.auth.weeklyPaymentTarget$.subscribe((targetFc) => {
-      this.syncWeeklyMinimum(targetFc || 600000);
+    this.weeklyTargetSub = combineLatest([
+      this.auth.weeklyPaymentTarget$, this.auth.weeklyDeductionTarget$, this.auth.user$,
+    ]).subscribe(([, , user]) => {
+      this.tutorialUser = user;
+      this.refreshWeeklyTargets();
     });
-    this.syncTeamWeeklyBonusThreshold(this.weeklyMinimumFc);
     this.weeklyObjectiveConfigSub =
       this.auth.weeklyObjectiveDeductionConfig$.subscribe(
       (config) => {
         this.weeklyObjectiveAdjustmentConfig = { ...config };
-        this.syncTeamWeeklyBonusThreshold(this.weeklyMinimumFc);
+        this.refreshWeeklyTargets();
       }
     );
   }
@@ -239,21 +250,66 @@ export class TutorialComponent implements OnInit, OnDestroy {
     }
 
     const value = Number(this.weeklyMinimumInput);
-    if (!Number.isFinite(value) || value < 600000 || value % 100000 !== 0) {
-      alert('Entrez un minimum valide en tranche de 100 000 FC (minimum 600 000 FC).');
+    if (!Number.isFinite(value) || value < 100000 || value % 100000 !== 0) {
+      alert('Entrez un minimum valide en tranche de 100 000 FC.');
       return;
     }
 
     this.weeklyMinimumSaving = true;
     try {
-      await this.auth.updateWeeklyPaymentTargetGlobal(value);
-      this.syncWeeklyMinimum(value);
-      alert('Minimum hebdomadaire mis à jour.');
+      const period = this.currentDeductionWeek(value);
+      const periods = (this.tutorialUser?.weeklyDeductionTargetPeriods || []).filter(
+        (entry) => entry.startDateIso !== period.startDateIso
+      );
+      await this.auth.updateWeeklyDeductionTargetPeriodsForCurrentUser([...periods, period]);
+      this.tutorialUser = this.auth.currentUser;
+      this.refreshWeeklyTargets();
+      alert('Exception de retenue enregistrée pour ce site et cette semaine.');
     } catch (error) {
       alert('Erreur lors de la mise à jour du minimum hebdomadaire.');
     } finally {
       this.weeklyMinimumSaving = false;
     }
+  }
+
+  async useDefaultWeeklyMinimum(): Promise<void> {
+    if (!this.auth.isAdmin || this.weeklyMinimumSaving) return;
+    const active = findMatchingWeeklyPaymentTargetPeriod(
+      this.tutorialUser?.weeklyDeductionTargetPeriods || [], pointBusinessDay()
+    );
+    if (!active) return;
+    this.weeklyMinimumSaving = true;
+    try {
+      await this.auth.updateWeeklyDeductionTargetPeriodsForCurrentUser(
+        (this.tutorialUser?.weeklyDeductionTargetPeriods || []).filter((period) =>
+          period.startDateIso !== active.startDateIso || period.endDateIso !== active.endDateIso
+        )
+      );
+      this.tutorialUser = this.auth.currentUser;
+      this.refreshWeeklyTargets();
+    } catch {
+      alert('Impossible de rétablir le minimum central.');
+    } finally {
+      this.weeklyMinimumSaving = false;
+    }
+  }
+
+  private currentDeductionWeek(targetFc: number): WeeklyPaymentTargetPeriod {
+    const start = parseWeeklyPaymentTargetDate(pointBusinessDay())!;
+    start.setDate(start.getDate() - (start.getDay() + 6) % 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    return { startDateIso: formatWeeklyPaymentTargetDateIso(start),
+      endDateIso: formatWeeklyPaymentTargetDateIso(end), targetFc };
+  }
+
+  private refreshWeeklyTargets(): void {
+    const date = pointBusinessDay();
+    this.weeklyMinimumHasSiteOverride = !!findMatchingWeeklyPaymentTargetPeriod(
+      this.tutorialUser?.weeklyDeductionTargetPeriods || [], date
+    );
+    this.syncWeeklyMinimum(this.auth.resolveWeeklyDeductionTargetForDate(date, this.tutorialUser));
+    this.syncTeamWeeklyBonusThreshold(this.auth.resolveWeeklyPaymentTargetForDate(date, this.tutorialUser));
   }
 
   toneClass(row: WeeklyDeductionGuideRow): string {
@@ -268,13 +324,14 @@ export class TutorialComponent implements OnInit, OnDestroy {
 
   private syncWeeklyMinimum(targetFc: number): void {
     const normalizedTarget =
-      Number.isFinite(Number(targetFc)) && Number(targetFc) >= 600000
+      Number.isFinite(Number(targetFc)) && Number(targetFc) > 0
         ? Number(targetFc)
         : 600000;
+    if (this.weeklyMinimumFc !== normalizedTarget || !this.weeklyMinimumInput) {
+      this.weeklyMinimumInput = normalizedTarget.toString();
+    }
     this.weeklyMinimumFc = normalizedTarget;
-    this.weeklyMinimumInput = normalizedTarget.toString();
     this.weeklyDeductionGuide = this.buildWeeklyDeductionGuide(normalizedTarget);
-    this.syncTeamWeeklyBonusThreshold(normalizedTarget);
   }
 
   private buildWeeklyDeductionGuide(targetFc: number): WeeklyDeductionGuideRow[] {
@@ -287,8 +344,9 @@ export class TutorialComponent implements OnInit, OnDestroy {
       },
     ];
 
-    for (let upperBound = targetFc - 1; upperBound >= 0; upperBound -= 100000) {
-      const lowerBound = Math.max(0, upperBound - 99999);
+    const bandFc = this.weeklyObjectiveAdjustmentConfig.bandFc;
+    for (let upperBound = targetFc - 1; upperBound >= 0; upperBound -= bandFc) {
+      const lowerBound = Math.max(0, upperBound - bandFc + 1);
       const deductionUsd = this.compute.computeWeeklyObjectiveDeductionUsd(
         lowerBound,
         targetFc

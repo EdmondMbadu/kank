@@ -2008,6 +2008,7 @@ export class AuthService {
     return resolveWeeklyDeductionTargetForDateUtil({
       dateInput,
       versions: this.weeklyDeductionTargetVersionsState,
+      userPeriods: user?.weeklyDeductionTargetPeriods,
       fallbackTargetFc: visibleTargetFc,
     });
   }
@@ -2306,6 +2307,18 @@ export class AuthService {
         );
         this.syncCurrentGlobalWeeklyPaymentTargetState();
       });
+  }
+
+  async updateWeeklyDeductionTargetPeriodsForCurrentUser(periods: WeeklyPaymentTargetPeriod[]): Promise<void> {
+    if (!this.isAdmin) throw new Error('Modification réservée aux administrateurs.');
+    const userUid = this.currentUser?.uid;
+    if (!userUid) throw new Error('Aucun utilisateur connecté trouvé.');
+    const normalizedPeriods = normalizeWeeklyPaymentTargetPeriods(periods);
+    if (normalizedPeriods.length !== periods.length) throw new Error('Période de retenue invalide.');
+    await this.afs.doc(`users/${userUid}`).set(
+      { weeklyDeductionTargetPeriods: normalizedPeriods }, { merge: true }
+    );
+    this.currentUser = { ...this.currentUser, weeklyDeductionTargetPeriods: normalizedPeriods };
   }
 
   updateWeeklyDeductionTargetVersionsGlobal(

@@ -2,6 +2,53 @@ import { BehaviorSubject, firstValueFrom, of } from 'rxjs';
 import { CANONICAL_MANAGEMENT_DOCUMENT_ID } from '../models/management';
 import { AuthService } from './auth.service';
 
+describe('AuthService site deduction thresholds', () => {
+  function setup(isAdmin = true) {
+    const set = jasmine.createSpy('set').and.resolveTo();
+    const doc = jasmine.createSpy('doc').and.returnValue({ set });
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service, {
+      afs: { doc }, isAdmninistrator: isAdmin,
+      currentUser: { uid: 'site', weeklyPaymentTargetFc: '1200000' },
+      weeklyPaymentTargetPeriodsState: [], weeklyPaymentTargetBaseState: 1200000,
+      defaultWeeklyPaymentTargetFc: 600000,
+      weeklyDeductionTargetVersionsState: [{ effectiveDateIso: '2026-09-01', targetFc: 900000 }],
+    });
+    return { service, doc, set };
+  }
+
+  it('resolves the same site exception for payroll and keeps the visible objective separate', () => {
+    const { service } = setup();
+    const site = { weeklyPaymentTargetFc: '1200000', weeklyDeductionTargetPeriods: [
+      { startDateIso: '2026-09-14', endDateIso: '2026-09-20', targetFc: 700000 },
+    ] };
+    expect(service.resolveWeeklyDeductionTargetForDate('2026-09-17', site)).toBe(700000);
+    expect(service.resolveWeeklyPaymentTargetForDate('2026-09-17', site)).toBe(1200000);
+    expect(service.resolveWeeklyDeductionTargetForDate('2026-09-21', site)).toBe(900000);
+    expect(service.resolveWeeklyDeductionTargetForDate('2026-08-31', site)).toBe(1200000);
+  });
+
+  it('saves only the site deduction periods without touching global or visible settings', async () => {
+    const { service, doc, set } = setup();
+    const periods = [{ startDateIso: '2026-09-14', endDateIso: '2026-09-20', targetFc: 700000 }];
+    await service.updateWeeklyDeductionTargetPeriodsForCurrentUser(periods);
+    expect(doc).toHaveBeenCalledOnceWith('users/site');
+    expect(set).toHaveBeenCalledOnceWith({ weeklyDeductionTargetPeriods: periods }, { merge: true });
+    expect(service.currentUser.weeklyPaymentTargetFc).toBe('1200000');
+  });
+
+  it('rejects staff and invalid periods without writing', async () => {
+    const staff = setup(false);
+    await expectAsync(staff.service.updateWeeklyDeductionTargetPeriodsForCurrentUser([])).toBeRejected();
+    expect(staff.doc).not.toHaveBeenCalled();
+    const admin = setup();
+    await expectAsync(admin.service.updateWeeklyDeductionTargetPeriodsForCurrentUser([
+      { startDateIso: 'bad', endDateIso: '2026-09-20', targetFc: 700000 },
+    ])).toBeRejected();
+    expect(admin.doc).not.toHaveBeenCalled();
+  });
+});
+
 describe('AuthService performance budget settings', () => {
   function setup(isAdmin = true) {
     const set = jasmine.createSpy('set').and.resolveTo();
