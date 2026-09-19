@@ -18,6 +18,13 @@ import { MessagingService } from 'src/app/services/messaging.service';
 import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/compat/firestore';
 import { Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
+import {
+  buildPaymentReminderProjection,
+  emptyPaymentReminderProjection,
+  PaymentReminderProjection,
+  PaymentReminderProjectionClient,
+  PaymentReminderProjectionSite,
+} from './payment-reminder-projection.util';
 
 type BulkFailure = { client: Client; error: string };
 type BulkResult = {
@@ -274,12 +281,14 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     },
     { id: 'logs', label: 'Journaux', eyebrow: 'Historique' },
   ];
-  scheduledReminderClientView: 'all' | 'quitte' | 'active' = 'all';
   scheduledReminderSendMode: PaymentReminderSendMode = 'all';
   scheduledReminderSettingsLoading = false;
   scheduledReminderSettingsSaving = false;
   scheduledReminderSettingsError: string | null = null;
-  showAllScheduledReminderClients = false;
+  scheduledReminderLocationFilter = 'all';
+  paymentReminderProjection: PaymentReminderProjection =
+    emptyPaymentReminderProjection();
+  expandedPaymentReminderSites = new Set<string>();
   allUsers: User[] = [];
 
   // master list search
@@ -1096,6 +1105,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
           d.isPhoneCorrect !== 'false'
         );
       });
+    this.rebuildPaymentReminderProjection();
     return this.allcurrentClientsWithDebts?.length
       ? this.allcurrentClientsWithDebts
       : [];
@@ -2620,10 +2630,11 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   // ===== scheduled-to-pay reminders (existing) =====
   sendReminders() {
     const targetClients = this.scheduledReminderSendTargetClients;
-    if (
-      !this.allCurrentClientsWithDebtsScheduledToPayToday ||
-      this.allCurrentClientsWithDebtsScheduledToPayToday.length === 0
-    ) {
+    if (!this.paymentReminderIsToday) {
+      alert("L'envoi est disponible uniquement pour la date d'aujourd'hui.");
+      return;
+    }
+    if (!this.paymentReminderProjection.totalClients) {
       console.log('No clients to remind.');
       return;
     }
@@ -2673,7 +2684,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     callable({
       clients: clientsPayload,
       sendMode: this.scheduledReminderSendMode,
-      plannedTotal: this.scheduledReminderClientsToday.length,
+      plannedTotal: this.paymentReminderProjection.totalClients,
       excludedQuitte: this.scheduledReminderExcludedQuitteCount,
     }).subscribe({
       next: (result: any) => {
@@ -5660,6 +5671,45 @@ Merci pona confiance na FONDATION GERVAIS.`;
     );
   }
 
+  get paymentReminderIsFuture(): boolean {
+    return (
+      this.paymentReminderDateKey >
+      this.formatDateKeyForTimeZone(new Date(), 'Africa/Kinshasa')
+    );
+  }
+
+  get paymentReminderIsPast(): boolean {
+    return (
+      this.paymentReminderDateKey <
+      this.formatDateKeyForTimeZone(new Date(), 'Africa/Kinshasa')
+    );
+  }
+
+  get paymentReminderDateModeLabel(): string {
+    if (this.paymentReminderIsFuture) return 'Projection';
+    if (this.paymentReminderIsPast) return 'Historique';
+    return "Aujourd'hui";
+  }
+
+  get paymentReminderSendButtonLabel(): string {
+    if (this.paymentReminderIsFuture) {
+      return 'Envoi disponible le jour sélectionné';
+    }
+    if (this.paymentReminderIsPast) {
+      return 'Envoi indisponible pour une date passée';
+    }
+    if (!this.paymentReminderProjection.targetCount) {
+      return 'Aucun client à contacter';
+    }
+    return `Envoyer le rappel à ${this.paymentReminderProjection.targetCount} client${
+      this.paymentReminderProjection.targetCount > 1 ? 's' : ''
+    }`;
+  }
+
+  formatPaymentReminderAmount(value: number): string {
+    return this.formatFc(value);
+  }
+
   get hasPaymentReminderLogs(): boolean {
     return this.paymentReminderLogs.length > 0;
   }
@@ -5671,104 +5721,18 @@ Merci pona confiance na FONDATION GERVAIS.`;
     });
   }
 
-  get scheduledReminderClientsToday(): Client[] {
-    return this.allCurrentClientsWithDebtsScheduledToPayToday ?? [];
-  }
-
   get scheduledReminderSendTargetClients(): Client[] {
-    if (this.scheduledReminderSendMode === 'excludeQuitte') {
-      return this.scheduledReminderActiveClients;
-    }
-    return this.scheduledReminderClientsToday;
+    return this.paymentReminderProjection.targetClients;
   }
 
   get scheduledReminderExcludedQuitteCount(): number {
-    if (this.scheduledReminderSendMode !== 'excludeQuitte') return 0;
-    return this.scheduledReminderQuitteClients.length;
+    return this.paymentReminderProjection.excludedQuitteCount;
   }
 
   get scheduledReminderSendModeLabel(): string {
     return this.scheduledReminderSendMode === 'excludeQuitte'
       ? 'Non quittés seulement'
       : 'Tous les planifiés';
-  }
-
-  get scheduledReminderSendModeHint(): string {
-    return this.scheduledReminderSendMode === 'excludeQuitte'
-      ? 'Les clients marqués quitté ne recevront pas ce rappel.'
-      : 'Tous les clients planifiés aujourd’hui recevront ce rappel.';
-  }
-
-  get scheduledReminderQuitteClients(): Client[] {
-    return this.scheduledReminderClientsToday.filter((client) =>
-      this.isClientQuitte(client)
-    );
-  }
-
-  get scheduledReminderActiveClients(): Client[] {
-    return this.scheduledReminderClientsToday.filter(
-      (client) => !this.isClientQuitte(client)
-    );
-  }
-
-  get scheduledReminderClientStats(): {
-    total: number;
-    quitte: number;
-    active: number;
-  } {
-    return {
-      total: this.scheduledReminderClientsToday.length,
-      quitte: this.scheduledReminderQuitteClients.length,
-      active: this.scheduledReminderActiveClients.length,
-    };
-  }
-
-  get filteredScheduledReminderClients(): Client[] {
-    if (this.scheduledReminderClientView === 'quitte') {
-      return this.scheduledReminderQuitteClients;
-    }
-    if (this.scheduledReminderClientView === 'active') {
-      return this.scheduledReminderActiveClients;
-    }
-    return this.scheduledReminderClientsToday;
-  }
-
-  get visibleScheduledReminderClients(): Client[] {
-    if (this.showAllScheduledReminderClients) {
-      return this.filteredScheduledReminderClients;
-    }
-    return this.filteredScheduledReminderClients.slice(0, 4);
-  }
-
-  get hasMoreScheduledReminderClients(): boolean {
-    return this.filteredScheduledReminderClients.length > 4;
-  }
-
-  get scheduledReminderClientViewLabel(): string {
-    switch (this.scheduledReminderClientView) {
-      case 'quitte':
-        return 'quittés';
-      case 'active':
-        return 'non quittés';
-      default:
-        return 'clients';
-    }
-  }
-
-  setScheduledReminderClientView(view: 'all' | 'quitte' | 'active'): void {
-    if (this.scheduledReminderClientView === view) return;
-    this.scheduledReminderClientView = view;
-    this.showAllScheduledReminderClients = false;
-  }
-
-  scheduledReminderViewButtonClasses(view: 'all' | 'quitte' | 'active') {
-    const active = this.scheduledReminderClientView === view;
-    return {
-      'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900':
-        active,
-      'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white':
-        !active,
-    };
   }
 
   scheduledReminderSendModeButtonClasses(mode: PaymentReminderSendMode) {
@@ -5778,6 +5742,64 @@ Merci pona confiance na FONDATION GERVAIS.`;
       'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white':
         !active,
     };
+  }
+
+  setScheduledReminderLocationFilter(value: string): void {
+    const normalized = (value || 'all').trim() || 'all';
+    if (this.scheduledReminderLocationFilter === normalized) return;
+    this.scheduledReminderLocationFilter = normalized;
+    this.expandedPaymentReminderSites.clear();
+    this.rebuildPaymentReminderProjection();
+  }
+
+  resetPaymentReminderDateToToday(): void {
+    const today = this.formatDateKeyForTimeZone(
+      new Date(),
+      'Africa/Kinshasa'
+    );
+    if (today === this.paymentReminderDateKey) return;
+    this.setPaymentReminderDate(today);
+  }
+
+  togglePaymentReminderSite(site: PaymentReminderProjectionSite): void {
+    if (this.expandedPaymentReminderSites.has(site.key)) {
+      this.expandedPaymentReminderSites.delete(site.key);
+      return;
+    }
+    this.expandedPaymentReminderSites.add(site.key);
+  }
+
+  isPaymentReminderSiteExpanded(site: PaymentReminderProjectionSite): boolean {
+    return this.expandedPaymentReminderSites.has(site.key);
+  }
+
+  trackPaymentReminderProjectionSite(
+    index: number,
+    site: PaymentReminderProjectionSite
+  ): string {
+    return site.key;
+  }
+
+  trackPaymentReminderProjectionClient(
+    index: number,
+    row: PaymentReminderProjectionClient
+  ): string {
+    return row.key;
+  }
+
+  private rebuildPaymentReminderProjection(): void {
+    const projection = buildPaymentReminderProjection(
+      this.allcurrentClientsWithDebts,
+      {
+        dateKey: this.paymentReminderDateKey,
+        sendMode: this.scheduledReminderSendMode,
+        locationFilter: this.scheduledReminderLocationFilter,
+        isQuitte: (client) => this.isClientQuitte(client),
+        expectedPayment: (client) => this.expectedPaymentForClient(client),
+      }
+    );
+    this.paymentReminderProjection = projection;
+    this.scheduledReminderLocationFilter = projection.locationFilter;
   }
 
   async setScheduledReminderSendMode(
@@ -5806,7 +5828,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
         { merge: true }
       );
       this.scheduledReminderSendMode = mode;
-      this.showAllScheduledReminderClients = false;
+      this.rebuildPaymentReminderProjection();
     } catch (error) {
       console.error('Payment reminder settings save failed', error);
       this.scheduledReminderSettingsError =
@@ -5826,32 +5848,23 @@ Merci pona confiance na FONDATION GERVAIS.`;
       const data = snap?.data?.() || {};
       this.scheduledReminderSendMode =
         data.sendMode === 'excludeQuitte' ? 'excludeQuitte' : 'all';
+      this.rebuildPaymentReminderProjection();
     } catch (error) {
       console.error('Payment reminder settings load failed', error);
       this.scheduledReminderSettingsError =
         'Impossible de charger la règle; mode tous planifiés utilisé.';
       this.scheduledReminderSendMode = 'all';
+      this.rebuildPaymentReminderProjection();
     } finally {
       this.scheduledReminderSettingsLoading = false;
     }
   }
 
-  toggleScheduledReminderClients(): void {
-    if (!this.hasMoreScheduledReminderClients) return;
-    this.showAllScheduledReminderClients = !this.showAllScheduledReminderClients;
-  }
-
-  trackScheduledReminderClient(index: number, client: Client): string {
-    return (
-      client.uid ||
-      client.trackingId ||
-      `${client.firstName || ''}-${client.lastName || ''}-${client.phoneNumber || index}`
-    );
-  }
-
   async setPaymentReminderDate(value: string): Promise<void> {
     if (!value || value === this.paymentReminderDateKey) return;
     this.paymentReminderDateKey = value;
+    this.expandedPaymentReminderSites.clear();
+    this.rebuildPaymentReminderProjection();
     await this.loadPaymentReminderLogsForDate();
   }
 
@@ -5859,6 +5872,8 @@ Merci pona confiance na FONDATION GERVAIS.`;
     const date = this.dateFromDateKey(this.paymentReminderDateKey);
     date.setDate(date.getDate() + days);
     this.paymentReminderDateKey = this.formatDateKeyForInput(date);
+    this.expandedPaymentReminderSites.clear();
+    this.rebuildPaymentReminderProjection();
     await this.loadPaymentReminderLogsForDate();
   }
 
