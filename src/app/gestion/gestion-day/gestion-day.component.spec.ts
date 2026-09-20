@@ -1369,3 +1369,70 @@ describe('GestionDayComponent upcoming request summary', () => {
     expect(component.isUpcomingRequestsExpanded).toBeFalse();
   });
 });
+
+describe('GestionDayComponent Saturday serve preview', () => {
+  function createComponent(): {
+    component: GestionDayComponent;
+    compute: jasmine.SpyObj<any>;
+    moneyGiven: Record<string, string>;
+  } {
+    const moneyGiven = { '8-23-2026-10-30-0': '450000' };
+    const time = {
+      getTodaysDateYearMonthDay: () => '2026-08-22',
+      todaysDateMonthDayYear: () => '8-22-2026',
+      yesterdaysDateMonthDayYear: () => '8-21-2026',
+      getTomorrowsDateMonthDayYear: () => '8-23-2026',
+      convertDateToDayMonthYear: (date: string) => date,
+    };
+    const compute = jasmine.createSpyObj('ComputationService', [
+      'findTotalGiventMonth',
+      'findTotalForToday',
+      'convertUsDollarsToCongoleseFranc',
+      'convertCongoleseFrancToUsDollars',
+    ]);
+    compute.findTotalGiventMonth.and.returnValue('0');
+    compute.findTotalForToday.and.callFake(
+      (values: Record<string, string>, date: string) =>
+        values === moneyGiven && date === '8-23-2026' ? 450000 : 0
+    );
+    compute.convertUsDollarsToCongoleseFranc.and.returnValue('0');
+    compute.convertCongoleseFrancToUsDollars.and.callFake(
+      (amount: string) => (Number(amount) / 3000).toString()
+    );
+
+    const component = new GestionDayComponent(
+      jasmine.createSpyObj('Router', ['navigate']),
+      { isAdmin: true } as any,
+      time as any,
+      compute,
+      {} as any,
+      {} as any
+    );
+    component.managementInfo = { moneyGiven };
+
+    return { component, compute, moneyGiven };
+  }
+
+  it('shows Sunday-stored money on Saturday as a Monday preview', () => {
+    const { component, compute, moneyGiven } = createComponent();
+
+    component.initalizeInputs();
+
+    expect(component.isSaturdayServePreview).toBeTrue();
+    expect(component.servedSummaryDate).toBe('8-23-2026');
+    expect(compute.findTotalForToday).toHaveBeenCalledWith(
+      moneyGiven,
+      '8-23-2026'
+    );
+    expect(component.dailyServed).toBe('450000');
+    expect(component.summaryContent[5].trim()).toBe('450000');
+  });
+
+  it('uses the selected day normally outside the current Saturday view', () => {
+    const { component } = createComponent();
+    component.requestDateCorrectFormat = '8-23-2026';
+
+    expect(component.isSaturdayServePreview).toBeFalse();
+    expect(component.servedSummaryDate).toBe('8-23-2026');
+  });
+});

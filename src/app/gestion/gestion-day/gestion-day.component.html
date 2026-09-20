@@ -181,6 +181,12 @@
           >
             {{ s }}
           </h3>
+          <span
+            *ngIf="i === 5 && isSaturdayServePreview"
+            class="mt-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
+          >
+            Pour lundi
+          </span>
 
           <div class="mt-4 space-y-1">
             <ng-container *ngIf="i === 0; else fraudOrMonetaryBlock">

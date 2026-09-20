@@ -1729,6 +1729,20 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     
     return 'demain';
   }
+
+  get isSaturdayServePreview(): boolean {
+    if (this.requestDateCorrectFormat !== this.today) return false;
+
+    const [month, day, year] = this.today.split('-').map(Number);
+    return new Date(year, month - 1, day).getDay() === 6;
+  }
+
+  get servedSummaryDate(): string {
+    return this.isSaturdayServePreview
+      ? this.tomorrow
+      : this.requestDateCorrectFormat;
+  }
+
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalLossAmountDollar: string = '';
   givenMonthTotalReserveAmount: string = '';
@@ -1806,7 +1820,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.dailyServed = this.compute
       .findTotalForToday(
         this.managementInfo?.moneyGiven!,
-        this.requestDateCorrectFormat
+        this.servedSummaryDate
       )
       .toString();
     // Get the previous day of the selected date
