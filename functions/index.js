@@ -8,6 +8,7 @@ const {randomUUID} = require("crypto");
 const AfricasTalking = require("africastalking");
 const twilio = require("twilio");
 const {mirrorLegacyWrite} = require("./firestore-v2-mirror");
+const {cardLifecycleSmsSkipReason} = require("./card-lifecycle-sms-policy");
 const {runRetentionCycle} = require("./firestore-v2-retention");
 const {capturePointExpectations} = require("./point-expectations");
 const {
@@ -1795,15 +1796,6 @@ exports.sendCardLifecycleSMS = functions
         thresholdFc: settings.minimumAmountToPayFc,
       };
 
-      if (!settings.enabled) {
-        await eventRef.set({
-          ...statusBase,
-          smsStatus: "skipped",
-          smsSkipReason: "automation-disabled",
-        }, {merge: true});
-        return null;
-      }
-
       const cardSnapshot = await db
           .collection("users")
           .doc(context.params.userId)
@@ -1811,20 +1803,12 @@ exports.sendCardLifecycleSMS = functions
           .doc(context.params.cardId)
           .get();
       const card = cardSnapshot.exists ? cardSnapshot.data() || {} : null;
-      if (!card) {
+      const smsSkipReason = cardLifecycleSmsSkipReason(event.type, card, settings);
+      if (smsSkipReason) {
         await eventRef.set({
           ...statusBase,
           smsStatus: "skipped",
-          smsSkipReason: "card-not-found",
-        }, {merge: true});
-        return null;
-      }
-
-      if (!cardMeetsSmsThreshold(card, settings)) {
-        await eventRef.set({
-          ...statusBase,
-          smsStatus: "skipped",
-          smsSkipReason: "below-threshold",
+          smsSkipReason,
         }, {merge: true});
         return null;
       }

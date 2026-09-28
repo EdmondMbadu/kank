@@ -120,22 +120,23 @@
                 : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
             "
           >
-            {{ cardSmsSettings.enabled ? "Actifs" : "En pause" }}
+            {{ cardSmsSettings.enabled ? "Règle active" : "Règle en pause" }}
           </span>
         </div>
         <h2 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
           Seuil global des messages clients Carte
         </h2>
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Quand la règle est active, le message est envoyé si le montant à
-          verser atteint ou dépasse le seuil et si le téléphone contient
-          exactement 10 chiffres. « Carte » reste toujours indiqué; le nom est
-          raccourci au prénom et un seul numéro d’assistance est utilisé si
-          nécessaire pour rester dans un segment SMS GSM.
+          Les dépôts et autres messages Carte suivent cette règle : quand elle
+          est active, le montant à verser doit atteindre le seuil. Les retraits
+          partiels et totaux envoient toujours leur message, quel que soit le
+          seuil ou l’état de cette règle. Un numéro valide de 10 chiffres est
+          requis dans tous les cas. « Carte » reste indiqué; le nom est raccourci
+          si nécessaire pour tenir dans un segment SMS GSM.
         </p>
         <p class="mt-3 text-sm font-medium text-indigo-700 dark:text-indigo-300">
           {{ cardSmsEligibleCount | number : "1.0-0" }} carte(s) atteignent le
-          seuil saisi.
+          seuil saisi pour les dépôts et les relances.
         </p>
       </div>
 
@@ -394,7 +395,7 @@
             <p
               class="mt-1.5 text-[11px] leading-4 text-slate-500 dark:text-slate-400"
             >
-              Filtre d’affichage uniquement. Les SMS exigent toujours au moins
+              Filtre d’affichage uniquement. Les relances SMS exigent au moins
               <strong
                 >{{ toFcDisplay(cardSmsSettings.minimumAmountToPayFc) }}
                 FC</strong
