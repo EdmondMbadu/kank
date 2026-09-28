@@ -54,6 +54,7 @@ import {
   sumAmountMapThroughDate,
 } from 'src/app/utils/amount-performance.util';
 import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
+import { buildEmployeePaymentSummary, EmployeePaymentSummary } from '../employee-payment-dialog/employee-payment-summary';
 import { buildTeamMonthlyPerformanceSeries } from 'src/app/utils/team-monthly-performance.util';
 import { pointBusinessDay, pointPerformanceDays, summarizeTeamPoints } from 'src/app/utils/point-performance.util';
 import {
@@ -3327,6 +3328,32 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (opening) {
       this.ensurePaymentDraftForCurrentMonth();
     }
+  }
+
+  get employeePaymentSummary(): EmployeePaymentSummary {
+    return buildEmployeePaymentSummary({
+      employee: this.employee,
+      month: this.currentMonth,
+      year: this.year,
+      yearsAtCompany: Number(this.yearsAtCompany),
+      net: this.totalPayments,
+      base: this.paymentAmount,
+      experience: this.paymentIncreaseYears,
+      bankFee: this.paymentBankFee,
+      manualAddition: this.paymentManualAddition,
+      objectiveBonus: this.paymentObjectiveWeekBonusTotal,
+      absent: this.paymentAbsent,
+      nothing: this.paymentNothing,
+      late: this.paymentLate,
+      objectiveDeduction: this.paymentObjectiveWeekDeductionTotal,
+      manualWithdrawal: this.paymentManualWithdrawal,
+      weeks: this.paymentObjectiveWeekDeductions,
+      bonusWeeks: this.paymentObjectiveWeekBonuses,
+      additionReason: this.paymentManualAdditionReason,
+      withdrawalReason: this.paymentManualWithdrawalReason,
+      note: this.paymentSignNote,
+      deductionRule: this.compute.weeklyObjectiveDeductionRule,
+    });
   }
   toggleCode() {
     this.displayCode = !this.displayCode;

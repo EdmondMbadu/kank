@@ -1,0 +1,73 @@
+:host {
+  --surface: #fff;
+  --ink: #111827;
+  --muted: #526485;
+  --line: #e2e8f0;
+  --mint: #edf9f3;
+  --green: #065f46;
+  --blue: #f0f5ff;
+  --navy: #172554;
+  --red: #b6372c;
+}
+.payment-dialog { color: var(--ink); background: var(--surface); }
+h2 { font-size: 28px; font-weight: 700; letter-spacing: -.035em; line-height: 1.2; }
+.payment-header p { color: var(--muted); margin-top: 6px; font-size: 15px; }
+svg { width: 24px; height: 24px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+button { cursor: pointer; }
+button:focus-visible { outline: 3px solid #3b82f6; outline-offset: 3px; }
+button:disabled { opacity: .6; cursor: wait; }
+.icon-button { display: flex; justify-content: center; align-items: center; width: 40px; height: 40px; flex-shrink: 0; color: var(--muted); border-radius: 8px; margin: -6px -8px 0 0; }
+.icon-button:hover, .cancel-button:hover { background: var(--blue); }
+.payment-actual { padding: 20px 24px; background: var(--mint); border-radius: 14px; }
+.payment-actual p { font-size: 18px; font-weight: 600; }
+.payment-amount { font-size: clamp(48px, 9vw, 72px); line-height: 1.15; letter-spacing: -.04em; font-weight: 750; color: var(--green); margin-top: 8px; overflow-wrap: anywhere; }
+.money, .payment-amount, td, .potential-value { font-variant-numeric: tabular-nums; }
+.deduction-list { margin: 8px 0 18px; padding: 0; list-style: none; }
+.deduction-row { display: flex; gap: 14px; align-items: center; padding: 17px 0; font-size: 16px; }
+.deduction-row + .deduction-row { border-top: 1px solid var(--line); }
+.row-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.money { white-space: nowrap; }
+.negative { color: var(--red); }
+.positive { color: var(--green); }
+.row-note { color: var(--muted); font-size: 13px; margin-top: 4px; overflow-wrap: anywhere; }
+.no-deductions { display: flex; align-items: center; gap: 14px; margin: 24px 0; font-weight: 500; }
+.no-deductions svg { color: var(--green); }
+.payment-potential { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 22px; background: var(--blue); color: var(--navy); border-radius: 14px; }
+.payment-potential h3 { font-size: 17px; font-weight: 600; }
+.payment-potential p, .payment-potential small { color: var(--muted); font-size: 13px; display: block; margin-top: 4px; }
+.potential-value { text-align: right; flex-shrink: 0; }
+.potential-value strong { font-size: 28px; font-weight: 650; letter-spacing: -.025em; }
+.potential-value strong span { font-size: .8em; }
+.details-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 14px; color: var(--muted); font-size: 15px; }
+.details-toggle svg { width: 19px; height: 19px; }
+.details-toggle .is-open { transform: rotate(180deg); }
+.detail-row { display: flex; justify-content: space-between; gap: 20px; padding: 14px 0; font-size: 14px; border-bottom: 1px solid var(--line); }
+.detail-row dt { overflow-wrap: anywhere; }
+.detail-row dd { margin: 0; }
+.weekly-details h3, .payment-note h3 { font-weight: 600; font-size: 16px; }
+.section-note { font-size: 12px; color: var(--muted); margin-top: 5px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 14px; }
+th, td { padding: 10px 0; text-align: right; border-bottom: 1px solid var(--line); }
+th:first-child { text-align: left; width: 46%; padding-right: 12px; }
+thead th { color: var(--muted); font-weight: 400; }
+tbody th { font-weight: 400; }
+td { white-space: nowrap; padding-left: 8px; }
+th small { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+.rule { margin-top: 12px; }
+.payment-note { border-left: 3px solid #d6a04c; padding: 4px 14px; margin-top: 20px; }
+.payment-footer { display: flex; flex-shrink: 0; justify-content: flex-end; gap: 14px; padding: 16px 32px; border-top: 1px solid var(--line); }
+.cancel-button { color: var(--muted); }
+.confirm-button { color: white; background: #065f46; }
+.confirm-button:hover { background: #047857; }
+@media (max-width: 480px) {
+  h2 { font-size: 25px; }
+  .payment-actual { padding: 18px; }
+  .payment-potential { padding: 16px; gap: 10px; }
+  .payment-potential h3 { font-size: 15px; }
+  .payment-potential small { font-size: 11px; }
+  .potential-value strong { font-size: 24px; }
+  .deduction-row { font-size: 14px; gap: 10px; }
+  .payment-footer { padding: 14px 20px; gap: 6px; }
+  table { font-size: 12px; }
+}
+:host-context(.dark) { --surface: #111827; --ink: #f1f5f9; --muted: #b1bfd5; --line: #334155; --mint: #12382e; --green: #9ce3c4; --blue: #1d2944; --navy: #dbeafe; --red: #fca5a5; }

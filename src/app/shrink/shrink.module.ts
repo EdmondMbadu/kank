@@ -7,6 +7,7 @@ import { NavbarComponent } from '../components/navbar/navbar.component';
 import { FormsModule } from '@angular/forms';
 import { PlotlyModule } from 'angular-plotly.js';
 import { EmployeePageComponent } from './employee-page/employee-page.component';
+import { EmployeePaymentDialogComponent } from './employee-payment-dialog/employee-payment-dialog.component';
 import { SharedModule } from '../shared/shared.module';
 import { TeamPageComponent } from '../components/team-page/team-page.component';
 
@@ -14,6 +15,7 @@ import { TeamPageComponent } from '../components/team-page/team-page.component';
   declarations: [ShrinkComponent, EmployeePageComponent],
   imports: [
     CommonModule,
+    EmployeePaymentDialogComponent,
     SharedModule,
     FormsModule,
     PlotlyModule,

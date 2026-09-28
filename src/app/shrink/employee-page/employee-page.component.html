@@ -5316,8 +5316,16 @@
   </div>
 </div>
 
+<app-employee-payment-dialog
+  *ngIf="displayPayment && isEmployeeUi"
+  [summary]="employeePaymentSummary"
+  [busy]="isLoading"
+  (dismissed)="togglePayment()"
+  (confirmed)="updateEmployeePaymentInfoAndSignCheck()"
+></app-employee-payment-dialog>
+
 <div
-  *ngIf="displayPayment"
+  *ngIf="displayPayment && !isEmployeeUi"
   id="defaultModal"
   tabindex="-1"
   class="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-4 sm:p-6"

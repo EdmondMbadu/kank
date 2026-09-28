@@ -261,6 +261,14 @@ export class ComputationService {
     return Math.max(1, missingBands) * this.weeklyObjectivePenaltyPerBandUsd;
   }
 
+  /** Read-only settings for explaining an employee's recorded deductions. */
+  get weeklyObjectiveDeductionRule(): { bandFc: number; penaltyPerBandUsd: number } {
+    return {
+      bandFc: this.weeklyObjectiveBandFc,
+      penaltyPerBandUsd: this.weeklyObjectivePenaltyPerBandUsd,
+    };
+  }
+
   computeWeeklyObjectiveAdjustmentUsd(
     weeklyTotalFc: number,
     weeklyDeductionTargetFc: number,

@@ -1078,6 +1078,24 @@ describe('EmployeePageComponent', () => {
     expect(component.computeTotalPayment()).toBe(102);
   });
 
+  it('presents the current payment draft without modifying its payroll amounts', () => {
+    const component = createComponent();
+    component.employee = { firstName: 'Edmond', lastName: 'Mbadu', role: 'Agent Marketing' };
+    component.paymentAmount = 100;
+    component.paymentIncreaseYears = 10;
+    component.paymentBankFee = 8;
+    component.paymentLate = 2;
+    component.paymentObjectiveWeekDeductionTotal = 27;
+    component.paymentSignNote = 'Vérifier avant signature.';
+    component.computeTotalPayment();
+    const view = component.employeePaymentSummary;
+    expect(view.net).toBe(89);
+    expect(view.withoutDeductions).toBe(118);
+    expect(view.note).toBe('Vérifier avant signature.');
+    expect(component.totalPayments).toBe(89);
+    expect(component.paymentObjectiveWeekDeductionTotal).toBe(27);
+  });
+
   it('allows an admin to add and remove a weekly objective addition', () => {
     const component = createComponent();
     component.weekObjectiveBonusStartDate = '2026-03-02';
