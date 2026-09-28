@@ -55,6 +55,7 @@ import {
 } from 'src/app/utils/amount-performance.util';
 import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
 import { buildEmployeePaymentSummary, EmployeePaymentSummary } from '../employee-payment-dialog/employee-payment-summary';
+import { buildEmployeeBonusSummary, EmployeeBonusSummary } from '../employee-payment-dialog/employee-bonus-summary';
 import { buildTeamMonthlyPerformanceSeries } from 'src/app/utils/team-monthly-performance.util';
 import { pointBusinessDay, pointPerformanceDays, summarizeTeamPoints } from 'src/app/utils/point-performance.util';
 import {
@@ -3322,6 +3323,22 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   toggleBonus() {
     this.displayBonus = !this.displayBonus;
   }
+
+  get employeeBonusSummary(): EmployeeBonusSummary {
+    return buildEmployeeBonusSummary({
+      employee: this.employee,
+      month: this.lastMonth,
+      year: this.lastMonthYear,
+      net: this.totalBonusAmount,
+      performance: this.bonusAmount,
+      percentage: this.bonusPercentage,
+      team: this.bestTeamBonusAmount,
+      employeeAward: this.bestEmployeeBonusAmount,
+      manager: this.bestManagerBonusAmount,
+      note: this.bonusSignNote,
+    });
+  }
+
   togglePayment() {
     const opening = !this.displayPayment;
     this.displayPayment = !this.displayPayment;

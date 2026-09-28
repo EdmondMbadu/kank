@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EmployeePaymentDialogComponent } from './employee-payment-dialog.component';
 import { buildEmployeePaymentSummary } from './employee-payment-summary';
 import { paymentFixture } from '../../../../test/fixtures/employee-payment';
+import { buildEmployeeBonusSummary } from './employee-bonus-summary';
+import { bonusFixture } from '../../../../test/fixtures/employee-bonus';
 
 describe('EmployeePaymentDialogComponent', () => {
   let fixture: ComponentFixture<EmployeePaymentDialogComponent>;
@@ -59,6 +61,80 @@ describe('EmployeePaymentDialogComponent', () => {
     fixture.detectChanges();
     expect(text(element.querySelector('.payment-note'))).toContain('Merci de vérifier avant signature.');
     expect(element.querySelector('.payment-details .payment-note')).toBeNull();
+  });
+
+  it('shows the bonus amount with collapsed details and no payroll deduction language', () => {
+    fixture.componentRef.setInput('summary', buildEmployeeBonusSummary(bonusFixture()));
+    fixture.detectChanges();
+    expect(text(element.querySelector('h2'))).toBe('Votre bonus');
+    expect(text(element.querySelector('#employee-bonus-period'))).toBe('Edmond Mbadu · août 2026');
+    expect(text(element.querySelector('.payment-actual p'))).toBe('Bonus à recevoir');
+    expect(text(element.querySelector('.payment-amount'))).toBe('70 $');
+    expect(text(element.querySelector('.confirm-button'))).toBe('Confirmer 70 $');
+    expect(element.querySelector('.deduction-list, .no-deductions, .payment-potential, .attendance-details, .weekly-details')).toBeNull();
+    expect(element.querySelector('[role="dialog"]')?.getAttribute('aria-labelledby')).toBe('employee-bonus-title');
+    expect(element.querySelector('.icon-button')?.getAttribute('aria-label')).toBe('Fermer le bonus');
+    expect(element.querySelector('.details-toggle')?.getAttribute('aria-controls')).toBe('employee-bonus-details');
+    expect((element.querySelector('#employee-bonus-details') as HTMLElement).hidden).toBeTrue();
+  });
+
+  it('expands only awarded bonus components, preserving the performance percentage and cents', () => {
+    fixture.componentRef.setInput('summary', buildEmployeeBonusSummary(bonusFixture({
+      net: 140.5, performance: 30.5, percentage: 92.5, employeeAward: 20, manager: 20,
+    })));
+    fixture.detectChanges();
+    const toggle = element.querySelector('.details-toggle') as HTMLButtonElement;
+    toggle.click();
+    fixture.detectChanges();
+    expect((element.querySelector('#employee-bonus-details') as HTMLElement).hidden).toBeFalse();
+    const rows = () => Array.from(element.querySelectorAll('.detail-row')).map(row => [text(row.querySelector('dt')), text(row.querySelector('dd'))]);
+    expect(rows()).toEqual([
+      ['Performance · 92,5 %', '30,5 $'], ['Meilleure équipe', '70 $'], ['Meilleur employé', '20 $'], ['Meilleur manager', '20 $'],
+    ]);
+    expect(text(element.querySelector('.confirm-button'))).toBe('Confirmer 140,5 $');
+    fixture.componentRef.setInput('summary', buildEmployeeBonusSummary(bonusFixture()));
+    fixture.detectChanges();
+    expect(rows()).toEqual([['Meilleure équipe', '70 $']]);
+    toggle.click();
+    fixture.detectChanges();
+    expect((element.querySelector('#employee-bonus-details') as HTMLElement).hidden).toBeTrue();
+  });
+
+  it('shows an awarded performance amount even without a percentage and explains an empty bonus', () => {
+    fixture.componentRef.setInput('summary', buildEmployeeBonusSummary(bonusFixture({ net: 25, performance: 25, team: 0 })));
+    fixture.detectChanges();
+    (element.querySelector('.details-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(text(element.querySelector('.detail-row dt'))).toBe('Performance');
+    expect(text(element.querySelector('.detail-row dd'))).toBe('25 $');
+    fixture.componentRef.setInput('summary', buildEmployeeBonusSummary(bonusFixture({ net: 0, team: 0, percentage: 80 })));
+    fixture.detectChanges();
+    expect(element.querySelector('.detail-row')).toBeNull();
+    expect(text(element.querySelector('#employee-bonus-details'))).toBe('Aucun bonus ce mois-ci.');
+    expect(text(element.querySelector('.confirm-button'))).toBe('Confirmer 0 $');
+  });
+
+  it('keeps the bonus note outside collapsed details and prevents repeated confirmation while busy', () => {
+    fixture.componentRef.setInput('summary', buildEmployeeBonusSummary(bonusFixture({ note: ' Merci pour votre travail. ' })));
+    fixture.detectChanges();
+    expect(text(element.querySelector('.payment-note p'))).toBe('Merci pour votre travail.');
+    expect(element.querySelector('#employee-bonus-details .payment-note')).toBeNull();
+    const confirm = spyOn(fixture.componentInstance.confirmed, 'emit');
+    const dismiss = spyOn(fixture.componentInstance.dismissed, 'emit');
+    (element.querySelector('.confirm-button') as HTMLButtonElement).click();
+    expect(confirm).toHaveBeenCalledTimes(1);
+    fixture.componentRef.setInput('busy', true);
+    fixture.detectChanges();
+    expect(text(element.querySelector('.confirm-button'))).toBe('Confirmation…');
+    expect(element.querySelector('[role="dialog"]')?.getAttribute('aria-busy')).toBe('true');
+    for (const selector of ['.confirm-button', '.cancel-button', '.icon-button']) {
+      const button = element.querySelector(selector) as HTMLButtonElement;
+      expect(button.disabled).toBeTrue();
+      button.click();
+    }
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(dismiss).not.toHaveBeenCalled();
   });
 
   it('emits the existing actions and disables them during confirmation', () => {

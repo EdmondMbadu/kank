@@ -1096,6 +1096,30 @@ describe('EmployeePageComponent', () => {
     expect(component.paymentObjectiveWeekDeductionTotal).toBe(27);
   });
 
+  it('presents the bonus draft for the preceding month without changing the saved amounts', () => {
+    jasmine.clock().mockDate(new Date(2027, 0, 15, 12));
+    const component = createComponent();
+    component.employee = { firstName: 'Edmond', lastName: 'Mbadu', totalBonusThisMonth: '90.5' };
+    component.bonusAmount = 20.5;
+    component.bonusPercentage = 85;
+    component.bestTeamBonusAmount = 70;
+    component.bestEmployeeBonusAmount = 0;
+    component.bestManagerBonusAmount = 0;
+    component.totalBonusAmount = 90.5;
+    component.bonusSignNote = 'À vérifier avant signature.';
+    const savedEmployee = JSON.stringify(component.employee);
+    const recompute = spyOn(component, 'computeTotalBonusAmount');
+    const view = component.employeeBonusSummary;
+    expect(view.kind).toBe('bonus');
+    expect(view.period).toBe('décembre 2026');
+    expect(view.net).toBe(90.5);
+    expect(view.incomes.map(row => row.amount)).toEqual([20.5, 70]);
+    expect(view.note).toBe('À vérifier avant signature.');
+    expect(component.totalBonusAmount).toBe(90.5);
+    expect(JSON.stringify(component.employee)).toBe(savedEmployee);
+    expect(recompute).not.toHaveBeenCalled();
+  });
+
   it('allows an admin to add and remove a weekly objective addition', () => {
     const component = createComponent();
     component.weekObjectiveBonusStartDate = '2026-03-02';

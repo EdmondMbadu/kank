@@ -5108,8 +5108,16 @@
   </div>
 </div>
 
+<app-employee-payment-dialog
+  *ngIf="displayBonus && isEmployeeUi"
+  [summary]="employeeBonusSummary"
+  [busy]="isLoading"
+  (dismissed)="toggleBonus()"
+  (confirmed)="updateEmployeeBonusInfoAndSignCheck()"
+></app-employee-payment-dialog>
+
 <div
-  *ngIf="displayBonus"
+  *ngIf="displayBonus && !isEmployeeUi"
   id="defaultModal"
   tabindex="-1"
   class="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-4 sm:p-6"

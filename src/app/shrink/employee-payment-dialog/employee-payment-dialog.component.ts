@@ -4,6 +4,7 @@ import {
   HostListener, Inject, Input, OnDestroy, Output, ViewChild,
 } from '@angular/core';
 import { EmployeePaymentSummary, paymentNumber } from './employee-payment-summary';
+import { EmployeeBonusSummary } from './employee-bonus-summary';
 
 @Component({
   selector: 'app-employee-payment-dialog',
@@ -14,7 +15,7 @@ import { EmployeePaymentSummary, paymentNumber } from './employee-payment-summar
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EmployeePaymentDialogComponent implements AfterViewInit, OnDestroy {
-  @Input() summary!: EmployeePaymentSummary;
+  @Input() summary!: EmployeePaymentSummary | EmployeeBonusSummary;
   @Input() busy = false;
   @Output() dismissed = new EventEmitter<void>();
   @Output() confirmed = new EventEmitter<void>();
@@ -26,6 +27,18 @@ export class EmployeePaymentDialogComponent implements AfterViewInit, OnDestroy 
   private previousOverflow = '';
 
   constructor(@Inject(DOCUMENT) private document: Document) {}
+
+  get isBonus(): boolean {
+    return 'kind' in this.summary && this.summary.kind === 'bonus';
+  }
+
+  get paymentSummary(): EmployeePaymentSummary | null {
+    return 'kind' in this.summary ? null : this.summary;
+  }
+
+  get dialogId(): string {
+    return this.isBonus ? 'employee-bonus' : 'employee-payment';
+  }
 
   ngAfterViewInit(): void {
     this.previousFocus = this.document.activeElement as HTMLElement | null;

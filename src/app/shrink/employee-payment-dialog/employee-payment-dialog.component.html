@@ -1,104 +1,110 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 sm:p-6">
   <section #dialog class="payment-dialog flex w-full max-w-[680px] max-h-[calc(100svh-24px)] flex-col overflow-hidden rounded-2xl shadow-2xl sm:max-h-[calc(100svh-48px)] sm:rounded-[20px]" role="dialog" aria-modal="true"
-    aria-labelledby="employee-payment-title" aria-describedby="employee-payment-period"
+    [attr.aria-labelledby]="dialogId + '-title'" [attr.aria-describedby]="dialogId + '-period'"
     [attr.aria-busy]="busy" tabindex="-1">
     <div class="min-h-0 overflow-y-auto overscroll-contain px-5 pb-[18px] pt-[22px] sm:px-8 sm:pb-6 sm:pt-7">
       <header class="payment-header mb-[22px] flex justify-between gap-4">
         <div class="min-w-0 break-words">
-          <h2 id="employee-payment-title">Votre paiement</h2>
-          <p id="employee-payment-period">{{ summary.name }} · {{ summary.period }}</p>
+          <h2 [id]="dialogId + '-title'">{{ isBonus ? 'Votre bonus' : 'Votre paiement' }}</h2>
+          <p [id]="dialogId + '-period'">{{ summary.name }} · {{ summary.period }}</p>
         </div>
-        <button #closeButton class="icon-button" type="button" aria-label="Fermer le paiement"
+        <button #closeButton class="icon-button" type="button" [attr.aria-label]="isBonus ? 'Fermer le bonus' : 'Fermer le paiement'"
           [disabled]="busy" (click)="dismiss()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
         </button>
       </header>
 
       <div class="payment-actual">
-        <p>À recevoir ce mois-ci</p>
+        <p>{{ isBonus ? 'Bonus à recevoir' : 'À recevoir ce mois-ci' }}</p>
         <div class="payment-amount" data-testid="actual-payment">{{ number(summary.net) }} <span>$</span></div>
       </div>
 
-      <ul *ngIf="summary.deductions.length; else noDeductions" class="deduction-list" aria-label="Retenues">
-        <li *ngFor="let row of summary.deductions" class="deduction-row">
-          <svg viewBox="0 0 24 24" aria-hidden="true" [ngSwitch]="row.icon">
-            <g *ngSwitchCase="'clock'"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></g>
-            <g *ngSwitchCase="'team'"><circle cx="9" cy="7" r="3" /><path d="M2 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 4 5v2" /></g>
-            <g *ngSwitchDefault><rect x="4" y="4" width="16" height="17" rx="3" /><path d="M8 2v4m8-4v4M8 13h8" /></g>
-          </svg>
-          <div class="row-label">{{ row.label }}<p *ngIf="row.note" class="row-note">{{ row.note }}</p></div>
-          <span class="negative money">−{{ number(row.amount) }} $</span>
-        </li>
-      </ul>
-      <ng-template #noDeductions>
-        <p class="no-deductions" data-testid="no-deductions">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m7.5 12 3 3 6-6" /></svg>
-          Aucune retenue
-        </p>
-      </ng-template>
+      <ng-container *ngIf="paymentSummary as payment">
+        <ul *ngIf="payment.deductions.length; else noDeductions" class="deduction-list" aria-label="Retenues">
+          <li *ngFor="let row of payment.deductions" class="deduction-row">
+            <svg viewBox="0 0 24 24" aria-hidden="true" [ngSwitch]="row.icon">
+              <g *ngSwitchCase="'clock'"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></g>
+              <g *ngSwitchCase="'team'"><circle cx="9" cy="7" r="3" /><path d="M2 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 4 5v2" /></g>
+              <g *ngSwitchDefault><rect x="4" y="4" width="16" height="17" rx="3" /><path d="M8 2v4m8-4v4M8 13h8" /></g>
+            </svg>
+            <div class="row-label">{{ row.label }}<p *ngIf="row.note" class="row-note">{{ row.note }}</p></div>
+            <span class="negative money">−{{ number(row.amount) }} $</span>
+          </li>
+        </ul>
+        <ng-template #noDeductions>
+          <p class="no-deductions" data-testid="no-deductions">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m7.5 12 3 3 6-6" /></svg>
+            Aucune retenue
+          </p>
+        </ng-template>
 
-      <div *ngIf="summary.deductionTotal > 0" class="payment-potential" data-testid="potential-payment">
-        <div><h3>Vous auriez reçu</h3><p>Sans ces retenues</p><small>Hors bonus supplémentaires</small></div>
-        <div class="potential-value"><strong>{{ number(summary.withoutDeductions) }} <span>$</span></strong><p>+{{ number(summary.deductionTotal) }} $ de plus</p></div>
-      </div>
+        <div *ngIf="payment.deductionTotal > 0" class="payment-potential" data-testid="potential-payment">
+          <div><h3>Vous auriez reçu</h3><p>Sans ces retenues</p><small>Hors bonus supplémentaires</small></div>
+          <div class="potential-value"><strong>{{ number(payment.withoutDeductions) }} <span>$</span></strong><p>+{{ number(payment.deductionTotal) }} $ de plus</p></div>
+        </div>
+      </ng-container>
 
       <button class="details-toggle" type="button" (click)="detailsOpen = !detailsOpen"
-        [attr.aria-expanded]="detailsOpen" aria-controls="employee-payment-details">
+        [attr.aria-expanded]="detailsOpen" [attr.aria-controls]="dialogId + '-details'">
         {{ detailsOpen ? 'Masquer le détail' : 'Voir le détail' }}
         <svg viewBox="0 0 24 24" aria-hidden="true" [class.is-open]="detailsOpen"><path d="m6 9 6 6 6-6" /></svg>
       </button>
 
-      <div id="employee-payment-details" [hidden]="!detailsOpen" class="payment-details mt-2.5">
+      <div [id]="dialogId + '-details'" [hidden]="!detailsOpen" class="payment-details mt-2.5">
         <dl class="income-list">
           <div *ngFor="let row of summary.incomes" class="detail-row">
             <dt>{{ row.label }}<p *ngIf="row.note" class="row-note">{{ row.note }}</p></dt>
             <dd class="money">{{ number(row.amount) }} $</dd>
           </div>
         </dl>
-        <dl class="attendance-details">
-          <ng-container *ngFor="let row of summary.deductions">
-            <div *ngIf="row.icon !== 'team'" class="detail-row">
-              <dt>{{ row.detailLabel || row.label }}<span *ngIf="row.calculation"> : {{ row.calculation }}</span><p *ngIf="row.note" class="row-note">{{ row.note }}</p></dt>
-              <dd class="negative money">−{{ number(row.amount) }} $</dd>
-            </div>
-          </ng-container>
-        </dl>
+        <p *ngIf="isBonus && !summary.incomes.length" class="row-note py-3">Aucun bonus ce mois-ci.</p>
+        <ng-container *ngIf="paymentSummary as payment">
+          <dl class="attendance-details">
+            <ng-container *ngFor="let row of payment.deductions">
+              <div *ngIf="row.icon !== 'team'" class="detail-row">
+                <dt>{{ row.detailLabel || row.label }}<span *ngIf="row.calculation"> : {{ row.calculation }}</span><p *ngIf="row.note" class="row-note">{{ row.note }}</p></dt>
+                <dd class="negative money">−{{ number(row.amount) }} $</dd>
+              </div>
+            </ng-container>
+          </dl>
 
-        <section *ngIf="summary.weeks.length" class="weekly-details mt-[22px]" aria-labelledby="payment-collection-title">
-          <h3 id="payment-collection-title">Collecte de l’équipe</h3>
-          <p *ngIf="summary.commonMinimum !== null" class="section-note">Minimum sans retenue : {{ number(summary.commonMinimum) }} FC / semaine</p>
-          <table>
-            <caption class="sr-only">Retenues hebdomadaires de collecte</caption>
-            <thead><tr><th scope="col">Semaine</th><th scope="col">Collecté</th><th scope="col">Retenue</th></tr></thead>
-            <tbody><tr *ngFor="let week of summary.weeks">
-              <th scope="row">{{ week.label }}<small *ngIf="summary.commonMinimum === null && week.target !== null">Minimum : {{ number(week.target) }} FC</small></th>
-              <td>{{ week.collected === null ? '—' : number(week.collected) + ' FC' }}</td>
-              <td class="negative">−{{ number(week.amount) }} $</td>
-            </tr></tbody>
-          </table>
-          <p *ngIf="summary.deductionRule as rule" class="section-note rule">−{{ number(rule.penaltyPerBandUsd) }} $ par tranche entamée de {{ number(rule.bandFc) }} FC manquante.</p>
-        </section>
+          <section *ngIf="payment.weeks.length" class="weekly-details mt-[22px]" aria-labelledby="payment-collection-title">
+            <h3 id="payment-collection-title">Collecte de l’équipe</h3>
+            <p *ngIf="payment.commonMinimum !== null" class="section-note">Minimum sans retenue : {{ number(payment.commonMinimum) }} FC / semaine</p>
+            <table>
+              <caption class="sr-only">Retenues hebdomadaires de collecte</caption>
+              <thead><tr><th scope="col">Semaine</th><th scope="col">Collecté</th><th scope="col">Retenue</th></tr></thead>
+              <tbody><tr *ngFor="let week of payment.weeks">
+                <th scope="row">{{ week.label }}<small *ngIf="payment.commonMinimum === null && week.target !== null">Minimum : {{ number(week.target) }} FC</small></th>
+                <td>{{ week.collected === null ? '—' : number(week.collected) + ' FC' }}</td>
+                <td class="negative">−{{ number(week.amount) }} $</td>
+              </tr></tbody>
+            </table>
+            <p *ngIf="payment.deductionRule as rule" class="section-note rule">−{{ number(rule.penaltyPerBandUsd) }} $ par tranche entamée de {{ number(rule.bandFc) }} FC manquante.</p>
+          </section>
 
-        <section *ngIf="summary.bonusWeeks.length" class="weekly-details mt-[22px]" aria-labelledby="payment-bonus-title">
-          <h3 id="payment-bonus-title">Bonus de collecte</h3>
-          <table>
-            <caption class="sr-only">Bonus hebdomadaires de collecte</caption>
-            <thead><tr><th scope="col">Semaine</th><th scope="col">Collecté</th><th scope="col">Bonus</th></tr></thead>
-            <tbody><tr *ngFor="let week of summary.bonusWeeks">
-              <th scope="row">{{ week.label }}<small *ngIf="week.target !== null">Objectif : {{ number(week.target) }} FC</small></th>
-              <td>{{ week.collected === null ? '—' : number(week.collected) + ' FC' }}</td>
-              <td class="positive">+{{ number(week.amount) }} $</td>
-            </tr></tbody>
-          </table>
-        </section>
+          <section *ngIf="payment.bonusWeeks.length" class="weekly-details mt-[22px]" aria-labelledby="payment-bonus-title">
+            <h3 id="payment-bonus-title">Bonus de collecte</h3>
+            <table>
+              <caption class="sr-only">Bonus hebdomadaires de collecte</caption>
+              <thead><tr><th scope="col">Semaine</th><th scope="col">Collecté</th><th scope="col">Bonus</th></tr></thead>
+              <tbody><tr *ngFor="let week of payment.bonusWeeks">
+                <th scope="row">{{ week.label }}<small *ngIf="week.target !== null">Objectif : {{ number(week.target) }} FC</small></th>
+                <td>{{ week.collected === null ? '—' : number(week.collected) + ' FC' }}</td>
+                <td class="positive">+{{ number(week.amount) }} $</td>
+              </tr></tbody>
+            </table>
+          </section>
+        </ng-container>
       </div>
 
       <aside *ngIf="summary.note" class="payment-note"><h3>Message de l’administration</h3><p class="mt-1.5 whitespace-pre-line break-words text-sm">{{ summary.note }}</p></aside>
     </div>
     <footer class="payment-footer">
-      <button type="button" class="cancel-button min-h-[44px] rounded-[9px] px-[18px] py-2.5 text-[15px] font-medium" [disabled]="busy" (click)="dismiss()">Annuler</button>
-      <button type="button" class="confirm-button min-h-[44px] rounded-[9px] px-[18px] py-2.5 text-[15px] font-medium" [disabled]="busy" (click)="confirm()">
-        {{ busy ? 'Confirmation…' : 'Confirmer ' + number(summary.net) + ' $' }}
+      <button type="button" class="cancel-button min-h-[44px] rounded-[9px] px-3 py-2.5 text-[15px] font-medium sm:px-[18px]" [disabled]="busy" (click)="dismiss()">Annuler</button>
+      <button type="button" class="confirm-button min-h-[44px] rounded-[9px] px-3 py-2.5 text-[15px] font-medium sm:px-[18px]" [disabled]="busy" (click)="confirm()">
+        <ng-container *ngIf="busy; else confirmAmount">Confirmation…</ng-container>
+        <ng-template #confirmAmount>Confirmer <span class="money">{{ number(summary.net) }} $</span></ng-template>
       </button>
     </footer>
   </section>
