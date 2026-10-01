@@ -308,6 +308,7 @@
   *ngIf="followedClientsEmployee as selectedEmployee"
   [employeeName]="(selectedEmployee.firstName || '') + ' ' + (selectedEmployee.middleName || '') + ' ' + (selectedEmployee.lastName || '')"
   [rows]="followedClientRows"
+  [totalDebt]="followedClientsTotalDebt"
   (dismissed)="closeFollowedClients()"
 ></app-followed-clients-dialog>
 

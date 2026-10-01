@@ -32,6 +32,7 @@ export class TeamPageComponent implements OnInit, OnDestroy {
   displayEditEmployees: boolean[] = [];
   followedClientsEmployee: Employee | null = null;
   followedClientRows: FollowedClientRow[] = [];
+  followedClientsTotalDebt = '0 FC';
   private followedClientsScope: 'current' | 'all' = 'current';
   private readonly debtFormatter = new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: 2,
@@ -406,6 +407,7 @@ export class TeamPageComponent implements OnInit, OnDestroy {
   closeFollowedClients(): void {
     this.followedClientsEmployee = null;
     this.followedClientRows = [];
+    this.followedClientsTotalDebt = '0 FC';
   }
 
   private refreshFollowedClientRows(): void {
@@ -413,6 +415,7 @@ export class TeamPageComponent implements OnInit, OnDestroy {
       this.followedClientsEmployee?.uid,
       this.followedClientsScope
     );
+    let totalDebt = 0;
     this.followedClientRows = ids.flatMap((uid) => {
       const client = this.clientDictionary[uid];
       if (!client) return [];
@@ -420,6 +423,7 @@ export class TeamPageComponent implements OnInit, OnDestroy {
         .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
       const debt = String(client.debtLeft ?? '').trim();
       const amount = debt ? Number(debt) : NaN;
+      if (Number.isFinite(amount)) totalDebt += Math.max(0, amount);
       return [{
         uid,
         name: name || client.name?.trim() || 'Client sans nom',
@@ -429,6 +433,7 @@ export class TeamPageComponent implements OnInit, OnDestroy {
         phone: String(client.phoneNumber ?? '').trim() || '—',
       }];
     });
+    this.followedClientsTotalDebt = `${this.debtFormatter.format(totalDebt)} FC`;
   }
 
   getTransferClientCount(employee: Employee): number {

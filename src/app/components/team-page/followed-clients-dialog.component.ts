@@ -33,6 +33,7 @@ export class FollowedClientsDialogComponent
 {
   @Input() employeeName = '';
   @Input() rows: readonly FollowedClientRow[] = [];
+  @Input() totalDebt = '0 FC';
   @Output() dismissed = new EventEmitter<void>();
   @ViewChild('dialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
 

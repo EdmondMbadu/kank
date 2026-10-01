@@ -186,14 +186,17 @@ describe('TeamPageComponent', () => {
     expect(component.followedClientRows[0].name).toBe('Aline Mbuyi Kanku');
     expect(component.followedClientRows[0].phone).toBe('082 111 2233');
     expect(component.followedClientRows[0].debt.replace(/\s/g, '')).toBe('125000FC');
+    expect(component.followedClientsTotalDebt.replace(/\s/g, '')).toBe('125000FC');
 
     component.closeFollowedClients();
     component.openFollowedClients(component.employees[1]);
     expect(component.followedClientRows.map((row) => row.uid)).toEqual(['someone-else']);
+    expect(component.followedClientsTotalDebt).toBe('100 FC');
     expect(clients$.observers.length).toBe(1);
     expect(employees$.observers.length).toBe(1);
     component.closeFollowedClients();
     expect(component.followedClientRows).toEqual([]);
+    expect(component.followedClientsTotalDebt).toBe('0 FC');
     component.ngOnDestroy();
   });
 
@@ -213,6 +216,7 @@ describe('TeamPageComponent', () => {
     expect(component.followedClientRows.find((row) => row.uid === 'finished')?.debt).toBe('0 FC');
     expect(component.followedClientRows.find((row) => row.uid === 'unknown')?.debt).toBe('—');
     expect(component.followedClientRows.find((row) => row.uid === 'unknown')?.phone).toBe('—');
+    expect(component.followedClientsTotalDebt).toBe('200 FC');
     component.ngOnDestroy();
   });
 
@@ -225,12 +229,27 @@ describe('TeamPageComponent', () => {
 
     clients$.next([client('active', 'employee-1', '75')]);
     expect(component.followedClientRows[0].debt).toBe('75 FC');
+    expect(component.followedClientsTotalDebt).toBe('75 FC');
     clients$.next([client('active', 'employee-2', '75')]);
     expect(component.followedClientRows).toEqual([]);
+    expect(component.followedClientsTotalDebt).toBe('0 FC');
     expect(clients$.observers.length).toBe(1);
 
     employees$.next([employee('employee-2')]);
     expect(component.followedClientsEmployee).toBeNull();
+    component.ngOnDestroy();
+  });
+
+  it('totals every followed client even beyond the initial modal batch', () => {
+    const { component, clients$, employees$ } = createComponent();
+    employees$.next([employee('employee-1')]);
+    clients$.next([
+      ...Array.from({ length: 60 }, (_, i) => client(`client-${i}`, 'employee-1', '125.5')),
+      client('other-employee', 'employee-2', '100000'),
+    ]);
+    component.ngOnInit();
+    component.openFollowedClients(component.employees[0]);
+    expect(component.followedClientsTotalDebt.replace(/\s/g, '')).toBe('7530FC');
     component.ngOnDestroy();
   });
 });
