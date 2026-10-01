@@ -1,0 +1,105 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  padding-bottom: 48px;
+  background: #fafbfc;
+}
+
+.team-shell {
+  max-width: 1728px;
+}
+
+.employee-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.employee-card {
+  box-shadow: 0 4px 20px -12px rgba(15, 23, 42, 0.16);
+}
+
+.employee-card:has(.employee-card-menu[open]) {
+  z-index: 30;
+}
+
+.employee-identity {
+  min-height: 84px;
+}
+
+.employee-name {
+  overflow-wrap: anywhere;
+}
+
+.employee-metrics dd {
+  max-width: 50%;
+  flex-shrink: 1;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.employee-card-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.employee-menu-panel {
+  max-width: calc(100vw - 64px);
+  max-height: min(480px, 70svh);
+  overflow-y: auto;
+}
+
+.employee-menu-panel button:focus-visible,
+.employee-menu-panel a:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: -2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host {
+    background: #020617;
+  }
+
+  .employee-card .text-slate-500 {
+    color: #94a3b8;
+  }
+
+  .employee-metrics dd {
+    color: #f1f5f9;
+  }
+
+  .employee-card-menu summary,
+  .employee-menu-panel .text-slate-700 {
+    color: #e2e8f0;
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  .employee-menu-panel .text-red-700 {
+    color: #fca5a5;
+  }
+
+  .employee-menu-panel button:hover,
+  .employee-menu-panel a:hover {
+    background: #1e293b;
+  }
+}
+
+@media (min-width: 700px) {
+  .team-shell {
+    padding-inline: 32px;
+  }
+  .employee-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1040px) {
+  .employee-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1320px) {
+  .employee-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

@@ -1,4 +1,3 @@
-<!-- ======================= TEAM PAGE – MODERN REFRESH ======================= -->
 <app-navbar
   [email]="auth.currentUser?.email || ''"
   [firstName]="auth.currentUser?.firstName || ''"
@@ -6,88 +5,74 @@
   [currentEmployeePage]="true"
 ></app-navbar>
 
-<!-- === HERO HEADER === -->
-<header
-  class="relative mx-auto mt-6 flex max-w-7xl flex-col items-center justify-between gap-6 rounded-3xl bg-gradient-to-r from-green-600 via-emerald-500 to-lime-500 px-6 py-10 shadow-xl sm:flex-row sm:px-10 lg:px-16"
->
-  <h1
-    class="text-center text-3xl font-extrabold tracking-tight text-white drop-shadow sm:text-4xl"
-  >
-    Notre Équipe
-  </h1>
-
-  <div class="flex flex-wrap items-center justify-center gap-4">
-    <button
-      *ngIf="auth.isAdmin"
-      (click)="toggleAddNewEmployee()"
-      class="rounded-full bg-white/10 px-6 py-3 text-sm font-medium text-white ring-2 ring-white/30 backdrop-blur transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/50"
-    >
-      Nouveau&nbsp;Employé(e)
-    </button>
-    <button
-      *ngIf="auth.isAdmin"
-      (click)="updatePerformance()"
-      class="rounded-full bg-white/10 px-6 py-3 text-sm font-medium text-white ring-2 ring-white/30 backdrop-blur transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/50"
-    >
-      Mise à Jour Performance
-    </button>
+<header class="team-shell mx-auto mt-6 px-4">
+  <div class="team-header flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-8 dark:border-slate-700 dark:bg-slate-900">
+    <h1 class="text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl dark:text-emerald-100">
+      Notre Équipe
+    </h1>
+    <div *ngIf="auth.isAdmin" class="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        (click)="toggleAddNewEmployee()"
+        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+      >
+        <span aria-hidden="true" class="text-lg leading-none">+</span>
+        Nouvel employé
+      </button>
+      <button
+        type="button"
+        (click)="updatePerformance()"
+        class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200 dark:hover:bg-slate-800"
+      >
+        <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M5 20v-7m7 7V8m7 12V3" /></svg>
+        Mise à jour performance
+      </button>
+    </div>
   </div>
 </header>
 
-<div
-  *ngIf="auth.isAdmin"
-  class="mx-auto mt-6 flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4"
->
-  <div>
-    <p class="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">
-      Vue employés
-    </p>
-    <p class="mt-1 text-sm text-slate-500">
-      Actuels par défaut. Tous inclut les employés quittés ou non en service.
-    </p>
-  </div>
-  <div class="inline-flex rounded-full border border-emerald-200 bg-white p-1 shadow-sm">
-    <button
-      type="button"
-      (click)="setEmployeeScope('current')"
-      class="rounded-full px-4 py-2 text-sm font-bold transition"
-      [ngClass]="employeeScope === 'current'
-        ? 'bg-emerald-600 text-white shadow'
-        : 'text-emerald-700 hover:bg-emerald-50'"
-    >
-      Actuels ({{ currentEmployeeCount }})
-    </button>
-    <button
-      type="button"
-      (click)="setEmployeeScope('all')"
-      class="rounded-full px-4 py-2 text-sm font-bold transition"
-      [ngClass]="employeeScope === 'all'
-        ? 'bg-emerald-600 text-white shadow'
-        : 'text-emerald-700 hover:bg-emerald-50'"
-    >
-      Tous ({{ allEmployeeCount }})
-    </button>
-  </div>
-</div>
-
-<!-- === EMPLOYEE GRID === -->
-<div class="mx-auto mt-12 max-w-7xl px-4">
-  <section>
-    <div class="mb-5 flex items-end justify-between gap-4">
-      <div>
-        <p
-          class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700 sm:text-base"
-        >
-          En service
-        </p>
-      </div>
-      <span
-        class="inline-flex items-center rounded-full bg-emerald-50 px-4 py-2 text-sm font-extrabold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:ring-emerald-400/20"
-      >
-        {{ workingEmployees.length }}
-      </span>
+<main class="team-shell mx-auto mt-8 px-4">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-emerald-900 dark:text-emerald-200">
+        En service <span class="ml-1 text-slate-400">· {{ workingEmployees.length }}</span>
+      </h2>
+      <p *ngIf="auth.isAdmin" class="mt-1 text-sm text-slate-500">
+        Actuels par défaut. Tous inclut les employés quittés ou non en service.
+      </p>
     </div>
+    <div
+      *ngIf="auth.isAdmin"
+      class="inline-flex self-start rounded-full border border-emerald-200 bg-white p-1 shadow-sm"
+      role="group"
+      aria-label="Vue employés"
+    >
+      <button
+        type="button"
+        (click)="setEmployeeScope('current')"
+        class="rounded-full px-4 py-2 text-sm font-semibold transition"
+        [ngClass]="employeeScope === 'current'
+          ? 'bg-emerald-600 text-white shadow-sm'
+          : 'text-emerald-800 hover:bg-emerald-50'"
+        [attr.aria-pressed]="employeeScope === 'current'"
+      >
+        Actuels ({{ currentEmployeeCount }})
+      </button>
+      <button
+        type="button"
+        (click)="setEmployeeScope('all')"
+        class="rounded-full px-4 py-2 text-sm font-semibold transition"
+        [ngClass]="employeeScope === 'all'
+          ? 'bg-emerald-600 text-white shadow-sm'
+          : 'text-emerald-800 hover:bg-emerald-50'"
+        [attr.aria-pressed]="employeeScope === 'all'"
+      >
+        Tous ({{ allEmployeeCount }})
+      </button>
+    </div>
+  </div>
 
+  <section class="mt-7">
     <ng-container
       [ngTemplateOutlet]="employeeGrid"
       [ngTemplateOutletContext]="{ $implicit: workingEmployees }"
@@ -96,30 +81,18 @@
 
   <details
     *ngIf="auth.isAdmin && nonWorkingEmployees.length > 0"
-    class="mt-10 overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-lg ring-1 ring-black/5 backdrop-blur dark:border-slate-700 dark:bg-slate-900/80 dark:ring-white/10"
+    class="mt-10 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
   >
-    <summary
-      class="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5"
-    >
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-          Admin uniquement
-        </p>
-        <h3 class="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">
-          Employés non en service
-        </h3>
-        <p class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
-          Vacance, absent, malade, quitté et autres statuts.
-        </p>
+        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Employés non en service</h2>
+        <p class="mt-1 text-sm text-slate-500">Vacance, absent, malade, quitté et autres statuts.</p>
       </div>
-      <span
-        class="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-extrabold text-white dark:bg-white dark:text-slate-900"
-      >
+      <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
         {{ nonWorkingEmployees.length }}
       </span>
     </summary>
-
-    <div class="border-t border-slate-200 px-6 py-6 dark:border-slate-700">
+    <div class="border-t border-slate-200 p-5 dark:border-slate-700">
       <ng-container
         [ngTemplateOutlet]="employeeGrid"
         [ngTemplateOutletContext]="{ $implicit: nonWorkingEmployees }"
@@ -128,312 +101,195 @@
   </details>
 
   <ng-template #employeeGrid let-employeeList>
-    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div class="employee-grid grid gap-5">
       <ng-container *ngFor="let em of employeeList; trackBy: trackEmployeeByUid">
-      <div
-        class="overflow-hidden rounded-3xl bg-white/70 shadow-xl ring-1 ring-gray-200 backdrop-blur transition hover:shadow-2xl dark:bg-slate-700 dark:ring-gray-700"
-      >
-        <!-- hidden upload input for profile picture -->
-        <input
-          *ngIf="auth.isAdmin"
-          type="file"
-          [id]="'getFile' + employeeDisplayIndex(em)"
-          class="hidden"
-          (change)="startUpload($any($event.target).files, em)"
-        />
-
-        <!-- picture -->
-        <div class="relative">
-          <!-- preview — click = enlarge -->
-          <img
-            [src]="
-              em.profilePicture?.downloadURL || '../../../assets/img/user.png'
-            "
-            (click)="
-              toggleFullPicture(
-                em.profilePicture?.downloadURL || '../../../assets/img/user.png'
-              )
-            "
-            class="h-48 w-full cursor-pointer object-cover transition hover:brightness-90"
-            alt="{{ em.firstName }}"
+        <article class="employee-card relative z-0 flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md focus-within:z-20 dark:border-slate-700 dark:bg-slate-900">
+          <input
+            *ngIf="auth.isAdmin"
+            type="file"
+            [id]="'getFile' + employeeDisplayIndex(em)"
+            class="hidden"
+            (change)="startUpload($any($event.target).files, em)"
           />
 
-          <!-- edit button (admins only) -->
-          <button
-            *ngIf="auth.isAdmin"
-            (click)="onImageClick(employeeDisplayIndex(em)); $event.stopPropagation()"
-            type="button"
-            title="Changer la photo"
-            class="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white shadow hover:bg-black/80 focus:outline-none"
-          >
-            <!-- pencil icon -->
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="1.8"
+          <div class="flex items-start justify-between gap-3">
+            <button
+              type="button"
+              (click)="toggleFullPicture(em.profilePicture?.downloadURL || '../../../assets/img/user.png')"
+              [attr.aria-label]="'Agrandir la photo de ' + em.firstName"
+              class="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M15.232 5.232l3.536 3.536M4 20h4.586a2 2 0 0 0 1.414-.586l9.536-9.536a2 2 0 0 0 0-2.828l-3.536-3.536a2 2 0 0 0-2.828 0L4.636 13.05A2 2 0 0 0 4 14.464V20z"
+              <img
+                [src]="em.profilePicture?.downloadURL || '../../../assets/img/user.png'"
+                [alt]="'Photo de ' + em.firstName"
+                class="h-24 w-24 rounded-full bg-slate-100 object-cover ring-1 ring-slate-200 dark:ring-slate-700"
               />
-            </svg>
-          </button>
+            </button>
+            <span
+              class="inline-flex max-w-[60%] items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+              [ngClass]="{
+                'bg-emerald-50 text-emerald-700': em.status === 'Travaille',
+                'bg-amber-50 text-amber-700': em.status === 'Vacance',
+                'bg-orange-50 text-orange-700': em.status === 'Malade',
+                'bg-red-50 text-red-700': em.status === 'Quitté',
+                'bg-slate-100 text-slate-700': em.status !== 'Travaille' && em.status !== 'Vacance' && em.status !== 'Malade' && em.status !== 'Quitté'
+              }"
+            >
+              <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true"></span>
+              <span class="truncate">{{ em.status || 'Statut inconnu' }}</span>
+            </span>
+          </div>
 
-          <!-- status badge -->
-          <span
-            class="absolute top-2 right-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white"
-            [ngClass]="{
-              'bg-emerald-600/90': em.status === 'Travaille',
-              'bg-yellow-500/90': em.status === 'Vacance',
-              'bg-orange-600/90': em.status === 'Malade',
-              'bg-red-600/90': em.status === 'Quitté'
-            }"
-            >{{ em.status }}</span
-          >
-
-        </div>
-
-        <!-- info -->
-        <div class="p-6">
-          <div class="flex items-center gap-2 flex-wrap">
-            <h3
-              class="cursor-pointer text-lg font-bold text-gray-900 hover:underline dark:text-white"
+          <div class="employee-identity mt-5">
+            <a
               [routerLink]="['/employee-page', em.trackingId]"
+              class="employee-name block text-lg font-bold leading-snug text-slate-900 hover:text-emerald-800 hover:underline focus:outline-none focus:underline dark:text-slate-100 dark:hover:text-emerald-200"
             >
               {{ em.firstName }} {{ em.middleName }} {{ em.lastName }}
-            </h3>
+            </a>
+            <p class="mt-1 text-sm text-slate-500">{{ em.role }}</p>
+            <p *ngIf="em.originLocation || em.tempLocationHolder" class="mt-1 text-xs text-slate-500">
+              <ng-container *ngIf="em.originLocation">{{ em.originLocation }}</ng-container>
+              <ng-container *ngIf="em.originLocation && em.tempLocationHolder"> → </ng-container>
+              <ng-container *ngIf="em.tempLocationHolder">{{ em.tempLocationHolder }}</ng-container>
+            </p>
 
-            <!-- Rotation Badge -->
-            <div *ngIf="em.isRotation" class="flex items-center gap-1.5">
-              <span
-                class="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 text-xs font-medium border border-blue-200 dark:border-blue-700"
-                title="Employé en rotation (temporaire)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-3.5 w-3.5 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
+            <div *ngIf="em.isRotation || hasBestTeamTrophy(em) || hasBestEmployeeTrophy(em)" class="mt-3 flex flex-wrap items-center gap-2">
+              <span *ngIf="em.isRotation" class="rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700" title="Employé en rotation (temporaire)">
                 Rotation
               </span>
               <button
-                *ngIf="auth.isAdmin"
+                *ngIf="hasBestTeamTrophy(em)"
                 type="button"
-                (click)="convertRotationToDefinitive(em); $event.stopPropagation()"
-                class="inline-flex items-center gap-1 rounded-full bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 text-xs font-medium shadow-sm transition-colors"
-                title="Convertir en affectation définitive"
+                (click)="openTrophyModal(em, 'team')"
+                class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                [title]="'Meilleure Équipe (' + getTeamTrophies(em).length + ')'"
+                [attr.aria-label]="'Meilleure Équipe (' + getTeamTrophies(em).length + ')'"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-3.5 w-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Convertir
+                <svg aria-hidden="true" class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.65 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.65 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z" /></svg>
+                {{ getTeamTrophies(em).length }}
+              </button>
+              <button
+                *ngIf="hasBestEmployeeTrophy(em)"
+                type="button"
+                (click)="openTrophyModal(em, 'employee')"
+                class="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-1 text-xs font-semibold text-yellow-800 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                [title]="'Meilleur Employé (' + getEmployeeTrophies(em).length + ')'"
+                [attr.aria-label]="'Meilleur Employé (' + getEmployeeTrophies(em).length + ')'"
+              >
+                <svg aria-hidden="true" class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                {{ getEmployeeTrophies(em).length }}
               </button>
             </div>
           </div>
 
-          <p
-            *ngIf="em.isRotation && em.originLocation"
-            class="mt-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/70 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-900/30 dark:text-blue-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-3.5 w-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            Venant de : <span class="font-bold">{{ em.originLocation }}</span>
-          </p>
+          <dl class="employee-metrics mt-5 space-y-3 border-t border-slate-100 pt-4 text-sm dark:border-slate-800">
+            <div class="flex items-center justify-between gap-2">
+              <dt class="flex min-w-0 items-center gap-2 text-slate-500">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m18 0v-2a4 4 0 0 0-3-3.87M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm8-7.87a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                Clients suivis{{ employeeScope === 'all' ? ' (tous)' : '' }}
+              </dt>
+              <dd class="shrink-0 font-semibold text-slate-900">{{ getEmployeeClientCount(em) }}</dd>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <dt class="flex min-w-0 items-center gap-2 text-slate-500">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
+                </span>
+                Ancienneté
+              </dt>
+              <dd class="shrink-0 font-semibold text-slate-900">{{ formatEmployeeTenure(em.dateJoined) || '—' }}</dd>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <dt class="flex min-w-0 items-center gap-2 text-slate-500">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg>
+                </span>
+                Congés restants
+              </dt>
+              <dd class="shrink-0 font-semibold text-slate-900">{{ numberOfVacationDaysLeft(em) }} j</dd>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <dt class="flex min-w-0 items-center gap-2 text-slate-500">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 0 1 2-2h3l2 5-2 2a16 16 0 0 0 6 6l2-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 5z"/></svg>
+                </span>
+                Téléphone
+              </dt>
+              <dd class="min-w-0 break-all text-right font-semibold text-slate-900">{{ em.phoneNumber || '—' }}</dd>
+            </div>
+          </dl>
 
-          <!-- Trophy badges in body section -->
-          <div class="mt-3 flex flex-wrap gap-2" *ngIf="hasBestTeamTrophy(em) || hasBestEmployeeTrophy(em)">
-            <!-- Best Team Trophy - Clickable -->
-            <button
-              *ngIf="hasBestTeamTrophy(em)"
-              type="button"
-              (click)="openTrophyModal(em, 'team')"
-              class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 px-3 py-1.5 text-xs font-medium text-white shadow-md hover:shadow-lg hover:scale-105 transition-transform"
-              [title]="'Meilleure Équipe (' + getTeamTrophies(em).length + ')'"
-            >
-              <!-- Trophy Cup Icon -->
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.65 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.65 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>
-              </svg>
-              <span *ngIf="getTeamTrophies(em).length > 1" class="ml-0.5 rounded-full bg-white/30 px-1.5 py-0.5 text-[10px] font-bold">{{ getTeamTrophies(em).length }}</span>
-            </button>
-
-            <!-- Best Employee Trophy - Clickable -->
-            <button
-              *ngIf="hasBestEmployeeTrophy(em)"
-              type="button"
-              (click)="openTrophyModal(em, 'employee')"
-              class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 px-3 py-1.5 text-xs font-medium text-white shadow-md hover:shadow-lg hover:scale-105 transition-transform"
-              [title]="'Meilleur Employé (' + getEmployeeTrophies(em).length + ')'"
-            >
-              <!-- Star Icon -->
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-              <span *ngIf="getEmployeeTrophies(em).length > 1" class="ml-0.5 rounded-full bg-white/30 px-1.5 py-0.5 text-[10px] font-bold">{{ getEmployeeTrophies(em).length }}</span>
-            </button>
-          </div>
-
-          <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            Role :
-            <strong>{{ em.role }}</strong>
-            <span *ngIf="em.originLocation && em.tempLocationHolder">
-              · {{ em.originLocation }} en rotation à
-              {{ em.tempLocationHolder }}
-            </span>
-            <span *ngIf="em.originLocation && !em.tempLocationHolder">
-              · {{ em.originLocation }} en rotation
-            </span>
-            <span *ngIf="!em.originLocation && em.tempLocationHolder">
-              · {{ em.tempLocationHolder }}
-            </span>
-          </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            # Clients suivi{{ employeeScope === 'all' ? ' (tous)' : '' }} :
-            {{ getEmployeeClientCount(em) }}
-          </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            Sexe : {{ em.sex }}
-          </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            Début :
-            {{ formatEmployeeStartDate(em.dateJoined) }}
-          </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            Ancienneté :
-            {{ formatEmployeeTenure(em.dateJoined) }}
-          </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            Téléphone : {{ em.phoneNumber }}
-          </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            Jour de Vacances Restants: {{ numberOfVacationDaysLeft(em) }}
-          </p>
-          <p
-            *ngIf="auth.isAdmin"
-            class="mt-1 text-sm text-gray-500 dark:text-white"
-          >
-            Arrival Hour: {{ em.arrivalHour }}
-          </p>
-          <p
-            *ngIf="auth.isAdmin"
-            class="mt-1 text-sm text-gray-500 dark:text-white"
-          >
-            Arrival Minute: {{ em.arrivalMinute }}
-          </p>
-
-
-          <!-- docs links -->
-          <div class="mt-3 flex flex-wrap gap-3" *ngIf="auth.isAdmin">
-            <a
-              *ngIf="em.profilePicture?.CVDownloadURL"
-              [href]="em.profilePicture?.CVDownloadURL"
-              target="_blank"
-              class="rounded-full bg-indigo-600 px-4 py-1 text-xs font-medium text-white hover:bg-indigo-700"
-              >CV</a
-            >
-            <a
-              *ngIf="em.bank"
-              [href]="em.bank"
-              target="_blank"
-              class="rounded-full bg-indigo-600 px-4 py-1 text-xs font-medium text-white hover:bg-indigo-700"
-              >Bank</a
-            >
-          </div>
-
-          <!-- action buttons -->
-          <div class="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              *ngIf="auth.isAdmin"
-              (click)="toggleEditEmployee(employeeDisplayIndex(em))"
-              class="rounded-full bg-emerald-600 px-5 py-2 text-xs font-medium text-white shadow hover:bg-emerald-700"
-            >
-              Modifier
-            </button>
+          <div class="mt-auto flex items-center gap-3 pt-6">
             <a
               [routerLink]="['/employee-page', em.trackingId]"
-              class="rounded-full bg-emerald-600 px-5 py-2 text-xs font-medium text-white shadow hover:bg-emerald-700"
-              >Détails</a
+              class="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             >
-            <button
-              *ngIf="auth.isAdmin"
-              (click)="deleteEmployee(em, employeeDisplayIndex(em))"
-              class="rounded-full bg-red-600 px-5 py-2 text-xs font-medium text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              title="Supprimer définitivement cet employé"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="inline h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-              Supprimer
-            </button>
+              Voir le profil
+              <svg aria-hidden="true" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" /></svg>
+            </a>
+            <details #cardMenu class="employee-card-menu relative shrink-0">
+              <summary
+                class="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-lg font-bold leading-none text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                [attr.aria-label]="'Actions pour ' + em.firstName + ' ' + em.lastName"
+                title="Autres actions"
+              ><svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle cx="19" cy="12" r="1.75" /></svg></summary>
+              <div class="employee-menu-panel absolute bottom-full right-0 z-30 mb-2 w-60 rounded-xl border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <dl class="space-y-2 border-b border-slate-100 px-3 py-3 text-xs dark:border-slate-800">
+                  <div class="flex justify-between gap-3"><dt class="text-slate-500">Sexe</dt><dd class="text-right text-slate-900 dark:text-slate-100">{{ em.sex || '—' }}</dd></div>
+                  <div class="flex justify-between gap-3"><dt class="text-slate-500">Début</dt><dd class="text-right text-slate-900 dark:text-slate-100">{{ formatEmployeeStartDate(em.dateJoined) }}</dd></div>
+                  <div *ngIf="auth.isAdmin" class="flex justify-between gap-3"><dt class="text-slate-500">Heure d’arrivée</dt><dd class="text-slate-900 dark:text-slate-100">{{ em.arrivalHour }}</dd></div>
+                  <div *ngIf="auth.isAdmin" class="flex justify-between gap-3"><dt class="text-slate-500">Minute d’arrivée</dt><dd class="text-slate-900 dark:text-slate-100">{{ em.arrivalMinute }}</dd></div>
+                </dl>
+                <button
+                  *ngIf="auth.isAdmin"
+                  type="button"
+                  (click)="cardMenu.open = false; toggleEditEmployee(employeeDisplayIndex(em))"
+                  class="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                >Modifier</button>
+                <button
+                  *ngIf="auth.isAdmin"
+                  type="button"
+                  (click)="cardMenu.open = false; onImageClick(employeeDisplayIndex(em))"
+                  class="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                >Changer la photo</button>
+                <a
+                  *ngIf="auth.isAdmin && em.profilePicture?.CVDownloadURL"
+                  [href]="em.profilePicture?.CVDownloadURL"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                >CV</a>
+                <a
+                  *ngIf="auth.isAdmin && em.bank"
+                  [href]="em.bank"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                >Bank</a>
+                <button
+                  *ngIf="auth.isAdmin && em.isRotation"
+                  type="button"
+                  (click)="cardMenu.open = false; convertRotationToDefinitive(em)"
+                  class="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                >Convertir en affectation définitive</button>
+                <div *ngIf="auth.isAdmin" class="my-1 border-t border-slate-100 dark:border-slate-800"></div>
+                <button
+                  *ngIf="auth.isAdmin"
+                  type="button"
+                  (click)="cardMenu.open = false; deleteEmployee(em, employeeDisplayIndex(em))"
+                  class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50"
+                >Supprimer</button>
+              </div>
+            </details>
           </div>
-        </div>
-      </div>
+        </article>
       </ng-container>
     </div>
   </ng-template>
-</div>
+</main>
 
 <!-- full-screen picture viewer -->
 <div
