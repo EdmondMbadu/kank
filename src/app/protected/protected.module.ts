@@ -91,6 +91,7 @@ import { InvestigationComponent } from '../components/investigation/investigatio
 import { InvestigationDocumentsComponent } from '../components/investigation-documents/investigation-documents.component';
 import { WhatsappAdminComponent } from '../components/whatsapp-admin/whatsapp-admin.component';
 import { ClientGalleryComponent } from '../components/client-gallery/client-gallery.component';
+import { FollowedClientsDialogComponent } from '../components/team-page/followed-clients-dialog.component';
 
 PlotlyModule.plotlyjs = PlotlyJS;
 
@@ -179,6 +180,7 @@ PlotlyModule.plotlyjs = PlotlyJS;
     ClientGalleryComponent,
   ],
   imports: [
+    FollowedClientsDialogComponent,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

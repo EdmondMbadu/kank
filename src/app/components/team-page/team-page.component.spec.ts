@@ -6,13 +6,13 @@ import { isActivelyFollowedClient } from 'src/app/utils/active-followed-client.u
 import { TeamPageComponent } from './team-page.component';
 
 describe('TeamPageComponent', () => {
-  function createComponent() {
+  function createComponent(isAdmin = true) {
     const clients$ = new BehaviorSubject<Client[]>([]);
     const employees$ = new BehaviorSubject<Employee[]>([]);
     const auth = {
       getAllClients: () => clients$,
       getAllEmployees: () => employees$,
-      isAdmin: true,
+      isAdmin,
       isDistributor: false,
       isInvestigator: false,
       currentUser: { uid: 'owner-1' },
@@ -164,6 +164,73 @@ describe('TeamPageComponent', () => {
     expect(component.currentEmployeeCount).toBe(2);
     expect(component.employees).not.toContain(formerEmployee);
 
+    component.ngOnDestroy();
+  });
+
+  it('prepares only the selected employee list on demand, including for staff', () => {
+    const { component, clients$, employees$ } = createComponent(false);
+    employees$.next([employee('employee-1'), employee('employee-2')]);
+    clients$.next([
+      { ...client('stable-uid', 'employee-1', '125000'), firstName: 'Aline',
+        middleName: 'Mbuyi', lastName: 'Kanku', phoneNumber: '082 111 2233', trackingId: '999' },
+      client('someone-else', 'employee-2'),
+      client('finished', 'employee-1', '0'),
+      client('left', 'employee-1', '100', 'Quitté'),
+    ]);
+    component.ngOnInit();
+    expect(component.followedClientRows).toEqual([]);
+
+    component.openFollowedClients(component.employees[0]);
+    expect(component.followedClientRows.length).toBe(1);
+    expect(component.followedClientRows[0].uid).toBe('stable-uid');
+    expect(component.followedClientRows[0].name).toBe('Aline Mbuyi Kanku');
+    expect(component.followedClientRows[0].phone).toBe('082 111 2233');
+    expect(component.followedClientRows[0].debt.replace(/\s/g, '')).toBe('125000FC');
+
+    component.closeFollowedClients();
+    component.openFollowedClients(component.employees[1]);
+    expect(component.followedClientRows.map((row) => row.uid)).toEqual(['someone-else']);
+    expect(clients$.observers.length).toBe(1);
+    expect(employees$.observers.length).toBe(1);
+    component.closeFollowedClients();
+    expect(component.followedClientRows).toEqual([]);
+    component.ngOnDestroy();
+  });
+
+  it('matches the all-client count and handles zero or unknown debt honestly', () => {
+    const { component, clients$, employees$ } = createComponent();
+    employees$.next([employee('employee-1')]);
+    clients$.next([
+      client('active', 'employee-1'),
+      client('finished', 'employee-1', '0'),
+      client('left', 'employee-1', '100', 'Quitté'),
+      client('unknown', 'employee-1', ''),
+    ]);
+    component.ngOnInit();
+    component.setEmployeeScope('all');
+    component.openFollowedClients(component.employees[0]);
+    expect(component.followedClientRows.length).toBe(component.getEmployeeClientCount(component.employees[0]));
+    expect(component.followedClientRows.find((row) => row.uid === 'finished')?.debt).toBe('0 FC');
+    expect(component.followedClientRows.find((row) => row.uid === 'unknown')?.debt).toBe('—');
+    expect(component.followedClientRows.find((row) => row.uid === 'unknown')?.phone).toBe('—');
+    component.ngOnDestroy();
+  });
+
+  it('refreshes an open list from the existing stream when debts or assignments change', () => {
+    const { component, clients$, employees$ } = createComponent();
+    employees$.next([employee('employee-1'), employee('employee-2')]);
+    clients$.next([client('active', 'employee-1', '100')]);
+    component.ngOnInit();
+    component.openFollowedClients(component.employees[0]);
+
+    clients$.next([client('active', 'employee-1', '75')]);
+    expect(component.followedClientRows[0].debt).toBe('75 FC');
+    clients$.next([client('active', 'employee-2', '75')]);
+    expect(component.followedClientRows).toEqual([]);
+    expect(clients$.observers.length).toBe(1);
+
+    employees$.next([employee('employee-2')]);
+    expect(component.followedClientsEmployee).toBeNull();
     component.ngOnDestroy();
   });
 });

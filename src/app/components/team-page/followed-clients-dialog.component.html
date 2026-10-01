@@ -1,0 +1,62 @@
+<dialog
+  #dialog
+  id="followed-clients-dialog"
+  class="client-dialog rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+  aria-labelledby="followed-clients-title"
+  aria-describedby="followed-clients-description"
+  (cancel)="onCancel($event)"
+  (click)="onBackdropClick($event)"
+>
+  <div class="flex max-h-[inherit] flex-col">
+    <header class="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
+      <div class="min-w-0">
+        <h2 id="followed-clients-title" class="text-2xl font-bold tracking-tight">Clients suivis</h2>
+        <p id="followed-clients-description" class="mt-1 break-words text-sm text-slate-500 dark:text-slate-400">
+          {{ employeeName }} · {{ rows.length }} client{{ rows.length === 1 ? '' : 's' }}
+        </p>
+        <p *ngIf="rows.length" class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          Sélectionnez un client pour ouvrir son portail.
+        </p>
+      </div>
+      <button type="button" autofocus (click)="close()" aria-label="Fermer la liste des clients"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 dark:text-slate-400 dark:hover:bg-slate-800">
+        <svg aria-hidden="true" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="m6 6 12 12M18 6 6 18" /></svg>
+      </button>
+    </header>
+
+    <div *ngIf="rows.length; else emptyClients" class="min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-5">
+      <div class="client-columns client-column-head sticky top-0 z-10 rounded-lg bg-slate-50 px-3 py-3 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400" aria-hidden="true">
+        <span>Client</span><span class="text-right">Total dû</span><span class="client-phone-heading">Téléphone</span><span></span>
+      </div>
+      <ul>
+        <li *ngFor="let row of visibleRows; trackBy: trackClient" class="border-b border-slate-100 last:border-0 dark:border-slate-800">
+          <a [routerLink]="['/client-portal', row.uid]" [attr.aria-label]="'Ouvrir le portail de ' + row.name"
+            class="client-columns client-row group rounded-lg px-3 py-4 transition-colors hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 dark:hover:bg-emerald-950">
+            <span class="client-name min-w-0 break-words text-sm font-medium group-hover:text-emerald-800 dark:group-hover:text-emerald-200">{{ row.name }}</span>
+            <span class="client-debt text-right text-sm font-semibold tabular-nums">{{ row.debt }}</span>
+            <span class="client-phone flex min-w-0 items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <svg aria-hidden="true" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 0 1 2-2h3l2 5-2 2a16 16 0 0 0 6 6l2-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 5z" /></svg>
+              <span class="break-all">{{ row.phone }}</span>
+            </span>
+            <svg aria-hidden="true" class="client-chevron h-4 w-4 text-slate-400 group-hover:text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" /></svg>
+          </a>
+        </li>
+      </ul>
+      <button *ngIf="visibleRows.length < rows.length" type="button" (click)="showMore()"
+        class="my-3 w-full rounded-lg py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 dark:text-emerald-300 dark:hover:bg-slate-800">
+        Afficher plus · {{ visibleRows.length }} sur {{ rows.length }}
+      </button>
+    </div>
+    <ng-template #emptyClients>
+      <div class="px-6 py-12 text-center">
+        <p class="text-base font-semibold">Aucun client suivi</p>
+        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Cet employé n’a aucun client dans cette vue.</p>
+      </div>
+    </ng-template>
+
+    <footer class="mt-2 flex shrink-0 items-center justify-between gap-3 border-t border-slate-100 px-5 py-4 dark:border-slate-800 sm:px-7">
+      <span class="text-xs text-slate-500 dark:text-slate-400">{{ rows.length }} client{{ rows.length === 1 ? '' : 's' }}</span>
+      <button type="button" (click)="close()" class="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 dark:border-slate-700 dark:hover:bg-slate-800">Fermer</button>
+    </footer>
+  </div>
+</dialog>

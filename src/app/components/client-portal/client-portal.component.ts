@@ -190,6 +190,7 @@ export class ClientPortalComponent {
   }
 
   id: any = '';
+  private selectedClientUid?: string;
   paymentDateLong = '';
   paymentDateNumeric = '';
   debtStart = '';
@@ -290,10 +291,17 @@ export class ClientPortalComponent {
         : (this.auth.getAllClients() as any);
 
     clientSource.subscribe((data: any) => {
-      const clients = Array.isArray(data) ? (data.filter(Boolean) as Client[]) : [];
-      const resolvedClient = resolveClientPortalClient(clients, this.id);
+      const clients = Array.isArray(data) ? (data as Client[]) : [];
+      const resolvedClient = resolveClientPortalClient(
+        clients,
+        this.selectedClientUid || this.id
+      );
       if (!resolvedClient) return;
 
+      // Keep the selected client stable while supplying the current list index
+      // to the existing payment, savings, and editing routes.
+      this.selectedClientUid = resolvedClient.uid;
+      this.id = String(clients.indexOf(resolvedClient));
       this.client = {
         ...resolvedClient,
         locationOwnerId:

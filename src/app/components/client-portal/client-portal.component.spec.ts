@@ -8,6 +8,9 @@ import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { Client } from 'src/app/models/client';
+import { BehaviorSubject } from 'rxjs';
+import { PaymentActivityComponent } from '../payment-activity/payment-activity.component';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 
 describe('ClientPortalComponent', () => {
   function createComponent(
@@ -53,6 +56,72 @@ describe('ClientPortalComponent', () => {
     const component = createComponent();
 
     expect(component).toBeTruthy();
+  });
+
+  function openPortal(routeId: string, clients$: BehaviorSubject<Client[]>) {
+    const component = createComponent();
+    component.id = routeId;
+    component.auth = {
+      currentUser: { uid: 'admin-1' },
+      getAllClients: () => clients$,
+      isAdmninistrator: false,
+    } as unknown as AuthService;
+    (component as any).compute.computeAge = () => 30;
+    (component as any).time = {
+      translateDayInFrench: () => 'Lundi',
+      nextPaymentDateDisplay: () => ({ long: '', numeric: '' }),
+      formatDateString: () => '',
+    };
+    spyOn(component, 'minimumPayment');
+    spyOn(component, 'setFields');
+    spyOn(component, 'setGraphCredit');
+    spyOn(component, 'setComments');
+    spyOn(component, 'endDate').and.returnValue('');
+    component.retrieveClient();
+    return component;
+  }
+
+  it('passes the current list index to payment history after opening a portal by UID', () => {
+    const selected = Object.assign(new Client(), {
+      uid: 'selected-client', trackingId: '999', debtLeft: '500',
+      payments: { '9-30-2026-10-0-0': '200', '9-29-2026-10-0-0': '0' },
+      paymentSources: { '9-30-2026-10-0-0': 'mobile_money' },
+    });
+    const other = Object.assign(new Client(), {
+      uid: 'other-client', payments: { '9-29-2026-10-0-0': '900' },
+    });
+    const clients$ = new BehaviorSubject<Client[]>([other, selected]);
+    const portal = openPortal('selected-client', clients$);
+    expect(portal.client.uid).toBe('selected-client');
+    expect(portal.id).toBe('1');
+
+    const history = new PaymentActivityComponent(
+      { snapshot: { paramMap: { get: () => portal.id } } } as unknown as ActivatedRoute,
+      portal.auth,
+      { convertDateToDesiredFormat: (date: string) => date } as TimeService,
+      {} as AngularFirestore,
+      {} as Router
+    );
+    history.ngOnInit();
+    expect(history.client.uid).toBe('selected-client');
+    expect(history.payments).toEqual(['200']);
+    expect(history.paymentSources).toEqual(['mobile_money']);
+  });
+
+  it('keeps UID and legacy portal links on the same client when the list order changes', () => {
+    for (const routeId of ['selected-client', '1']) {
+      const selected = Object.assign(new Client(), {
+        uid: 'selected-client', trackingId: '999', debtLeft: '0',
+      });
+      const other = Object.assign(new Client(), { uid: 'other-client' });
+      const clients$ = new BehaviorSubject<Client[]>([other, selected]);
+      const portal = openPortal(routeId, clients$);
+      expect(portal.id).toBe('1');
+
+      clients$.next([selected, other]);
+      expect(portal.client.uid).toBe('selected-client');
+      expect(portal.id).toBe('0');
+    }
   });
 
   it('rejects a pending transfer without debiting user aggregates', async () => {

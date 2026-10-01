@@ -12,6 +12,7 @@ import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { combineLatest, Subject, takeUntil } from 'rxjs';
+import { FollowedClientRow } from './followed-clients-dialog.component';
 
 @Component({
   selector: 'app-team-page',
@@ -29,6 +30,12 @@ export class TeamPageComponent implements OnInit, OnDestroy {
     private compute: ComputationService
   ) {}
   displayEditEmployees: boolean[] = [];
+  followedClientsEmployee: Employee | null = null;
+  followedClientRows: FollowedClientRow[] = [];
+  private followedClientsScope: 'current' | 'all' = 'current';
+  private readonly debtFormatter = new Intl.NumberFormat('fr-FR', {
+    maximumFractionDigits: 2,
+  });
   private readonly WORKING_STATUSES = [
     'travaille',
     'tavaille',
@@ -125,6 +132,7 @@ export class TeamPageComponent implements OnInit, OnDestroy {
 
   setEmployeeScope(scope: 'current' | 'all'): void {
     if (this.employeeScope === scope) return;
+    this.closeFollowedClients();
     this.employeeScope = scope;
     this.applyEmployeeScope();
   }
@@ -182,6 +190,17 @@ export class TeamPageComponent implements OnInit, OnDestroy {
         this.findClientsWithDebts();
         this.prepareEmployees(this.allEmployees);
         this.applyEmployeeScope();
+        if (this.followedClientsEmployee) {
+          const employee = this.employees.find(
+            (entry) => entry.uid === this.followedClientsEmployee?.uid
+          );
+          if (employee) {
+            this.followedClientsEmployee = employee;
+            this.refreshFollowedClientRows();
+          } else {
+            this.closeFollowedClients();
+          }
+        }
         if (this.transferModalVisible) {
           this.refreshTransferCounts();
         }
@@ -376,6 +395,40 @@ export class TeamPageComponent implements OnInit, OnDestroy {
     const index =
       scope === 'all' ? this.allClientIdsByAgent : this.currentClientIdsByAgent;
     return index.get(employee.uid)?.length || 0;
+  }
+
+  openFollowedClients(employee: Employee): void {
+    this.followedClientsScope = this.employeeScope;
+    this.followedClientsEmployee = employee;
+    this.refreshFollowedClientRows();
+  }
+
+  closeFollowedClients(): void {
+    this.followedClientsEmployee = null;
+    this.followedClientRows = [];
+  }
+
+  private refreshFollowedClientRows(): void {
+    const ids = this.getClientIdsForEmployee(
+      this.followedClientsEmployee?.uid,
+      this.followedClientsScope
+    );
+    this.followedClientRows = ids.flatMap((uid) => {
+      const client = this.clientDictionary[uid];
+      if (!client) return [];
+      const name = [client.firstName, client.middleName, client.lastName]
+        .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+      const debt = String(client.debtLeft ?? '').trim();
+      const amount = debt ? Number(debt) : NaN;
+      return [{
+        uid,
+        name: name || client.name?.trim() || 'Client sans nom',
+        debt: Number.isFinite(amount)
+          ? `${this.debtFormatter.format(Math.max(0, amount))} FC`
+          : '—',
+        phone: String(client.phoneNumber ?? '').trim() || '—',
+      }];
+    });
   }
 
   getTransferClientCount(employee: Employee): number {
