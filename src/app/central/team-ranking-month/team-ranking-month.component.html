@@ -1854,6 +1854,12 @@
 
                 <!-- Status / alerts -->
                 <span
+                  *ngIf="auth.isAdmin && em.isRotation"
+                  class="text-[10px] font-medium text-slate-500"
+                >
+                  Paie : {{ rankingPaymentLocationLabel(em) }}
+                </span>
+                <span
                   *ngIf="auth.isAdmin && em.signedPaymentThisMonth"
                   class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50/70 px-2 py-0.5 text-[10px] font-medium text-indigo-700"
                   [title]="
@@ -3203,6 +3209,21 @@
             >Salaire + bonus</span
           >
         </header>
+
+        <div
+          *ngIf="rotationPayrollIssues.length"
+          role="alert"
+          class="mx-4 my-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"
+        >
+          <p class="font-semibold">Paie incomplète — origine de paiement à vérifier</p>
+          <p>Les employés ci-dessous sont exclus de la paie et des totaux jusqu’à identification de leur dossier d’origine. Leur performance reste affichée.</p>
+          <ul class="mt-1 list-inside list-disc">
+            <li *ngFor="let item of rotationPayrollIssues">
+              {{ item.employee.firstName }} {{ item.employee.lastName }}
+              · {{ item.employee.tempLocationHolder }} : {{ rotationPayrollIssueLabel(item.issue) }}.
+            </li>
+          </ul>
+        </div>
 
         <!-- Collapsible body -->
         <div class="px-4 pb-4" [class.hidden]="!collapse.payroll">

@@ -49,6 +49,10 @@ import {
 } from 'src/app/utils/monthly-payroll.util';
 import { dedupeTrophyHistoryEmployees } from 'src/app/utils/trophy-history-employees.util';
 import {
+  resolveRotationPayrollEmployee,
+  RotationPayrollIssue,
+} from 'src/app/utils/rotation-payroll.util';
+import {
   AmountPerformanceDayRecord,
   AmountPerformanceSummary,
   buildAmountPerformanceSummary,
@@ -482,6 +486,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
   payrollRows: PayrollBreakdownRow[] = [];
+  rotationPayrollIssues: Array<{ employee: Employee; issue: RotationPayrollIssue }> = [];
   payrollSearchTerm = '';
   payrollBankFilter: '' | 'rawbank' | 'equity' = '';
   payrollPaidFilter: '' | 'paid' | 'unpaid' = '';
@@ -2786,6 +2791,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       if (fullEmployee) {
         fullEmployee.receipts = receipts;
       }
+      this.recomputePayrollRowsForAdmin();
       alert('Reçu ajouté/modifié avec succès!');
     } catch (error) {
       console.error('Failed to upload payroll receipt', error);
@@ -3241,7 +3247,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
       return;
     }
 
-    this.payrollRows = this.allEmployees.map((employee) =>
+    // Keep one payroll row per original record, independently of the rotation
+    // representative used by every performance view. All payment controls,
+    // histories and receipt paths already use row.employee's owner and UID.
+    const payrollEmployees = new Map<string, Employee>();
+    for (const representative of this.allEmployees) {
+      const employee = this.payrollEmployeeForRepresentative(representative);
+      if (!employee) continue;
+      this.decorateMonthlySignatureState(employee);
+      payrollEmployees.set(this.employeeRecordKey(employee), employee);
+    }
+    this.refreshRepresentativePaymentStates();
+    this.payrollRows = Array.from(payrollEmployees.values()).map((employee) =>
       this.buildPayrollBreakdownRow(employee)
     );
     this.loadEmployeeCreditTransportReceiptsForPayroll();
@@ -5533,6 +5550,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   // use your existing gradient color logic to tint chips/accents
 
   allEmployees: Employee[] = [];
+  private payrollEmployeeByRepresentativeKey = new Map<string, Employee | null>();
   private logicalRepresentativeByRecordKey = new Map<string, Employee>();
   private logicalEmployeeGroupsByRepresentativeKey = new Map<
     string,
@@ -5778,9 +5796,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return latest;
   }
 
-  private decorateMonthlySignatureState(employee: Employee): void {
-    const latestPayment = this.getLatestSignatureThisMonth(employee, 'paiement');
-    const latestBonus = this.getLatestSignatureThisMonth(employee, 'bonus');
+  private decorateMonthlySignatureState(
+    employee: Employee,
+    paymentEmployee: Employee | null = employee
+  ): void {
+    const latestPayment = paymentEmployee
+      ? this.getLatestSignatureThisMonth(paymentEmployee, 'paiement') : null;
+    const latestBonus = paymentEmployee
+      ? this.getLatestSignatureThisMonth(paymentEmployee, 'bonus') : null;
     const paymentPaid = !!latestPayment?.receiptUrl;
     const bonusPaid = !!latestBonus?.receiptUrl;
 
@@ -5807,6 +5830,34 @@ export class TeamRankingMonthComponent implements OnDestroy {
     employee.paidThisMonth = paymentPaid;
   }
 
+  private payrollEmployeeForRepresentative(employee: Employee): Employee | null {
+    const key = this.employeeRecordKey(employee);
+    if (this.payrollEmployeeByRepresentativeKey.has(key)) {
+      return this.payrollEmployeeByRepresentativeKey.get(key) || null;
+    }
+    // Also support callers before the employee aggregation has completed.
+    return resolveRotationPayrollEmployee(
+      employee, this.allEmployeesAll || [], this.auth.currentUser?.uid
+    ).employee;
+  }
+
+  private refreshRepresentativePaymentStates(): void {
+    this.allEmployees.forEach((employee) => this.decorateMonthlySignatureState(
+      employee, this.payrollEmployeeForRepresentative(employee)
+    ));
+  }
+
+  rankingPaymentLocationLabel(employee: Employee): string {
+    const source = this.payrollEmployeeForRepresentative(employee);
+    return source ? this.getPayrollLocationLabel(source) : 'source à vérifier';
+  }
+
+  rotationPayrollIssueLabel(issue: RotationPayrollIssue): string {
+    if (issue === 'ambiguous-source') return 'plusieurs sources ou identifiants contradictoires';
+    if (issue === 'cyclic-source') return 'liens de rotation circulaires';
+    return 'employé ou site d’origine introuvable';
+  }
+
   filterAndInitializeEmployees(
     allEmployees: Employee[],
     currentClients: Client[]
@@ -5816,6 +5867,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     });
     const uniqueEmployeeRecords = new Map<string, Employee>();
     this.allEmployees = [];
+    this.payrollEmployeeByRepresentativeKey.clear();
+    this.rotationPayrollIssues = [];
     this.logicalRepresentativeByRecordKey.clear();
     this.logicalEmployeeGroupsByRepresentativeKey.clear();
     this.logicalEmployeeGroups = [];
@@ -5845,9 +5898,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
       }
     });
 
-    const logicalGroups = this.buildLogicalEmployeeGroups(
-      Array.from(uniqueEmployeeRecords.values()).filter((emp) => !!emp?.uid)
-    );
+    const employeeRecords = Array.from(uniqueEmployeeRecords.values());
+    const logicalGroups = this.buildLogicalEmployeeGroups(employeeRecords);
     this.logicalEmployeeGroups = logicalGroups;
     const representatives: Employee[] = [];
 
@@ -5856,6 +5908,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
       if (!representative) return;
 
       representatives.push(representative);
+      const payment = resolveRotationPayrollEmployee(
+        representative,
+        employeeRecords,
+        this.auth.currentUser?.uid
+      );
+      this.payrollEmployeeByRepresentativeKey.set(
+        this.employeeRecordKey(representative), payment.employee
+      );
+      if (payment.issue) {
+        this.rotationPayrollIssues.push({ employee: representative, issue: payment.issue });
+      }
       this.logicalEmployeeGroupsByRepresentativeKey.set(
         this.employeeRecordKey(representative),
         group
@@ -5870,6 +5933,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     });
 
     this.allEmployees = representatives;
+    this.refreshRepresentativePaymentStates();
     this.logDebug('Logical employees after rotation dedupe', {
       rawRecordCount: uniqueEmployeeRecords.size,
       logicalGroupCount: logicalGroups.length,
@@ -6290,9 +6354,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   onPayrollMonthChange(): void {
-    this.allEmployees.forEach((employee) =>
+    this.allEmployeesAll.forEach((employee) =>
       this.decorateMonthlySignatureState(employee)
     );
+    this.refreshRepresentativePaymentStates();
     this.refreshLogicalPerformanceMetrics();
     this.recomputePayrollRowsForAdmin();
     if (this.rankingMode === 'monthlyPayments') {

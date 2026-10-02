@@ -1,6 +1,7 @@
 import { TeamRankingMonthComponent } from './team-ranking-month.component';
 import { EmployeePageComponent } from 'src/app/shrink/employee-page/employee-page.component';
 import { of, Subject } from 'rxjs';
+import { TimeService } from 'src/app/services/time.service';
 
 describe('TeamRankingMonthComponent', () => {
   function createComponent() {
@@ -33,6 +34,8 @@ describe('TeamRankingMonthComponent', () => {
       todaysDateMonthDayYear: () => '7-23-2026',
       convertDateToDayMonthYear: () => '23 Juillet 2026',
       getTodaysDateYearMonthDay: () => '2026-07-23',
+      parseFlexibleDateTime: (raw: string) => new TimeService().parseFlexibleDateTime(raw),
+      convertTimeFormat: (raw: string) => new TimeService().convertTimeFormat(raw),
       toDate: (dateKey: string) => {
         const [month, day, year] = dateKey.split('-').map(Number);
         return new Date(year, month - 1, day);
@@ -276,6 +279,221 @@ describe('TeamRankingMonthComponent', () => {
     expect(component.employeeUsesAmountPerformance(verifier)).toBeFalse();
     expect(component.employeePerformancePercent(verifier)).toBe(46);
     expect(component.employeePerformanceVisualPercent(verifier)).toBe(46);
+  });
+
+  describe('rotation payroll routing', () => {
+    function scenario() {
+      const setup = createComponent();
+      const { component, auth, data } = setup;
+      auth.isAdmin = true;
+      auth.isAdmninistrator = true;
+      component.givenMonth = 7;
+      component.givenYear = 2026;
+      data.updateEmployeeFieldsForUser = jasmine.createSpy('updateEmployeeFieldsForUser').and.resolveTo();
+      const collection = jasmine.createSpy('collection').and.returnValue({ snapshotChanges: () => of([]) });
+      (component as any).afs = { collection };
+      const source: any = {
+        uid: 'original', firstName: 'Mercisse', lastName: 'Tsimba', role: 'Auditrice', status: 'Transféré',
+        tempUser: { uid: 'home', firstName: 'Matadikibala' }, tempLocationHolder: 'Matadikibala',
+        paymentConfiguredMonthKey: '2026-07', paymentAmount: '100', paymentBankFee: '5',
+        paymentIncreaseYears: '10', paymentManualAddition: '2', paymentManualWithdrawal: '4',
+        paymentAbsent: '3', paymentNothing: '0', paymentLate: '1', bonusAmount: '7',
+        paymentBankProvider: 'Rawbank', paymentCheckVisible: 'true', checkVisible: 'true',
+        payments: { '7-20-2026-12-0-0-paiement': '109', '7-21-2026-12-0-0-bonus': '7' },
+        receipts: ['home-payment-receipt', ''], paymentsPicturePath: ['home-payment-invoice', 'home-bonus-invoice'],
+        dailyPoints: { '7-1-2026': '8' }, totalDailyPoints: { '7-1-2026': '10' },
+      };
+      const rotation: any = {
+        uid: 'rotation', firstName: 'Mercisse', lastName: 'Tsimba', role: 'Auditrice', status: 'Travaille',
+        tempUser: { uid: 'upn', firstName: 'UPN' }, tempLocationHolder: 'UPN',
+        isRotation: true, canonicalEmployeeId: 'original',
+        rotationSourceLocationId: 'home', rotationSourceEmployeeId: 'original',
+        paymentAmount: '999', paymentBankProvider: 'Equity', paymentCheckVisible: 'false',
+        payments: {}, receipts: [],
+        dailyPoints: { '7-1-2026': '8', '7-2-2026': '9' },
+        totalDailyPoints: { '7-1-2026': '10', '7-2-2026': '10' },
+      };
+      const refresh = (records = [source, rotation]) => {
+        component.allEmployeesAll = records;
+        component.filterAndInitializeEmployees(records, []);
+        (component as any).recomputePayrollRowsForAdmin();
+      };
+      refresh();
+      return { ...setup, source, rotation, collection, refresh };
+    }
+
+    it('keeps one UPN performance card and one original-site payroll row with original amounts', () => {
+      const { component, source, rotation, collection } = scenario();
+      expect(component.allEmployees).toEqual([rotation]);
+      expect(rotation.tempLocationHolder).toBe('UPN');
+      expect(rotation.performancePercentageMonth).toBe('85');
+      expect(component.currentPerformancePercent).toBe(85);
+      expect(component.payrollRows.length).toBe(1);
+      const row = component.payrollRows[0];
+      expect(row.employee).toBe(source);
+      expect(row.locationLabel).toBe('Matadikibala');
+      expect(row.base).toBe(100);
+      expect(row.net).toBe(109);
+      expect(row.bonusTotal).toBe(7);
+      expect(row.bankLabel).toBe('Rawbank');
+      expect(component.payrollPaymentVisible(row.employee)).toBeTrue();
+      expect(component.totalSalary).toBe('109');
+      expect(component.rotationPayrollIssues).toEqual([]);
+      expect(collection.calls.mostRecent().args[0]).toBe('users/home/employees/original/auditReceipts');
+      expect(rotation.paymentAmount).toBe('999');
+      expect(rotation.payments).toEqual({});
+    });
+
+    it('uses original signatures, receipts and invoices on both payroll and the rotation card', () => {
+      const { component, source, rotation } = scenario();
+      expect(rotation.signedPaymentThisMonth).toBeTrue();
+      expect(rotation.paidPaymentThisMonth).toBeTrue();
+      expect(rotation.signedBonusThisMonth).toBeTrue();
+      expect(rotation.paidBonusThisMonth).toBeFalse();
+      expect(rotation.lastPaymentSignatureLabelThisMonth).toBe(source.lastPaymentSignatureLabelThisMonth);
+      expect(component.rankingPaymentLocationLabel(rotation)).toBe('Matadikibala');
+      const row = component.payrollRows[0];
+      expect(row.salaryRemaining).toBe(0);
+      expect(row.bonusRemaining).toBe(7);
+      const payment = component.latestPayrollPaymentHistory(row).find((entry) => entry.kind === 'paiement')!;
+      expect(component.payrollHistoryReceiptUrl(row, payment)).toBe('home-payment-receipt');
+      expect(component.payrollHistoryInvoiceUrl(row, payment)).toBe('home-payment-invoice');
+    });
+
+    it('ignores stale payment evidence copied into a rotation', () => {
+      const { component, source, rotation, refresh } = scenario();
+      source.payments = {};
+      source.receipts = [];
+      rotation.payments = { '7-20-2026-12-0-0-paiement': '999' };
+      rotation.receipts = ['stale-copy'];
+      refresh();
+      expect(rotation.signedPaymentThisMonth).toBeFalse();
+      expect(rotation.paidPaymentThisMonth).toBeFalse();
+      expect(component.payrollRows[0].salaryRemaining).toBe(109);
+      expect(component.latestPayrollPaymentHistory(component.payrollRows[0])).toEqual([]);
+    });
+
+    it('refreshes the original and displayed signature states when selecting another payroll month', () => {
+      const { component, source, rotation } = scenario();
+      component.givenMonth = 8;
+      component.onPayrollMonthChange();
+      expect(source.signedPaymentThisMonth).toBeFalse();
+      expect(rotation.signedPaymentThisMonth).toBeFalse();
+      component.givenMonth = 7;
+      component.onPayrollMonthChange();
+      expect(source.signedPaymentThisMonth).toBeTrue();
+      expect(rotation.signedPaymentThisMonth).toBeTrue();
+    });
+
+    it('preserves the previous-month rule for payroll signed on days one through five', () => {
+      const { component, source, rotation, refresh } = scenario();
+      source.payments = { '8-3-2026-12-0-0-paiement': '109' };
+      source.receipts = ['receipt'];
+      refresh();
+      expect(rotation.signedPaymentThisMonth).toBeTrue();
+      component.givenMonth = 8;
+      component.onPayrollMonthChange();
+      expect(rotation.signedPaymentThisMonth).toBeFalse();
+    });
+
+    it('writes payroll edits, bank and visibility controls to the original record only', async () => {
+      const { component, source, rotation, data } = scenario();
+      const row = component.payrollRows[0];
+      component.openPayrollEdit(row);
+      component.payrollEditDraft!.base = 130;
+      await component.savePayrollEdit(row);
+      expect(data.updateEmployeeFieldsForUser).toHaveBeenCalledWith('home', 'original',
+        jasmine.objectContaining({ paymentAmount: '130', paymentConfiguredMonthKey: '2026-07' }));
+      await component.setPayrollBank(component.payrollRows[0], 'equity');
+      await component.setPayrollPaymentVisible(component.payrollRows[0], false);
+      await component.setPayrollBonusVisible(component.payrollRows[0], false);
+      expect(data.updateEmployeeFieldsForUser).toHaveBeenCalledWith('home', 'original', { paymentBankProvider: 'Equity' });
+      expect(data.updateEmployeeFieldsForUser).toHaveBeenCalledWith('home', 'original', { paymentCheckVisible: 'false' });
+      expect(data.updateEmployeeFieldsForUser).toHaveBeenCalledWith('home', 'original', { checkVisible: 'false' });
+      expect(data.updateEmployeeFieldsForUser.calls.allArgs().every((args: any[]) => args[0] === 'home' && args[1] === 'original')).toBeTrue();
+      expect(source.paymentAmount).toBe('130');
+      expect(rotation.paymentAmount).toBe('999');
+    });
+
+    it('attaches a receipt to the original and immediately refreshes badges and payroll totals', async () => {
+      const { component, source, rotation, data } = scenario();
+      spyOn(window, 'alert');
+      source.receipts = ['', ''];
+      (component as any).recomputePayrollRowsForAdmin();
+      const row = component.payrollRows[0];
+      const payment = component.latestPayrollPaymentHistory(row).find((entry) => entry.kind === 'paiement')!;
+      const upload = jasmine.createSpy('upload').and.resolveTo({ ref: { getDownloadURL: () => Promise.resolve('new-receipt') } });
+      (component as any).storage = { upload };
+      component.payrollReceiptTarget = { rowKey: (component as any).payrollRowKey(row), ownerUid: 'home', employeeUid: 'original', sourceIndex: payment.sourceIndex };
+      await component.onPayrollReceiptFileSelected(
+        { item: () => new File(['receipt'], 'receipt.png', { type: 'image/png' }) } as unknown as FileList
+      );
+      expect(data.updateEmployeeFieldsForUser).toHaveBeenCalledWith('home', 'original', { receipts: ['new-receipt', ''] });
+      expect(rotation.receipts).toEqual([]);
+      expect(rotation.paidPaymentThisMonth).toBeTrue();
+      expect(component.payrollRows[0].salaryRemaining).toBe(0);
+      expect(component.totalPayrollSalaryPaidPeople).toBe(1);
+    });
+
+    it('flags a missing original and excludes it from payroll without hiding its performance', () => {
+      const { component, source, rotation, refresh } = scenario();
+      refresh([rotation]);
+      expect(component.allEmployees).toEqual([rotation]);
+      expect(rotation.performancePercentageMonth).toBe('85');
+      expect(component.payrollRows).toEqual([]);
+      expect(component.totalSalary).toBe('0');
+      expect(component.rotationPayrollIssues).toEqual([{ employee: rotation, issue: 'missing-source' }]);
+      expect(component.rankingPaymentLocationLabel(rotation)).toBe('source à vérifier');
+      expect(rotation.signedPaymentThisMonth).toBeFalse();
+      refresh([source, rotation]);
+      expect(component.rotationPayrollIssues).toEqual([]);
+      expect(component.payrollRows[0].employee).toBe(source);
+      expect(rotation.signedPaymentThisMonth).toBeTrue();
+    });
+
+    it('keeps the original payroll authority across successive rotations', () => {
+      const { component, source, rotation, refresh } = scenario();
+      rotation.status = 'Transféré';
+      const latest = { ...rotation, uid: 'latest', status: 'Travaille',
+        tempUser: { uid: 'third', firstName: 'Third site' }, tempLocationHolder: 'Third site',
+        rotationSourceLocationId: 'upn', rotationSourceEmployeeId: 'rotation' };
+      refresh([source, rotation, latest]);
+      expect(component.allEmployees).toEqual([latest]);
+      expect(component.payrollRows.length).toBe(1);
+      expect(component.payrollRows[0].employee).toBe(source);
+      expect(component.rankingPaymentLocationLabel(latest)).toBe('Matadikibala');
+      expect(latest.signedPaymentThisMonth).toBeTrue();
+      expect(component.currentPerformancePercent).toBe(85);
+    });
+
+    it('flags ambiguous legacy sources while continuing to pay ordinary employees', () => {
+      const { component, source, rotation, refresh } = scenario();
+      delete rotation.canonicalEmployeeId;
+      delete rotation.rotationSourceEmployeeId;
+      const duplicate = { ...source, uid: 'duplicate' };
+      const ordinary = { ...source, uid: 'ordinary', firstName: 'Other', status: 'Travaille' };
+      refresh([source, duplicate, rotation, ordinary]);
+      expect(component.payrollRows.length).toBe(1);
+      expect(component.payrollRows[0].employee).toBe(ordinary);
+      expect(component.rotationPayrollIssues).toEqual([{ employee: rotation, issue: 'ambiguous-source' }]);
+      expect(component.allEmployees).toContain(rotation);
+      expect(rotation.signedPaymentThisMonth).toBeFalse();
+    });
+
+    it('leaves ordinary employees and permanent affectations on their current payment records', () => {
+      const { component, source, rotation, refresh } = scenario();
+      const ordinary = { ...rotation, uid: 'ordinary', isRotation: false, canonicalEmployeeId: undefined,
+        rotationSourceEmployeeId: undefined, rotationSourceLocationId: undefined, firstName: 'Ordinary' };
+      const affectation = { ...rotation, uid: 'affectation', isRotation: false, status: 'Travaille' };
+      // An inactive former record remains available for grouping/history.
+      source.status = 'Quitté';
+      refresh([source, affectation, ordinary]);
+      expect(component.payrollRows.map((row) => row.employee)).toContain(affectation);
+      expect(component.payrollRows.map((row) => row.employee)).toContain(ordinary);
+      expect(component.payrollRows.map((row) => row.employee)).not.toContain(source);
+      expect(component.rotationPayrollIssues).toEqual([]);
+      expect(component.payrollRows.every((row) => row.locationLabel === 'UPN')).toBeTrue();
+    });
   });
 
   it('shows one rotation row and computes legacy performance once per person', () => {
