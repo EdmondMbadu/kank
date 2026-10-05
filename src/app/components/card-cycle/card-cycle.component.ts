@@ -1,5 +1,4 @@
-import { OnInit } from '@angular/core';
-import { Component } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { async } from 'rxjs';
 import { Card } from 'src/app/models/card';
@@ -7,6 +6,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { isTenDigitPhone, tenDigitPhoneValidationMessage } from 'src/app/utils/ten-digit-phone.util';
 
 @Component({
   selector: 'app-card-cycle',
@@ -15,6 +15,16 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class CardCycleComponent implements OnInit {
   clientCard = new Card();
+  phoneInteracted = false;
+  @ViewChild('phoneInput') phoneInput?: ElementRef<HTMLInputElement>;
+
+  get isPhoneNumberValid(): boolean {
+    return isTenDigitPhone(this.clientCard?.phoneNumber);
+  }
+
+  get phoneValidationMessage(): string {
+    return tenDigitPhoneValidationMessage(this.clientCard?.phoneNumber, this.phoneInteracted);
+  }
 
   id: any = '';
   amountToPay: string = '';
@@ -40,6 +50,11 @@ export class CardCycleComponent implements OnInit {
   }
 
   addNewCardClient() {
+    this.phoneInteracted = true;
+    if (!this.isPhoneNumberValid) {
+      this.phoneInput?.nativeElement.focus();
+      return;
+    }
     let inputValid = this.data.numbersValid(this.amountToPay);
     if (
       this.clientCard.firstName === '' ||
@@ -48,7 +63,6 @@ export class CardCycleComponent implements OnInit {
       this.clientCard.profession === '' ||
       this.clientCard.businessAddress === '' ||
       this.clientCard.homeAddress === '' ||
-      this.clientCard.phoneNumber === '' ||
       this.amountToPay === ''
     ) {
       alert('Completer tous les données');

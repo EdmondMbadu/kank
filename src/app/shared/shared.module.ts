@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SafeNumberPipe } from './pipes/safe-number.pipe';
 import { SafeDecimalPipe } from './pipes/safe-decimal.pipe';
+import { TenDigitPhoneDirective } from './directives/ten-digit-phone.directive';
 
 @NgModule({
-  declarations: [NavbarComponent, SafeNumberPipe],
+  declarations: [NavbarComponent, SafeNumberPipe, TenDigitPhoneDirective],
   imports: [CommonModule, RouterModule, FormsModule],
-  exports: [NavbarComponent, SafeNumberPipe],
+  exports: [NavbarComponent, SafeNumberPipe, TenDigitPhoneDirective],
   providers: [{ provide: DecimalPipe, useClass: SafeDecimalPipe }],
 })
 export class SharedModule {}

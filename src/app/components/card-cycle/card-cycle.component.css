@@ -67,6 +67,14 @@
   transform: translateY(-1px);
 }
 
+.card-cycle-input.card-cycle-input-error {
+  border-color: #dc2626;
+}
+
+.card-cycle-input.card-cycle-input-error:focus {
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.14);
+}
+
 .card-cycle-step {
   border-radius: 9999px;
   background: #f1f5f9;

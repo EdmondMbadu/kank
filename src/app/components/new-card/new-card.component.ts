@@ -1,10 +1,17 @@
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { Card } from 'src/app/models/card';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { isTenDigitPhone, tenDigitPhoneValidationMessage } from 'src/app/utils/ten-digit-phone.util';
 
 @Component({
   selector: 'app-new-card',
@@ -31,9 +38,19 @@ export class NewCardComponent implements OnInit {
   homeAddress: string = '';
   businessAddress: string = '';
   phoneNumber: string = '';
+  phoneInteracted = false;
+  @ViewChild('phoneInput') phoneInput?: ElementRef<HTMLInputElement>;
   amountPaidToday: string = '';
 
   amountToPay: string = '';
+
+  get isPhoneNumberValid(): boolean {
+    return isTenDigitPhone(this.phoneNumber);
+  }
+
+  get phoneValidationMessage(): string {
+    return tenDigitPhoneValidationMessage(this.phoneNumber, this.phoneInteracted);
+  }
 
   get clientDisplayName(): string {
     const parts = [this.firstName, this.middleName, this.lastName]
@@ -67,6 +84,11 @@ export class NewCardComponent implements OnInit {
   ngOnInit(): void {}
 
   addNewCardClient() {
+    this.phoneInteracted = true;
+    if (!this.isPhoneNumberValid) {
+      this.phoneInput?.nativeElement.focus();
+      return;
+    }
     let inputValid = this.data.numbersValid(this.amountToPay);
     if (
       this.firstName === '' ||
@@ -75,7 +97,6 @@ export class NewCardComponent implements OnInit {
       this.profession === '' ||
       this.businessAddress === '' ||
       this.homeAddress === '' ||
-      this.phoneNumber === '' ||
       this.amountToPay === ''
     ) {
       alert('Completer tous les données');
@@ -133,6 +154,7 @@ export class NewCardComponent implements OnInit {
     this.middleName = '';
     this.lastName = '';
     this.phoneNumber = '';
+    this.phoneInteracted = false;
     this.businessAddress = '';
     this.homeAddress = '';
     this.amountToPay = '';

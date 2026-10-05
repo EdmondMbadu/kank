@@ -1,6 +1,6 @@
 <app-navbar
-  [email]="auth.currentUser.email"
-  [firstName]="auth.currentUser.firstName"
+  [email]="auth.currentUser?.email || ''"
+  [firstName]="auth.currentUser?.firstName || ''"
   [path]="'home'"
   [currentNewClientCard]="true"
 ></app-navbar>
@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div class="card-cycle-panel p-4 sm:p-6">
+    <div *ngIf="clientCard" class="card-cycle-panel p-4 sm:p-6">
       <div class="mb-5 flex items-center justify-between">
         <div>
           <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
@@ -74,14 +74,36 @@
         </label>
 
         <label class="space-y-2">
-          <span class="card-cycle-label">Téléphone</span>
+          <span class="card-cycle-label">Téléphone <span aria-hidden="true">*</span></span>
           <input
+            #phoneInput
+            appTenDigitPhone
             type="tel"
             id="phone"
             class="card-cycle-input"
-            placeholder="0893258653"
+            [class.card-cycle-input-error]="!!phoneValidationMessage"
+            placeholder="Ex. : 0812345678"
+            required
+            pattern="[0-9]{10}"
+            maxlength="10"
+            inputmode="numeric"
+            autocomplete="tel-national"
+            aria-describedby="phoneValidation"
+            [attr.aria-invalid]="!!phoneValidationMessage"
             [(ngModel)]="clientCard.phoneNumber"
+            (ngModelChange)="phoneInteracted = true"
+            (blur)="phoneInteracted = true"
           />
+          <span
+            id="phoneValidation"
+            class="block text-xs leading-5"
+            [class.text-red-600]="!!phoneValidationMessage"
+            [class.text-slate-500]="!phoneValidationMessage"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {{ phoneValidationMessage || 'Obligatoire : exactement 10 chiffres.' }}
+          </span>
         </label>
 
         <label class="space-y-2 sm:col-span-2">
