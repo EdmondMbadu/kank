@@ -225,6 +225,7 @@ export class RequestUpdateComponent implements OnInit {
     this.client.loanAmount = this.loanAmount;
     this.client.requestAmount = this.loanAmount;
     this.client.requestDate = this.requestDate;
+    this.client.auditConversationCycleStartedAt ||= this.client.dateOfRequest;
     this.client.dateOfRequest = this.time.todaysDate();
   }
 

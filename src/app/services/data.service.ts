@@ -40,6 +40,7 @@ import {
   uploadClientPhotoThroughServer,
 } from '../utils/client-photo-recovery.util';
 import { isActivelyFollowedClient } from '../utils/active-followed-client.util';
+import { emptyAuditConversationAudioFields } from '../utils/audit-conversation-audio.util';
 import { coerceToNumber } from '../utils/number-utils';
 import {
   buildCardLifecycleEvent,
@@ -2060,6 +2061,8 @@ export class DataService {
       agentVerifyingName: '',
       agentSubmittedVerification: '',
       agentVerifiedAt: '',
+      ...emptyAuditConversationAudioFields(),
+      auditConversationCycleStartedAt: client.dateOfRequest,
       requestDate: client.requestDate,
       moneyAvailabilityMinimumDate: client.moneyAvailabilityMinimumDate,
       moneyAvailabilityPolicySnapshot:
@@ -2077,9 +2080,8 @@ export class DataService {
       .set(data, { merge: true })
       .then(() => {
         // Explicitly set `savingsPayments` to ensure it is not merged
-        clientRef.update({ savingsPayments: client.savingsPayments });
-      })
-      .catch((error) => console.error('Failed to update client data:', error));
+        return clientRef.update({ savingsPayments: client.savingsPayments });
+      });
     // return clientRef.set(data, { merge: true });
   }
   public async saveCurrentCycle(client: Client): Promise<void> {
@@ -2128,6 +2130,7 @@ export class DataService {
 
   registerClientRequestUpdate(client: Client) {
     const data = this.removeUndefinedFields({
+      auditConversationCycleStartedAt: client.auditConversationCycleStartedAt,
       firstName: client.firstName,
       lastName: client.lastName,
       middleName: client.middleName,

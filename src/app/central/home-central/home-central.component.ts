@@ -1,3 +1,4 @@
+import { currentAuditConversationAudios } from 'src/app/utils/audit-conversation-audio.util';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
@@ -4257,25 +4258,7 @@ Merci pour ta confiance !`;
   clientAuditConversationAudios(
     client?: Client | null
   ): AuditConversationAudioAttachment[] {
-    if (client?.auditConversationAudios !== undefined) {
-      return client.auditConversationAudios;
-    }
-
-    if (!client?.auditConversationAudioUrl) {
-      return [];
-    }
-
-    return [
-      {
-        url: client.auditConversationAudioUrl,
-        name: client.auditConversationAudioName,
-        mimeType: client.auditConversationAudioMimeType,
-        recordedAt: client.auditConversationAudioRecordedAt,
-        recordedAtSource: client.auditConversationAudioRecordedAtSource,
-        uploadedAt: client.auditConversationAudioUploadedAt,
-        uploadedBy: client.auditConversationAudioUploadedBy,
-      },
-    ];
+    return currentAuditConversationAudios(client);
   }
   hasClientAuditAudio(client?: Client | null): boolean {
     return this.clientAuditConversationAudios(client).length > 0;

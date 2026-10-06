@@ -14,6 +14,7 @@ import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { recoverOrRetryClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
+import { emptyAuditConversationAudioFields } from 'src/app/utils/audit-conversation-audio.util';
 import {
   createMoneyAvailabilityPolicySnapshot,
   DEFAULT_MONEY_AVAILABILITY_POLICY,
@@ -579,6 +580,8 @@ export class NewCycleRegisterComponent implements OnInit, OnDestroy {
         this.resolvedMoneyPolicy
       );
     this.client.dateOfRequest = today;
+    this.client.auditConversationCycleStartedAt = today;
+    Object.assign(this.client, emptyAuditConversationAudioFields());
     this.client.homeAvenue = this.client.homeAvenue?.trim();
     this.client.homeQuartier = this.client.homeQuartier?.trim();
     this.client.homeCommune = this.client.homeCommune?.trim();

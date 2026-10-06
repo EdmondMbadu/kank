@@ -70,6 +70,7 @@ export interface ClientHomePictureHistoryEntry extends Avatar {
 
 export interface AuditConversationAudioAttachment {
   url: string;
+  debtCycle?: string;
   name?: string;
   mimeType?: string;
   recordedAt?: string;
@@ -184,6 +185,8 @@ export class Client {
   auditCommentTaggedAt?: string;
   auditCommentTaggedBy?: string;
   auditConversationAudios?: AuditConversationAudioAttachment[];
+  /** Registration boundary retained when other requests or edits change dateOfRequest. */
+  auditConversationCycleStartedAt?: string;
   auditConversationAudioUrl?: string;
   auditConversationAudioName?: string;
   auditConversationAudioMimeType?: string;

@@ -928,6 +928,8 @@
       <p class="mb-4 mt-4 text-sm text-slate-600 dark:text-slate-300">
         Si l’audit a déjà parlé au client mais ne valide pas encore le dossier,
         l’audio peut être joint ici sans passer par la confirmation.
+        Un nouvel audio est requis à chaque cycle. Les audios des cycles précédents
+        ne valident pas cette inscription.
       </p>
 
       <div
@@ -949,7 +951,7 @@
             <button
               type="button"
               (click)="saveAuditConversationAudioOnly()"
-              [disabled]="auditAudioUploading || auditVerificationSaving"
+              [disabled]="auditAudioUploading || auditVerificationSaving || !!selectedAuditAudioCycleError"
               class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {{
@@ -979,6 +981,9 @@
           {{ selectedAuditAudioOldWarning }}
         </div>
 
+        <p *ngIf="selectedAuditAudioCycleError" class="mb-3 text-sm text-red-700 dark:text-red-300">
+          {{ selectedAuditAudioCycleError }}
+        </p>
         <audio
           [src]="selectedAuditAudioPreviewUrl"
           controls
@@ -1732,6 +1737,9 @@
         >
           {{ selectedAuditAudioOldWarning }}
         </div>
+        <p *ngIf="selectedAuditAudioCycleError" class="mb-3 text-sm text-red-700 dark:text-red-300">
+          {{ selectedAuditAudioCycleError }}
+        </p>
         <audio
           [src]="selectedAuditAudioPreviewUrl"
           controls

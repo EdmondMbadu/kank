@@ -58,6 +58,15 @@ describe('ClientPortalComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('hides carried-over audit audio on the current registration', () => {
+    const component = createComponent();
+    component.client = Object.assign(new Client(), {
+      type: 'register', debtCycle: '2', dateOfRequest: '10-6-2026-10-0-0',
+      auditConversationAudios: [{ url: 'may.m4a', uploadedAt: '5-9-2026-14-40-0' }],
+    });
+    expect(component.auditConversationAudioAttachments).toEqual([]);
+  });
+
   function openPortal(routeId: string, clients$: BehaviorSubject<Client[]>) {
     const component = createComponent();
     component.id = routeId;

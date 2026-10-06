@@ -4,6 +4,72 @@ import { of } from 'rxjs';
 import { DataService } from './data.service';
 
 describe('DataService', () => {
+  describe('new cycle audit audio reset', () => {
+    let stored: any;
+    let archived: any;
+    let clientRef: any;
+    let service: DataService;
+
+    beforeEach(() => {
+      stored = {
+        uid: 'client-89', debtCycle: '1', dateOfRequest: '5-9-2026-10-0-0',
+        auditConversationCycleStartedAt: '5-9-2026-10-0-0',
+        auditConversationAudios: [{ url: 'may.m4a', uploadedAt: '5-9-2026-14-40-0' }],
+        auditConversationAudioUrl: 'may.m4a',
+        auditConversationAudioName: 'AUD-20260509-WA0070.m4a',
+        auditConversationAudioMimeType: 'audio/x-m4a',
+        auditConversationAudioRecordedAt: '2026-05-09T14:35:00Z',
+        auditConversationAudioRecordedAtSource: 'fileLastModified',
+        auditConversationAudioUploadedAt: '5-9-2026-14-40-0',
+        auditConversationAudioUploadedBy: 'Delvaux Kank',
+        agentSubmittedVerification: 'true', agentVerifiedAt: '5-9-2026-15-0-0',
+        galleryPictures: { home: { url: 'home.jpg' } },
+      };
+      archived = undefined;
+      clientRef = {
+        ref: { get: async () => ({ data: () => ({ ...stored }) }) },
+        collection: () => ({ doc: () => ({ set: async (data: any) => { archived = data; } }) }),
+        set: jasmine.createSpy('set').and.callFake(async (data: any) => { stored = { ...stored, ...data }; }),
+        update: jasmine.createSpy('update').and.resolveTo(),
+      };
+      service = new DataService(
+        { doc: () => clientRef, createId: () => 'old-cycle-snapshot' } as any,
+        {} as any, { currentUser: { uid: 'delvaux' } } as any,
+        { getTomorrowsDateMonthDayYear: () => '10-7-2026', todaysDate: () => '10-6-2026-10-0-0' } as any,
+        {} as any, {} as any
+      );
+    });
+
+    it('archives old audio, then clears both formats in the actual merge write', async () => {
+      const client = { ...stored };
+      await service.saveCurrentCycle(client);
+      client.dateOfRequest = '10-6-2026-10-0-0';
+      client.requestDate = '10-9-2026';
+      await service.registerNewDebtCycle(client);
+
+      expect(archived.auditConversationAudios[0].url).toBe('may.m4a');
+      expect(archived.auditConversationAudioUrl).toBe('may.m4a');
+      expect(archived.auditConversationCycleStartedAt).toBe('5-9-2026-10-0-0');
+      expect(stored.debtCycle).toBe('2');
+      expect(stored.auditConversationAudios).toEqual([]);
+      for (const field of [
+        'auditConversationAudioUrl', 'auditConversationAudioName',
+        'auditConversationAudioMimeType', 'auditConversationAudioRecordedAt',
+        'auditConversationAudioRecordedAtSource', 'auditConversationAudioUploadedAt',
+        'auditConversationAudioUploadedBy', 'agentSubmittedVerification', 'agentVerifiedAt',
+      ]) {
+        expect(stored[field]).withContext(field).toBe('');
+      }
+      expect(stored.auditConversationCycleStartedAt).toBe('10-6-2026-10-0-0');
+      expect(stored.galleryPictures.home.url).toBe('home.jpg');
+    });
+
+    it('reports a failed cycle write instead of navigating as if the audio reset succeeded', async () => {
+      clientRef.set.and.rejectWith(new Error('offline'));
+      await expectAsync(service.registerNewDebtCycle(stored)).toBeRejected();
+      expect(clientRef.update).not.toHaveBeenCalled();
+    });
+  });
   describe('on-demand employee cash payment details', () => {
     const dayKey = '9-1-2026';
     let totals: any[];

@@ -738,6 +738,7 @@ export class AuthService {
         client.moneyAvailabilityPolicySnapshot,
       profession: client.profession,
       dateOfRequest: client.dateOfRequest,
+      auditConversationCycleStartedAt: client.auditConversationCycleStartedAt || client.dateOfRequest || '',
       dateJoined: `${month}-${day}-${year}`,
       payments: {},
       paymentSources: {},

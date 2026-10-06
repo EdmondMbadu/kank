@@ -1,3 +1,4 @@
+import { currentAuditConversationAudios } from 'src/app/utils/audit-conversation-audio.util';
 import {
   ChangeDetectorRef,
   Component,
@@ -573,25 +574,7 @@ export class ClientPortalComponent {
   }
 
   get auditConversationAudioAttachments(): AuditConversationAudioAttachment[] {
-    if (this.client.auditConversationAudios !== undefined) {
-      return this.client.auditConversationAudios;
-    }
-
-    if (!this.client.auditConversationAudioUrl) {
-      return [];
-    }
-
-    return [
-      {
-        url: this.client.auditConversationAudioUrl,
-        name: this.client.auditConversationAudioName,
-        mimeType: this.client.auditConversationAudioMimeType,
-        recordedAt: this.client.auditConversationAudioRecordedAt,
-        recordedAtSource: this.client.auditConversationAudioRecordedAtSource,
-        uploadedAt: this.client.auditConversationAudioUploadedAt,
-        uploadedBy: this.client.auditConversationAudioUploadedBy,
-      },
-    ];
+    return currentAuditConversationAudios(this.client);
   }
 
   auditConversationAudioUploadedAtFor(

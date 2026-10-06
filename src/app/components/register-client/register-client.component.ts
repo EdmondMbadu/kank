@@ -611,6 +611,7 @@ export class RegisterClientComponent implements OnInit, OnDestroy {
         this.resolvedMoneyPolicy
       );
     this.client.dateOfRequest = this.time.todaysDate();
+    this.client.auditConversationCycleStartedAt = this.client.dateOfRequest;
     this.client.profilePicture = this.avatar;
     this.client.homePicture = this.homePictureAvatar;
     this.client.previousHomePictures = [];

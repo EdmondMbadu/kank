@@ -57,6 +57,15 @@ describe('RequestUpdateComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('retains the original audio cycle boundary through repeated registration edits', () => {
+    component.client.dateOfRequest = '8-1-2026-10-0-0';
+    component.setClientNewDebtCycleValues();
+    expect(component.client.dateOfRequest).toBe('8-12-2026');
+    expect(component.client.auditConversationCycleStartedAt).toBe('8-1-2026-10-0-0');
+    component.setClientNewDebtCycleValues();
+    expect(component.client.auditConversationCycleStartedAt).toBe('8-1-2026-10-0-0');
+  });
+
   it('keeps the old phone in history when a register request changes it', fakeAsync(() => {
     spyOn(window, 'confirm').and.returnValue(true);
     component.client.phoneNumber = '0999999999';

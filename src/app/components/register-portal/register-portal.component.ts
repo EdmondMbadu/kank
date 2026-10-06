@@ -1,3 +1,8 @@
+import {
+  auditConversationCycleStartedAt,
+  currentAuditConversationAudios,
+  isAuditAudioRecordedBeforeCycle,
+} from 'src/app/utils/audit-conversation-audio.util';
 import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -390,6 +395,7 @@ export class RegiserPortalComponent {
       this.isConfirmed &&
       !this.auditVerificationSaving &&
       !this.auditAudioUploading &&
+      !this.selectedAuditAudioCycleError &&
       (!this.requiresAuditConversationAudio || !!this.selectedAuditAudioFile)
     );
   }
@@ -401,7 +407,7 @@ export class RegiserPortalComponent {
   }
 
   get selectedAuditAudioOldWarning(): string {
-    if (!this.selectedAuditAudioFile) return '';
+    if (!this.selectedAuditAudioFile || this.selectedAuditAudioCycleError) return '';
 
     const recordedAt = this.selectedAuditAudioRecordedDate();
     if (!recordedAt) return '';
@@ -421,6 +427,14 @@ export class RegiserPortalComponent {
     });
 
     return `Attention : cet audio semble très ancien. Il date du ${formatted}. Vous pouvez continuer, mais vérifiez bien que c’est le bon audio de conversation avec ce client.`;
+  }
+
+  get selectedAuditAudioCycleError(): string {
+    const file = this.selectedAuditAudioFile;
+    if (!file || !isAuditAudioRecordedBeforeCycle(
+      this.client, this.detectAuditAudioRecordedAt(file), file.name
+    )) return '';
+    return "Cet audio est antérieur à l'inscription de ce cycle. Ajoutez un nouvel audio de conversation avec le client.";
   }
 
   get canAddAuditClientComment(): boolean {
@@ -932,6 +946,10 @@ export class RegiserPortalComponent {
       alert("Entrer un nom d'agent valide");
       return;
     }
+    if (this.selectedAuditAudioCycleError) {
+      alert(this.selectedAuditAudioCycleError);
+      return;
+    }
     if (this.requiresAuditConversationAudio && !this.selectedAuditAudioFile) {
       alert("Ajoutez l'audio sans lequel vous ne pouvez pas confirmer ce client.");
       return;
@@ -1397,6 +1415,11 @@ export class RegiserPortalComponent {
     const normalizedFile = this.normalizeAudioFile(file);
     this.clearSelectedAuditAudio();
     this.selectedAuditAudioFile = normalizedFile;
+    if (this.selectedAuditAudioCycleError) {
+      alert(this.selectedAuditAudioCycleError);
+      this.clearSelectedAuditAudio();
+      return;
+    }
     this.selectedAuditAudioPreviewUrl = URL.createObjectURL(normalizedFile);
     this.resetAuditConversationInputs();
   }
@@ -1411,25 +1434,7 @@ export class RegiserPortalComponent {
   }
 
   get auditConversationAudioAttachments(): AuditConversationAudioAttachment[] {
-    if (this.client.auditConversationAudios !== undefined) {
-      return this.client.auditConversationAudios;
-    }
-
-    if (!this.client.auditConversationAudioUrl) {
-      return [];
-    }
-
-    return [
-      {
-        url: this.client.auditConversationAudioUrl,
-        name: this.client.auditConversationAudioName,
-        mimeType: this.client.auditConversationAudioMimeType,
-        recordedAt: this.client.auditConversationAudioRecordedAt,
-        recordedAtSource: this.client.auditConversationAudioRecordedAtSource,
-        uploadedAt: this.client.auditConversationAudioUploadedAt,
-        uploadedBy: this.client.auditConversationAudioUploadedBy,
-      },
-    ];
+    return currentAuditConversationAudios(this.client);
   }
 
   get hasPersistedAuditConversationAudio(): boolean {
@@ -1470,6 +1475,10 @@ export class RegiserPortalComponent {
   }
 
   async saveAuditConversationAudioOnly(): Promise<void> {
+    if (this.selectedAuditAudioCycleError) {
+      alert(this.selectedAuditAudioCycleError);
+      return;
+    }
     if (
       !this.client.uid ||
       !this.selectedAuditAudioFile ||
@@ -1544,6 +1553,9 @@ export class RegiserPortalComponent {
   private async uploadAuditConversationAudio(
     file: File
   ): Promise<AuditConversationAudioAttachment> {
+    if (isAuditAudioRecordedBeforeCycle(this.client, this.detectAuditAudioRecordedAt(file), file.name)) {
+      throw new Error("L'audio est antérieur à l'inscription de ce cycle.");
+    }
     const normalizedFile = this.normalizeAudioFile(file);
     const fileName = `${Date.now()}-${normalizedFile.name}`;
     const path = `audit-conversations/${this.client.uid}/${fileName}`;
@@ -1567,6 +1579,7 @@ export class RegiserPortalComponent {
 
     return {
       url,
+      debtCycle: String(this.client.debtCycle || '1'),
       name: normalizedFile.name,
       mimeType,
       recordedAt: recordedAt || undefined,
@@ -1583,6 +1596,7 @@ export class RegiserPortalComponent {
 
     return {
       auditConversationAudios: attachments,
+      auditConversationCycleStartedAt: auditConversationCycleStartedAt(this.client) || '',
       auditConversationAudioUrl: latest?.url || '',
       auditConversationAudioName: latest?.name || '',
       auditConversationAudioMimeType: latest?.mimeType || '',
