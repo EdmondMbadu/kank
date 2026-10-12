@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Client, Comment } from 'src/app/models/client';
+import { AuditConversationAudioAttachment, Client, Comment } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
+import { currentAuditConversationAudios } from 'src/app/utils/audit-conversation-audio.util';
 
 @Component({
   selector: 'app-client-cycle',
@@ -22,6 +23,25 @@ export class ClientCycleComponent {
   agent?: Employee = { firstName: '-' };
   url: string = '';
   comments: Comment[] = [];
+  showRegistrationConversation = false;
+
+  get auditConversationAudioAttachments(): AuditConversationAudioAttachment[] {
+    // Only the archived snapshot is evidence for this cycle. Never fall back
+    // to clientCycle, which is the live client's current-cycle record.
+    return currentAuditConversationAudios(this.client);
+  }
+
+  auditConversationAudioUploadedAtFor(audio: AuditConversationAudioAttachment): string {
+    return audio.uploadedAt ? this.time.convertDateToDesiredFormat(audio.uploadedAt) : '';
+  }
+
+  auditConversationAudioRecordedAtFormatted(audio: AuditConversationAudioAttachment): string {
+    return this.time.formatISOToDesiredDateTime(audio.recordedAt);
+  }
+
+  trackAuditConversationAudio(_index: number, audio: AuditConversationAudioAttachment): string {
+    return audio.url;
+  }
 
   id: any = '';
   clientId: any = '';
