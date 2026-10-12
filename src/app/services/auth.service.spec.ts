@@ -207,3 +207,88 @@ describe('AuthService independent point expectations', () => {
     expect(source.expectedPoints['9-17-2026']).toBe(10);
   });
 });
+
+describe('AuthService card phone validation at save time', () => {
+  function setup() {
+    const validate = jasmine.createSpy('validate').and.resolveTo();
+    const transaction = { set: jasmine.createSpy('transaction.set') };
+    const commit = jasmine.createSpy('commit').and.callFake(async (
+      _card: any, _owner: string, _uid: string, write: (tx: any) => void
+    ) => write(transaction));
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service, {
+      afs: {
+        createId: () => 'new-card',
+        doc: (path: string) => ({ ref: { path } }),
+        collection: (path: string) => ({ doc: () => ({ ref: { path: `${path}/event` } }) }),
+      },
+      currentUser: { uid: 'site' }, clientId: 'previous-card',
+      cardPhoneValidation: { commit, validate },
+      time: { todaysDate: () => '10-12-2026' },
+    });
+    const card = {
+      uid: 'renew-card', firstName: 'Edmond', middleName: 'Mbadu', lastName: 'Ngoma',
+      phoneNumber: '0812345678', homeAddress: 'Matete', businessAddress: 'Matete',
+      profession: 'Vendeur', cardCycle: '3', amountPaidToday: '10000', amountToPay: '10000',
+      payments: { '10-12-2026': '10000' },
+    };
+    return { service, commit, validate, transaction, card };
+  }
+
+  it('forwards the identity and current owner to a read-only precheck', async () => {
+    const { service, validate, commit, transaction, card } = setup();
+    await service.validateClientCardPhone(card);
+    expect(validate).toHaveBeenCalledOnceWith(card, 'site', undefined);
+    expect(commit).not.toHaveBeenCalled();
+    expect(transaction.set).not.toHaveBeenCalled();
+    expect(service.clientId).toBe('previous-card');
+  });
+
+  it('passes the renewal document ID to the precheck and preserves its rejection', async () => {
+    const { service, validate, commit, card } = setup();
+    const rejection = new Error('Phone rejected');
+    validate.and.rejectWith(rejection);
+    await expectAsync(service.validateClientCardPhone(card, card.uid)).toBeRejectedWith(rejection);
+    expect(validate).toHaveBeenCalledOnceWith(card, 'site', 'renew-card');
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it('creates the card and its lifecycle event through the guarded transaction', async () => {
+    const { service, commit, transaction, card } = setup();
+    await service.addNewClientCard(card);
+    expect(commit).toHaveBeenCalledOnceWith(card, 'site', 'new-card', jasmine.any(Function));
+    expect(transaction.set).toHaveBeenCalledWith({ path: 'users/site/cards/new-card' },
+      jasmine.objectContaining({ phoneNumber: '0812345678', cardCycle: '1', amountPaid: '10000' }), { merge: true });
+    expect(transaction.set).toHaveBeenCalledWith({ path: 'users/site/cards/new-card/events/event' },
+      jasmine.objectContaining({ type: 'card_created', phoneNumber: '0812345678', createdByUid: 'site' }));
+    expect(service.clientId).toBe('new-card');
+  });
+
+  it('renews through the same guarded transaction, excluding only that card', async () => {
+    const { service, commit, transaction, card } = setup();
+    await service.startNewCardCycle(card);
+    expect(commit).toHaveBeenCalledOnceWith(card, 'site', 'renew-card', jasmine.any(Function), 'renew-card');
+    expect(transaction.set).toHaveBeenCalledWith({ path: 'users/site/cards/renew-card' },
+      jasmine.objectContaining({ phoneNumber: '0812345678', cardCycle: '3', depositCount: '1' }), { merge: true });
+    expect(transaction.set).toHaveBeenCalledWith({ path: 'users/site/cards/renew-card/events/event' },
+      jasmine.objectContaining({ type: 'cycle_started', cycle: 3 }));
+  });
+
+  it('does not write or replace the last saved card ID when creation is rejected', async () => {
+    const { service, commit, transaction, card } = setup();
+    const rejection = new Error('Phone rejected');
+    commit.and.rejectWith(rejection);
+    await expectAsync(service.addNewClientCard(card)).toBeRejectedWith(rejection);
+    expect(transaction.set).not.toHaveBeenCalled();
+    expect(service.clientId).toBe('previous-card');
+  });
+
+  it('does not write a renewal or mutate the supplied card if validation fails', async () => {
+    const { service, commit, transaction, card } = setup();
+    commit.and.rejectWith(new Error('Phone rejected'));
+    await expectAsync(service.startNewCardCycle(card)).toBeRejected();
+    expect(transaction.set).not.toHaveBeenCalled();
+    expect(card.cardCycle).toBe('3');
+    expect(card.payments).toEqual({ '10-12-2026': '10000' });
+  });
+});

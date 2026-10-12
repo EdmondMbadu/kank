@@ -160,3 +160,8 @@
     padding: 0.82rem 0.9rem;
   }
 }
+
+.card-cycle-primary-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}

@@ -67,7 +67,9 @@
               type="text"
               id="first_name"
               class="field-input"
+              [readOnly]="isSubmitting"
               [(ngModel)]="lastName"
+              (ngModelChange)="phoneIdentityError = ''"
             />
           </label>
 
@@ -77,7 +79,9 @@
               type="text"
               id="last_name"
               class="field-input"
+              [readOnly]="isSubmitting"
               [(ngModel)]="middleName"
+              (ngModelChange)="phoneIdentityError = ''"
             />
           </label>
 
@@ -87,7 +91,9 @@
               type="text"
               id="firstName"
               class="field-input"
+              [readOnly]="isSubmitting"
               [(ngModel)]="firstName"
+              (ngModelChange)="phoneIdentityError = ''"
             />
           </label>
 
@@ -108,8 +114,9 @@
               autocomplete="tel-national"
               aria-describedby="phoneValidation"
               [attr.aria-invalid]="!!phoneValidationMessage"
+              [readOnly]="isSubmitting"
               [(ngModel)]="phoneNumber"
-              (ngModelChange)="phoneInteracted = true"
+              (ngModelChange)="phoneInteracted = true; phoneIdentityError = ''"
               (blur)="phoneInteracted = true"
             />
             <span
@@ -131,6 +138,7 @@
               id="profession"
               class="field-input"
               placeholder="Vendeuse"
+              [readOnly]="isSubmitting"
               [(ngModel)]="profession"
             />
           </label>
@@ -142,6 +150,7 @@
               id="address"
               class="field-input"
               placeholder="Kimayala 41 Mont-Ngafula"
+              [readOnly]="isSubmitting"
               [(ngModel)]="homeAddress"
             />
           </label>
@@ -153,6 +162,7 @@
               id="baddress"
               class="field-input"
               placeholder="Kimayala 41 Mont-Ngafula"
+              [readOnly]="isSubmitting"
               [(ngModel)]="businessAddress"
             />
           </label>
@@ -164,6 +174,7 @@
               id="amountToPay"
               class="field-input"
               placeholder="10000"
+              [readOnly]="isSubmitting"
               [(ngModel)]="amountToPay"
             />
           </label>
@@ -188,8 +199,10 @@
               type="button"
               class="inline-flex items-center justify-center rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_30px_-20px_rgba(4,120,87,0.9)] transition hover:bg-emerald-800"
               (click)="addNewCardClient()"
+              [disabled]="isSubmitting"
+              [attr.aria-busy]="isSubmitting"
             >
-              Soumettre
+              {{ isSubmitting ? 'Vérification et enregistrement…' : 'Soumettre' }}
             </button>
           </div>
         </div>

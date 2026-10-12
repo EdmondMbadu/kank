@@ -49,7 +49,9 @@
             type="text"
             id="first_name"
             class="card-cycle-input"
+            [readOnly]="isSubmitting"
             [(ngModel)]="clientCard.lastName"
+            (ngModelChange)="phoneIdentityError = ''"
           />
         </label>
 
@@ -59,7 +61,9 @@
             type="text"
             id="last_name"
             class="card-cycle-input"
+            [readOnly]="isSubmitting"
             [(ngModel)]="clientCard.middleName"
+            (ngModelChange)="phoneIdentityError = ''"
           />
         </label>
 
@@ -69,7 +73,9 @@
             type="text"
             id="first_name_given"
             class="card-cycle-input"
+            [readOnly]="isSubmitting"
             [(ngModel)]="clientCard.firstName"
+            (ngModelChange)="phoneIdentityError = ''"
           />
         </label>
 
@@ -90,8 +96,9 @@
             autocomplete="tel-national"
             aria-describedby="phoneValidation"
             [attr.aria-invalid]="!!phoneValidationMessage"
+            [readOnly]="isSubmitting"
             [(ngModel)]="clientCard.phoneNumber"
-            (ngModelChange)="phoneInteracted = true"
+            (ngModelChange)="phoneInteracted = true; phoneIdentityError = ''"
             (blur)="phoneInteracted = true"
           />
           <span
@@ -113,6 +120,7 @@
             id="profession"
             class="card-cycle-input"
             placeholder="Vendeuse"
+            [readOnly]="isSubmitting"
             [(ngModel)]="clientCard.profession"
           />
         </label>
@@ -124,6 +132,7 @@
             id="address"
             class="card-cycle-input"
             placeholder="Kimayala 41 Mont-Ngafula"
+            [readOnly]="isSubmitting"
             [(ngModel)]="clientCard.homeAddress"
           />
         </label>
@@ -135,6 +144,7 @@
             id="baddress"
             class="card-cycle-input"
             placeholder="Kimayala 41 Mont-Ngafula"
+            [readOnly]="isSubmitting"
             [(ngModel)]="clientCard.businessAddress"
           />
         </label>
@@ -146,6 +156,7 @@
             id="amountToPay"
             class="card-cycle-input"
             placeholder="10000"
+            [readOnly]="isSubmitting"
             [(ngModel)]="amountToPay"
           />
         </label>
@@ -165,8 +176,10 @@
           <button
             class="card-cycle-primary-button"
             (click)="addNewCardClient()"
+            [disabled]="isSubmitting"
+            [attr.aria-busy]="isSubmitting"
           >
-            Soumettre
+            {{ isSubmitting ? 'Vérification et enregistrement…' : 'Soumettre' }}
           </button>
         </div>
       </div>

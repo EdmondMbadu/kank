@@ -13,7 +13,8 @@
     "test:point-expectations": "firebase emulators:exec --only firestore --project demo-kank-point-expectations \"node --test test/point-expectations.rules.test.cjs\"",
     "test:performance-points": "ng test --watch=false --browsers=ChromeHeadless --include=src/app/services/performance.service.spec.ts --include=src/app/utils/point-performance.util.spec.ts --include=src/app/utils/team-monthly-performance.util.spec.ts --include=src/app/utils/firestore-v2-compat.util.spec.ts --include=src/app/central/team-ranking-month/team-ranking-month.component.spec.ts --include=src/app/shrink/employee-page/employee-page.component.spec.ts --include=src/app/services/auth.service.spec.ts",
     "test:stability": "npm run test:storage-rules && npm run test:point-expectations && npm run test:performance-points && npm run test:critical && npm run test:functions && npm run build",
-    "deploy:storage:safe": "firebase deploy --only storage"
+    "deploy:storage:safe": "firebase deploy --only storage",
+    "test:card-phone": "ng test --watch=false --browsers=ChromeHeadless --include=src/app/utils/card-phone-identity.util.spec.ts --include=src/app/services/card-phone-validation.service.spec.ts --include=src/app/components/new-card/new-card.component.spec.ts --include=src/app/components/card-cycle/card-cycle.component.spec.ts --include=src/app/services/auth.service.spec.ts && firebase emulators:exec --only firestore --project demo-kank-card-phone \"node --test test/card-phone-guard.test.cjs\""
   },
   "private": true,
   "dependencies": {

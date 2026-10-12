@@ -48,6 +48,7 @@ import {
 } from '../utils/weekly-objective-adjustment.util';
 import { FirestoreV2CompatService } from './firestore-v2-compat.service';
 import { buildCardLifecycleEvent } from '../utils/card-lifecycle-event.util';
+import { CardPhoneValidationService } from './card-phone-validation.service';
 import {
   DEFAULT_PERFORMANCE_BUDGET_PROPORTION,
   normalizePerformanceBudgetProportion,
@@ -205,7 +206,8 @@ export class AuthService {
     private time: TimeService,
     private compute: ComputationService,
     private storage: AngularFireStorage,
-    private firestoreV2: FirestoreV2CompatService
+    private firestoreV2: FirestoreV2CompatService,
+    private cardPhoneValidation: CardPhoneValidationService
   ) {
     this.clientsRef$ = of(null);
     this.user$ = this.fireauth.authState.pipe(
@@ -791,7 +793,13 @@ export class AuthService {
     return clientRef.set(data, { merge: true });
   }
 
-  addNewClientCard(card: Card) {
+  validateClientCardPhone(card: Card, excludeCardUid?: string): Promise<void> {
+    return this.cardPhoneValidation.validate({ ...card }, this.currentUser?.uid || '', excludeCardUid);
+  }
+
+  async addNewClientCard(card: Card) {
+    card = { ...card };
+    const ownerUid = this.currentUser?.uid || '';
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
@@ -814,14 +822,12 @@ export class AuthService {
       depositCount: '1',
       payments: card.payments,
     };
-    this.clientId = data.uid;
     const cardtRef: AngularFirestoreDocument<Card> = this.afs.doc(
-      `users/${this.currentUser.uid}/cards/${data.uid}`
+      `users/${ownerUid}/cards/${data.uid}`
     );
     const eventRef = this.afs
-      .collection(`users/${this.currentUser.uid}/cards/${data.uid}/events`)
+      .collection(`users/${ownerUid}/cards/${data.uid}/events`)
       .doc().ref;
-    const batch = this.afs.firestore.batch();
     const event = buildCardLifecycleEvent(
       { ...card, ...data },
       'card_created',
@@ -831,17 +837,22 @@ export class AuthService {
         cardTotalAfter: Number(card.amountPaidToday) || 0,
         depositCount: 1,
         occurredDateKey: this.time.todaysDate(),
-        createdByUid: this.currentUser.uid || '',
+        createdByUid: ownerUid,
         source: 'new-card',
       }
     );
 
-    batch.set(cardtRef.ref, data, { merge: true });
-    batch.set(eventRef, event);
-    return batch.commit();
+    await this.cardPhoneValidation.commit(card, ownerUid, data.uid, (transaction) => {
+      transaction.set(cardtRef.ref, data, { merge: true });
+      transaction.set(eventRef, event);
+    });
+    this.clientId = data.uid;
   }
 
-  startNewCardCycle(card: Card) {
+  async startNewCardCycle(card: Card) {
+    card = { ...card };
+    const ownerUid = this.currentUser?.uid || '';
+    if (!card.uid) throw new Error('Missing card ID');
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
@@ -864,12 +875,11 @@ export class AuthService {
       payments: card.payments,
     };
     const cardRef: AngularFirestoreDocument<Card> = this.afs.doc(
-      `users/${this.currentUser.uid}/cards/${card.uid}`
+      `users/${ownerUid}/cards/${card.uid}`
     );
     const eventRef = this.afs
-      .collection(`users/${this.currentUser.uid}/cards/${card.uid}/events`)
+      .collection(`users/${ownerUid}/cards/${card.uid}/events`)
       .doc().ref;
-    const batch = this.afs.firestore.batch();
     const event = buildCardLifecycleEvent(
       { ...card, ...data },
       'cycle_started',
@@ -879,14 +889,15 @@ export class AuthService {
         cardTotalAfter: Number(card.amountPaidToday) || 0,
         depositCount: 1,
         occurredDateKey: this.time.todaysDate(),
-        createdByUid: this.currentUser.uid || '',
+        createdByUid: ownerUid,
         source: 'card-cycle',
       }
     );
 
-    batch.set(cardRef.ref, data, { merge: true });
-    batch.set(eventRef, event);
-    return batch.commit();
+    return this.cardPhoneValidation.commit(card, ownerUid, card.uid, (transaction) => {
+      transaction.set(cardRef.ref, data, { merge: true });
+      transaction.set(eventRef, event);
+    }, card.uid);
   }
 
   addNewEmployee(employee: Employee) {

@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   ElementRef,
+  OnDestroy,
   OnInit,
   ViewChild,
 } from '@angular/core';
@@ -12,6 +14,7 @@ import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { isTenDigitPhone, tenDigitPhoneValidationMessage } from 'src/app/utils/ten-digit-phone.util';
+import { CardPhoneValidationError } from 'src/app/utils/card-phone-identity.util';
 
 @Component({
   selector: 'app-new-card',
@@ -19,13 +22,14 @@ import { isTenDigitPhone, tenDigitPhoneValidationMessage } from 'src/app/utils/t
   styleUrls: ['./new-card.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewCardComponent implements OnInit {
+export class NewCardComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     public auth: AuthService,
     public data: DataService,
     private time: TimeService,
-    private performance: PerformanceService
+    private performance: PerformanceService,
+    private cdr: ChangeDetectorRef
   ) {}
   amountToPayDisplay: boolean = false;
   debtCycleDisplay: boolean = false;
@@ -39,6 +43,9 @@ export class NewCardComponent implements OnInit {
   businessAddress: string = '';
   phoneNumber: string = '';
   phoneInteracted = false;
+  phoneIdentityError = '';
+  isSubmitting = false;
+  private destroyed = false;
   @ViewChild('phoneInput') phoneInput?: ElementRef<HTMLInputElement>;
   amountPaidToday: string = '';
 
@@ -49,7 +56,7 @@ export class NewCardComponent implements OnInit {
   }
 
   get phoneValidationMessage(): string {
-    return tenDigitPhoneValidationMessage(this.phoneNumber, this.phoneInteracted);
+    return tenDigitPhoneValidationMessage(this.phoneNumber, this.phoneInteracted) || this.phoneIdentityError;
   }
 
   get clientDisplayName(): string {
@@ -83,7 +90,13 @@ export class NewCardComponent implements OnInit {
 
   ngOnInit(): void {}
 
+  ngOnDestroy(): void {
+    this.destroyed = true;
+  }
+
   addNewCardClient() {
+    if (this.isSubmitting) return;
+    this.phoneIdentityError = '';
     this.phoneInteracted = true;
     if (!this.isPhoneNumberValid) {
       this.phoneInput?.nativeElement.focus();
@@ -107,34 +120,48 @@ export class NewCardComponent implements OnInit {
       );
       return;
     } else {
-      let conf = confirm(
-        `${this.firstName} ${this.middleName} ${this.lastName} va commencez a verser un montant de ${this.amountToPay} FC minimum pour sa carte. Voulez-vous quand même continuer ?`
-      );
-      if (!conf) {
-        return;
-      }
       this.setNewCardValues();
       this.addClientAndNavigate();
     }
   }
   async addClientAndNavigate() {
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
+    const card = { ...this.card };
     try {
-      this.card.payments = {
-        [this.time.todaysDate()]: this.amountToPay,
+      await this.auth.validateClientCardPhone(card);
+      if (this.destroyed) return;
+      const conf = confirm(
+        `${card.firstName} ${card.middleName} ${card.lastName} va commencez a verser un montant de ${card.amountToPay} FC minimum pour sa carte. Voulez-vous quand même continuer ?`
+      );
+      if (!conf) return;
+      card.payments = {
+        [this.time.todaysDate()]: card.amountToPay!,
       };
-      const addCardResult = await this.auth.addNewClientCard(this.card);
+      this.card = card;
+      const addCardResult = await this.auth.addNewClientCard(card);
       // Proceed with the next operation only after the previous one has completed.
       const updateInfoResult = await this.data.updateUserInfoForNewCardClient(
-        this.card
+        card
       );
       console.log('Informations utilisateur cartes mises à jour avec succès');
+      if (this.destroyed) return;
       this.resetFields();
       this.router.navigate(['client-info-card/current']);
     } catch (err) {
+      if (this.destroyed) return;
+      if (err instanceof CardPhoneValidationError) {
+        this.phoneIdentityError = err.message;
+        this.phoneInput?.nativeElement.focus();
+        return;
+      }
       alert(
         "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client de carte. Essayez encore"
       );
       console.log(err);
+    } finally {
+      this.isSubmitting = false;
+      if (!this.destroyed) this.cdr.markForCheck();
     }
   }
 
@@ -155,6 +182,7 @@ export class NewCardComponent implements OnInit {
     this.lastName = '';
     this.phoneNumber = '';
     this.phoneInteracted = false;
+    this.phoneIdentityError = '';
     this.businessAddress = '';
     this.homeAddress = '';
     this.amountToPay = '';
