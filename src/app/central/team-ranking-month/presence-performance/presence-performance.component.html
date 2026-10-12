@@ -5,6 +5,8 @@
     <div class="filters">
       <label>Équipe / site<select [(ngModel)]="location" (ngModelChange)="applyFilters()"><option value="">Toutes les équipes</option><option *ngFor="let site of locations" [value]="site">{{ site }}</option></select></label>
       <label>Fonction<select [(ngModel)]="role" (ngModelChange)="applyFilters()"><option value="">Toutes les fonctions</option><option *ngFor="let item of roles" [value]="item">{{ item }}</option></select></label>
+      <label>Échelle de performance<select [(ngModel)]="performanceScale" (ngModelChange)="applyFilters()"><option value="focused">Zoom automatique</option><option value="full">Vue complète (0–100 % minimum)</option></select></label>
+      <label>Employé à repérer<select [ngModel]="selected" (ngModelChange)="selectEmployee($event)"><option *ngFor="let row of filtered; trackBy: trackRow" [ngValue]="row">{{ row.name }} — {{ row.performance === null ? 'indisponible' : (row.performance | number:'1.0-1') + ' %' }}</option></select></label>
     </div>
     <p class="method">Présence = (présents + retards) ÷ jours attendus. Les vacances (V / VP), jours exceptionnels et jours hors contrat sont exclus. Les cercles montrent la performance individuelle ; les triangles montrent la performance de l’équipe du site du manager.</p>
     <div class="stats">
@@ -14,22 +16,36 @@
     </div>
     <p *ngIf="!filtered.length" class="empty">Aucun employé avec des jours ouvrés dans cette période et ces filtres.</p>
     <ng-container *ngIf="filtered.length">
-      <div class="chart-heading"><div><h4>Présence vs Performance</h4><p>Un marqueur = un employé. Sélectionnez un marqueur ou une ligne pour voir ses détails.</p></div><span class="badge">{{ plotted.length }} point{{ plotted.length > 1 ? 's' : '' }}</span></div>
+      <div class="chart-heading"><div><h4>Présence vs Performance</h4><p>Un marqueur = un employé. Sélectionnez un marqueur ou une ligne pour voir ses détails.</p></div><span class="badge">{{ visiblePoints.length }} / {{ plotted.length }} point{{ plotted.length > 1 ? 's' : '' }}</span></div>
+      <div class="zoom-controls" *ngIf="plotted.length" role="group" aria-label="Zoom de performance">
+        <button type="button" (click)="zoomPerformance('in')" [disabled]="!canZoomIn" aria-label="Zoom avant sur la performance">Zoom +</button>
+        <button type="button" (click)="zoomPerformance('out')" [disabled]="!canZoomOut" aria-label="Zoom arrière sur la performance">Zoom −</button>
+        <button type="button" (click)="resetZoom()" [disabled]="!manualZoom">Réinitialiser</button>
+        <span aria-live="polite">{{ yMin | number:'1.0-2' }}–{{ yMax | number:'1.0-2' }} %</span>
+      </div>
+      <p *ngIf="manualZoom" class="method">Zoom manuel sur la performance, centré sur l’employé sélectionné. Les scores et les corrélations restent identiques.</p>
+      <p *ngIf="outsideZoomCount" class="warning" role="status">{{ outsideZoomCount }} marqueur(s) hors du zoom. Utilisez Zoom − ou Réinitialiser pour les revoir, ou choisissez un employé dans « Employé à repérer ».</p>
+      <p *ngIf="plotted.length && !manualZoom" class="method">{{ performanceScale === 'focused' ? 'Zoom vertical : l’axe de performance s’adapte aux résultats visibles.' : 'Vue complète : l’axe de performance inclut au moins 0–100 %.' }} Les valeurs restent identiques.</p>
       <div *ngIf="plotted.length; else noPoints" class="plot-scroll">
         <svg viewBox="0 0 744 416" class="plot" aria-label="Nuage de points : présence confirmée et performance en points" role="group">
-          <rect x="76" y="52" width="624" height="286" rx="8" fill="#f8fafc" />
-          <g *ngFor="let tick of yTicks"><line x1="76" x2="700" [attr.y1]="y(tick)" [attr.y2]="y(tick)" stroke="#e2e8f0"/><text x="64" [attr.y]="y(tick) + 4" text-anchor="end">{{ tick | number:'1.0-0' }} %</text></g>
+          <rect x="100" y="52" width="600" height="286" rx="8" fill="#f8fafc" />
+          <g *ngFor="let tick of yTicks"><line x1="100" x2="700" [attr.y1]="y(tick)" [attr.y2]="y(tick)" stroke="#e2e8f0"/><text x="88" [attr.y]="y(tick) + 4" text-anchor="end">{{ tick | number:'1.0-2' }} %</text></g>
           <g *ngFor="let tick of xTicks"><line [attr.x1]="x(tick)" [attr.x2]="x(tick)" y1="52" y2="338" stroke="#e2e8f0"/><text [attr.x]="x(tick)" y="360" text-anchor="middle">{{ tick }} %</text></g>
-          <line x1="76" x2="700" [attr.y1]="y(100)" [attr.y2]="y(100)" stroke="#94a3b8" stroke-dasharray="5 5"/>
-          <text x="697" [attr.y]="y(100) - 9" text-anchor="end" class="target">Objectif : 100 %</text>
+          <ng-container *ngIf="yMin <= 100 && yMax >= 100">
+            <line x1="100" x2="700" [attr.y1]="y(100)" [attr.y2]="y(100)" stroke="#94a3b8" stroke-dasharray="5 5"/>
+            <text x="697" [attr.y]="y(100) - 9" text-anchor="end" class="target">Objectif : 100 %</text>
+          </ng-container>
           <line *ngFor="let line of trends" [attr.x1]="line.x1" [attr.x2]="line.x2" [attr.y1]="line.y1" [attr.y2]="line.y2" [attr.stroke]="line.color" stroke-width="2" [attr.stroke-dasharray]="line.dash"><title>Tendance : {{ line.label }}</title></line>
-          <g *ngFor="let point of plotted; trackBy: trackPoint" tabindex="0" role="button" [attr.aria-label]="point.title" [attr.aria-pressed]="selected?.id === point.row.id" (mouseenter)="selected = point.row" (focus)="selected = point.row" (click)="selected = point.row" (keydown.enter)="selected = point.row" (keydown.space)="selected = point.row; $event.preventDefault()">
+          <g *ngFor="let point of visiblePoints; trackBy: trackPoint" tabindex="0" role="button" [attr.aria-label]="point.title" [attr.aria-pressed]="selected?.id === point.row.id" (focus)="selectEmployee(point.row)" (click)="selectEmployee(point.row)" (keydown.enter)="selectEmployee(point.row)" (keydown.space)="selectEmployee(point.row); $event.preventDefault()">
             <title>{{ point.title }}</title>
             <circle *ngIf="selected?.id === point.row.id" [attr.cx]="point.x" [attr.cy]="point.y" r="13" fill="none" [attr.stroke]="point.color" stroke-width="2" opacity="0.45"/>
             <circle *ngIf="point.row.individual" [attr.cx]="point.x" [attr.cy]="point.y" r="7" [attr.fill]="point.row.complete ? point.color : '#fff'" [attr.stroke]="point.color" stroke-width="2.5"/>
             <polygon *ngIf="!point.row.individual" [attr.points]="point.triangle" [attr.fill]="point.row.complete ? point.color : '#fff'" [attr.stroke]="point.color" stroke-width="2.5"/>
           </g>
-          <text x="388" y="398" text-anchor="middle" class="axis">Présence confirmée / jours attendus (%) →</text>
+          <ng-container *ngIf="selected as employee">
+            <text *ngIf="employee.performance !== null && employee.attendance !== null && isInsideZoom(employee.performance!)" [attr.x]="x(employee.attendance!) + (employee.attendance! > 55 ? -15 : 15)" [attr.y]="y(employee.performance!) < 75 ? y(employee.performance!) + 24 : y(employee.performance!) - 15" [attr.text-anchor]="employee.attendance! > 55 ? 'end' : 'start'" fill="#0f172a" stroke="white" stroke-width="4" style="paint-order:stroke;pointer-events:none;font-weight:700">{{ employee.name }} · {{ employee.performance | number:'1.0-1' }} %</text>
+          </ng-container>
+          <text x="400" y="398" text-anchor="middle" class="axis">Présence confirmée / jours attendus (%) →</text>
           <text x="20" y="195" transform="rotate(-90 20 195)" text-anchor="middle" class="axis">Performance en points (%) →</text>
         </svg>
       </div>
@@ -47,12 +63,12 @@
       <div *ngIf="unavailableCount" class="empty">
         <strong>Sans performance comparable · {{ unavailableCount }} employé{{ unavailableCount > 1 ? 's' : '' }}</strong>
         <p>Ces employés restent dans les barres de présence. Leur performance n’est pas remplacée par un zéro.</p>
-        <p *ngFor="let row of unavailableRows"><button type="button" (click)="selected = row"><b>{{ row.name }}</b> · {{ row.role }} · {{ row.location }} — {{ row.attendance === null ? 'Aucun jour attendu dans cette période' : 'Aucun objectif de points positif vérifié' }}</button></p>
+        <p *ngFor="let row of unavailableRows"><button type="button" (click)="selectEmployee(row)"><b>{{ row.name }}</b> · {{ row.role }} · {{ row.location }} — {{ row.attendance === null ? 'Aucun jour attendu dans cette période' : 'Aucun objectif de points positif vérifié' }}</button></p>
       </div>
       <div class="chart-heading"><div><h4>Jours de présence par employé</h4><p>Les segments couvrent les jours ouvrés écoulés pendant le contrat.</p></div></div>
       <div class="legend status-legend"><span><i class="present"></i>Présent</span><span><i class="late"></i>Retard</span><span><i class="absent"></i>Absent</span><span><i class="leave"></i>Vacances</span><span><i class="missing"></i>Sans statut</span><span><i class="other"></i>Néant / anomalie</span></div>
       <div class="attendance-rows">
-        <button type="button" class="attendance-row" *ngFor="let row of visibleRows; trackBy: trackRow" (click)="selected = row" [class.selected]="selected?.id === row.id" [attr.aria-pressed]="selected?.id === row.id" [attr.aria-label]="description(row)">
+        <button type="button" class="attendance-row" *ngFor="let row of visibleRows; trackBy: trackRow" (click)="selectEmployee(row)" [class.selected]="selected?.id === row.id" [attr.aria-pressed]="selected?.id === row.id" [attr.aria-label]="description(row)">
           <span class="person"><b>{{ row.name }}</b><small>{{ row.location }} · {{ row.role }}</small></span>
           <span class="bar" aria-hidden="true"><span class="present" [style.width.%]="width(row, row.present)"></span><span class="late" [style.width.%]="width(row, row.late)"></span><span class="absent" [style.width.%]="width(row, row.absent)"></span><span class="leave" [style.width.%]="width(row, row.leave)"></span><span class="missing" [style.width.%]="width(row, row.missing)"></span><span class="other" [style.width.%]="width(row, row.other)"></span></span>
           <span class="count"><b>{{ row.present + row.late }} / {{ row.expected }}</b><small>jours présents</small></span>
