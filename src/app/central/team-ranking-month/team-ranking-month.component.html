@@ -8021,6 +8021,26 @@
 
 <ng-container *ngIf="auth.isAdmin">
   <ng-container *ngTemplateOutlet="presenceCalendarSection"></ng-container>
+  <section class="mx-auto mb-10 max-w-5xl px-4" aria-label="Analyse de présence et performance">
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <button type="button" class="flex w-full items-center justify-between gap-4 bg-slate-900 px-5 py-5 text-left text-white" (click)="togglePresenceAnalytics()" [disabled]="presenceAnalyticsLoading" [attr.aria-expanded]="presenceAnalyticsOpen" aria-controls="presence-performance-content">
+        <div><p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Analyse · Administrateur</p><h3 class="mt-1 text-xl font-bold">Présence &amp; Performance</h3><p class="mt-1 text-sm text-slate-300">{{ presenceMonthLabel }} {{ presenceYear }} · Tous les employés · Lundi–vendredi</p></div>
+        <span class="rounded-lg bg-white/10 px-3 py-2 text-sm font-bold">{{ presenceAnalyticsLoading ? 'Chargement…' : presenceAnalyticsOpen ? 'Fermer ↑' : 'Ouvrir ↓' }}</span>
+      </button>
+      <div *ngIf="presenceAnalyticsOpen" id="presence-performance-content">
+        <div class="flex flex-wrap gap-3 border-b border-slate-100 px-6 py-4">
+          <label class="text-xs font-bold text-slate-600">Mois<select aria-label="Mois de l’analyse de présence" [(ngModel)]="presenceMonth" (ngModelChange)="onPresenceAnalyticsPeriodChange()" class="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"><option *ngFor="let month of monthsList" [ngValue]="month">{{ time.monthFrenchNames[month - 1] }}</option></select></label>
+          <label class="text-xs font-bold text-slate-600">Année<select aria-label="Année de l’analyse de présence" [(ngModel)]="presenceYear" (ngModelChange)="onPresenceAnalyticsPeriodChange()" class="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"><option *ngFor="let year of yearsList" [ngValue]="year">{{ year }}</option></select></label>
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-600"><input type="checkbox" [(ngModel)]="presenceAnalyticsIncludeToday">Inclure aujourd’hui (journée en cours)</label>
+        </div>
+        <p *ngIf="presenceAnalyticsLoading || presenceExceptionsLoading" class="px-6 py-4 text-sm text-slate-500" role="status">Préparation de l’analyse…</p>
+        <p *ngIf="presenceAnalyticsError || presenceExceptionMessage" class="px-6 py-3 text-sm text-amber-800" role="status">{{ presenceAnalyticsError || presenceExceptionMessage }}</p>
+        <ng-container *ngIf="!presenceAnalyticsLoading && presenceAnalyticsInputs as inputs">
+          <ng-container *ngComponentOutlet="presenceAnalyticsComponent; inputs: inputs"></ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </section>
 </ng-container>
 
 <div

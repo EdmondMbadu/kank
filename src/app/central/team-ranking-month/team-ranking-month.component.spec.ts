@@ -111,6 +111,64 @@ describe('TeamRankingMonthComponent', () => {
     expect(createComponent().component).toBeTruthy();
   });
 
+  it('never opens or prepares the attendance analytics for regular users', async () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = false;
+    const exceptions = spyOn<any>(component, 'loadPresenceExceptionDaysForSelection');
+    await component.togglePresenceAnalytics();
+    component.onPresenceAnalyticsPeriodChange();
+    expect(component.presenceAnalyticsOpen).toBeFalse();
+    expect(component.presenceAnalyticsComponent).toBeNull();
+    expect(component.presenceAnalyticsInputs).toBeNull();
+    expect(exceptions).not.toHaveBeenCalled();
+  });
+
+  it('memoizes chart inputs and invalidates after attendance edits or employee snapshots', () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.presenceAnalyticsOpen = true;
+    component.presenceAnalyticsComponent = class {};
+    component.allEmployees = [{ uid: 'a', role: 'Agent', firstName: 'Alice' }];
+    const first = component.presenceAnalyticsInputs;
+    expect(component.presenceAnalyticsInputs).toBe(first);
+    (component as any).invalidatePresenceCache();
+    const edited = component.presenceAnalyticsInputs;
+    expect(edited).not.toBe(first);
+    component.allEmployees = [...component.allEmployees];
+    expect(component.presenceAnalyticsInputs).not.toBe(edited);
+    component.presenceAnalyticsOpen = false;
+    expect(component.presenceAnalyticsInputs).toBeNull();
+  });
+
+  it('ignores stale calendar exception responses when changing months quickly', async () => {
+    const { component } = createComponent();
+    const first = new Subject<any>(), second = new Subject<any>();
+    (component as any).afs.doc = (path: string) => ({ get: () => path.endsWith('2026-07') ? first : second });
+    component.presenceMonth = 7; component.presenceYear = 2026;
+    const pendingFirst = (component as any).loadPresenceExceptionDaysForSelection();
+    component.presenceMonth = 8;
+    const pendingSecond = (component as any).loadPresenceExceptionDaysForSelection();
+    second.next({ data: () => ({ days: { '2026-08-03': { reason: 'Fermé' } } }) });
+    await pendingSecond;
+    first.next({ data: () => ({ days: { '2026-07-01': { reason: 'Ancien mois' } } }) });
+    await pendingFirst;
+    expect(Object.keys(component.presenceExceptionDays)).toEqual(['2026-08-03']);
+    expect(component.presenceExceptionsLoading).toBeFalse();
+  });
+
+  it('scopes chart availability to source health rather than another month’s missing expectations', () => {
+    const { component, auth } = createComponent();
+    auth.isAdmin = true;
+    component.presenceAnalyticsOpen = true;
+    component.presenceAnalyticsComponent = class {};
+    component.presenceMonth = 9;
+    component.givenMonth = 10;
+    component.habitualPerformanceIncomplete = true;
+    expect((component.presenceAnalyticsInputs!['source'] as any).performanceReady).toBeTrue();
+    (component as any).rankingFailedOwners.add('failed-site');
+    expect((component.presenceAnalyticsInputs!['source'] as any).performanceReady).toBeFalse();
+  });
+
   it('uses the shared admin proportion for projected budgets without modifying current budgets', () => {
     const { component, auth } = createComponent();
     spyOn(component, 'getTeamManagerPerformance').and.returnValue(60);

@@ -1,4 +1,5 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, Type } from '@angular/core';
+import type { PresencePerformanceSource } from './presence-performance/presence-performance.util';
 import { Router } from '@angular/router';
 
 import { Client } from 'src/app/models/client';
@@ -403,6 +404,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
   presenceCalendarOpen = false;
+  presenceAnalyticsOpen = false;
+  presenceAnalyticsIncludeToday = false;
+  presenceAnalyticsLoading = false;
+  presenceAnalyticsError = '';
+  presenceAnalyticsComponent: Type<unknown> | null = null;
+  private presenceAnalyticsDestroyed = false;
+  private presenceAnalyticsInputsCache: Record<string, unknown> | null = null;
+  private presenceAnalyticsInputsKey = '';
+  private presenceAnalyticsEmployees: Employee[] | null = null;
+  private presenceExceptionLoadFailed = false;
+  private presenceExceptionRequestId = 0;
   selectedPresenceEmployeeId = '';
   presenceEmployeeSearch = '';
   presenceEmployeeSearchOpen = false;
@@ -1219,6 +1231,93 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
   }
 
+  async togglePresenceAnalytics(): Promise<void> {
+    // Guard the import as well as the template: regular users never download
+    // the chart chunk, build rows, or initiate chart-specific reads.
+    if (!this.auth.isAdmin || this.presenceAnalyticsLoading) return;
+    this.presenceAnalyticsOpen = !this.presenceAnalyticsOpen;
+    if (!this.presenceAnalyticsOpen) return;
+    this.presenceAnalyticsError = '';
+    this.presenceAnalyticsLoading = true;
+    try {
+      if (!this.presenceAnalyticsComponent) {
+        const chart = await import('./presence-performance/presence-performance.component');
+        if (this.presenceAnalyticsDestroyed || !this.auth.isAdmin) return;
+        this.presenceAnalyticsComponent = chart.PresencePerformanceComponent;
+      }
+      await this.loadPresenceExceptionDaysForSelection();
+    } catch (error) {
+      console.error('Failed to load presence analytics', error);
+      this.presenceAnalyticsError = 'Impossible de charger le graphique. Fermez puis ouvrez cette section pour réessayer.';
+    } finally {
+      this.presenceAnalyticsLoading = false;
+    }
+  }
+
+  onPresenceAnalyticsPeriodChange(): void {
+    if (!this.auth.isAdmin || !this.presenceAnalyticsOpen) return;
+    this.presenceBulkMessage = '';
+    this.ensurePresenceExceptionDate();
+    this.invalidatePresenceCache();
+    // No photos, payment ledgers, or amount-performance queries for this chart.
+    void this.loadPresenceExceptionDaysForSelection();
+  }
+
+  get presenceAnalyticsInputs(): Record<string, unknown> | null {
+    if (!this.auth.isAdmin || !this.presenceAnalyticsOpen || !this.presenceAnalyticsComponent) return null;
+    // Today's attendance and collections are still being recorded. Default to
+    // completed business days so a morning opening cannot imply an absence.
+    const throughDay = pointBusinessDay(new Date(Date.now() - (this.presenceAnalyticsIncludeToday ? 0 : 86400000)));
+    const exceptionKey = [this.presenceExceptionDocPath(), this.legacyPresenceExceptionDocPath()].filter(Boolean).join('|');
+    const exceptionsReady = !this.presenceExceptionsLoading && !this.presenceExceptionLoadFailed && this.presenceExceptionsCacheKey === exceptionKey;
+    // A missing expectation in the ranking's selected month must not suppress
+    // a different month in this independently scoped chart. Only stream failures
+    // make the already-loaded source unreliable for every month.
+    const performanceReady = this.rankingFailedOwners.size === 0;
+    const key = [this.presenceCacheVersion, this.presenceMonth, this.presenceYear, throughDay, exceptionsReady, performanceReady].join('|');
+    if (this.presenceAnalyticsInputsKey === key && this.presenceAnalyticsEmployees === this.allEmployees) return this.presenceAnalyticsInputsCache;
+    const [todayMonth, todayDay, todayYear] = throughDay.split('-').map(Number);
+    const isCurrent = this.presenceMonth === todayMonth && this.presenceYear === todayYear;
+    const teamRecords = new Map<string, Employee[]>();
+    for (const employee of this.allEmployeesAll.length ? this.allEmployeesAll : this.allEmployees) {
+      if (!employee.uid) continue;
+      const owner = this.employeeOwnerUid(employee);
+      const records = teamRecords.get(owner) || [];
+      records.push(employee);
+      teamRecords.set(owner, records);
+    }
+    const teamGroups = new Map<string, Employee[][]>();
+    teamRecords.forEach((records, owner) => {
+      teamGroups.set(owner, this.buildLogicalEmployeeGroups(records).map((group) => {
+        const representative = this.chooseLogicalEmployeeRepresentative(group) || group[0];
+        return [representative, ...group.filter((record) => record !== representative)];
+      }));
+    });
+    const source: PresencePerformanceSource = {
+      month: Number(this.presenceMonth), year: Number(this.presenceYear), throughDay,
+      periodLabel: `${this.presenceMonthLabel} ${this.presenceYear}${isCurrent ? ` — jusqu'au ${todayDay}` : ''} · ${this.presenceAnalyticsIncludeToday ? 'Journée en cours incluse' : 'Journées terminées'} (Kinshasa)`,
+      exceptionsReady, performanceReady,
+      excludedDates: Object.keys(this.presenceExceptionDays),
+      employees: (this.allEmployees || []).map((employee) => {
+        const records = this.logicalEmployeeGroupsByRepresentativeKey.get(this.employeeRecordKey(employee)) || [employee];
+        return {
+          id: this.employeeRecordKey(employee), name: this.formatRankingEmployeeName(employee),
+          role: employee.role?.trim() || 'Non précisée',
+          location: employee.tempLocationHolder || employee.tempUser?.firstName || 'Site non précisé',
+          records: [employee, ...records.filter((record) => record !== employee)],
+          teamKey: this.employeeOwnerUid(employee),
+          teamRecordGroups: employee.role?.toLowerCase().includes('manager') ? teamGroups.get(this.employeeOwnerUid(employee)) || [] : undefined,
+        };
+      }),
+      isEmployed: (employee, day) => this.isPresenceDayInsideEmployment(employee, day),
+      normalizeStatus: (raw) => this.normalizeAttendanceCode(raw),
+    };
+    this.presenceAnalyticsInputsCache = { source };
+    this.presenceAnalyticsInputsKey = key;
+    this.presenceAnalyticsEmployees = this.allEmployees;
+    return this.presenceAnalyticsInputsCache;
+  }
+
   onPresenceEmployeeSearchChange(): void {
     this.presenceEmployeeSearchOpen = true;
   }
@@ -1915,7 +2014,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (this.presenceExceptionsCacheKey === cacheKey) return;
 
     this.presenceExceptionsCacheKey = cacheKey;
+    const requestId = ++this.presenceExceptionRequestId;
     this.presenceExceptionsLoading = true;
+    this.presenceExceptionLoadFailed = false;
     this.presenceExceptionMessage = '';
     try {
       const [snapshot, legacySnapshot] = await Promise.all([
@@ -1924,6 +2025,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
           ? firstValueFrom(this.afs.doc(legacyPath).get())
           : Promise.resolve(null),
       ]);
+      if (requestId !== this.presenceExceptionRequestId) return;
       const data = snapshot.data() as any;
       const legacyData = legacySnapshot?.data() as any;
       const globalDays = data?.days || {};
@@ -1940,13 +2042,16 @@ export class TeamRankingMonthComponent implements OnDestroy {
       }
       this.invalidatePresenceCache();
     } catch (error) {
+      if (requestId !== this.presenceExceptionRequestId) return;
       console.error('Failed to load presence exception days', error);
+      this.presenceExceptionLoadFailed = true;
+      this.presenceExceptionsCacheKey = '';
       this.presenceExceptionDays = {};
       this.invalidatePresenceCache();
       this.presenceExceptionMessage =
         'Impossible de charger les jours exception.';
     } finally {
-      this.presenceExceptionsLoading = false;
+      if (requestId === this.presenceExceptionRequestId) this.presenceExceptionsLoading = false;
     }
   }
 
@@ -4636,6 +4741,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.presenceAnalyticsDestroyed = true;
     if (this.habitualDayTimer) clearInterval(this.habitualDayTimer);
     this.rankingUsersSub?.unsubscribe();
     this.rankingEmployeeSubs.forEach((sub) => sub.unsubscribe());
