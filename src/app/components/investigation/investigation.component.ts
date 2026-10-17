@@ -10,7 +10,7 @@ import { User } from 'src/app/models/user';
 import { Client, ClientGalleryPicture, Comment } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
-import { DataService } from 'src/app/services/data.service';
+import { DataService, InvestigationMediaLogContext } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -3561,12 +3561,20 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     if (!fileList || fileList.length === 0) return;
     const file = fileList[0];
     if (!this.isSupportedAudioFile(file)) {
+      this.data.logInvestigationMediaError(
+        { code: 'validation/unsupported-audio' },
+        this.feedbackMediaLogContext(), 'validation', file
+      );
       this.resetFileInput('feedbackAudio');
       alert('Veuillez sélectionner un audio.');
       return;
     }
     const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
+      this.data.logInvestigationMediaError(
+        { code: 'validation/file-too-large' },
+        this.feedbackMediaLogContext(), 'validation', file
+      );
       this.resetFileInput('feedbackAudio');
       alert("L'audio dépasse la limite de 20MB.");
       return;
@@ -3638,6 +3646,17 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     }
   }
 
+  private feedbackMediaLogContext(): InvestigationMediaLogContext {
+    const client = this.selectedFeedbackClient;
+    return {
+      ownerId: client?.locationOwnerId || this.selectedLocationId || this.currentUserId,
+      clientId: client?.uid || '',
+      dayKey: this.dayKey,
+      investigatorId: this.investigationAccessEmployee?.uid || '',
+      verifierName: this.feedbackVerifierName.trim(),
+    };
+  }
+
   private uploadFeedbackMediaAndPost(): void {
     const client = this.selectedFeedbackClient;
     if (!client?.uid) return;
@@ -3655,7 +3674,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       const file = this.selectedFeedbackImageFile;
       const path = `client-feedback/images/${userId}/${client.uid}/${time}-${file.name}`;
       jobs.push(
-        this.data.uploadCommentFile(file, path).then((url) => {
+        this.data.uploadCommentFile(file, path, this.feedbackMediaLogContext()).then((url) => {
           this.feedbackImageUploadUrl = url;
         })
       );
@@ -3664,7 +3683,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       const file = this.selectedFeedbackVideoFile;
       const path = `client-feedback/videos/${userId}/${client.uid}/${time}-${file.name}`;
       jobs.push(
-        this.data.uploadCommentFile(file, path).then((url) => {
+        this.data.uploadCommentFile(file, path, this.feedbackMediaLogContext()).then((url) => {
           this.feedbackVideoUploadUrl = url;
         })
       );
@@ -3673,7 +3692,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       const file = this.selectedFeedbackAudioFile;
       const path = `client-feedback/audios/${userId}/${client.uid}/${time}-${file.name}`;
       jobs.push(
-        this.data.uploadCommentFile(file, path).then((url) => {
+        this.data.uploadCommentFile(file, path, this.feedbackMediaLogContext()).then((url) => {
           this.feedbackAudioUploadUrl = url;
         })
       );
@@ -3778,6 +3797,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       })
       .catch((err) => {
         console.error('Failed to post client feedback:', err);
+        this.data.logInvestigationMediaError(
+          err, this.feedbackMediaLogContext(), 'save-feedback'
+        );
         alert("Impossible d'enregistrer l'avis du client.");
       })
       .finally(() => {

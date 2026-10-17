@@ -60,6 +60,20 @@ export interface AttendanceAttachmentUploadOptions {
   onTask?: (task: { cancel?: () => Promise<boolean> } | null) => void;
 }
 
+export interface InvestigationMediaLogContext {
+  ownerId: string;
+  clientId: string;
+  dayKey: string;
+  investigatorId: string;
+  verifierName: string;
+}
+
+export type InvestigationMediaErrorStage =
+  | 'validation'
+  | 'upload'
+  | 'download-url'
+  | 'save-feedback';
+
 export type AttendancePhotoVerificationVerdict = 'clear' | 'duplicate';
 
 export interface AttendancePhotoVerificationResult {
@@ -3353,17 +3367,96 @@ export class DataService {
     return clientRef.set(data, { merge: true });
   }
 
-  uploadCommentFile(file: File, path: string): Promise<string> {
-    const ref = this.storage.ref(path);
-    return this.storage
-      .upload(path, file)
-      .then(async () => {
-        return await ref.getDownloadURL().toPromise();
-      })
-      .catch((error) => {
-        console.error('File upload failed:', error);
-        throw error;
-      });
+  uploadCommentFile(
+    file: File,
+    path: string,
+    diagnostics?: InvestigationMediaLogContext
+  ): Promise<string> {
+    const startedAt = Date.now();
+    let stage: InvestigationMediaErrorStage = 'upload';
+    const reportFailure = (error: unknown) => {
+      console.error('File upload failed:', error);
+      if (diagnostics) {
+        this.logInvestigationMediaError(
+          error, diagnostics, stage, file, Date.now() - startedAt
+        );
+      }
+    };
+    try {
+      const ref = this.storage.ref(path);
+      return this.storage
+        .upload(path, file)
+        .then(async () => {
+          stage = 'download-url';
+          return await ref.getDownloadURL().toPromise();
+        })
+        .catch((error) => {
+          reportFailure(error);
+          throw error;
+        });
+    } catch (error) {
+      reportFailure(error);
+      throw error;
+    }
+  }
+
+  // Best effort and deliberately not awaited: diagnostics must never block a
+  // submission or replace its original error. Firestore can queue an offline
+  // write until this browser reconnects.
+  logInvestigationMediaError(
+    error: unknown,
+    context: InvestigationMediaLogContext,
+    stage: InvestigationMediaErrorStage,
+    file?: File,
+    elapsedMs = 0
+  ): void {
+    try {
+      const value = (error || {}) as {
+        code?: unknown;
+        message?: unknown;
+        status?: unknown;
+        status_?: unknown;
+        customData?: { serverResponse?: unknown };
+        serverResponse?: unknown;
+      };
+      const safeText = (input: unknown, limit: number) => String(input ?? '')
+        .replace(/https?:\/\/[^\s"'<>]+/gi, '[URL removed]')
+        .replace(/Bearer\s+[^\s"',}]+/gi, 'Bearer [removed]')
+        .replace(/((?:token|authorization|password|api[_-]?key)\s*["']?\s*[:=]\s*["']?)[^\s"',}&]+/gi, '$1[removed]')
+        .slice(0, limit);
+      const browser = typeof navigator === 'undefined' ? null : navigator;
+      const record = {
+        source: 'investigation-client-feedback',
+        diagnosticsVersion: '2026-10-17-v1',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        occurredAt: new Date().toISOString(),
+        stage,
+        actorUid: this.auth.currentUser?.uid || '',
+        ownerId: safeText(context.ownerId, 128),
+        clientId: safeText(context.clientId, 128),
+        dayKey: safeText(context.dayKey, 32),
+        investigatorId: safeText(context.investigatorId, 128),
+        verifierName: safeText(context.verifierName, 200),
+        errorCode: safeText(value.code, 128),
+        errorMessage: safeText(value.message, 1000),
+        httpStatus: safeText(value.status ?? value.status_, 20),
+        serverResponse: safeText(
+          value.customData?.serverResponse ?? value.serverResponse, 1500
+        ),
+        fileType: safeText(file?.type, 128),
+        fileExtension: safeText(file?.name.split('.').pop()?.toLowerCase(), 20),
+        fileSize: file?.size ?? 0,
+        elapsedMs,
+        online: browser?.onLine ?? null,
+        userAgent: safeText(browser?.userAgent, 512),
+      };
+      void this.afs.collection('investigationMediaErrors').add(record)
+        .catch((loggingError) => {
+          console.error('Feedback media error log could not be saved:', loggingError);
+        });
+    } catch (loggingError) {
+      console.error('Feedback media error log could not be prepared:', loggingError);
+    }
   }
 
   deleteUploadedFile(path: string): Promise<void> {

@@ -83,3 +83,68 @@ describe('InvestigationComponent profession editor', () => {
     expect(data.updateClientInvestigationFields).not.toHaveBeenCalled();
   });
 });
+
+describe('InvestigationComponent feedback diagnostics', () => {
+  function setup() {
+    const data = {
+      logInvestigationMediaError: jasmine.createSpy('logInvestigationMediaError'),
+      uploadCommentFile: jasmine.createSpy('uploadCommentFile')
+        .and.resolveTo('https://example.test/audio'),
+    };
+    const component = new InvestigationComponent(
+      { isInvestigator: true } as any,
+      { todaysDate: () => '10-17-2026-10-0-0' } as any,
+      data as any, {} as any, {} as any, {} as any, {} as any
+    );
+    component.clients = [{ uid: 'client-1', locationOwnerId: 'site-1' }];
+    component.feedbackClientId = 'client-1';
+    component.feedbackVerifierName = 'Investigator';
+    component.investigationAccessEmployee = { uid: 'employee-1' };
+    component.dayKey = '10-17-2026';
+    spyOn(window, 'alert');
+    return { component, data };
+  }
+
+  it('logs an audio format rejection while preserving the existing alert', () => {
+    const { component, data } = setup();
+    const file = new File(['unknown'], 'recording.bin');
+    component.onFeedbackAudioSelected([file] as unknown as FileList);
+    expect(data.logInvestigationMediaError).toHaveBeenCalledWith(
+      { code: 'validation/unsupported-audio' },
+      jasmine.objectContaining({ clientId: 'client-1', investigatorId: 'employee-1' }),
+      'validation', file
+    );
+    expect(window.alert).toHaveBeenCalledOnceWith('Veuillez sélectionner un audio.');
+    expect(component.selectedFeedbackAudioFile).toBeUndefined();
+  });
+
+  it('logs an oversized audio without changing the 20 MB limit', () => {
+    const { component, data } = setup();
+    const file = new File(['audio'], 'recording.m4a', { type: 'audio/mp4' });
+    Object.defineProperty(file, 'size', { value: 20 * 1024 * 1024 + 1 });
+    component.onFeedbackAudioSelected([file] as unknown as FileList);
+    expect(data.logInvestigationMediaError).toHaveBeenCalledWith(
+      { code: 'validation/file-too-large' }, jasmine.anything(), 'validation', file
+    );
+    expect(window.alert).toHaveBeenCalledOnceWith("L'audio dépasse la limite de 20MB.");
+    expect(component.selectedFeedbackAudioFile).toBeUndefined();
+  });
+
+  it('passes the selected investigator and client to upload diagnostics', async () => {
+    const { component, data } = setup();
+    const file = new File(['audio'], 'recording.m4a', { type: 'audio/mp4' });
+    component.selectedFeedbackAudioFile = file;
+    const finalize = spyOn<any>(component, 'finalizeFeedbackPost');
+    (component as any).uploadFeedbackMediaAndPost();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(data.uploadCommentFile).toHaveBeenCalledOnceWith(
+      file, 'client-feedback/audios/site-1/client-1/10-17-2026-10-0-0-recording.m4a',
+      {
+        ownerId: 'site-1', clientId: 'client-1', dayKey: '10-17-2026',
+        investigatorId: 'employee-1', verifierName: 'Investigator',
+      }
+    );
+    expect(finalize).toHaveBeenCalledTimes(1);
+    expect(data.logInvestigationMediaError).not.toHaveBeenCalled();
+  });
+});
