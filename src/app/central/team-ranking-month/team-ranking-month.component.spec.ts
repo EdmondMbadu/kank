@@ -665,6 +665,31 @@ describe('TeamRankingMonthComponent', () => {
     expect(component.habitualPerformanceIncomplete).toBeTrue();
   });
 
+  it('restored vacation zero unblocks the total while retaining work from before vacation', () => {
+    const {component} = createComponent();
+    const site = {uid: 'site', firstName: 'UPN', pointExpectationSince: '7-22-2026'} as any;
+    const active = {uid: 'active', role: 'Agent Marketing', status: 'Travaille', tempUser: site,
+      dailyPoints: {'7-22-2026': '5'}, expectedPoints: {'7-22-2026': 10, '7-23-2026': 10}} as any;
+    const vacation = {uid: 'vacation', role: 'Agent Marketing', status: 'Vacance', tempUser: site,
+      dailyPoints: {'7-22-2026': '5'}, expectedPoints: {'7-22-2026': 5}} as any;
+    const manager = {uid: 'manager', role: 'Manager', status: 'Travaille', tempUser: site,
+      expectedPoints: {'7-22-2026': 0, '7-23-2026': 0}} as any;
+    component.givenMonth = 7;
+    component.givenYear = 2026;
+    const records = [active, vacation, manager];
+    component.allEmployeesAll = records;
+    component.filterAndInitializeEmployees(records, []);
+    expect(component.currentPerformancePercent).toBeNull();
+    expect(component.habitualPerformanceIncomplete).toBeTrue();
+    vacation.expectedPoints['7-23-2026'] = 0;
+    component.filterAndInitializeEmployees(records, []);
+    expect(component.currentPerformancePercent).toBe(40);
+    expect(manager.performancePercentageMonth).toBe('40');
+    expect(component.habitualPerformanceIncomplete).toBeFalse();
+    expect(component.allEmployees.map(employee => employee.uid)).not.toContain('vacation');
+    expect((component as any).monthlyPerformanceByOwner.get('site')).toEqual({earned: 10, possible: 25});
+  });
+
   it('missing capture cannot be excluded from the global average leaving a misleading high score', () => {
     const {component} = createComponent();
     const site = {uid: 'site', firstName: 'UPN', pointExpectationSince: '7-22-2026'} as any;

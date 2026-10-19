@@ -3,6 +3,45 @@
 Implemented locally on 2026-09-16. No production deployment, scheduler
 invocation, correction, reassignment, or historical backfill was performed.
 
+## 2026-10-19 frozen zero publication recovery
+
+The October 19 capture failed at UPN with Firestore error
+`3 INVALID_ARGUMENT: The referenced transaction has expired or is no longer valid.`
+Beverly Nzuzi was on vacation, with a verified zero in the original 00:05
+Kinshasa snapshot, but no corresponding employee expectation or day ledger.
+The existing completeness check therefore withheld the global monthly score.
+
+With explicit user authorization, replayed only the existing UPN snapshot
+`users/qEpq2pOAcoUxxA1GmWdg7b9zplw2/pointExpectationDays/10-19-2026` through
+the idempotent publisher. A guarded preview verified all seven other entries
+were already published and only employee `jILuutUCuMUCRHZVInUx` was missing.
+Exactly three writes restored that frozen zero to the employee and day ledger,
+then marked the snapshot complete. Verification confirmed the rest of the
+employee document and the original snapshot contents were preserved; repeating
+publication made zero writes. No portfolio rescan or guessed expectation was
+used. The local monthly ranking visibly returned to **19%**.
+
+Publication now retries only expired/invalid transaction IDs reported as
+`INVALID_ARGUMENT`, with at most three calls to the SDK transaction runner and
+250/500 ms backoff. Normal SDK transaction retries remain in place; unrelated
+invalid arguments and permanent failures still propagate, and an exhausted
+publication remains frozen. The formula, vacation history, genuine missing-data
+warnings, daily schedule, and actual collection writes are unchanged.
+
+Verification: backend suite 92/92, Firestore capture/rules emulator suite 10/10,
+browser performance suite 123/123, TypeScript spec check, scoped ESLint, and
+`git diff --check` passed. New regression coverage exercises bounded recovery
+and exhaustion, permanent failures, frozen vacation-zero replay after portfolio
+changes, unchanged actuals/history, idempotence, and restoration of the monthly
+total without dropping pre-vacation work.
+
+Deployed only `scheduleExpectedKinshasaProd` to `kank-4bbbc`; Google Cloud
+confirmed version 100 `ACTIVE`, updated at 2026-10-19 16:09:34 UTC. No Hosting,
+rules, indexes, other function deployment, or scheduler invocation was performed.
+The CLI reported a build-image cleanup warning after the successful deployment;
+no build images were manually deleted. The next natural scheduled run has not
+yet occurred.
+
 ## 2026-09-17 debt eligibility correction
 
 Clients without a valid positive `debtLeft` are now excluded before schedule

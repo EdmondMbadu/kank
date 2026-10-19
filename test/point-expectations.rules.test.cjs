@@ -155,6 +155,49 @@ test('publication failure remains frozen and retry uses snapshot after payoff, n
   assert.equal((await db.doc(employeePath).get()).data().expectedPoints[day], 1);
 });
 
+test('expired vacation publication retries the frozen zero without changing earlier work or actual totals', async () => {
+  await preparePortfolio();
+  const vacationPath = `${ownerPath}/employees/empty`;
+  await db.doc(vacationPath).update({status: 'Vacance', dailyPoints: {'9-16-2026': '2'},
+    expectedPoints: {'9-16-2026': 4}});
+  const vacationBefore = (await db.doc(vacationPath).get()).data();
+  const actualsBefore = (await db.doc(`${employeePath}/dayTotals/${day}`).get()).data();
+  const now = new Date('2026-09-16T23:05:00Z');
+  const capture = await freezeOwnerExpectations({db, ownerUid: 'site', now, day: businessDay(now)});
+  const frozenBefore = JSON.parse(JSON.stringify(capture));
+  // Portfolio changes after freezing cannot affect the retried expectation.
+  await db.doc(`${ownerPath}/clients/client`).update({debtLeft: '0'});
+  let attempts = 0;
+  const retryingDb = Object.create(db);
+  retryingDb.runTransaction = (callback) => db.runTransaction(async (tx) => {
+    const wrapper = Object.create(tx);
+    wrapper.get = async (ref) => {
+      const result = await tx.get(ref);
+      if (ref.path === vacationPath && ++attempts === 1) {
+        throw Object.assign(new Error('3 INVALID_ARGUMENT: The referenced transaction has expired or is no longer valid.'), {code: 3});
+      }
+      return result;
+    };
+    return callback(wrapper);
+  });
+  await publishOwnerExpectations({db: retryingDb, fieldPath: admin.firestore.FieldPath, ownerUid: 'site', capture});
+  assert.equal(attempts, 2);
+  const vacationAfter = (await db.doc(vacationPath).get()).data();
+  assert.equal(vacationAfter.expectedPoints[day], 0);
+  assert.equal(vacationAfter.expectedPoints['9-16-2026'], 4);
+  assert.deepEqual(vacationAfter.dailyPoints, vacationBefore.dailyPoints);
+  assert.equal((await db.doc(`${vacationPath}/dayTotals/${day}`).get()).data().expectedPoints, 0);
+  assert.equal((await db.doc(employeePath).get()).data().expectedPoints[day], 1);
+  const actualsAfter = (await db.doc(`${employeePath}/dayTotals/${day}`).get()).data();
+  for (const field of ['total', 'count', 'dayStartMs', 'updatedAtMs']) {
+    assert.equal(actualsAfter[field], actualsBefore[field]);
+  }
+  const completed = (await db.doc(`${ownerPath}/pointExpectationDays/${day}`).get()).data();
+  assert.deepEqual(completed, {...frozenBefore, status: 'complete'});
+  const repeat = await publishOwnerExpectations({db, fieldPath: admin.firestore.FieldPath, ownerUid: 'site', capture: completed});
+  assert.equal(repeat.writes, 0);
+});
+
 test('late first capture refuses to guess and leaves activation marker for UI gap detection', async () => {
   await preparePortfolio();
   await assert.rejects(capturePointExpectations({db, fieldPath: admin.firestore.FieldPath, now: new Date('2026-09-17T16:00:00Z')}), /failed/);

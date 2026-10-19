@@ -8,6 +8,7 @@ const VERSION = "scheduled-client-points-v1";
 const COLLECTION = "pointExpectationDays";
 const DAY_MS = 86400000;
 const MAX_CAPTURE_MINUTES = 30;
+const MAX_PUBLICATION_ATTEMPTS = 3;
 const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 const frenchDays = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 
@@ -157,6 +158,21 @@ async function freezeOwnerExpectations({db, ownerUid, day, now, ownerSince = day
   }
 }
 
+async function publishTransaction(db, callback) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await db.runTransaction(callback);
+    } catch (error) {
+      // Some Admin SDK versions do not retry INVALID_ARGUMENT for an expired
+      // transaction. Start a fresh transaction, only for that specific failure.
+      const expired = [3, "3", "invalid-argument", "INVALID_ARGUMENT"].includes(error.code) &&
+        /transaction (?:has expired|is no longer valid)/i.test(error.message || "");
+      if (!expired || attempt >= MAX_PUBLICATION_ATTEMPTS) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** (attempt - 1)));
+    }
+  }
+}
+
 async function publishOwnerExpectations({db, fieldPath, ownerUid, capture}) {
   const FieldPath = fieldPath;
   let writes = 0;
@@ -166,7 +182,7 @@ async function publishOwnerExpectations({db, fieldPath, ownerUid, capture}) {
     const results = await Promise.allSettled(employees.slice(offset, offset + 8).map(async ([employeeId, value]) => {
       const employeeRef = db.doc(`users/${ownerUid}/employees/${employeeId}`);
       const totalRef = employeeRef.collection("dayTotals").doc(capture.dayKey);
-      return db.runTransaction(async (tx) => {
+      return publishTransaction(db, async (tx) => {
         const employee = await tx.get(employeeRef);
         const total = await tx.get(totalRef);
         if (!employee.exists) throw new Error(`Employee removed during capture: ${employeeId}`);

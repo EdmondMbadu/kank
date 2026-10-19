@@ -2,7 +2,7 @@
 /* eslint-disable max-len */
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const {businessDay, buildExpectations, capturePointExpectations} = require("../point-expectations");
+const {businessDay, buildExpectations, capturePointExpectations, publishOwnerExpectations} = require("../point-expectations");
 const {parseArgs, ACK} = require("../scripts/point-expectations-admin");
 
 const day = businessDay(new Date("2026-09-16T23:05:00Z"));
@@ -86,4 +86,55 @@ test("admin audit is read-only, corrections default to dry-run and require reaso
 test("expired scheduler messages stop retrying without scans or writes", async () => {
   const result = await capturePointExpectations({db: {}, now: new Date("2026-09-18T10:00:00Z"), scheduledAt: new Date("2026-09-16T23:05:00Z")});
   assert.equal(result.expiredRetry, true);
+});
+
+/**
+ * Simulates failures escaping the Admin SDK's own transaction retries.
+ * @param {Error} error Failure returned by each rejected transaction.
+ * @param {number} failures Number of failures before success.
+ * @return {object} Minimal publication database and observed state.
+ */
+function publicationFailureDb(error, failures = Infinity) {
+  let attempts = 0;
+  let completed = false;
+  const ref = {collection: () => ({doc: () => ({})}), update: async () => {
+    completed = true;
+  }};
+  return {
+    doc: () => ref,
+    runTransaction: async () => {
+      attempts++;
+      if (attempts <= failures) throw error;
+      return 2;
+    },
+    state: () => ({attempts, completed}),
+  };
+}
+
+const frozenPublication = {status: "frozen", dayKey: day.dayKey, employees: {
+  vacation: {points: 0, expectedFc: 0, issues: 0},
+}};
+
+test("expired publication starts fresh transactions and stops after three attempts", async () => {
+  const error = Object.assign(new Error("3 INVALID_ARGUMENT: The referenced transaction has expired or is no longer valid."), {code: 3});
+  const db = publicationFailureDb(error);
+  await assert.rejects(publishOwnerExpectations({db, ownerUid: "site", capture: frozenPublication}), (caught) => caught === error);
+  assert.deepEqual(db.state(), {attempts: 3, completed: false});
+});
+
+test("expired publication can recover on the third attempt", async () => {
+  const error = Object.assign(new Error("The referenced transaction is no longer valid."), {code: 3});
+  const db = publicationFailureDb(error, 2);
+  const result = await publishOwnerExpectations({db, ownerUid: "site", capture: frozenPublication});
+  assert.deepEqual(db.state(), {attempts: 3, completed: true});
+  assert.equal(result.writes, 3);
+});
+
+test("unrelated invalid arguments and permanent publication failures are not retried", async () => {
+  for (const error of [Object.assign(new Error("Invalid field value"), {code: 3}),
+    Object.assign(new Error("Permission denied"), {code: 7}), new Error("Employee removed during capture")]) {
+    const db = publicationFailureDb(error);
+    await assert.rejects(publishOwnerExpectations({db, ownerUid: "site", capture: frozenPublication}), (caught) => caught === error);
+    assert.deepEqual(db.state(), {attempts: 1, completed: false});
+  }
 });
