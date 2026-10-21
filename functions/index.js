@@ -4990,6 +4990,8 @@ exports.scheduledSendAgentFollowups = functions.pubsub
               const builtMessage = buildEmployeeSummaryMessage({
                 firstName: e.firstName,
                 lastName: e.lastName,
+                dateKey,
+                maxNumberOfDaysToLend: userDoc.get("maxNumberOfDaysToLend"),
                 clients: effCurrent.map((client) => {
                   const minPayment = minimumPayment(client);
                   return {

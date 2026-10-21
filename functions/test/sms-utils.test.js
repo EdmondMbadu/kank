@@ -332,6 +332,87 @@ test("employee no-client message remains useful and one segment", () => {
   );
 });
 
+test("employee no-client wording changes only after the site's cutoff", () => {
+  const employee = {firstName: "Emilie", lastName: "Malundama", clients: []};
+  const original = "Emilie Malundama: Client programme te lelo. " +
+    "Luka clients ya sika pe landela oyo bafutaki te lobi. Fondation Gervais.";
+  const afterCutoff = "Emilie Malundama: Client programme te lelo. " +
+    "Luka clients ya sika pona le 1er ya mois ekoya pe landela oyo " +
+    "bafutaki te lobi. Fondation Gervais.";
+  const cases = [
+    {dateKey: "2026-10-19", cutoff: "20", nextMonth: false},
+    {dateKey: "2026-10-20", cutoff: "20", nextMonth: false},
+    {dateKey: "2026-10-21", cutoff: "20", nextMonth: true},
+    {dateKey: "2026-10-18", cutoff: "18", nextMonth: false},
+    {dateKey: "2026-10-19", cutoff: "18", nextMonth: true},
+    {dateKey: "2026-10-21", cutoff: "25", nextMonth: false},
+    {dateKey: "2026-10-25", cutoff: "25", nextMonth: false},
+    {dateKey: "2026-10-26", cutoff: "25", nextMonth: true},
+    {dateKey: "2026-10-31", cutoff: 31, nextMonth: false},
+    {dateKey: "2026-11-01", cutoff: "20", nextMonth: false},
+    {dateKey: "2026-12-31", cutoff: "20", nextMonth: true},
+    {dateKey: "2027-01-01", cutoff: "20", nextMonth: false},
+    {dateKey: "2027-02-28", cutoff: "20", nextMonth: true},
+    {dateKey: "2027-02-28", cutoff: "31", nextMonth: false},
+    {dateKey: "2028-02-29", cutoff: "20", nextMonth: true},
+  ];
+
+  for (const {dateKey, cutoff, nextMonth} of cases) {
+    const result = buildEmployeeSummaryMessage({
+      ...employee,
+      dateKey,
+      maxNumberOfDaysToLend: cutoff,
+    });
+    const label = `${dateKey}, cutoff ${cutoff}`;
+    assert.equal(result.message, nextMonth ? afterCutoff : original, label);
+    assert.equal(result.measurement.encoding, "GSM-7", label);
+    assert.equal(result.measurement.segments, 1, label);
+    assert.equal(result.usedCompactFallback, false, label);
+    assert.equal(result.includedDebt, false, label);
+  }
+});
+
+test("employee no-client cutoff uses the same fallback as registration", () => {
+  for (const cutoff of [undefined, null, "", "invalid", 0, "0"]) {
+    for (const day of [20, 21]) {
+      const result = buildEmployeeSummaryMessage({
+        firstName: "Emilie",
+        lastName: "Malundama",
+        clients: [],
+        dateKey: `2026-10-${day}`,
+        maxNumberOfDaysToLend: cutoff,
+      });
+      assert.equal(
+          result.message.includes("pona le 1er ya mois ekoya"),
+          day === 21,
+          `day ${day}, cutoff ${String(cutoff)}`,
+      );
+    }
+  }
+});
+
+test("employee client lists remain identical after the cutoff", () => {
+  const employee = {
+    firstName: "Emilie",
+    lastName: "Malundama",
+    clients: [{
+      firstName: "Mado",
+      lastName: "Kanku",
+      phoneNumber: "0812345678",
+      minPayment: 10000,
+      debtLeft: 250000,
+    }],
+  };
+  const original = buildEmployeeSummaryMessage(employee);
+  const afterCutoff = buildEmployeeSummaryMessage({
+    ...employee,
+    dateKey: "2026-10-21",
+    maxNumberOfDaysToLend: "20",
+  });
+
+  assert.deepEqual(afterCutoff, original);
+});
+
 test("unicode punctuation is normalized without forcing UCS-2", () => {
   const safe = toGsmSafe("⚠️ Client • dette — l’appli");
   assert.equal(measureSms(safe).encoding, "GSM-7");

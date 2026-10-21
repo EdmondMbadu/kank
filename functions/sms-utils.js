@@ -361,13 +361,25 @@ function employeeClientEntry(client, {includeDebt, firstOnly}) {
     (includeDebt ? ` n FC${debt}` : "");
 }
 
-function buildEmployeeSummaryMessage({firstName, lastName, clients = []}) {
+function buildEmployeeSummaryMessage({
+  firstName,
+  lastName,
+  clients = [],
+  dateKey,
+  maxNumberOfDaysToLend,
+}) {
   const names = clientNames(firstName, lastName);
   const safeClients = Array.isArray(clients) ? clients : [];
   if (!safeClients.length) {
+    // dateKey is the scheduler's YYYY-MM-DD date in Africa/Kinshasa.
+    const dayOfMonth = Number(String(dateKey || "").split("-")[2]);
+    // Match registration's configured cutoff and existing default.
+    const cutoffDay = Number(maxNumberOfDaysToLend) || 20;
+    const recruitmentTiming = dayOfMonth > cutoffDay ?
+      "pona le 1er ya mois ekoya " : "";
     const message = toGsmSafe(
         `${names.fullName}: Client programme te lelo. Luka clients ya sika ` +
-        `pe landela oyo bafutaki te lobi. ${BRAND_LINE}`,
+        `${recruitmentTiming}pe landela oyo bafutaki te lobi. ${BRAND_LINE}`,
     );
     return {
       message,
