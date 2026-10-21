@@ -1,0 +1,16 @@
+.audit-dialog-overlay {
+  height: 100vh;
+  height: 100dvh;
+  padding: max(0.75rem, env(safe-area-inset-top))
+    max(0.75rem, env(safe-area-inset-right))
+    max(0.75rem, env(safe-area-inset-bottom))
+    max(0.75rem, env(safe-area-inset-left));
+  overscroll-behavior: none;
+}
+
+.audit-dialog-body {
+  overscroll-behavior-y: contain;
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-block: 1rem;
+}

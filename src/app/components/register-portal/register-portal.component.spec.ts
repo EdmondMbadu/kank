@@ -70,6 +70,61 @@ describe('RegiserPortalComponent', () => {
     expect(label).toBe('');
   });
 
+  describe('audit dialog page scrolling', () => {
+    let originalBodyStyles: string;
+    let restoreScroll: jasmine.Spy;
+
+    beforeEach(() => {
+      originalBodyStyles = document.body.style.cssText;
+      spyOnProperty(window, 'scrollX', 'get').and.returnValue(0);
+      spyOnProperty(window, 'scrollY', 'get').and.returnValue(640);
+      restoreScroll = spyOn(window, 'scrollTo');
+    });
+
+    afterEach(() => {
+      component.closeAuditConfirmation();
+      document.body.style.cssText = originalBodyStyles;
+    });
+
+    it('keeps the background page fixed at its current position', () => {
+      component.isConfirmed = true;
+
+      component.confirmAudit();
+
+      expect(component.showAuditConfirmation).toBeTrue();
+      expect(component.isConfirmed).toBeFalse();
+      expect(document.body.style.position).toBe('fixed');
+      expect(document.body.style.top).toBe('-640px');
+      expect(document.body.style.overflow).toBe('hidden');
+    });
+
+    it('restores existing page styles and position when the dialog closes', () => {
+      document.body.style.position = 'relative';
+      document.body.style.top = '2px';
+      document.body.style.left = '3px';
+      document.body.style.width = '95%';
+      document.body.style.overflow = 'auto';
+      const existingStyles = document.body.style.cssText;
+      component.confirmAudit();
+      component.confirmAudit();
+
+      component.closeAuditConfirmation();
+
+      expect(component.showAuditConfirmation).toBeFalse();
+      expect(document.body.style.cssText).toBe(existingStyles);
+      expect(restoreScroll).toHaveBeenCalledOnceWith(0, 640);
+    });
+
+    it('releases the page when navigating away with the dialog open', () => {
+      component.confirmAudit();
+
+      component.ngOnDestroy();
+
+      expect(document.body.style.cssText).toBe(originalBodyStyles);
+      expect(restoreScroll).toHaveBeenCalledOnceWith(0, 640);
+    });
+  });
+
   describe('fresh audio requirement', () => {
     let data: any;
     let storage: any;

@@ -153,6 +153,11 @@ export class RegiserPortalComponent {
   @ViewChild('phoneHistory', { static: false }) phoneHistoryRef?: ElementRef;
 
   showAuditConfirmation: boolean = false;
+  private auditPageScroll?: {
+    x: number;
+    y: number;
+    styles: Pick<CSSStyleDeclaration, 'position' | 'top' | 'left' | 'width' | 'overflow'>;
+  };
   showAuditConversation = false;
   isConfirmed: boolean = false;
   audits: Audit[] = [];
@@ -755,9 +760,29 @@ export class RegiserPortalComponent {
   // }
 
   toggle(property: 'showAuditConfirmation' | 'isConfirmed') {
-    this[property] = !this[property];
+    if (property === 'showAuditConfirmation') {
+      this.showAuditConfirmation ? this.closeAuditConfirmation() : this.confirmAudit();
+      return;
+    }
+    this.isConfirmed = !this.isConfirmed;
   }
   confirmAudit() {
+    if (!this.auditPageScroll) {
+      const {position, top, left, width, overflow} = document.body.style;
+      this.auditPageScroll = {
+        x: window.scrollX,
+        y: window.scrollY,
+        styles: {position, top, left, width, overflow},
+      };
+      // Fix the page behind the dialog, including on mobile Safari.
+      Object.assign(document.body.style, {
+        position: 'fixed',
+        top: `-${this.auditPageScroll.y}px`,
+        left: `-${this.auditPageScroll.x}px`,
+        width: '100%',
+        overflow: 'hidden',
+      });
+    }
     this.showAuditConfirmation = true;
     this.isConfirmed = false;
   }
@@ -765,6 +790,15 @@ export class RegiserPortalComponent {
   closeAuditConfirmation(): void {
     this.showAuditConfirmation = false;
     this.isConfirmed = false;
+    this.restoreAuditPageScroll();
+  }
+
+  private restoreAuditPageScroll(): void {
+    if (!this.auditPageScroll) return;
+    const {x, y, styles} = this.auditPageScroll;
+    Object.assign(document.body.style, styles);
+    this.auditPageScroll = undefined;
+    window.scrollTo(x, y);
   }
   async cancelRegistration() {
     let total =
@@ -1819,6 +1853,7 @@ export class RegiserPortalComponent {
   }
 
   ngOnDestroy(): void {
+    this.restoreAuditPageScroll();
     this.clearSelectedAuditAudio();
     this.clearAuditClientCommentAttachment(false);
   }
