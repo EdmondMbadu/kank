@@ -201,13 +201,23 @@
                 <h3 class="text-base font-semibold text-slate-900">
                   Visite domicile
                 </h3>
-                <p class="mt-1 text-sm text-slate-500">
-                  Photo de la maison visitée et adresse exacte du client.
-                </p>
               </div>
               <span class="w-fit rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
                 Obligatoire
               </span>
+            </div>
+
+            <div
+              id="homePictureGuidance"
+              class="rounded-r-xl border-l-4 border-amber-500 bg-amber-50 px-4 py-3 text-amber-950"
+            >
+              <p class="text-base font-bold leading-6">
+                La maison doit être reconnaissable.
+              </p>
+              <p class="mt-1 text-sm leading-6">
+                Photo nette, idéalement de face avec l’entrée visible.
+                <strong class="block font-semibold">Un mur seul ne suffit pas.</strong>
+              </p>
             </div>
 
             <div class="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -215,6 +225,7 @@
                 <input
                   type="file"
                   id="putHomePicture"
+                  aria-describedby="homePictureGuidance"
                   accept="image/*"
                   class="hidden"
                   (change)="startHomePictureUpload($any($event.target).files)"
@@ -222,6 +233,7 @@
                 <input
                   type="file"
                   id="changeHomePicture"
+                  aria-describedby="homePictureGuidance"
                   accept="image/*"
                   class="hidden"
                   (change)="startHomePictureUpload($any($event.target).files)"
@@ -229,6 +241,7 @@
 
                 <button
                   type="button"
+                  aria-describedby="homePictureGuidance"
                   class="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-[20px] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50"
                   (click)="onImageClick(homePictureUrl ? 'changeHomePicture' : 'putHomePicture')"
                 >
@@ -247,6 +260,7 @@
 
                 <button
                   type="button"
+                  aria-describedby="homePictureGuidance"
                   class="cycle-secondary-button mt-3 w-full"
                   [disabled]="homePictureUploading"
                   (click)="onImageClick(homePictureUrl ? 'changeHomePicture' : 'putHomePicture')"
