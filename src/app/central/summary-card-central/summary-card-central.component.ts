@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
@@ -33,6 +33,13 @@ type BulkResult = {
   failures: BulkFailure[];
 };
 type SendResult = { ok: boolean; text: string };
+type CardLocationSummary = {
+  location: string;
+  total: number;
+  current: number;
+  savings: number;
+  savingsUsd: number;
+};
 type BulkLogContext = 'card_clients' | 'custom';
 type BulkMessageLogDocument = {
   type?: BulkLogContext | string;
@@ -138,11 +145,6 @@ export class SummaryCardCentralComponent implements OnDestroy {
   currentClientsCard: Card[] = [];
   elements: number = 10;
 
-  linkPath: string[] = [
-    '/client-info-card',
-    '/client-info-card',
-    '/client-info-card',
-  ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
@@ -155,6 +157,19 @@ export class SummaryCardCentralComponent implements OnDestroy {
   ];
   summaryContent: string[] = [];
   sContent: string[] = [];
+
+  isSummaryModalOpen = false;
+  summaryMetricIndex = 0;
+  summaryLocationSearch = '';
+  summaryLocations: CardLocationSummary[] = [];
+  summaryVisibleLocations: CardLocationSummary[] = [];
+  summaryFilteredTotal = 0;
+  summaryFilteredTotalUsd = 0;
+  cardsSummaryLoading = true;
+  cardsSummaryError = '';
+  @ViewChild('summaryDialog') summaryDialog?: ElementRef<HTMLElement>;
+  private summaryPreviousFocus: HTMLElement | null = null;
+  private summaryPreviousOverflow = '';
 
   // ================= NEW: CARDS DASHBOARD STATE =================
 
@@ -203,6 +218,7 @@ export class SummaryCardCentralComponent implements OnDestroy {
   private allUsersSub?: Subscription;
   private cardsDataSub?: Subscription;
   private creditClientsSub?: Subscription;
+  private cardsSearchSub?: Subscription;
 
   cardUniqueLocations: string[] = [];
   cardSelectedLocations = new Set<string>();
@@ -272,22 +288,27 @@ export class SummaryCardCentralComponent implements OnDestroy {
 
   ngOnInit(): void {
     this.listenToCardSmsSettings();
-    this.allUsersSub = this.auth.getAllUsersInfo().subscribe((data) => {
-      this.allUsers = data;
-      this.getAllClientsCard();
-      this.getAllCreditClients();
+    this.allUsersSub = this.auth.getAllUsersInfo().subscribe({
+      next: (data) => {
+        this.allUsers = data;
+        this.getAllClientsCard();
+        this.getAllCreditClients();
+      },
+      error: () => this.onCardsSummaryError(),
     });
     this.listenToBulkLogs();
     this.listenToScheduledBulkMessages();
   }
 
   ngOnDestroy(): void {
+    this.closeSummaryModal();
     this.bulkLogsSub?.unsubscribe();
     this.scheduledBulkSub?.unsubscribe();
     this.cardSmsSettingsSub?.unsubscribe();
     this.allUsersSub?.unsubscribe();
     this.cardsDataSub?.unsubscribe();
     this.creditClientsSub?.unsubscribe();
+    this.cardsSearchSub?.unsubscribe();
   }
 
   private listenToCardSmsSettings(): void {
@@ -450,6 +471,8 @@ export class SummaryCardCentralComponent implements OnDestroy {
   // ======== FETCH & SUMMARY =========
   getAllClientsCard() {
     this.cardsDataSub?.unsubscribe();
+    this.cardsSummaryLoading = true;
+    this.cardsSummaryError = '';
     if (!this.allUsers.length) {
       this.filterAndInitializeClientsCard([]);
       return;
@@ -467,10 +490,16 @@ export class SummaryCardCentralComponent implements OnDestroy {
       )
     );
 
-    this.cardsDataSub = combineLatest(siteCardStreams).subscribe(
-      (cardsBySite) =>
-        this.filterAndInitializeClientsCard(cardsBySite.flat() as Card[])
-    );
+    this.cardsDataSub = combineLatest(siteCardStreams).subscribe({
+      next: (cardsBySite) =>
+        this.filterAndInitializeClientsCard(cardsBySite.flat() as Card[]),
+      error: () => this.onCardsSummaryError(),
+    });
+  }
+
+  private onCardsSummaryError(): void {
+    this.cardsSummaryLoading = false;
+    this.cardsSummaryError = 'Impossible de charger la répartition par site. Actualisez la page pour réessayer.';
   }
 
   getAllCreditClients() {
@@ -500,16 +529,20 @@ export class SummaryCardCentralComponent implements OnDestroy {
   filterAndInitializeClientsCard(allClients: Card[]) {
     const unique = new Map<string, Card>();
     allClients.forEach((client: any) => {
-      const key =
+      const identity =
         client.uid ||
         client.trackingId ||
         `${client.firstName}-${client.lastName}-${client.phoneNumber}`;
+      // Card IDs belong to a site's collection, not to the central collection.
+      const key = JSON.stringify([client.ownerUid || client.locationName || '', identity]);
       if (!unique.has(key)) unique.set(key, client);
     });
 
     this.allClientsCard = Array.from(unique.values());
     this.initalizeInputs(); // existing summary
     this.buildCardsDataset(); // new dashboard dataset
+    this.cardsSummaryLoading = false;
+    this.cardsSummaryError = '';
   }
 
   private initializeCreditClients(allClients: Client[]) {
@@ -548,6 +581,7 @@ export class SummaryCardCentralComponent implements OnDestroy {
         clientCardSavings.toString()
       )}`,
     ];
+    this.buildSummaryLocations();
   }
 
   findCurrentClientsCard() {
@@ -562,9 +596,114 @@ export class SummaryCardCentralComponent implements OnDestroy {
   findMoneyToReturnToClients() {
     let total = 0;
     this.currentClientsCard.forEach((client: any) => {
-      total += Number(client.amountPaid) - Number(client.amountToPay);
+      total += this.summaryCardSavings(client);
     });
     return total;
+  }
+
+  private summaryCardSavings(card: Card): number {
+    const paid = Number(card.amountPaid);
+    const fee = Number(card.amountToPay);
+    return (Number.isFinite(paid) ? paid : 0) - (Number.isFinite(fee) ? fee : 0);
+  }
+
+  private summaryDollars(amount: number): number {
+    return Number(this.compute.convertCongoleseFrancToUsDollars(String(amount))) || 0;
+  }
+
+  private buildSummaryLocations(): void {
+    // Rebuilt only when the existing card stream changes; opening/searching
+    // the dialog never reads Firestore or scans individual clients.
+    const locations = new Map<string, CardLocationSummary>();
+    const siteNames = new Map(this.allUsers.map((user) => [user.uid, user.firstName]));
+    const ensureLocation = (name?: string): CardLocationSummary => {
+      const location = name?.trim() || 'Site non renseigné';
+      let row = locations.get(location);
+      if (!row) {
+        row = { location, total: 0, current: 0, savings: 0, savingsUsd: 0 };
+        locations.set(location, row);
+      }
+      return row;
+    };
+    this.allUsers.forEach((user) => ensureLocation(user.firstName));
+    for (const card of (this.allClientsCard || []) as (Card & { locationName?: string; ownerUid?: string })[]) {
+      const row = ensureLocation(card.locationName || siteNames.get(card.ownerUid));
+      row.total++;
+      // Match the existing central indicators, including their signed balance.
+      if (card.clientCardStatus !== 'ended') {
+        row.current++;
+        row.savings += this.summaryCardSavings(card);
+      }
+    }
+    this.summaryLocations = Array.from(locations.values()).sort((a, b) =>
+      a.location.localeCompare(b.location, 'fr')
+    );
+    this.summaryLocations.forEach((row) => row.savingsUsd = this.summaryDollars(row.savings));
+    this.filterSummaryLocations();
+  }
+
+  summaryLocationValue(row: CardLocationSummary): number {
+    return this.summaryMetricIndex === 0 ? row.total : this.summaryMetricIndex === 1 ? row.current : row.savings;
+  }
+
+  trackSummaryLocation(_index: number, row: CardLocationSummary): string {
+    return row.location;
+  }
+
+  filterSummaryLocations(): void {
+    const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const search = normalize(this.summaryLocationSearch);
+    this.summaryVisibleLocations = this.summaryLocations.filter((row) => normalize(row.location).includes(search));
+    this.summaryFilteredTotal = this.summaryVisibleLocations.reduce((sum, row) => sum + this.summaryLocationValue(row), 0);
+    this.summaryFilteredTotalUsd = this.summaryMetricIndex === 2 ? this.summaryDollars(this.summaryFilteredTotal) : 0;
+  }
+
+  resetSummaryLocationSearch(): void {
+    this.summaryLocationSearch = '';
+    this.filterSummaryLocations();
+  }
+
+  openSummaryModal(index: number): void {
+    if (index < 0 || index > 2) return;
+    if (!this.isSummaryModalOpen) {
+      this.summaryPreviousFocus = document.activeElement as HTMLElement | null;
+      this.summaryPreviousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
+    this.summaryMetricIndex = index;
+    this.isSummaryModalOpen = true;
+    this.resetSummaryLocationSearch();
+    setTimeout(() => {
+      if (this.isSummaryModalOpen) this.summaryDialog?.nativeElement.querySelector<HTMLElement>('button')?.focus();
+    });
+  }
+
+  closeSummaryModal(): void {
+    if (!this.isSummaryModalOpen) return;
+    this.isSummaryModalOpen = false;
+    document.body.style.overflow = this.summaryPreviousOverflow;
+    this.summaryPreviousFocus?.focus();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onSummaryModalKeydown(event: KeyboardEvent): void {
+    if (!this.isSummaryModalOpen) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeSummaryModal();
+    } else if (event.key === 'Tab') {
+      const controls = this.summaryDialog?.nativeElement.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])');
+      if (!controls?.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
   }
 
   // ======== NEW: CARDS DATASET & FILTERS =========
@@ -591,7 +730,8 @@ export class SummaryCardCentralComponent implements OnDestroy {
   }
 
   private setupCardsSearch() {
-    this.cardsSearchControl.valueChanges
+    if (this.cardsSearchSub) return;
+    this.cardsSearchSub = this.cardsSearchControl.valueChanges
       .pipe(debounceTime(250), distinctUntilChanged())
       .subscribe((value) => {
         this.cardsSearchTerm = value ? String(value) : '';

@@ -204,10 +204,13 @@
     class="grid grid-cols-1 gap-4 lg:grid-cols-3"
     *ngIf="summary?.length; else emptySummary"
   >
-    <a
+    <button
       *ngFor="let s of summary; let i = index"
-      routerLink="{{ linkPath[i] }}"
-      class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
+      type="button"
+      (click)="openSummaryModal(i)"
+      aria-haspopup="dialog"
+      [attr.aria-label]="s + ' : voir la répartition par site'"
+      class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900"
     >
       <div class="flex items-start gap-4">
         <span
@@ -253,7 +256,7 @@
       <div
         class="mt-6 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition group-hover:gap-1.5 group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
       >
-        Accéder au détail
+        Voir la répartition par site
         <svg
           class="h-3.5 w-3.5"
           viewBox="0 0 24 24"
@@ -268,7 +271,7 @@
       <div
         class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
       ></div>
-    </a>
+    </button>
   </div>
 
   <ng-template #emptySummary>
@@ -279,6 +282,99 @@
     </div>
   </ng-template>
 </section>
+
+<!-- Uses the page's existing live card data; no additional detail request. -->
+<div
+  *ngIf="isSummaryModalOpen"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-6"
+  (click)="closeSummaryModal()"
+>
+  <section
+    #summaryDialog
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="card-summary-title"
+    aria-describedby="card-summary-description"
+    [attr.aria-busy]="cardsSummaryLoading"
+    class="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl dark:bg-slate-900 dark:text-slate-100"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-700">
+      <div>
+        <h2 id="card-summary-title" class="text-xl font-semibold">{{ summary[summaryMetricIndex] }}</h2>
+        <p id="card-summary-description" class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Tous les sites · Répartition par site, triée par nom.
+          {{ summaryMetricIndex === 0 ? 'Toutes les cartes, cycles terminés inclus.' : summaryMetricIndex === 1 ? 'Clients dont le cycle carte est en cours.' : 'Épargne à restituer des cycles en cours : montants payés moins les frais de carte.' }}
+          Les filtres de relance ne modifient pas cette répartition.
+        </p>
+      </div>
+      <button type="button" (click)="closeSummaryModal()" aria-label="Fermer la répartition par site" class="rounded-lg px-3 py-2 text-xl hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:hover:bg-slate-800">✕</button>
+    </header>
+
+    <div class="overflow-y-auto p-5">
+      <p *ngIf="cardsSummaryLoading" role="status" class="py-8 text-center text-slate-500 dark:text-slate-400">Chargement de la répartition par site…</p>
+      <p *ngIf="cardsSummaryError && !cardsSummaryLoading" role="alert" class="rounded-xl bg-rose-50 p-4 text-rose-700 dark:bg-rose-950 dark:text-rose-200">{{ cardsSummaryError }}</p>
+
+      <ng-container *ngIf="!cardsSummaryLoading && !cardsSummaryError">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-live="polite">
+          <div class="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-900/30">
+            <p class="text-xs text-slate-600 dark:text-slate-300">Total central</p>
+            <p class="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-300">
+              {{ summaryMetricIndex === 2 ? 'FC ' : '' }}{{ summaryContent[summaryMetricIndex] | number : '1.0-0' }}
+            </p>
+            <p *ngIf="summaryMetricIndex === 2" class="text-sm text-slate-500 dark:text-slate-400">≈ $ {{ valuesConvertedToDollars[2] | number : '1.0-0' }}</p>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+            <p class="text-xs text-slate-600 dark:text-slate-300">Total filtré</p>
+            <p class="mt-1 text-2xl font-semibold">{{ summaryMetricIndex === 2 ? 'FC ' : '' }}{{ summaryFilteredTotal | number : '1.0-0' }}</p>
+            <p *ngIf="summaryMetricIndex === 2" class="text-sm text-slate-500 dark:text-slate-400">≈ $ {{ summaryFilteredTotalUsd | number : '1.0-0' }}</p>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+            <p class="text-xs text-slate-600 dark:text-slate-300">Sites affichés</p>
+            <p class="mt-1 text-2xl font-semibold">{{ summaryVisibleLocations.length }} / {{ summaryLocations.length }}</p>
+          </div>
+        </div>
+
+        <div class="my-5 flex flex-wrap items-end gap-3">
+          <label class="min-w-0 flex-1 text-sm" for="card-summary-search">
+            Rechercher un site
+            <input id="card-summary-search" type="search" [(ngModel)]="summaryLocationSearch" (ngModelChange)="filterSummaryLocations()" placeholder="Nom du site" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800" />
+          </label>
+          <button type="button" (click)="resetSummaryLocationSearch()" class="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:hover:bg-slate-800">Réinitialiser</button>
+        </div>
+        <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">Données déjà chargées sur cette page, mises à jour automatiquement. Les sites sans clients sont inclus.</p>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+          <table class="w-full text-sm tabular-nums">
+            <caption class="sr-only">{{ summary[summaryMetricIndex] }} : répartition par site</caption>
+            <thead class="bg-slate-50 dark:bg-slate-800">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left">Site</th>
+                <th scope="col" class="px-4 py-3 text-right">{{ summaryMetricIndex === 0 ? 'Total clients carte' : summaryMetricIndex === 1 ? 'Clients actuels' : 'Épargne carte' }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr *ngFor="let row of summaryVisibleLocations; trackBy: trackSummaryLocation">
+                <th scope="row" class="px-4 py-3 text-left font-medium">{{ row.location }}</th>
+                <td class="whitespace-nowrap px-4 py-3 text-right">
+                  <span class="font-semibold">{{ summaryMetricIndex === 2 ? 'FC ' : '' }}{{ summaryLocationValue(row) | number : '1.0-0' }}</span>
+                  <span *ngIf="summaryMetricIndex === 2" class="mt-1 block text-xs text-slate-500 dark:text-slate-400">≈ $ {{ row.savingsUsd | number : '1.0-0' }}</span>
+                </td>
+              </tr>
+              <tr *ngIf="!summaryVisibleLocations.length"><td colspan="2" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">{{ summaryLocations.length ? 'Aucun site ne correspond à la recherche.' : 'Aucun site disponible.' }}</td></tr>
+            </tbody>
+            <tfoot class="bg-slate-50 font-semibold dark:bg-slate-800">
+              <tr>
+                <th scope="row" class="px-4 py-3 text-left">Total filtré</th>
+                <td class="whitespace-nowrap px-4 py-3 text-right">{{ summaryMetricIndex === 2 ? 'FC ' : '' }}{{ summaryFilteredTotal | number : '1.0-0' }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </ng-container>
+    </div>
+  </section>
+</div>
 
 <!-- ===================== CARDS CLIENTS – BULK INVITE DASHBOARD (ELEVATED UI) ===================== -->
 <section class="container mx-auto px-4 py-10" id="cards-bulk-dashboard">
