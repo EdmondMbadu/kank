@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import {
   AngularFireStorage,
   AngularFireUploadTask,
@@ -30,6 +30,34 @@ export class TeamPageComponent implements OnInit, OnDestroy {
     private compute: ComputationService
   ) {}
   displayEditEmployees: boolean[] = [];
+  tenurePopoverEmployee: Employee | null = null;
+  private tenurePopoverTrigger: HTMLElement | null = null;
+
+  toggleTenurePopover(employee: Employee, event: MouseEvent): void {
+    const opening = this.tenurePopoverEmployee !== employee;
+    this.tenurePopoverEmployee = opening ? employee : null;
+    this.tenurePopoverTrigger = opening ? event.currentTarget as HTMLElement : null;
+  }
+
+  @HostListener('document:click', ['$event'])
+  @HostListener('document:focusin', ['$event'])
+  onTenureOutsideClick(event: Event): void {
+    if (this.tenurePopoverEmployee && !(event.target as Element | null)?.closest('.employee-tenure')) {
+      this.tenurePopoverEmployee = null;
+      this.tenurePopoverTrigger = null;
+    }
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onTenureEscape(event: KeyboardEvent): void {
+    if (!this.tenurePopoverEmployee) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.tenurePopoverEmployee = null;
+    this.tenurePopoverTrigger?.focus();
+    this.tenurePopoverTrigger = null;
+  }
+
   followedClientsEmployee: Employee | null = null;
   followedClientRows: FollowedClientRow[] = [];
   followedClientsTotalDebt = '0 FC';
@@ -443,21 +471,26 @@ export class TeamPageComponent implements OnInit, OnDestroy {
     ).length;
   }
 
+  private parseEmployeeStartDate(rawDate?: string | null): Date | null {
+    const value = rawDate?.trim() || '';
+    const iso = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/.exec(value);
+    const legacy = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/.exec(value);
+    if (!iso && !legacy) return null;
+    const parts = (iso || legacy)!;
+    const year = Number(parts[iso ? 1 : 3]);
+    const month = Number(parts[iso ? 2 : 1]);
+    const day = Number(parts[iso ? 3 : 2]);
+    // Employment dates are calendar dates. Parsing an ISO string as UTC can
+    // otherwise display the previous day in timezones west of Greenwich.
+    const parsed = new Date(year, month - 1, day);
+    return parsed.getFullYear() === year && parsed.getMonth() === month - 1 &&
+      parsed.getDate() === day ? parsed : null;
+  }
+
   formatEmployeeStartDate(rawDate?: string | null): string {
-    if (!rawDate) return 'Date inconnue';
-
-    const dateParts = rawDate.split(/[-/]/);
-    let normalized = rawDate.trim();
-
-    if (dateParts.length === 3 && dateParts[0].length !== 4) {
-      const [month, day, year] = dateParts;
-      normalized = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    }
-
-    const parsed = new Date(normalized);
-    if (Number.isNaN(parsed.getTime())) {
-      return rawDate;
-    }
+    if (!rawDate?.trim()) return 'Date inconnue';
+    const parsed = this.parseEmployeeStartDate(rawDate);
+    if (!parsed) return rawDate;
 
     return parsed.toLocaleDateString('fr-FR', {
       day: 'numeric',
@@ -469,20 +502,8 @@ export class TeamPageComponent implements OnInit, OnDestroy {
   }
 
   formatEmployeeTenure(rawDate?: string | null): string {
-    if (!rawDate) return '';
-
-    const dateParts = rawDate.split(/[-/]/);
-    let normalized = rawDate.trim();
-
-    if (dateParts.length === 3 && dateParts[0].length !== 4) {
-      const [month, day, year] = dateParts;
-      normalized = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    }
-
-    const parsed = new Date(normalized);
-    if (Number.isNaN(parsed.getTime())) {
-      return '';
-    }
+    const parsed = this.parseEmployeeStartDate(rawDate);
+    if (!parsed) return '';
 
     const today = new Date();
     let totalMonths =
