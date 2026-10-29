@@ -71,13 +71,19 @@
 </section>
 
 <section class="container mx-auto -mt-14 px-6 pb-16">
+  <p *ngIf="totalsLoading" role="status" class="relative mb-4 rounded-xl bg-white p-4 text-slate-600 dark:bg-slate-900 dark:text-slate-300">Chargement des totaux…</p>
+  <p *ngIf="totalsError" role="alert" class="relative mb-4 rounded-xl bg-rose-50 p-4 text-rose-700 dark:bg-rose-950 dark:text-rose-200">{{ totalsError }}</p>
   <div
     class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
   >
-    <a
+    <button
       *ngFor="let s of summary; let i = index"
-      [routerLink]="linkPaths[i]"
-      class="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_25px_60px_-30px_rgba(15,23,42,0.45)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_35px_75px_-28px_rgba(16,185,129,0.55)] dark:border-slate-700 dark:bg-slate-900/80"
+      type="button"
+      (click)="openDetails(i)"
+      [disabled]="!auth.isAdmin || totalsLoading || !!totalsError"
+      aria-haspopup="dialog"
+      [attr.aria-label]="s + ' : voir les clients par site'"
+      class="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-6 text-left shadow-[0_25px_60px_-30px_rgba(15,23,42,0.45)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_35px_75px_-28px_rgba(16,185,129,0.55)] focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900/80"
     >
       <div
         class="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-400/0 via-emerald-400/10 to-sky-400/20 opacity-0 transition duration-300 group-hover:opacity-100"
@@ -112,7 +118,7 @@
         <span
           class="mt-auto inline-flex items-center gap-2 text-xs font-semibold text-emerald-600 transition group-hover:gap-3 group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
         >
-          Ouvrir
+          Voir les clients par site
           <svg
             class="h-3.5 w-3.5"
             viewBox="0 0 24 24"
@@ -124,6 +130,104 @@
           </svg>
         </span>
       </div>
-    </a>
+    </button>
   </div>
 </section>
+
+<div *ngIf="isDetailsOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-6" (click)="closeDetails()">
+  <section
+    #detailsDialog
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="daily-card-detail-title"
+    aria-describedby="daily-card-detail-description"
+    [attr.aria-busy]="detailsLoading"
+    class="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl dark:bg-slate-900 dark:text-slate-100"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-700">
+      <div>
+        <h2 id="daily-card-detail-title" class="text-xl font-semibold">{{ summary[detailMetric] }}</h2>
+        <p class="mt-1 font-medium">{{ displayDate }}</p>
+        <p id="daily-card-detail-description" class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Tous les sites · Clients regroupés par site, puis par heure.
+          {{ detailMetric === 0 ? 'Dépôts et ajustements signés, retraits partiels et transferts déduits.' : detailMetric === 1 ? 'Retraits carte enregistrés pour cette date.' : 'Frais de création de carte et de démarrage de cycle identifiables dans les dossiers.' }}
+        </p>
+      </div>
+      <button type="button" (click)="closeDetails()" aria-label="Fermer les détails carte" class="rounded-lg px-3 py-2 text-xl hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:hover:bg-slate-800">✕</button>
+    </header>
+
+    <div class="overflow-y-auto p-5">
+      <div class="grid gap-3 sm:grid-cols-3" aria-live="polite">
+        <div class="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-900/30">
+          <p class="text-xs text-slate-600 dark:text-slate-300">Total central</p>
+          <p class="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-300">FC {{ detailCentralTotal | number : '1.0-0' }}</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">≈ $ {{ amountDollars(detailCentralTotal) | number : '1.0-0' }}</p>
+        </div>
+        <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+          <p class="text-xs text-slate-600 dark:text-slate-300">Total filtré</p>
+          <p class="mt-1 text-2xl font-semibold">{{ detailsLoading || detailsError ? '—' : 'FC ' + (detailFilteredTotal | number : '1.0-0') }}</p>
+          <p *ngIf="!detailsLoading && !detailsError" class="text-sm text-slate-500 dark:text-slate-400">≈ $ {{ amountDollars(detailFilteredTotal) | number : '1.0-0' }}</p>
+        </div>
+        <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+          <p class="text-xs text-slate-600 dark:text-slate-300">Opérations filtrées / listées</p>
+          <p class="mt-1 text-2xl font-semibold">{{ detailsLoading || detailsError ? '—' : filteredRows.length + ' / ' + detailRows.length }}</p>
+          <p *ngIf="!detailsLoading && !detailsError" class="text-sm text-slate-500 dark:text-slate-400">{{ detailSites.length }} site(s) avec opérations</p>
+        </div>
+      </div>
+
+      <div class="my-5 flex flex-wrap items-end gap-3">
+        <label for="daily-card-site" class="text-sm">Site
+          <select id="daily-card-site" [(ngModel)]="detailSite" (ngModelChange)="applyDetailFilters()" [disabled]="detailsLoading || !!detailsError" class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800">
+            <option value="">Tous les sites</option>
+            <option *ngFor="let site of detailSites; trackBy: trackDetail" [value]="site.id">{{ site.name }}</option>
+          </select>
+        </label>
+        <label for="daily-card-search" class="min-w-0 flex-1 text-sm">Rechercher
+          <input id="daily-card-search" type="search" [(ngModel)]="detailSearch" (ngModelChange)="applyDetailFilters()" [disabled]="detailsLoading || !!detailsError" placeholder="Nom, site, date ou montant" class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800" />
+        </label>
+        <button type="button" (click)="resetDetailFilters()" [disabled]="detailsLoading || !!detailsError" class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-slate-600">Réinitialiser</button>
+      </div>
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <p class="text-xs text-slate-500 dark:text-slate-400">Détails chargés à l’ouverture, puis mis en cache pour ce mois. Actualisez pour les dernières opérations.</p>
+        <button type="button" (click)="loadDetails(true)" [disabled]="detailsLoading" class="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-slate-600">Actualiser</button>
+      </div>
+
+      <p *ngIf="detailsLoading" role="status" class="py-8 text-center text-slate-500 dark:text-slate-400">Chargement des clients par site…</p>
+      <p *ngIf="detailsError && !detailsLoading" role="alert" class="rounded-xl bg-rose-50 p-4 text-rose-700 dark:bg-rose-950 dark:text-rose-200">{{ detailsError }}</p>
+
+      <ng-container *ngIf="!detailsLoading && !detailsError">
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Liste complète : FC {{ detailTotal | number : '1.0-0' }} · ≈ $ {{ amountDollars(detailTotal) | number : '1.0-0' }}</p>
+        <p *ngIf="detailTotal !== detailCentralTotal" role="status" class="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+          Écart avec le total central : FC {{ detailCentralTotal - detailTotal | number : '1.0-0' }}.
+          Les corrections manuelles et les anciens cycles dont le détail n’est plus conservé ne peuvent pas toujours être attribués à un client. Le total central reste la référence.
+        </p>
+        <p *ngIf="!filteredRows.length" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ detailRows.length ? 'Aucune opération ne correspond aux filtres.' : 'Aucune opération client disponible pour cette date.' }}</p>
+        <section *ngFor="let group of detailGroups; trackBy: trackDetail" class="mb-5 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+          <div class="bg-slate-50 px-4 py-3 dark:bg-slate-800">
+            <h3 class="font-semibold">{{ group.name }}</h3>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Total filtré de ce site : FC {{ group.filteredTotal | number : '1.0-0' }} · ≈ $ {{ amountDollars(group.filteredTotal) | number : '1.0-0' }}</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm tabular-nums">
+              <caption class="sr-only">Clients et opérations carte · {{ group.name }}</caption>
+              <thead class="text-xs text-slate-500 dark:text-slate-400"><tr><th scope="col" class="px-4 py-3 text-left">Client</th><th scope="col" class="px-4 py-3 text-left">Date / heure</th><th scope="col" class="px-4 py-3 text-right">Montant</th></tr></thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tr *ngFor="let row of group.rows; trackBy: trackDetail">
+                  <th scope="row" class="px-4 py-3 text-left font-medium">{{ row.fullName }}<span class="mt-1 block text-xs font-normal text-slate-500 dark:text-slate-400">{{ row.detail }}</span></th>
+                  <td class="whitespace-nowrap px-4 py-3">{{ row.dateLabel }}</td>
+                  <td class="whitespace-nowrap px-4 py-3 text-right font-semibold">FC {{ row.amount | number : '1.0-0' }}<span class="mt-1 block text-xs font-normal text-slate-500 dark:text-slate-400">≈ $ {{ amountDollars(row.amount) | number : '1.0-0' }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <nav *ngIf="detailPageCount > 1" aria-label="Pages des opérations carte" class="flex items-center justify-between gap-3 text-sm">
+          <button type="button" (click)="changeDetailPage(-1)" [disabled]="detailPage === 0" class="rounded-lg border border-slate-300 px-3 py-2 disabled:opacity-50 dark:border-slate-600">Précédent</button>
+          <span>Page {{ detailPage + 1 }} / {{ detailPageCount }}</span>
+          <button type="button" (click)="changeDetailPage(1)" [disabled]="detailPage + 1 >= detailPageCount" class="rounded-lg border border-slate-300 px-3 py-2 disabled:opacity-50 dark:border-slate-600">Suivant</button>
+        </nav>
+      </ng-container>
+    </div>
+  </section>
+</div>

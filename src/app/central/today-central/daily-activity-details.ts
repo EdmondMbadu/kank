@@ -109,7 +109,7 @@ export function buildDailyCashPaymentRows(
   return sortDailyActivityRows([...rows.values()]);
 }
 
-function sortDailyActivityRows(rows: DailyActivityRow[]): DailyActivityRow[] {
+export function sortDailyActivityRows(rows: DailyActivityRow[]): DailyActivityRow[] {
   const locations = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
   const names = new Intl.Collator('fr');
   return rows.sort((a, b) =>

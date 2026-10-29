@@ -161,6 +161,32 @@ describe('AuthService management ledger', () => {
 });
 
 describe('AuthService daily central snapshots', () => {
+  it('reads card details once and hydrates only the selected month with authoritative document IDs', async () => {
+    const get = jasmine.createSpy('get').and.returnValue(of({
+      empty: false, docs: [{ id: 'card-a', data: () => ({ uid: 'stale-id', firstName: 'Esther' }) }],
+    }));
+    const afs = { collection: jasmine.createSpy('collection').and.returnValue({ get }) };
+    const firestoreV2 = { hydrateDocument: jasmine.createSpy('hydrateDocument').and.callFake((_path: string, base: any) => of(base)) };
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service as any, { afs, firestoreV2 });
+    const result = await firstValueFrom(service.getCardsOfAUserForMonth('site-a', '2026-09'));
+    expect(afs.collection).toHaveBeenCalledOnceWith('users/site-a/cards');
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(firestoreV2.hydrateDocument).toHaveBeenCalledOnceWith(
+      'users/site-a/cards/card-a', { uid: 'card-a', firstName: 'Esther' }, '2026-09'
+    );
+    expect(result[0].uid).toBe('card-a');
+  });
+
+  it('returns an empty card snapshot without starting hydration for an empty site', async () => {
+    const afs = { collection: () => ({ get: () => of({ empty: true }) }) };
+    const firestoreV2 = { hydrateDocument: jasmine.createSpy() };
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service as any, { afs, firestoreV2 });
+    expect(await firstValueFrom(service.getCardsOfAUserForMonth('empty', '2026-09'))).toEqual([]);
+    expect(firestoreV2.hydrateDocument).not.toHaveBeenCalled();
+  });
+
   it('uses a one-shot client query and hydrates only the requested month with document ids', async () => {
     const get = jasmine.createSpy('get').and.returnValue(of({
       empty: false, docs: [{ id: 'client-a', data: () => ({ firstName: 'Esther' }) }],

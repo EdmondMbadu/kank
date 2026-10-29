@@ -361,6 +361,22 @@ export class AuthService {
       })
     );
   }
+
+  /** One-shot card details for a daily modal; hydrate only the selected month. */
+  getCardsOfAUserForMonth(userId: string, monthKey: string) {
+    return this.afs.collection<Card>(`users/${userId}/cards`).get().pipe(
+      switchMap((snapshot) => {
+        if (snapshot.empty) return of([] as Card[]);
+        return combineLatest(snapshot.docs.map((doc) =>
+          this.firestoreV2.hydrateDocument(
+            `users/${userId}/cards/${doc.id}`,
+            { ...doc.data(), uid: doc.id },
+            monthKey
+          )
+        ));
+      })
+    );
+  }
   getReviews(): Observable<any[]> {
     return this.user$.pipe(
       switchMap((user) => {
