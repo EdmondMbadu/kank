@@ -1,0 +1,92 @@
+{
+  "reason": "User requested reverting all assistant-added point credits except Laurette Kapinga at Barre, and excluding savings-only deposits from repayment points.",
+  "preserved": {
+    "employee": "Laurette Kapinga",
+    "site": "Barre",
+    "day": "11-3-2026",
+    "points": 1.8
+  },
+  "plans": [
+    {
+      "name": "Sephora Luyeye",
+      "site": "Pumbu",
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/47ITZjCkRhfwlDFwP6xFMBXNgx82/employees/DFzXkrUwFJ15YKZj0oU6",
+      "precondition": "2026-11-05T16:13:29.821855Z",
+      "changes": {
+        "11-3-2026": {
+          "beforeValue": 2,
+          "subtract": 2,
+          "afterValue": 0,
+          "deleteField": true,
+          "reason": "Reverse only assistant-added final-payment credit at user request"
+        }
+      }
+    },
+    {
+      "name": "Nephtalie Zala",
+      "site": "Pumbu",
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/47ITZjCkRhfwlDFwP6xFMBXNgx82/employees/p7rKu2jLymKHxpnTwbz3",
+      "precondition": "2026-11-05T16:13:30.169599Z",
+      "changes": {
+        "11-3-2026": {
+          "beforeValue": 2.2,
+          "subtract": 0.5,
+          "afterValue": 1.7,
+          "deleteField": false,
+          "reason": "Reverse only assistant-added final-payment credit at user request"
+        },
+        "11-5-2026": {
+          "beforeValue": 1,
+          "subtract": 1,
+          "afterValue": 0,
+          "deleteField": true,
+          "reason": "Remove verified false point awarded for 0 FC loan repayment plus 140000 FC savings deposit"
+        }
+      }
+    },
+    {
+      "name": "Emilie Malundama",
+      "site": "Masangambila",
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/9VGEuyE3SKNNfqPmMU8tL3K19D22/employees/VvjMJRwRdSjW3DXpHJuQ",
+      "precondition": "2026-11-05T16:13:30.490943Z",
+      "changes": {
+        "11-5-2026": {
+          "beforeValue": 0.9,
+          "subtract": 0.9,
+          "afterValue": 0,
+          "deleteField": true,
+          "reason": "Reverse only assistant-added final-payment credit at user request"
+        },
+        "11-3-2026": {
+          "beforeValue": 1,
+          "subtract": 1,
+          "afterValue": 0,
+          "deleteField": true,
+          "reason": "Reverse only assistant-added final-payment credit at user request"
+        }
+      }
+    },
+    {
+      "name": "Naomie Luyeye",
+      "site": "Matadikibala",
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/iA1sbcwdBpT59PoaoPDOJ8Dy1iG3/employees/hWLWKrggRRhWwLgny2LA",
+      "precondition": "2026-11-05T16:13:30.847407Z",
+      "changes": {
+        "11-4-2026": {
+          "beforeValue": 2,
+          "subtract": 2,
+          "afterValue": 0,
+          "deleteField": true,
+          "reason": "Reverse only assistant-added final-payment credit at user request"
+        },
+        "11-3-2026": {
+          "beforeValue": 0.4,
+          "subtract": 0.4,
+          "afterValue": 0,
+          "deleteField": true,
+          "reason": "Reverse only assistant-added final-payment credit at user request"
+        }
+      }
+    }
+  ]
+}

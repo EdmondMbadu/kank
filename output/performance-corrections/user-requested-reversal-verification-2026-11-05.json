@@ -1,0 +1,77 @@
+{
+  "pointReversals": [
+    {
+      "name": "Sephora Luyeye",
+      "site": "Pumbu",
+      "updateTime": "2026-11-05T16:31:57.045679Z",
+      "verified": true
+    },
+    {
+      "name": "Nephtalie Zala",
+      "site": "Pumbu",
+      "updateTime": "2026-11-05T16:31:57.529695Z",
+      "verified": true
+    },
+    {
+      "name": "Emilie Malundama",
+      "site": "Masangambila",
+      "updateTime": "2026-11-05T16:31:58.126447Z",
+      "verified": true
+    },
+    {
+      "name": "Naomie Luyeye",
+      "site": "Matadikibala",
+      "updateTime": "2026-11-05T16:31:58.621583Z",
+      "verified": true
+    }
+  ],
+  "preservedLaurette": {
+    "site": "Barre",
+    "points": 1.8,
+    "verified": true
+  },
+  "pumbu": {
+    "earned": 8.4,
+    "expected": 23,
+    "percent": 36.52173913043478,
+    "displayPercent": 36
+  },
+  "rules": {
+    "savingsDeposit": "no repayment points",
+    "actualRepayment": "points on repayment amount only",
+    "savingsAppliedToLoan": "actual repayment earns points",
+    "metric": "existing point system retained"
+  },
+  "frontendRelease": {
+    "hostingVersion": "320d29d99ad9b776",
+    "url": "https://kank-4bbbc.web.app/",
+    "verifiedLive": true,
+    "assetChecks": [
+      {
+        "asset": "runtime.637a72c6541acc8e.js",
+        "matchesTestedBuild": true
+      },
+      {
+        "asset": "polyfills.b13f3e4001a12809.js",
+        "matchesTestedBuild": true
+      },
+      {
+        "asset": "main.ef3ef8e79895f89d.js",
+        "matchesTestedBuild": true
+      },
+      {
+        "asset": "240.928384bde909c20f.js",
+        "matchesTestedBuild": true
+      },
+      {
+        "asset": "ngsw.json",
+        "matchesTestedBuild": true
+      }
+    ],
+    "tests": {
+      "criticalFlow": 233,
+      "performanceAndRegression": 164,
+      "productionBuild": "passed"
+    }
+  }
+}

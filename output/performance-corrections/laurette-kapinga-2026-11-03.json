@@ -1,0 +1,24 @@
+{
+  "employeePath": "users/Ku6NRCLR30NV8e6nMckp56eueK33/employees/3cxgBd9xvGd9UbcZG9x9",
+  "dayKey": "11-3-2026",
+  "reason": "Restore missing performance credit for verified 130000 FC payment; explicitly requested by user.",
+  "paymentDocument": "payments/4ieQw6VVRoFhxsF3jXpd",
+  "paymentAmountFc": 130000,
+  "historicalReadTime": "2026-11-03T12:40:00Z",
+  "historicalAmountToPayFc": 560000,
+  "paymentPeriodRange": 8,
+  "installmentFc": 70000,
+  "pointsBefore": null,
+  "pointsAfter": 1.8,
+  "beforeUpdateTime": "2026-11-05T14:03:39.580191Z",
+  "afterUpdateTime": "2026-11-05T16:06:05.413103Z",
+  "verifiedOtherDailyPointsUnchanged": true,
+  "verifiedExpectedPointsUnchanged": true,
+  "verifiedMonthlySummary": {
+    "earned": 1.8,
+    "possible": 10,
+    "complete": true,
+    "percent": 18,
+    "throughDay": "11-5-2026"
+  }
+}

@@ -8,6 +8,10 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import {
+  capturePaymentPerformance,
+  recordPaymentPerformanceInBackground,
+} from 'src/app/utils/payment-performance.util';
 
 @Component({
   selector: 'app-payment',
@@ -267,6 +271,7 @@ export class PaymentComponent {
     if (!conf) {
       return;
     }
+    const performanceSnapshot = capturePaymentPerformance(this.client, this.paymentAmount);
     this.client.amountPaid = (
       Number(this.client.amountPaid) + Number(this.paymentAmount)
     ).toString();
@@ -305,13 +310,7 @@ export class PaymentComponent {
         this.paymentAmount
       )
       .then(() => {
-        // only updates performance if the payment is positive
-        if (Number(this.paymentAmount) > 0) {
-          this.performance.updateUserPerformance(
-            this.client,
-            this.paymentAmount
-          );
-        }
+        recordPaymentPerformanceInBackground(this.performance, performanceSnapshot);
 
         this.router.navigate(['/client-portal', this.id]);
       })
@@ -339,6 +338,7 @@ export class PaymentComponent {
     );
     if (!conf) return;
 
+    const performanceSnapshot = capturePaymentPerformance(this.client, this.paymentAmount);
     this.mobileMoneyError = '';
     this.mobileMoneyStatus = 'Initialisation du paiement Mobile Money...';
     this.isSubmitting = true;
@@ -368,12 +368,7 @@ export class PaymentComponent {
 
       const checkResult = await this.pollMobileMoneyStatus(this.mobileMoneyReference);
       if (checkResult.status === 'SUCCESS') {
-        if (Number(this.paymentAmount) > 0) {
-          this.performance.updateUserPerformance(
-            this.client,
-            this.paymentAmount
-          );
-        }
+        recordPaymentPerformanceInBackground(this.performance, performanceSnapshot);
         this.mobileMoneyStatus = 'Paiement confirmé et enregistré.';
         this.router.navigate(['/client-portal', this.id]);
         return;

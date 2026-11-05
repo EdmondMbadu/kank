@@ -75,7 +75,7 @@ export class PerformanceService {
 
     this.updateEmployeesPointsForToday(client);
 
-    this.callEachEmployeeToUpdatePerformancePerSubmission();
+    const employeeWrites = this.callEachEmployeeToUpdatePerformancePerSubmission();
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
@@ -87,10 +87,16 @@ export class PerformanceService {
       },
     };
 
-    return userRef.set(data, { merge: true });
+    // Observe all existing writes so the background caller can catch employee
+    // failures too. This starts no extra reads/writes and does not block payment.
+    return Promise.all([
+      ...employeeWrites,
+      userRef.set(data, { merge: true }),
+    ]).then(() => undefined);
   }
 
   callEachEmployeeToUpdatePerformancePerSubmission() {
+    const writes: Promise<void>[] = [];
     if (this.employees) {
       for (let em of this.employees!) {
         if ((em.expectedPointsSince || this.auth.currentUser.pointExpectationSince) &&
@@ -101,10 +107,11 @@ export class PerformanceService {
         ) {
           // console.log('entering here');
         } else {
-          this.UpdateEachEmployeePerformancePerSubmission(em);
+          writes.push(this.UpdateEachEmployeePerformancePerSubmission(em));
         }
       }
     }
+    return writes;
   }
   UpdateEachEmployeePerformancePerSubmission(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
@@ -195,7 +202,8 @@ export class PerformanceService {
       if (client.payments && typeof client.payments === 'object') {
         const filteredDict = Object.fromEntries(
           Object.entries(client.payments).filter(([key, value]) =>
-            key.startsWith(this.today)
+            (key === this.today || key.startsWith(`${this.today}-`)) &&
+            Number.isFinite(Number(value)) && Number(value) > 0
           )
         );
         const filteredValues = Object.values(filteredDict);

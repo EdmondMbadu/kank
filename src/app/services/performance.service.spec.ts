@@ -14,7 +14,7 @@ describe('PerformanceService independent expectations', () => {
     const afs = {doc: (path: string) => ({set: (data: any) => {
       writes.push({path, data}); return Promise.resolve();
     }})} as any;
-    return {service: new PerformanceService(auth, time, afs), auth, clients, employees, writes};
+    return {service: new PerformanceService(auth, time, afs), auth, clients, employees, writes, afs};
   }
 
   beforeEach(() => {jasmine.clock().install(); jasmine.clock().mockDate(new Date('2026-09-16T10:00:00Z'));});
@@ -62,5 +62,49 @@ describe('PerformanceService independent expectations', () => {
     expect(service.findAverageAndTotal(employee)).toEqual([10, 20]);
     expect(service.findAverageAndTotalAllEmployee([employee])).toEqual([10, 20]);
     expect(service.findTotalToday([employee])).toBe('10.00');
+  });
+
+  it('awards 1.8 points for a 130000 FC payoff with a 70000 FC installment, even on an unscheduled day', async () => {
+    const {service, employees, writes} = create();
+    employees.next([{uid: 'agent', clients: ['client'], dailyPoints: {},
+      expectedPoints: {'9-16-2026': 0}, expectedPointsSince: '9-16-2026'}]);
+    await service.updateUserPerformance({uid: 'client', amountToPay: '560000',
+      paymentPeriodRange: '8', debtCycleStartDate: '8-13-2026'}, '130000');
+    expect(writes.filter(w => w.path.includes('/employees/'))).toEqual([
+      {path: 'users/site/employees/agent', data: {dailyPoints: {'9-16-2026': '1.8'}}},
+    ]);
+    expect(service.employees![0].expectedPoints!['9-16-2026']).toBe(0);
+  });
+
+  it('surfaces employee write rejection to the background error handler', async () => {
+    const {service, employees, afs} = create();
+    employees.next([{uid: 'agent', clients: ['client'], dailyPoints: {}, expectedPointsSince: '9-16-2026'}]);
+    const error = new Error('employee write failed');
+    spyOn(afs, 'doc').and.callFake((path: string) => ({set: () =>
+      path.includes('/employees/') ? Promise.reject(error) : Promise.resolve()}));
+    await expectAsync(service.updateUserPerformance({uid: 'client', amountToPay: '1000',
+      paymentPeriodRange: '10', debtCycleStartDate: '9-1-2026'}, '100')).toBeRejectedWith(error);
+  });
+
+  it('does not count a savings-only zero repayment as a paid client in team performance', () => {
+    const {service, clients} = create();
+    clients.next([{uid: 'client', paymentDay: 'Wednesday', debtLeft: '500',
+      amountToPay: '1000', amountPaid: '500', paymentPeriodRange: '10',
+      debtCycleStartDate: '9-1-2026', payments: {'9-16-2026-10-00-00': '0'},
+      savingsPayments: {'9-16-2026-10-00-00': '140000'}}]);
+    expect(service.paidToday).toEqual([]);
+    expect(service.haveNotPaidToday.length).toBe(1);
+    expect(service.performance).toBe('-1');
+  });
+
+  it('still counts an actual repayment accompanied by savings as a paid client', () => {
+    const {service, clients} = create();
+    clients.next([{uid: 'client', paymentDay: 'Wednesday', debtLeft: '500',
+      amountToPay: '1000', amountPaid: '500', paymentPeriodRange: '10',
+      debtCycleStartDate: '9-1-2026', payments: {'9-16-2026-10-00-00': '100'},
+      savingsPayments: {'9-16-2026-10-00-00': '140000'}}]);
+    expect(service.paidToday.length).toBe(1);
+    expect(service.haveNotPaidToday).toEqual([]);
+    expect(service.performance).toBe('5');
   });
 });

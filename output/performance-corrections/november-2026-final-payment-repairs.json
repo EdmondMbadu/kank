@@ -1,0 +1,322 @@
+{
+  "scope": "All 59 November 2026 payment ledger entries across 9 production sites, reviewed 2026-11-05. Historical client and employee snapshots used to verify omitted final-payment points.",
+  "method": "Add missing final-payoff credit only. Preserve existing daily points, expected points, all financial records. Conditional updateTime writes.",
+  "plans": [
+    {
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/47ITZjCkRhfwlDFwP6xFMBXNgx82/employees/DFzXkrUwFJ15YKZj0oU6",
+      "name": "Sephora Luyeye",
+      "site": "Pumbu",
+      "days": {
+        "11-3-2026": {
+          "credit": 2,
+          "evidence": [
+            {
+              "payment": {
+                "path": "projects/kank-4bbbc/databases/(default)/documents/users/47ITZjCkRhfwlDFwP6xFMBXNgx82/employees/DFzXkrUwFJ15YKZj0oU6/payments/BnVxf1k1WrViVqWq0nD3",
+                "createTime": "2026-11-03T13:39:29.711487Z",
+                "amount": "140000",
+                "clientUid": "cW2c3jyU60OYoWZeIP2q",
+                "createdAtMs": "1793713168868",
+                "dayKey": "11-3-2026",
+                "savings": "0",
+                "trackingId": "117",
+                "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/47ITZjCkRhfwlDFwP6xFMBXNgx82/employees/DFzXkrUwFJ15YKZj0oU6",
+                "site": "Pumbu",
+                "employeeUid": "DFzXkrUwFJ15YKZj0oU6",
+                "employeeName": "Sephora Luyeye",
+                "ownerUid": "47ITZjCkRhfwlDFwP6xFMBXNgx82"
+              },
+              "readTime": "2026-11-03T13:39:00.000Z",
+              "client": {
+                "agent": "DFzXkrUwFJ15YKZj0oU6",
+                "amountPaid": "420000",
+                "amountToPay": "560000",
+                "debtCycleStartDate": "9-9-2026",
+                "debtLeft": "140000",
+                "firstName": "Gisèle ",
+                "lastName": "Mikenge",
+                "paymentPeriodRange": "8",
+                "uid": "cW2c3jyU60OYoWZeIP2q"
+              },
+              "rosterMatches": true,
+              "minimum": 70000,
+              "points": 2,
+              "fullPayoff": true,
+              "sameDayLoan": false,
+              "pointsBefore": null,
+              "clientUpdateTime": "2026-10-22T14:38:32.590703Z",
+              "afterReadTime": "2026-11-03T13:40:00.000Z",
+              "pointsAfter": null,
+              "employeeAfterUpdateTime": "2026-11-02T23:05:07.562847Z"
+            }
+          ],
+          "before": null,
+          "beforeValue": 0,
+          "afterValue": 2
+        }
+      },
+      "precondition": "2026-11-05T15:23:14.174735Z"
+    },
+    {
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/47ITZjCkRhfwlDFwP6xFMBXNgx82/employees/p7rKu2jLymKHxpnTwbz3",
+      "name": "Nephtalie Zala",
+      "site": "Pumbu",
+      "days": {
+        "11-3-2026": {
+          "credit": 0.5,
+          "evidence": [
+            {
+              "payment": {
+                "path": "projects/kank-4bbbc/databases/(default)/documents/users/47ITZjCkRhfwlDFwP6xFMBXNgx82/employees/p7rKu2jLymKHxpnTwbz3/payments/7bRlaKEbdGRUzLakJdGp",
+                "createTime": "2026-11-03T12:13:32.382815Z",
+                "amount": "30000",
+                "clientUid": "L6p5Aj58X1aZDkBXC2It",
+                "createdAtMs": "1793708011545",
+                "dayKey": "11-3-2026",
+                "savings": "0",
+                "trackingId": "67",
+                "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/47ITZjCkRhfwlDFwP6xFMBXNgx82/employees/p7rKu2jLymKHxpnTwbz3",
+                "site": "Pumbu",
+                "employeeUid": "p7rKu2jLymKHxpnTwbz3",
+                "employeeName": "Nephtalie Zala",
+                "ownerUid": "47ITZjCkRhfwlDFwP6xFMBXNgx82"
+              },
+              "readTime": "2026-11-03T12:13:00.000Z",
+              "client": {
+                "agent": "p7rKu2jLymKHxpnTwbz3",
+                "amountPaid": "390000",
+                "amountToPay": "420000",
+                "debtCycleStartDate": "8-21-2026",
+                "debtLeft": "30000",
+                "firstName": "Fanny ",
+                "lastName": "Tolombi",
+                "paymentPeriodRange": "8",
+                "uid": "L6p5Aj58X1aZDkBXC2It"
+              },
+              "rosterMatches": true,
+              "minimum": 52500,
+              "points": 0.5,
+              "fullPayoff": true,
+              "sameDayLoan": false,
+              "pointsBefore": "1.7",
+              "clientUpdateTime": "2026-11-02T15:21:37.795567Z",
+              "afterReadTime": "2026-11-03T12:14:00.000Z",
+              "pointsAfter": "1.7",
+              "employeeAfterUpdateTime": "2026-11-03T09:51:06.341807Z"
+            }
+          ],
+          "before": {
+            "stringValue": "1.7"
+          },
+          "beforeValue": 1.7,
+          "afterValue": 2.2
+        }
+      },
+      "precondition": "2026-11-05T14:56:19.376655Z"
+    },
+    {
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/9VGEuyE3SKNNfqPmMU8tL3K19D22/employees/VvjMJRwRdSjW3DXpHJuQ",
+      "name": "Emilie Malundama",
+      "site": "Masangambila",
+      "days": {
+        "11-5-2026": {
+          "credit": 0.9,
+          "evidence": [
+            {
+              "payment": {
+                "path": "projects/kank-4bbbc/databases/(default)/documents/users/9VGEuyE3SKNNfqPmMU8tL3K19D22/employees/VvjMJRwRdSjW3DXpHJuQ/payments/lsETbeBg8KXISdVs2NTU",
+                "createTime": "2026-11-05T12:59:50.263775Z",
+                "amount": "85500",
+                "clientUid": "AIWKQyRKoMQKDt0Oc4VO",
+                "createdAtMs": "1793883267548",
+                "dayKey": "11-5-2026",
+                "savings": "14500",
+                "trackingId": "25",
+                "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/9VGEuyE3SKNNfqPmMU8tL3K19D22/employees/VvjMJRwRdSjW3DXpHJuQ",
+                "site": "Masangambila",
+                "employeeUid": "VvjMJRwRdSjW3DXpHJuQ",
+                "employeeName": "Emilie Malundama",
+                "ownerUid": "9VGEuyE3SKNNfqPmMU8tL3K19D22"
+              },
+              "readTime": "2026-11-05T12:59:00.000Z",
+              "client": {
+                "agent": "VvjMJRwRdSjW3DXpHJuQ",
+                "amountPaid": "614500",
+                "amountToPay": "700000",
+                "debtCycleStartDate": "9-10-2026",
+                "debtLeft": "85500",
+                "firstName": "Ruphin ",
+                "lastName": "Kayoka ",
+                "paymentPeriodRange": "8",
+                "uid": "AIWKQyRKoMQKDt0Oc4VO"
+              },
+              "rosterMatches": true,
+              "minimum": 87500,
+              "points": 0.9,
+              "fullPayoff": true,
+              "sameDayLoan": false,
+              "pointsBefore": null,
+              "clientUpdateTime": "2026-10-31T15:18:25.361791Z",
+              "afterReadTime": "2026-11-05T13:00:00.000Z",
+              "pointsAfter": null,
+              "employeeAfterUpdateTime": "2026-11-05T09:46:34.887391Z"
+            }
+          ],
+          "before": null,
+          "beforeValue": 0,
+          "afterValue": 0.9
+        },
+        "11-3-2026": {
+          "credit": 1,
+          "evidence": [
+            {
+              "payment": {
+                "path": "projects/kank-4bbbc/databases/(default)/documents/users/9VGEuyE3SKNNfqPmMU8tL3K19D22/employees/VvjMJRwRdSjW3DXpHJuQ/payments/H5enm16EQm5wpfWWk0ch",
+                "createTime": "2026-11-03T13:07:31.432367Z",
+                "amount": "90000",
+                "clientUid": "invj8tLhzPZ2JaDbYuei",
+                "createdAtMs": "1793710928733",
+                "dayKey": "11-3-2026",
+                "savings": "60000",
+                "trackingId": "86",
+                "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/9VGEuyE3SKNNfqPmMU8tL3K19D22/employees/VvjMJRwRdSjW3DXpHJuQ",
+                "site": "Masangambila",
+                "employeeUid": "VvjMJRwRdSjW3DXpHJuQ",
+                "employeeName": "Emilie Malundama",
+                "ownerUid": "9VGEuyE3SKNNfqPmMU8tL3K19D22"
+              },
+              "readTime": "2026-11-03T13:07:00.000Z",
+              "client": {
+                "agent": "VvjMJRwRdSjW3DXpHJuQ",
+                "amountPaid": "270000",
+                "amountToPay": "360000",
+                "debtCycleStartDate": "10-6-2026",
+                "debtLeft": "90000",
+                "firstName": "Clarisse ",
+                "lastName": "Ngalula",
+                "paymentPeriodRange": "4",
+                "uid": "invj8tLhzPZ2JaDbYuei"
+              },
+              "rosterMatches": true,
+              "minimum": 90000,
+              "points": 1,
+              "fullPayoff": true,
+              "sameDayLoan": false,
+              "pointsBefore": null,
+              "clientUpdateTime": "2026-10-27T15:20:35.046495Z",
+              "afterReadTime": "2026-11-03T13:08:00.000Z",
+              "pointsAfter": null,
+              "employeeAfterUpdateTime": "2026-11-03T09:31:41.569023Z"
+            }
+          ],
+          "before": null,
+          "beforeValue": 0,
+          "afterValue": 1
+        }
+      },
+      "precondition": "2026-11-05T09:46:34.887391Z"
+    },
+    {
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/iA1sbcwdBpT59PoaoPDOJ8Dy1iG3/employees/hWLWKrggRRhWwLgny2LA",
+      "name": "Naomie Luyeye",
+      "site": "Matadikibala",
+      "days": {
+        "11-4-2026": {
+          "credit": 2,
+          "evidence": [
+            {
+              "payment": {
+                "path": "projects/kank-4bbbc/databases/(default)/documents/users/iA1sbcwdBpT59PoaoPDOJ8Dy1iG3/employees/hWLWKrggRRhWwLgny2LA/payments/EcEBy0nN1ZsBGAdmghyc",
+                "createTime": "2026-11-04T10:35:11.046367Z",
+                "amount": "105000",
+                "clientUid": "Zj05s3VBcxawUfGnwSSv",
+                "createdAtMs": "1793788347965",
+                "dayKey": "11-4-2026",
+                "savings": "0",
+                "trackingId": "114",
+                "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/iA1sbcwdBpT59PoaoPDOJ8Dy1iG3/employees/hWLWKrggRRhWwLgny2LA",
+                "site": "Matadikibala",
+                "employeeUid": "hWLWKrggRRhWwLgny2LA",
+                "employeeName": "Naomie Luyeye",
+                "ownerUid": "iA1sbcwdBpT59PoaoPDOJ8Dy1iG3"
+              },
+              "readTime": "2026-11-04T10:35:00.000Z",
+              "client": {
+                "agent": "hWLWKrggRRhWwLgny2LA",
+                "amountPaid": "315000",
+                "amountToPay": "420000",
+                "debtCycleStartDate": "9-7-2026",
+                "debtLeft": "105000",
+                "firstName": "Bernadette ",
+                "lastName": "Lemba",
+                "paymentPeriodRange": "8",
+                "uid": "Zj05s3VBcxawUfGnwSSv"
+              },
+              "rosterMatches": true,
+              "minimum": 52500,
+              "points": 2,
+              "fullPayoff": true,
+              "sameDayLoan": false,
+              "pointsBefore": null,
+              "clientUpdateTime": "2026-10-26T14:52:42.928143Z",
+              "afterReadTime": "2026-11-04T10:36:00.000Z",
+              "pointsAfter": null,
+              "employeeAfterUpdateTime": "2026-11-03T23:05:16.631535Z"
+            }
+          ],
+          "before": null,
+          "beforeValue": 0,
+          "afterValue": 2
+        },
+        "11-3-2026": {
+          "credit": 0.4,
+          "evidence": [
+            {
+              "payment": {
+                "path": "projects/kank-4bbbc/databases/(default)/documents/users/iA1sbcwdBpT59PoaoPDOJ8Dy1iG3/employees/hWLWKrggRRhWwLgny2LA/payments/HhpZGvl20QHSHpKDlqgV",
+                "createTime": "2026-11-03T14:57:49.577855Z",
+                "amount": "15000",
+                "clientUid": "1ujlEsGRvE3g68G3CBIN",
+                "createdAtMs": "1793717737451",
+                "dayKey": "11-3-2026",
+                "savings": "0",
+                "trackingId": "7",
+                "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/iA1sbcwdBpT59PoaoPDOJ8Dy1iG3/employees/hWLWKrggRRhWwLgny2LA",
+                "site": "Matadikibala",
+                "employeeUid": "hWLWKrggRRhWwLgny2LA",
+                "employeeName": "Naomie Luyeye",
+                "ownerUid": "iA1sbcwdBpT59PoaoPDOJ8Dy1iG3"
+              },
+              "readTime": "2026-11-03T14:57:00.000Z",
+              "client": {
+                "agent": "hWLWKrggRRhWwLgny2LA",
+                "amountPaid": "265000",
+                "amountToPay": "280000",
+                "debtCycleStartDate": "9-7-2026",
+                "debtLeft": "15000",
+                "firstName": "Antho",
+                "lastName": "Mututa",
+                "paymentPeriodRange": "8",
+                "uid": "1ujlEsGRvE3g68G3CBIN"
+              },
+              "rosterMatches": true,
+              "minimum": 35000,
+              "points": 0.4,
+              "fullPayoff": true,
+              "sameDayLoan": false,
+              "pointsBefore": null,
+              "clientUpdateTime": "2026-10-26T15:20:54.687135Z",
+              "afterReadTime": "2026-11-03T14:58:00.000Z",
+              "pointsAfter": null,
+              "employeeAfterUpdateTime": "2026-11-03T09:07:55.466559Z"
+            }
+          ],
+          "before": null,
+          "beforeValue": 0,
+          "afterValue": 0.4
+        }
+      },
+      "precondition": "2026-11-05T09:35:35.235919Z"
+    }
+  ]
+}

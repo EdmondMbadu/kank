@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
@@ -24,6 +24,7 @@ describe('PaymentComponent', () => {
   };
   let dataService: {
     clientDeposit: jasmine.Spy;
+    clientPaymentAndStats: jasmine.Spy;
   };
 
   const paymentClient = Object.assign(new Client(), {
@@ -83,6 +84,7 @@ describe('PaymentComponent', () => {
 
     dataService = {
       clientDeposit: jasmine.createSpy('clientDeposit').and.returnValue(Promise.resolve()),
+      clientPaymentAndStats: jasmine.createSpy('clientPaymentAndStats').and.returnValue(Promise.resolve()),
     };
 
     await TestBed.configureTestingModule({
@@ -147,6 +149,214 @@ describe('PaymentComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
   }
+
+  function prepareFinalPayment() {
+    const client = Object.assign(new Client(), paymentClient, {
+      amountToPay: '560000', amountPaid: '430000', debtLeft: '130000',
+      paymentPeriodRange: '8',
+    });
+    const clients = new BehaviorSubject<Client[]>([client]);
+    authService.getAllClients.and.returnValue(clients);
+    createComponent();
+    component.paymentAmount = '130000';
+    component.savingsAmount = '0';
+    spyOn(window, 'confirm').and.returnValue(true);
+    spyOn(component, 'computeCreditScore').and.returnValue('75');
+    return {
+      clients, client,
+      performance: TestBed.inject(PerformanceService).updateUserPerformance as jasmine.Spy,
+      navigate: TestBed.inject(Router).navigate as jasmine.Spy,
+    };
+  }
+
+  it('credits a manual final payment using its original amount and loan after a live refresh', fakeAsync(() => {
+    const { clients, client, performance, navigate } = prepareFinalPayment();
+    dataService.clientPaymentAndStats.and.callFake(() => {
+      // A refresh can replace the client and reset the payment input before .then().
+      clients.next([Object.assign(new Client(), client, {
+        amountToPay: '0', paymentPeriodRange: '4', debtLeft: '0',
+      })]);
+      return Promise.resolve();
+    });
+    component.makePayment();
+    tick();
+    expect(component.paymentAmount).toBe('0');
+    expect(dataService.clientPaymentAndStats).toHaveBeenCalledOnceWith(
+      jasmine.anything(), '0', '3-20-2026', '130000'
+    );
+    expect(performance).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      uid: 'client-0', amountToPay: '560000', paymentPeriodRange: '8',
+      debtCycleStartDate: '3-1-2026',
+    }), '130000');
+    expect(navigate).toHaveBeenCalledOnceWith(['/client-portal', '0']);
+  }));
+
+  it('credits Mobile Money only after success despite a final-payment refresh', fakeAsync(() => {
+    const { clients, client, performance, navigate } = prepareFinalPayment();
+    const callable = jasmine.createSpy('init').and.returnValue(of({reference: 'ref'}));
+    (TestBed.inject(AngularFireFunctions).httpsCallable as jasmine.Spy).and.returnValue(callable);
+    spyOn<any>(component, 'pollMobileMoneyStatus').and.callFake(() => {
+      clients.next([Object.assign(new Client(), client, {amountToPay: '0', debtLeft: '0'})]);
+      expect(performance).not.toHaveBeenCalled();
+      return Promise.resolve({status: 'SUCCESS'});
+    });
+    component.makeMobileMoneyPayment();
+    tick();
+    expect(callable).toHaveBeenCalledOnceWith(jasmine.objectContaining({paymentAmount: '130000'}));
+    expect(performance).toHaveBeenCalledOnceWith(jasmine.objectContaining({amountToPay: '560000'}), '130000');
+    expect(navigate).toHaveBeenCalledOnceWith(['/client-portal', '0']);
+    expect(dataService.clientPaymentAndStats).not.toHaveBeenCalled();
+  }));
+
+  it('redirects a successful manual payment without waiting for performance writes', fakeAsync(() => {
+    const { performance, navigate } = prepareFinalPayment();
+    performance.and.returnValue(new Promise(() => {}));
+    component.makePayment();
+    tick();
+    expect(navigate).toHaveBeenCalledOnceWith(['/client-portal', '0']);
+    expect(component.isSubmitting).toBeFalse();
+    expect(dataService.clientPaymentAndStats).toHaveBeenCalledTimes(1);
+  }));
+
+  it('redirects Mobile Money success without waiting for performance writes', fakeAsync(() => {
+    const { performance, navigate } = prepareFinalPayment();
+    performance.and.returnValue(new Promise(() => {}));
+    (TestBed.inject(AngularFireFunctions).httpsCallable as jasmine.Spy)
+      .and.returnValue(() => of({reference: 'ref'}));
+    spyOn<any>(component, 'pollMobileMoneyStatus').and.resolveTo({status: 'SUCCESS'});
+    component.makeMobileMoneyPayment(); tick();
+    expect(performance).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledOnceWith(['/client-portal', '0']);
+    expect(component.isSubmitting).toBeFalse();
+  }));
+
+  for (const synchronous of [false, true]) {
+    it(`keeps payment success separate from a ${synchronous ? 'synchronous' : 'rejected'} performance error`, fakeAsync(() => {
+      const { performance, navigate } = prepareFinalPayment();
+      const error = new Error('performance unavailable');
+      if (synchronous) performance.and.throwError(error);
+      else performance.and.callFake(() => Promise.reject(error));
+      spyOn(console, 'error');
+      const alert = spyOn(window, 'alert');
+      component.makePayment();
+      tick();
+      expect(navigate).toHaveBeenCalledOnceWith(['/client-portal', '0']);
+      expect(alert).not.toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalled();
+      expect(dataService.clientPaymentAndStats).toHaveBeenCalledTimes(1);
+    }));
+  }
+
+  it('keeps partial-payment credit unchanged', fakeAsync(() => {
+    const { clients, client, performance } = prepareFinalPayment();
+    component.paymentAmount = '70000';
+    dataService.clientPaymentAndStats.and.callFake(() => {
+      clients.next([Object.assign(new Client(), client, {debtLeft: '60000'})]);
+      return Promise.resolve();
+    });
+    component.makePayment(); tick();
+    expect(performance).toHaveBeenCalledOnceWith(jasmine.objectContaining({amountToPay: '560000'}), '70000');
+  }));
+
+  it('does not credit a savings-only deposit when a live refresh refills the zero repayment input', fakeAsync(() => {
+    const { clients, client, performance, navigate } = prepareFinalPayment();
+    Object.assign(client, {amountToPay: '1400000', amountPaid: '1215000',
+      debtLeft: '185000', paymentPeriodRange: '8'});
+    spyOn(TestBed.inject(ComputationService), 'minimumPayment').and.returnValue('175000');
+    component.paymentAmount = '0';
+    component.savingsAmount = '140000';
+    dataService.clientPaymentAndStats.and.callFake(() => {
+      clients.next([Object.assign(new Client(), client)]);
+      return Promise.resolve();
+    });
+    component.submitPayment(); tick();
+    expect(component.paymentAmount).toBe('175000');
+    expect(dataService.clientPaymentAndStats).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({amountPaid: '1215000', debtLeft: '185000', savings: '150000'}),
+      '140000', '3-20-2026', '0'
+    );
+    expect(performance).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledOnceWith(['/client-portal', '0']);
+  }));
+
+  it('credits only the repayment portion of a mixed repayment and savings deposit', fakeAsync(() => {
+    const { clients, client, performance } = prepareFinalPayment();
+    component.paymentAmount = '70000';
+    component.savingsAmount = '140000';
+    dataService.clientPaymentAndStats.and.callFake(() => {
+      clients.next([Object.assign(new Client(), client)]);
+      return Promise.resolve();
+    });
+    component.submitPayment(); tick();
+    expect(dataService.clientPaymentAndStats).toHaveBeenCalledOnceWith(
+      jasmine.anything(), '140000', '3-20-2026', '70000'
+    );
+    expect(performance).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      amountToPay: '560000', paymentPeriodRange: '8',
+    }), '70000');
+  }));
+
+  it('does not credit a Mobile Money savings-only deposit after the form refills its repayment amount', fakeAsync(() => {
+    const { clients, client, performance, navigate } = prepareFinalPayment();
+    component.paymentAmount = '0';
+    component.savingsAmount = '140000';
+    const callable = jasmine.createSpy('init').and.returnValue(of({reference: 'ref'}));
+    (TestBed.inject(AngularFireFunctions).httpsCallable as jasmine.Spy).and.returnValue(callable);
+    spyOn<any>(component, 'pollMobileMoneyStatus').and.callFake(() => {
+      clients.next([Object.assign(new Client(), client)]);
+      return Promise.resolve({status: 'SUCCESS'});
+    });
+    component.makeMobileMoneyPayment(); tick();
+    expect(Number(component.paymentAmount)).toBeGreaterThan(0);
+    expect(callable).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      paymentAmount: '0', savingsAmount: '140000',
+    }));
+    expect(performance).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledOnceWith(['/client-portal', '0']);
+  }));
+
+  it('does not credit a rejected manual payment or navigate', fakeAsync(() => {
+    const { performance, navigate } = prepareFinalPayment();
+    dataService.clientPaymentAndStats.and.rejectWith(new Error('payment failed'));
+    spyOn(console, 'error'); spyOn(window, 'alert');
+    component.makePayment(); tick();
+    expect(performance).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(component.isSubmitting).toBeFalse();
+  }));
+
+  it('keeps duplicate-submit protection while the payment is pending', fakeAsync(() => {
+    const { performance, navigate } = prepareFinalPayment();
+    let finish!: () => void;
+    dataService.clientPaymentAndStats.and.returnValue(new Promise<void>(resolve => finish = resolve));
+    component.makePayment(); component.makePayment();
+    expect(dataService.clientPaymentAndStats).toHaveBeenCalledTimes(1);
+    expect(performance).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+    finish(); tick();
+    expect(performance).toHaveBeenCalledTimes(1);
+  }));
+
+  for (const status of ['FAILED', 'TIMEOUT']) {
+    it(`does not credit Mobile Money with status ${status}`, fakeAsync(() => {
+      const { performance, navigate } = prepareFinalPayment();
+      (TestBed.inject(AngularFireFunctions).httpsCallable as jasmine.Spy)
+        .and.returnValue(() => of({reference: 'ref'}));
+      spyOn<any>(component, 'pollMobileMoneyStatus').and.resolveTo({status});
+      component.makeMobileMoneyPayment(); tick();
+      expect(performance).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(component.isSubmitting).toBeFalse();
+    }));
+  }
+
+  it('does not submit or credit a cancelled payment', () => {
+    const { performance } = prepareFinalPayment();
+    (window.confirm as jasmine.Spy).and.returnValue(false);
+    component.makePayment();
+    expect(dataService.clientPaymentAndStats).not.toHaveBeenCalled();
+    expect(performance).not.toHaveBeenCalled();
+  });
 
   it('renders the payment form with the route client and manual mode by default', () => {
     createComponent();
@@ -277,5 +487,6 @@ describe('PaymentComponent', () => {
 
     expect(dataService.clientDeposit).toHaveBeenCalled();
     expect(navigateSpy).toHaveBeenCalledWith(['/client-portal', '0']);
+    expect(TestBed.inject(PerformanceService).updateUserPerformance).not.toHaveBeenCalled();
   }));
 });

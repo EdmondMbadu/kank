@@ -6,6 +6,10 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import {
+  capturePaymentPerformance,
+  recordPaymentPerformanceInBackground,
+} from 'src/app/utils/payment-performance.util';
 
 @Component({
   selector: 'app-withdraw-savings',
@@ -186,6 +190,7 @@ export class WithdrawSavingsComponent implements OnInit {
       return;
     }
 
+    const performanceSnapshot = capturePaymentPerformance(this.client, amountNum.toString());
     /* 1️⃣  Update in-memory client object */
     /* remove from savings */
     this.client.savings = (+this.client.savings! - amountNum).toString();
@@ -272,10 +277,7 @@ export class WithdrawSavingsComponent implements OnInit {
       })
       .then(() => {
         /* 3️⃣  performance metrics, then redirect */
-        this.performance.updateUserPerformance(
-          this.client,
-          this.savingsWithdrawn
-        );
+        recordPaymentPerformanceInBackground(this.performance, performanceSnapshot);
         this.router.navigate(['/client-portal', this.id]);
       });
   }

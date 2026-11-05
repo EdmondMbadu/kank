@@ -1,0 +1,104 @@
+{
+  "scope": {
+    "month": "2026-11",
+    "through": "2026-11-05",
+    "productionSites": 9,
+    "employeeDocuments": 50,
+    "paymentLedgerEntries": 59,
+    "employeeDays": 37
+  },
+  "corrections": [
+    {
+      "employee": "Sephora Luyeye",
+      "site": "Pumbu",
+      "updateTime": "2026-11-05T16:13:29.821855Z",
+      "changes": [
+        {
+          "day": "11-3-2026",
+          "points": 2
+        }
+      ],
+      "expectedPointsUnchanged": true,
+      "otherDailyPointsUnchanged": true,
+      "employeePointBucketSummary": {
+        "earned": 4.7,
+        "possible": 13,
+        "complete": true,
+        "percent": 36.15384615384615
+      }
+    },
+    {
+      "employee": "Nephtalie Zala",
+      "site": "Pumbu",
+      "updateTime": "2026-11-05T16:13:30.169599Z",
+      "changes": [
+        {
+          "day": "11-3-2026",
+          "points": 2.2
+        }
+      ],
+      "expectedPointsUnchanged": true,
+      "otherDailyPointsUnchanged": true,
+      "employeePointBucketSummary": {
+        "earned": 7.2,
+        "possible": 10,
+        "complete": true,
+        "percent": 72
+      }
+    },
+    {
+      "employee": "Emilie Malundama",
+      "site": "Masangambila",
+      "updateTime": "2026-11-05T16:13:30.490943Z",
+      "changes": [
+        {
+          "day": "11-3-2026",
+          "points": 1
+        },
+        {
+          "day": "11-5-2026",
+          "points": 0.9
+        }
+      ],
+      "expectedPointsUnchanged": true,
+      "otherDailyPointsUnchanged": true,
+      "employeePointBucketSummary": {
+        "earned": 3,
+        "possible": 7,
+        "complete": true,
+        "percent": 42.857142857142854
+      }
+    },
+    {
+      "employee": "Naomie Luyeye",
+      "site": "Matadikibala",
+      "updateTime": "2026-11-05T16:13:30.847407Z",
+      "changes": [
+        {
+          "day": "11-3-2026",
+          "points": 0.4
+        },
+        {
+          "day": "11-4-2026",
+          "points": 2
+        }
+      ],
+      "expectedPointsUnchanged": true,
+      "otherDailyPointsUnchanged": true,
+      "employeePointBucketSummary": {
+        "earned": 2.4,
+        "possible": 11,
+        "complete": true,
+        "percent": 21.818181818181817
+      }
+    }
+  ],
+  "previouslyCorrected": {
+    "employee": "Laurette Kapinga",
+    "day": "11-3-2026",
+    "points": 1.8,
+    "action": "preserved; no duplicate credit"
+  },
+  "verification": "Fresh reads confirmed all six corrections. Only earned-point fields were updated; financial transactions and frozen expectations were not modified.",
+  "summaryNote": "Point bucket summaries describe the corrected employee record. Manager ranking percentages use all employee buckets at their site."
+}
