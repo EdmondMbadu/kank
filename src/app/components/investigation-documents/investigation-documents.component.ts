@@ -210,6 +210,10 @@ export class InvestigationDocumentsComponent implements OnInit, OnDestroy {
     const url = investigationDocumentUrl(document);
     if (!url || this.downloadingDocumentId) return;
     this.downloadingDocumentId = document.id;
+    // Reserve the fallback while the click still has a user gesture. Safari
+    // may block window.open() after the asynchronous fetch has failed.
+    const fallbackTab = window.open('about:blank', '_blank');
+    if (fallbackTab) fallbackTab.opener = null;
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('download-failed');
@@ -219,10 +223,18 @@ export class InvestigationDocumentsComponent implements OnInit, OnDestroy {
       anchor.href = objectUrl;
       anchor.download = document.fileName || `${document.title}.pdf`;
       anchor.rel = 'noopener';
+      window.document.body.appendChild(anchor);
       anchor.click();
-      setTimeout(() => URL.revokeObjectURL(objectUrl));
+      anchor.remove();
+      // Give mobile browsers time to start consuming the blob.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      fallbackTab?.close();
     } catch {
-      window.open(url, '_blank', 'noopener');
+      if (fallbackTab && !fallbackTab.closed) {
+        fallbackTab.location.replace(url);
+      } else {
+        window.location.assign(url);
+      }
     } finally {
       this.downloadingDocumentId = '';
     }

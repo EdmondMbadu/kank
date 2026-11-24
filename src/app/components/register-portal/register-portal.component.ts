@@ -13,7 +13,7 @@ import {
 import { Avatar, Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
-import { DataService } from 'src/app/services/data.service';
+import { DataService, InvestigationMediaErrorStage } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Audit, PendingClient } from 'src/app/models/management';
@@ -153,6 +153,7 @@ export class RegiserPortalComponent {
   @ViewChild('phoneHistory', { static: false }) phoneHistoryRef?: ElementRef;
 
   showAuditConfirmation: boolean = false;
+  private auditSaveStage: InvestigationMediaErrorStage = 'upload';
   private auditPageScroll?: {
     x: number;
     y: number;
@@ -994,6 +995,7 @@ export class RegiserPortalComponent {
 
     try {
       this.auditVerificationSaving = true;
+      this.auditSaveStage = 'upload';
       let audioFields: Partial<Client> = {};
       const verifiedAt = this.time.todaysDate();
       const verifiedBy = String(value).trim();
@@ -1012,6 +1014,7 @@ export class RegiserPortalComponent {
         ]);
       }
 
+      this.auditSaveStage = 'save-audit';
       await this.data.setClientFields(this.client.uid, {
         [field]: verifiedBy,
         agentSubmittedVerification: 'true',
@@ -1032,7 +1035,7 @@ export class RegiserPortalComponent {
       await this.removeClientFromPending();
     } catch (err) {
       console.error('Failed to confirm audit with optional audio:', err);
-      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+      this.reportAuditSaveError(err);
     } finally {
       this.auditAudioUploading = false;
       this.auditVerificationSaving = false;
@@ -1525,6 +1528,7 @@ export class RegiserPortalComponent {
 
     try {
       this.auditAudioUploading = true;
+      this.auditSaveStage = 'upload';
       const attachment = await this.uploadAuditConversationAudio(
         this.selectedAuditAudioFile
       );
@@ -1533,6 +1537,7 @@ export class RegiserPortalComponent {
         attachment,
       ]);
 
+      this.auditSaveStage = 'save-audit';
       await this.data.setClientFields(this.client.uid, audioFields);
       Object.assign(this.client, audioFields);
       this.clearSelectedAuditAudio();
@@ -1540,7 +1545,7 @@ export class RegiserPortalComponent {
       alert('Audio joint avec succès');
     } catch (err) {
       console.error('Failed to attach audit audio without confirmation:', err);
-      alert("Une erreur s'est produite lors de l'ajout de l'audio, Réessayez");
+      this.reportAuditSaveError(err);
     } finally {
       this.auditAudioUploading = false;
     }
@@ -1609,6 +1614,7 @@ export class RegiserPortalComponent {
       },
       contentType: mimeType,
     });
+    this.auditSaveStage = 'download-url';
     const url = await uploadTask.ref.getDownloadURL();
 
     return {
@@ -1616,11 +1622,36 @@ export class RegiserPortalComponent {
       debtCycle: String(this.client.debtCycle || '1'),
       name: normalizedFile.name,
       mimeType,
-      recordedAt: recordedAt || undefined,
+      // Firestore rejects undefined values inside attachment arrays. Some
+      // mobile file providers don't supply a usable lastModified timestamp.
+      ...(recordedAt ? { recordedAt } : {}),
       recordedAtSource,
       uploadedAt: this.time.todaysDate(),
       uploadedBy: this.auditActorName(),
     };
+  }
+
+  private reportAuditSaveError(error: unknown): void {
+    this.data.logAuditVerificationError(
+      error, this.client.uid || '', this.auditSaveStage, this.selectedAuditAudioFile
+    );
+    const code = String((error as { code?: unknown } | null)?.code || '');
+    const action = this.auditSaveStage === 'save-audit'
+      ? "Impossible d'enregistrer la vérification d'audit."
+      : this.auditSaveStage === 'download-url'
+        ? "L'audio a été envoyé, mais son lien est indisponible."
+        : "Impossible d'envoyer l'audio de vérification.";
+    const advice = /unauthenticated/.test(code)
+      ? 'Reconnectez-vous puis réessayez.'
+      : /unauthorized|permission-denied/.test(code)
+        ? 'Accès refusé. Vérifiez le compte connecté avec un administrateur.'
+        : /quota-exceeded/.test(code)
+          ? 'Le stockage est indisponible. Contactez un administrateur.'
+          : /cannot-slice-blob/.test(code)
+            ? 'Enregistrez le fichier sur cet appareil puis sélectionnez-le à nouveau.'
+            : 'Vérifiez votre connexion puis réessayez.';
+    const safeCode = /^[a-z0-9/_-]+$/i.test(code) ? ` (${code})` : '';
+    alert(`${action} ${advice}${safeCode}`);
   }
 
   private buildAuditConversationAudioFields(

@@ -72,7 +72,8 @@ export type InvestigationMediaErrorStage =
   | 'validation'
   | 'upload'
   | 'download-url'
-  | 'save-feedback';
+  | 'save-feedback'
+  | 'save-audit';
 
 export type AttendancePhotoVerificationVerdict = 'clear' | 'duplicate';
 
@@ -3410,6 +3411,34 @@ export class DataService {
     file?: File,
     elapsedMs = 0
   ): void {
+    this.logClientMediaError(
+      'investigation-client-feedback', error, context, stage, file, elapsedMs
+    );
+  }
+
+  logAuditVerificationError(
+    error: unknown,
+    clientId: string,
+    stage: InvestigationMediaErrorStage,
+    file?: File
+  ): void {
+    this.logClientMediaError('audit-client-verification', error, {
+      ownerId: this.auth.currentUser?.uid || '',
+      clientId,
+      dayKey: '',
+      investigatorId: '',
+      verifierName: '',
+    }, stage, file);
+  }
+
+  private logClientMediaError(
+    source: string,
+    error: unknown,
+    context: InvestigationMediaLogContext,
+    stage: InvestigationMediaErrorStage,
+    file?: File,
+    elapsedMs = 0
+  ): void {
     try {
       const value = (error || {}) as {
         code?: unknown;
@@ -3426,7 +3455,7 @@ export class DataService {
         .slice(0, limit);
       const browser = typeof navigator === 'undefined' ? null : navigator;
       const record = {
-        source: 'investigation-client-feedback',
+        source,
         diagnosticsVersion: '2026-10-17-v1',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         occurredAt: new Date().toISOString(),

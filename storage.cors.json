@@ -1,0 +1,17 @@
+[
+  {
+    "origin": [
+      "https://kank-4bbbc.web.app",
+      "https://kank-4bbbc.firebaseapp.com"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": [
+      "Content-Type",
+      "Content-Disposition",
+      "Content-Length",
+      "Content-Range",
+      "Accept-Ranges"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

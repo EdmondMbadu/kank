@@ -67,4 +67,48 @@ describe('InvestigationDocumentsComponent', () => {
       'attestation-prise-en-charge-paiement'
     );
   });
+
+  it('opens the fallback before fetching and uses it when a browser download fails', async () => {
+    const fallback = {
+      opener: window, closed: false,
+      location: { replace: jasmine.createSpy('replace') },
+      close: jasmine.createSpy('close'),
+    };
+    const open = spyOn(window, 'open').and.returnValue(fallback as any);
+    spyOn(window, 'fetch').and.callFake(() => {
+      expect(open).toHaveBeenCalled();
+      return Promise.reject(new TypeError('Failed to fetch'));
+    });
+
+    await component.download(component.documents[0]);
+
+    expect(fallback.opener).toBeNull();
+    expect(fallback.location.replace).toHaveBeenCalledWith(component.documents[0].assetUrl);
+    expect(fallback.close).not.toHaveBeenCalled();
+    expect(component.downloadingDocumentId).toBe('');
+  });
+
+  it('keeps the blob available while the browser starts a successful download', async () => {
+    jasmine.clock().install();
+    try {
+      const fallback = { opener: window, close: jasmine.createSpy('close') };
+      spyOn(window, 'open').and.returnValue(fallback as any);
+      spyOn(window, 'fetch').and.resolveTo(new Response(new Blob(['PDF'])));
+      spyOn(URL, 'createObjectURL').and.returnValue('blob:pdf');
+      const revoke = spyOn(URL, 'revokeObjectURL');
+      spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) {
+        expect(this.isConnected).toBeTrue();
+        expect(this.download).toBe(component.documents[0].fileName!);
+      });
+
+      await component.download(component.documents[0]);
+
+      expect(fallback.close).toHaveBeenCalled();
+      expect(revoke).not.toHaveBeenCalled();
+      jasmine.clock().tick(60_000);
+      expect(revoke).toHaveBeenCalledOnceWith('blob:pdf');
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
 });

@@ -1,0 +1,30 @@
+{
+  "reason": "User explicitly requested restoring these verified repayment credits after the previous reversal.",
+  "corrections": [
+    {
+      "employee": "Emilie Malundama",
+      "site": "Masangambila",
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/9VGEuyE3SKNNfqPmMU8tL3K19D22/employees/VvjMJRwRdSjW3DXpHJuQ",
+      "restoredPoints": 1.9,
+      "creditsByDay": {
+        "11-3-2026": 1,
+        "11-5-2026": 0.9
+      },
+      "verified": true,
+      "updateTime": "2026-11-05T16:48:18.659631Z"
+    },
+    {
+      "employee": "Naomie Luyeye",
+      "site": "Matadikibala",
+      "employeePath": "projects/kank-4bbbc/databases/(default)/documents/users/iA1sbcwdBpT59PoaoPDOJ8Dy1iG3/employees/hWLWKrggRRhWwLgny2LA",
+      "restoredPoints": 2.4,
+      "creditsByDay": {
+        "11-3-2026": 0.4,
+        "11-4-2026": 2
+      },
+      "verified": true,
+      "updateTime": "2026-11-05T16:48:18.974111Z"
+    }
+  ],
+  "verification": "Fresh reads confirm exact credits, existing daily points preserved, expected targets unchanged."
+}

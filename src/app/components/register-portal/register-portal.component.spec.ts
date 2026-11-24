@@ -133,7 +133,10 @@ describe('RegiserPortalComponent', () => {
     });
 
     beforeEach(() => {
-      data = { setClientFields: jasmine.createSpy('setClientFields').and.resolveTo() };
+      data = {
+        setClientFields: jasmine.createSpy('setClientFields').and.resolveTo(),
+        logAuditVerificationError: jasmine.createSpy('logAuditVerificationError'),
+      };
       storage = { upload: jasmine.createSpy('upload').and.resolveTo({
         ref: { getDownloadURL: async () => 'https://example.com/current.m4a' },
       }) };
@@ -216,6 +219,66 @@ describe('RegiserPortalComponent', () => {
       expect(fields.auditConversationAudios.length).toBe(1);
       expect(fields.auditConversationAudios[0].debtCycle).toBe('2');
       expect(component.hasPersistedAuditConversationAudio).toBeTrue();
+    });
+
+    it('can confirm an audio supplied without a file timestamp', async () => {
+      component.selectedAuditAudioFile = new File(['audio'], 'Enregistrement d’appel.m4a', {
+        type: 'audio/mp4', lastModified: 0,
+      });
+      // Match Firestore's rejection of undefined nested values.
+      data.setClientFields.and.callFake(async (_id: string, fields: unknown) => {
+        JSON.stringify(fields, (_key, value) => {
+          if (value === undefined) throw new Error('Unsupported field value: undefined');
+          return value;
+        });
+      });
+      spyOn(component, 'removeClientFromPending').and.resolveTo();
+
+      await component.setClientFieldAgent('agentVerifyingName', 'Audit');
+
+      expect(component.client.agentSubmittedVerification).toBe('true');
+      expect(component.client.auditConversationAudios![0].recordedAtSource).toBe('uploadTime');
+      expect(data.logAuditVerificationError).not.toHaveBeenCalled();
+    });
+
+    it('reports upload failure without saving verification or discarding the selected file', async () => {
+      const file = freshFile();
+      component.selectedAuditAudioFile = file;
+      const error = { code: 'storage/unauthorized' };
+      storage.upload.and.rejectWith(error);
+
+      await component.setClientFieldAgent('agentVerifyingName', 'Audit');
+
+      expect(data.setClientFields).not.toHaveBeenCalled();
+      expect(data.logAuditVerificationError).toHaveBeenCalledWith(error, 'delvaux-client', 'upload', file);
+      expect(window.alert).toHaveBeenCalledWith(jasmine.stringMatching('Accès refusé.*storage/unauthorized'));
+      expect(component.selectedAuditAudioFile).toBe(file);
+      expect(component.auditVerificationSaving).toBeFalse();
+      expect(component.auditAudioUploading).toBeFalse();
+    });
+
+    it('distinguishes download URL failure from upload failure', async () => {
+      component.selectedAuditAudioFile = freshFile();
+      const error = { code: 'storage/unknown' };
+      storage.upload.and.resolveTo({ ref: { getDownloadURL: async () => { throw error; } } });
+
+      await component.setClientFieldAgent('agentVerifyingName', 'Audit');
+
+      expect(data.setClientFields).not.toHaveBeenCalled();
+      expect(data.logAuditVerificationError.calls.mostRecent().args[2]).toBe('download-url');
+      expect(window.alert).toHaveBeenCalledWith(jasmine.stringMatching('lien est indisponible'));
+    });
+
+    it('reports a database failure separately and leaves the client pending', async () => {
+      component.selectedAuditAudioFile = freshFile();
+      data.setClientFields.and.rejectWith({ code: 'permission-denied' });
+      spyOn(component, 'removeClientFromPending').and.resolveTo();
+
+      await component.setClientFieldAgent('agentVerifyingName', 'Audit');
+
+      expect(data.logAuditVerificationError.calls.mostRecent().args[2]).toBe('save-audit');
+      expect(component.client.agentSubmittedVerification).not.toBe('true');
+      expect(component.removeClientFromPending).not.toHaveBeenCalled();
     });
   });
 });

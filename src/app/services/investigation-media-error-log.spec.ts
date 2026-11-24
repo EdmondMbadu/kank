@@ -115,4 +115,15 @@ describe('investigation feedback media diagnostics', () => {
     expect(record.file).toBeUndefined();
     expect(record.fileName).toBeUndefined();
   });
+
+  it('records audit failures with their source and failing stage', () => {
+    const { service, add } = setup();
+
+    service.logAuditVerificationError({ code: 'storage/unknown' }, 'client-1', 'upload', file);
+
+    expect(add).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      source: 'audit-client-verification', stage: 'upload',
+      clientId: 'client-1', ownerId: 'signed-in-site', errorCode: 'storage/unknown',
+    }));
+  });
 });
