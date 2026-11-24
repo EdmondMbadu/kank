@@ -18,6 +18,8 @@ import { TimeService } from 'src/app/services/time.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Audit, PendingClient } from 'src/app/models/management';
 import { mediaErrorServerDetails } from 'src/app/utils/media-error-diagnostics.util';
+import { isRetryableStorageError } from 'src/app/utils/client-photo-recovery.util';
+import type { AuditAudioUploadResult } from 'src/app/utils/audit-audio-upload.util';
 
 type AuditClientCommentType = 'no_answer' | 'fraud' | 'other';
 type AuditClientCommentAttachmentKind = 'image' | 'audio' | 'video';
@@ -1604,7 +1606,7 @@ export class RegiserPortalComponent {
     const recordedAt = this.detectAuditAudioRecordedAt(normalizedFile);
     const recordedAtSource = recordedAt ? 'fileLastModified' : 'uploadTime';
 
-    const uploadTask = await this.storage.upload(path, normalizedFile, {
+    const metadata = {
       customMetadata: {
         fileName: normalizedFile.name,
         uploadedAt: new Date().toISOString(),
@@ -1614,7 +1616,18 @@ export class RegiserPortalComponent {
         recordedAtSource,
       },
       contentType: mimeType,
-    });
+    };
+    let uploadTask: AuditAudioUploadResult;
+    try {
+      uploadTask = await this.storage.upload(path, normalizedFile, metadata);
+    } catch (error) {
+      if (!isRetryableStorageError(error)) throw error;
+      this.data.logAuditVerificationError(error, this.client.uid || '', 'upload', normalizedFile);
+      this.auditSaveStage = 'upload-fallback';
+      // Reuse the same path so an ambiguous completed transfer cannot create
+      // duplicate audio objects. Auth, rules, and metadata stay the same.
+      uploadTask = await this.data.uploadAuditAudioBytes(path, normalizedFile, metadata);
+    }
     this.auditSaveStage = 'download-url';
     const url = await uploadTask.ref.getDownloadURL();
 
@@ -1709,6 +1722,7 @@ export class RegiserPortalComponent {
 
   private inferAudioMimeType(file: File): string {
     const mimeType = (file.type || '').toLowerCase();
+    if (this.fileExtension(file.name) === 'm4a') return 'audio/mp4';
     if (mimeType.startsWith('audio/')) return mimeType;
 
     switch (this.fileExtension(file.name)) {

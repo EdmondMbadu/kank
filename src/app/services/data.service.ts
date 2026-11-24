@@ -49,6 +49,8 @@ import {
 import { isLoanBudgetExempt } from '../utils/pending-loan-budget.util';
 import { RemainingLoanMonthEndSnapshot } from '../models/remaining-loan-month-end';
 import { safeMediaDiagnosticText } from '../utils/media-error-diagnostics.util';
+import { uploadAuditAudioBytes } from '../utils/audit-audio-upload.util';
+import type { UploadMetadata } from 'firebase/storage';
 import firebase from 'firebase/compat/app'; // ① NEW
 import 'firebase/compat/firestore'; // ②
 
@@ -72,6 +74,7 @@ export interface InvestigationMediaLogContext {
 export type InvestigationMediaErrorStage =
   | 'validation'
   | 'upload'
+  | 'upload-fallback'
   | 'download-url'
   | 'save-feedback'
   | 'save-audit';
@@ -3400,6 +3403,10 @@ export class DataService {
       reportFailure(error);
       throw error;
     }
+  }
+
+  uploadAuditAudioBytes(path: string, file: File, metadata: UploadMetadata) {
+    return uploadAuditAudioBytes(this.storage, path, file, metadata);
   }
 
   // Best effort and deliberately not awaited: diagnostics must never block a

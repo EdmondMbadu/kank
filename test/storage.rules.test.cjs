@@ -79,12 +79,61 @@ test('authenticated staff can upload every critical operational file type', asyn
     ['receipts/employee-1/payment.jpg', 'image/jpeg'],
     ['foundation-receipts/employee-1/payment.pdf', 'application/pdf'],
     ['reviews/client-1/message.webm', 'audio/webm'],
+    ['audit-conversations/client-1/conversation.m4a', 'audio/mp4'],
   ];
 
   for (const [objectPath, contentType] of operationalUploads) {
     await assertSucceeds(
       upload(staff, objectPath, new Uint8Array([1, 2, 3]), contentType)
     );
+  }
+});
+
+test('audit audio byte fallback works with the AngularFire Firebase version and staff rules', async () => {
+  const assert = require('node:assert/strict');
+  const { createRequire, Module } = require('node:module');
+  const ts = require('typescript');
+  const { File } = require('node:buffer');
+  const sourcePath = path.join(ROOT, 'src/app/utils/audit-audio-upload.util.ts');
+  const compiled = ts.transpileModule(fs.readFileSync(sourcePath, 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  });
+  const loaded = new Module(sourcePath, module);
+  loaded.filename = sourcePath;
+  loaded.paths = Module._nodeModulePaths(path.dirname(sourcePath));
+  loaded._compile(compiled.outputText, sourcePath);
+
+  // Use the actual Firebase 9 instance that AngularFire wraps, while the
+  // helper imports uploadBytes from the app's Firebase 10 dependency.
+  const afRequire = createRequire(path.join(ROOT, 'node_modules/@angular/fire/package.json'));
+  const compat = afRequire('firebase/compat/app');
+  afRequire('firebase/compat/storage');
+  const { connectStorageEmulator } = afRequire('firebase/storage');
+  const app = compat.initializeApp({ projectId: PROJECT_ID, storageBucket: `${PROJECT_ID}.appspot.com` }, 'audit-audio-emulator');
+  const storage = app.storage();
+  const [host, port] = process.env.FIREBASE_STORAGE_EMULATOR_HOST.split(':');
+  connectStorageEmulator(storage._delegate, host, Number(port), { mockUserToken: { sub: 'staff-user' } });
+  try {
+    const protocols = [];
+    const nativeRequest = storage._delegate.makeRequestWithTokens.bind(storage._delegate);
+    storage._delegate.makeRequestWithTokens = (request, ...rest) => {
+      protocols.push(request.headers['X-Goog-Upload-Protocol']);
+      return nativeRequest(request, ...rest);
+    };
+    const result = await loaded.exports.uploadAuditAudioBytes(
+      { storage }, 'audit-conversations/client-1/iphone-fallback.m4a',
+      new File([new Uint8Array(632389)], 'Enregistrement d’appel.m4a', { type: 'audio/mp4' }),
+      { contentType: 'audio/mp4', customMetadata: { fileName: 'Enregistrement d’appel.m4a', debtCycle: '3' } }
+    );
+    const metadata = await result.ref.getMetadata();
+    assert.equal(metadata.size, 632389);
+    assert.equal(metadata.contentType, 'audio/mp4');
+    assert.equal(metadata.customMetadata.debtCycle, '3');
+    assert.match(await result.ref.getDownloadURL(), /alt=media/);
+    assert.ok(protocols.includes('multipart'));
+    assert.ok(!protocols.includes('resumable'));
+  } finally {
+    await app.delete();
   }
 });
 

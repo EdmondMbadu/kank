@@ -136,6 +136,9 @@ describe('RegiserPortalComponent', () => {
       data = {
         setClientFields: jasmine.createSpy('setClientFields').and.resolveTo(),
         logAuditVerificationError: jasmine.createSpy('logAuditVerificationError'),
+        uploadAuditAudioBytes: jasmine.createSpy('uploadAuditAudioBytes').and.resolveTo({
+          ref: { getDownloadURL: async () => 'https://example.com/recovered.m4a' },
+        }),
       };
       storage = { upload: jasmine.createSpy('upload').and.resolveTo({
         ref: { getDownloadURL: async () => 'https://example.com/current.m4a' },
@@ -255,6 +258,7 @@ describe('RegiserPortalComponent', () => {
       expect(component.selectedAuditAudioFile).toBe(file);
       expect(component.auditVerificationSaving).toBeFalse();
       expect(component.auditAudioUploading).toBeFalse();
+      expect(data.uploadAuditAudioBytes).not.toHaveBeenCalled();
     });
 
     it('distinguishes download URL failure from upload failure', async () => {
@@ -271,10 +275,12 @@ describe('RegiserPortalComponent', () => {
 
     it('includes the server rejection in an unknown upload error', async () => {
       component.selectedAuditAudioFile = freshFile();
-      storage.upload.and.rejectWith({
+      const error = {
         code: 'storage/unknown', status: 412,
         customData: { serverResponse: '{"error":{"message":"Upload service unavailable"}}' },
-      });
+      };
+      storage.upload.and.rejectWith(error);
+      data.uploadAuditAudioBytes.and.rejectWith(error);
 
       await component.setClientFieldAgent('agentVerifyingName', 'Audit');
 
@@ -282,6 +288,25 @@ describe('RegiserPortalComponent', () => {
         'storage/unknown[\\s\\S]*HTTP 412 : Upload service unavailable'
       ));
       expect(data.setClientFields).not.toHaveBeenCalled();
+    });
+
+    it('confirms after a rejected resumable upload succeeds through the byte fallback', async () => {
+      component.selectedAuditAudioFile = new File(['audio'], 'Enregistrement d’appel.m4a', {
+        type: 'audio/x-m4a', lastModified: freshFile().lastModified,
+      });
+      storage.upload.and.rejectWith({ code: 'storage/unknown', status: 400 });
+      spyOn(component, 'removeClientFromPending').and.resolveTo();
+
+      await component.setClientFieldAgent('agentVerifyingName', 'Audit');
+
+      const [path, file, metadata] = storage.upload.calls.mostRecent().args;
+      expect(file.type).toBe('audio/mp4');
+      expect(data.uploadAuditAudioBytes).toHaveBeenCalledOnceWith(path, file, metadata);
+      const fields = data.setClientFields.calls.mostRecent().args[1];
+      expect(fields.agentSubmittedVerification).toBe('true');
+      expect(fields.auditConversationAudios[0].url).toBe('https://example.com/recovered.m4a');
+      expect(fields.auditConversationAudios[0].debtCycle).toBe('2');
+      expect(component.removeClientFromPending).toHaveBeenCalled();
     });
 
     it('reports a database failure separately and leaves the client pending', async () => {
