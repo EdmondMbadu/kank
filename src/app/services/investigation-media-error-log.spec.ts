@@ -124,6 +124,7 @@ describe('investigation feedback media diagnostics', () => {
     expect(add).toHaveBeenCalledOnceWith(jasmine.objectContaining({
       source: 'audit-client-verification', stage: 'upload',
       clientId: 'client-1', ownerId: 'signed-in-site', errorCode: 'storage/unknown',
+      createdAt: jasmine.any(Date),
     }));
   });
 });

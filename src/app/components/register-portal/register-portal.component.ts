@@ -17,6 +17,7 @@ import { DataService, InvestigationMediaErrorStage } from 'src/app/services/data
 import { TimeService } from 'src/app/services/time.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Audit, PendingClient } from 'src/app/models/management';
+import { mediaErrorServerDetails } from 'src/app/utils/media-error-diagnostics.util';
 
 type AuditClientCommentType = 'no_answer' | 'fraud' | 'other';
 type AuditClientCommentAttachmentKind = 'image' | 'audio' | 'video';
@@ -1649,9 +1650,10 @@ export class RegiserPortalComponent {
           ? 'Le stockage est indisponible. Contactez un administrateur.'
           : /cannot-slice-blob/.test(code)
             ? 'Enregistrez le fichier sur cet appareil puis sélectionnez-le à nouveau.'
-            : 'Vérifiez votre connexion puis réessayez.';
+            : 'Réessayez. Si le problème persiste, contactez un administrateur.';
     const safeCode = /^[a-z0-9/_-]+$/i.test(code) ? ` (${code})` : '';
-    alert(`${action} ${advice}${safeCode}`);
+    const serverDetails = mediaErrorServerDetails(error);
+    alert(`${action} ${advice}${safeCode}${serverDetails ? `\n${serverDetails}` : ''}`);
   }
 
   private buildAuditConversationAudioFields(

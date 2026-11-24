@@ -269,6 +269,21 @@ describe('RegiserPortalComponent', () => {
       expect(window.alert).toHaveBeenCalledWith(jasmine.stringMatching('lien est indisponible'));
     });
 
+    it('includes the server rejection in an unknown upload error', async () => {
+      component.selectedAuditAudioFile = freshFile();
+      storage.upload.and.rejectWith({
+        code: 'storage/unknown', status: 412,
+        customData: { serverResponse: '{"error":{"message":"Upload service unavailable"}}' },
+      });
+
+      await component.setClientFieldAgent('agentVerifyingName', 'Audit');
+
+      expect(window.alert).toHaveBeenCalledWith(jasmine.stringMatching(
+        'storage/unknown[\\s\\S]*HTTP 412 : Upload service unavailable'
+      ));
+      expect(data.setClientFields).not.toHaveBeenCalled();
+    });
+
     it('reports a database failure separately and leaves the client pending', async () => {
       component.selectedAuditAudioFile = freshFile();
       data.setClientFields.and.rejectWith({ code: 'permission-denied' });

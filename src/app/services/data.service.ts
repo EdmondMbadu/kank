@@ -48,6 +48,7 @@ import {
 } from '../utils/card-lifecycle-event.util';
 import { isLoanBudgetExempt } from '../utils/pending-loan-budget.util';
 import { RemainingLoanMonthEndSnapshot } from '../models/remaining-loan-month-end';
+import { safeMediaDiagnosticText } from '../utils/media-error-diagnostics.util';
 import firebase from 'firebase/compat/app'; // ① NEW
 import 'firebase/compat/firestore'; // ②
 
@@ -3448,16 +3449,15 @@ export class DataService {
         customData?: { serverResponse?: unknown };
         serverResponse?: unknown;
       };
-      const safeText = (input: unknown, limit: number) => String(input ?? '')
-        .replace(/https?:\/\/[^\s"'<>]+/gi, '[URL removed]')
-        .replace(/Bearer\s+[^\s"',}]+/gi, 'Bearer [removed]')
-        .replace(/((?:token|authorization|password|api[_-]?key)\s*["']?\s*[:=]\s*["']?)[^\s"',}&]+/gi, '$1[removed]')
-        .slice(0, limit);
+      const safeText = safeMediaDiagnosticText;
       const browser = typeof navigator === 'undefined' ? null : navigator;
       const record = {
         source,
         diagnosticsVersion: '2026-10-17-v1',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        // AngularFire uses Firebase 9 while direct app imports use Firebase
+        // 10. A native Date serializes in both; a v10 FieldValue is rejected
+        // by the v9 writer before the diagnostic reaches Firestore.
+        createdAt: new Date(),
         occurredAt: new Date().toISOString(),
         stage,
         actorUid: this.auth.currentUser?.uid || '',
