@@ -71,6 +71,7 @@ describe('TeamRankingMonthComponent', () => {
         Number(value) / 3000,
     } as any;
     const data = {
+      getEmployeePaymentHistoryForMonth: jasmine.createSpy('getEmployeePaymentHistoryForMonth').and.resolveTo([]),
       getEmployeeDayTotalsForDay: jasmine
         .createSpy('getEmployeeDayTotalsForDay')
         .and.resolveTo({ total: 0, count: 0 }),
@@ -109,6 +110,246 @@ describe('TeamRankingMonthComponent', () => {
 
   it('should create', () => {
     expect(createComponent().component).toBeTruthy();
+  });
+
+  function setupPlacementRanking() {
+    const setup = createComponent();
+    const { component, auth } = setup;
+    auth.currentUser = { uid: 'site' };
+    auth.isAdmin = false;
+    component.givenMonth = 7; component.givenYear = 2026;
+    component.rankingMode = 'performance';
+    const owner = { uid: 'site', firstName: 'Bandal' };
+    component.allUsers = [owner];
+    const a = { uid: 'a', firstName: 'Alice', status: 'Travaille', role: 'Agent', tempUser: owner,
+      dailyPoints: { '7-20-2026': '10', '7-21-2026': '5' },
+      totalDailyPoints: { '7-20-2026': '10', '7-21-2026': '10' } };
+    const b = { ...a, uid: 'b', firstName: 'Bob', dailyPoints: { '7-20-2026': '5', '7-21-2026': '10' } };
+    component.allEmployeesAll = [a, b];
+    component.filterAndInitializeEmployees([a, b], []);
+    return { ...setup, a, b };
+  }
+
+  async function settleRequestedDetails(component: TeamRankingMonthComponent): Promise<void> {
+    jasmine.clock().tick(0);
+    await Promise.allSettled([...(component as any).pendingPlacementHistory.values()]);
+    // Settle the joined month loads and the dialog update after their cache commits.
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+  }
+
+  it('calculates details only on request and reuses one result for every employee without reads', () => {
+    const { component, data, a, b } = setupPlacementRanking();
+    const calculate = spyOn<any>(component, 'performancePlacementParticipants').and.callThrough();
+    expect(component.rankingDetails).toBeNull();
+    expect(calculate).not.toHaveBeenCalled();
+    component.openRankingDetails(a);
+    expect(component.rankingDetails!.loading).toBeTrue();
+    jasmine.clock().tick(0);
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 1, days: 1 }, { rank: 2, days: 1 }]);
+    expect(component.rankingDetails!.summary!.days).toBe(2);
+    component.closeRankingDetails();
+    component.openRankingDetails(b); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.name).toContain('Bob');
+    expect(calculate).toHaveBeenCalledTimes(1);
+    expect(data.getEmployeeDayTotalsForDay).not.toHaveBeenCalled();
+    component.closeRankingDetails();
+  });
+
+  it('invalidates after point updates and cancels work when a modal closes before calculation', () => {
+    const { component, a } = setupPlacementRanking();
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    a.dailyPoints['7-20-2026'] = '1';
+    (component as any).refreshLogicalPerformanceMetrics();
+    jasmine.clock().tick(0);
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 2, days: 2 }]);
+    component.closeRankingDetails();
+    const calculate = spyOn<any>(component, 'performancePlacementParticipants').and.callThrough();
+    component.openRankingDetails(a); component.closeRankingDetails();
+    jasmine.clock().tick(0);
+    expect(component.rankingDetails).toBeNull();
+    expect(calculate).not.toHaveBeenCalled();
+  });
+
+  it('loads a cold daily detail month only on click, then shares it across all employees', async () => {
+    const { component, data, a, b } = setupPlacementRanking();
+    component.rankingMode = 'dailyPayments';
+    data.getEmployeePaymentHistoryForMonth.and.resolveTo([
+      { ownerUid: 'site', employeeUid: 'a', dayKey: '7-20-2026', total: 200, count: 2 },
+      { ownerUid: 'site', employeeUid: 'b', dayKey: '7-20-2026', total: 100, count: 1 },
+    ]);
+    expect(data.getEmployeePaymentHistoryForMonth).not.toHaveBeenCalled();
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.loading).toBeTrue();
+    expect(component.rankingDetails!.loadingLabel).toContain('Chargement');
+    await settleRequestedDetails(component);
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 1, days: 1 }]);
+    expect(component.rankingDetails!.message).toBe('');
+    component.closeRankingDetails(); component.openRankingDetails(b);
+    await settleRequestedDetails(component);
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 2, days: 1 }]);
+    expect(data.getEmployeePaymentHistoryForMonth).toHaveBeenCalledOnceWith('2026-07', ['site']);
+    expect(data.getEmployeeDayTotalsForDay).not.toHaveBeenCalled();
+    component.closeRankingDetails();
+  });
+
+  it('joins a slow request across closing and reopening and never reopens a dismissed modal', async () => {
+    const { component, data, a, b } = setupPlacementRanking();
+    let resolve!: (rows: any[]) => void;
+    data.getEmployeePaymentHistoryForMonth.and.returnValue(new Promise<any[]>((done) => resolve = done));
+    component.rankingMode = 'dailyPayments';
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    component.closeRankingDetails(); component.openRankingDetails(b); jasmine.clock().tick(0);
+    expect(data.getEmployeePaymentHistoryForMonth).toHaveBeenCalledTimes(1);
+    resolve([{ ownerUid: 'site', employeeUid: 'b', dayKey: '7-20-2026', total: 100, count: 1 }]);
+    await settleRequestedDetails(component);
+    expect(component.rankingDetails!.name).toContain('Bob');
+    expect(component.rankingDetails!.summary!.topThree).toBe(1);
+    component.closeRankingDetails();
+    expect(component.rankingDetails).toBeNull();
+  });
+
+  it('leaves connection failures retryable and does not automatically repeat failed reads', async () => {
+    const { component, data, a } = setupPlacementRanking();
+    component.rankingMode = 'dailyPayments';
+    data.getEmployeePaymentHistoryForMonth.and.rejectWith(new Error('offline'));
+    component.openRankingDetails(a); await settleRequestedDetails(component);
+    expect(component.rankingDetails!.summary).toBeNull();
+    expect(component.rankingDetails!.error).toBeTrue();
+    (component as any).invalidateRankingDetails();
+    jasmine.clock().tick(0);
+    expect(data.getEmployeePaymentHistoryForMonth).toHaveBeenCalledTimes(1);
+    data.getEmployeePaymentHistoryForMonth.and.resolveTo([]);
+    component.retryRankingDetails(); await settleRequestedDetails(component);
+    expect(component.rankingDetails!.error).toBeFalse();
+    expect(component.rankingDetails!.summary!.days).toBe(0);
+    expect(data.getEmployeePaymentHistoryForMonth).toHaveBeenCalledTimes(2);
+    expect(data.getEmployeeDayTotalsForDay).not.toHaveBeenCalled();
+    component.closeRankingDetails();
+  });
+
+  it('ignores an old requested month that finishes after the selected month changes', async () => {
+    const { component, data, a } = setupPlacementRanking();
+    jasmine.clock().mockDate(new Date(2026, 8, 23));
+    let resolveOld!: (rows: any[]) => void;
+    const old = new Promise<any[]>((done) => resolveOld = done);
+    data.getEmployeePaymentHistoryForMonth.and.callFake((month: string) => month === '2026-07' ? old
+      : Promise.resolve([{ ownerUid: 'site', employeeUid: 'a', dayKey: '8-20-2026', total: 100, count: 1 }]));
+    component.rankingMode = 'dailyPayments';
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    component.closeRankingDetails(); component.todayDayKey = '8-23-2026';
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    // Resolve July too: its cached result must never overwrite the August dialog.
+    resolveOld([]); await settleRequestedDetails(component);
+    expect(component.rankingDetails!.period).toContain('août');
+    expect(component.rankingDetails!.summary!.topThree).toBe(1);
+    expect(data.getEmployeePaymentHistoryForMonth).toHaveBeenCalledTimes(2);
+    component.closeRankingDetails();
+  });
+
+  it('retains the existing month reads for details and reuses them in the daily view', async () => {
+    const { component, data, a, b } = setupPlacementRanking();
+    data.getEmployeeDayTotalsForDay.and.callFake((_owner: string, employee: string, day: string) =>
+      Promise.resolve({ total: day === '7-20-2026' ? employee === 'a' ? 200 : 100
+        : day === '7-21-2026' ? employee === 'b' ? 200 : 100 : 0, count: 1 }));
+    component.rankingMode = 'monthlyPayments';
+    await (component as any).loadMonthlyTotalsForEmployees();
+    expect(data.getEmployeeDayTotalsForDay).toHaveBeenCalledTimes(62);
+    expect((component as any).placementCache.size).toBe(0);
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 1, days: 1 }, { rank: 2, days: 1 }]);
+    component.closeRankingDetails();
+    component.rankingMode = 'dailyPayments';
+    component.openRankingDetails(b); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.summary!.days).toBe(2);
+    expect(data.getEmployeeDayTotalsForDay).toHaveBeenCalledTimes(62);
+    component.closeRankingDetails();
+    component.allEmployeesAll = [a]; component.allEmployees = [a];
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.summary).toBeNull();
+    component.closeRankingDetails();
+  });
+
+  it('retains the existing weekly reads, includes only completed days and adds no reads on reopening', async () => {
+    const { component, data, a } = setupPlacementRanking();
+    (component as any).time.convertDateToMonthDayYear = () => '7-20-2026';
+    component.selectedWeekStartDate = '2026-07-20';
+    component.rankingMode = 'weeklyPayments';
+    data.getEmployeeDayTotalsForDay.and.resolveTo({ total: 100, count: 1 });
+    await (component as any).loadWeeklyTotalsForEmployees();
+    expect(data.getEmployeeDayTotalsForDay).toHaveBeenCalledTimes(14);
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 1, days: 3 }]);
+    component.closeRankingDetails(); component.openRankingDetails(a); jasmine.clock().tick(0);
+    expect(data.getEmployeeDayTotalsForDay).toHaveBeenCalledTimes(14);
+    component.closeRankingDetails();
+  });
+
+  it('does not publish partial or failed payment history', async () => {
+    const { component, data, a } = setupPlacementRanking();
+    component.rankingMode = 'monthlyPayments';
+    data.getEmployeeDayTotalsForDay.and.rejectWith(new Error('offline'));
+    data.getEmployeePaymentHistoryForMonth.and.rejectWith(new Error('offline'));
+    await (component as any).loadMonthlyTotalsForEmployees();
+    component.openRankingDetails(a); await settleRequestedDetails(component);
+    expect(component.rankingDetails!.summary).toBeNull();
+    expect(component.rankingDetails!.error).toBeTrue();
+    component.closeRankingDetails();
+  });
+
+  it('excludes a corrupt payment day instead of turning its invalid total into a false zero', async () => {
+    const { component, data, a } = setupPlacementRanking();
+    component.rankingMode = 'monthlyPayments';
+    data.getEmployeeDayTotalsForDay.and.callFake((_owner: string, employee: string, day: string) =>
+      Promise.resolve({ total: day === '7-20-2026' && employee === 'b' ? NaN : 100, count: 1 }));
+    await (component as any).loadMonthlyTotalsForEmployees();
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.summary!.incomplete).toBe(1);
+    expect(component.rankingDetails!.summary!.days).toBe(21);
+    expect(data.getEmployeeDayTotalsForDay).toHaveBeenCalledTimes(62);
+    component.closeRankingDetails();
+  });
+
+  it('keeps the latest month when a previous period finishes loading later', async () => {
+    const { component, data, a } = setupPlacementRanking();
+    jasmine.clock().mockDate(new Date(2026, 8, 23));
+    let resolveOld!: (value: { total: number; count: number }) => void;
+    const old = new Promise<{ total: number; count: number }>((resolve) => resolveOld = resolve);
+    data.getEmployeeDayTotalsForDay.and.callFake((_owner: string, employee: string, day: string) =>
+      day.startsWith('7-') ? old : Promise.resolve({ total: employee === 'a' ? 200 : 100, count: 1 }));
+    component.rankingMode = 'monthlyPayments';
+    const pending = (component as any).loadMonthlyTotalsForEmployees();
+    component.givenMonth = 8;
+    await (component as any).loadMonthlyTotalsForEmployees();
+    resolveOld({ total: 999, count: 99 }); await pending;
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.period).toContain('août');
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 1, days: 31 }]);
+    expect(component.paidEmployeesMonth[0]._monthTotal).toBe(6200);
+    expect(data.getEmployeeDayTotalsForDay).toHaveBeenCalledTimes(124);
+    component.closeRankingDetails();
+  });
+
+  it('reuses already fetched amount records for non-admin details with manager site scope', async () => {
+    const { component, auth, data, a, b } = setupPlacementRanking();
+    auth.isAdmin = true;
+    a.role = 'Manager';
+    component.allUsers[0].dailyReimbursement = { '7-20-2026': '150' };
+    const fetch = spyOn<any>(component, 'fetchEmployeeAmountRecordsForMonth').and.resolveTo([
+      { dayKey: '7-20-2026', expected: 100, total: 75, expectedPresent: true, totalPresent: true },
+    ]);
+    await component.setPerformanceMetricMode('amount');
+    auth.isAdmin = false;
+    component.publishedEmployeePerformanceMode = 'amount';
+    component.openRankingDetails(a); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.metric).toBe('Performance actuelle');
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 1, days: 1 }]);
+    component.closeRankingDetails(); component.openRankingDetails(b); jasmine.clock().tick(0);
+    // Agent retains the habitual metric while the manager uses site amounts.
+    expect(component.rankingDetails!.metric).toBe('Performance habituelle');
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 2, days: 1 }]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(data.getEmployeeDayTotalsForDay).not.toHaveBeenCalled();
+    component.closeRankingDetails();
   });
 
   it('never opens or prepares the attendance analytics for regular users', async () => {
@@ -830,6 +1071,10 @@ describe('TeamRankingMonthComponent', () => {
     expect(component.paidEmployeesMonth[0]._monthTotal).toBe(300000);
     expect(component.paidEmployeesMonth[0]._monthCount).toBe(3);
     expect(component.totalMonthlyAmount).toBe(300000);
+    component.openRankingDetails(rotationEmployee); jasmine.clock().tick(0);
+    expect(component.rankingDetails!.summary!.ranks).toEqual([{ rank: 1, days: 2 }]);
+    expect(data.getEmployeeDayTotalsForDay).toHaveBeenCalledTimes(62);
+    component.closeRankingDetails();
   });
 
   it('publishes the global employee mode and mirrors it in the admin preview', async () => {

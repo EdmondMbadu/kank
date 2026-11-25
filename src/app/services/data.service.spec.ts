@@ -4,6 +4,50 @@ import { of } from 'rxjs';
 import { DataService } from './data.service';
 
 describe('DataService', () => {
+  describe('ranking placement month history', () => {
+    let docs: any[];
+    let get: jasmine.Spy;
+    let where: jasmine.Spy;
+    let collectionGroup: jasmine.Spy;
+    let service: DataService;
+    const stored = (path: string, data: any) => ({ ref: { path }, data: () => data });
+    beforeEach(() => {
+      docs = [
+        stored('users/a/employees/e1/dayTotals/7-20-2026', { total: 200, count: 2 }),
+        stored('users/a/employees/e1/dayTotals/07-20-2026', { total: 999, count: 99 }),
+        stored('users/b/employees/e2/dayTotals/7-20-2026', { collected: '100', count: 1 }),
+        stored('users/other/employees/e3/dayTotals/7-20-2026', { total: 999 }),
+        stored('users/a/employees/e1/dayTotals/8-20-2026', { total: 999 }),
+        stored('users/a/employees/e1/dayTotals/7-32-2026', { total: 999 }),
+        stored('other/a/employees/e1/dayTotals/7-20-2026', { total: 999 }),
+      ];
+      get = jasmine.createSpy('get').and.callFake(async () => ({ forEach: (callback: any) => docs.forEach(callback) }));
+      where = jasmine.createSpy('where').and.returnValue({ get });
+      collectionGroup = jasmine.createSpy('collectionGroup').and.returnValue({ where });
+      service = new DataService({ firestore: { collectionGroup } } as any, {} as any, {} as any, {
+        getTomorrowsDateMonthDayYear: () => '7-24-2026', todaysDate: () => '7-23-2026',
+      } as any, {} as any, {} as any);
+    });
+    it('uses one server query and retains the employee identity, date and payment count', async () => {
+      expect(await service.getEmployeePaymentHistoryForMonth('2026-07', ['a', 'b'])).toEqual([
+        { ownerUid: 'a', employeeUid: 'e1', dayKey: '7-20-2026', total: 200, count: 2 },
+        { ownerUid: 'b', employeeUid: 'e2', dayKey: '7-20-2026', total: 100, count: 1 },
+      ]);
+      expect(collectionGroup).toHaveBeenCalledOnceWith('dayTotals');
+      expect(where).toHaveBeenCalledOnceWith('monthKey', '==', '2026-07');
+      expect(get).toHaveBeenCalledOnceWith({ source: 'server' });
+    });
+    it('skips invalid selections without a read and rejects failures instead of returning partial history', async () => {
+      expect(await service.getEmployeePaymentHistoryForMonth('2026-13', ['a'])).toEqual([]);
+      expect(await service.getEmployeePaymentHistoryForMonth('2026-07', [])).toEqual([]);
+      expect(get).not.toHaveBeenCalled();
+      docs.push(stored('users/a/employees/e2/dayTotals/7-20-2026', { total: 'NaN' }));
+      await expectAsync(service.getEmployeePaymentHistoryForMonth('2026-07', ['a'])).toBeRejected();
+      get.and.rejectWith(new Error('offline'));
+      await expectAsync(service.getEmployeePaymentHistoryForMonth('2026-07', ['a'])).toBeRejected();
+    });
+  });
+
   describe('new cycle audit audio reset', () => {
     let stored: any;
     let archived: any;

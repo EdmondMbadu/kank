@@ -22,7 +22,7 @@ import {
 } from 'src/app/services/performance-metric-settings.service';
 import { DataService } from 'src/app/services/data.service';
 import exifr from 'exifr';
-import { firstValueFrom, Subscription } from 'rxjs';
+import { firstValueFrom, from, Subscription, timeout } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
@@ -60,8 +60,17 @@ import {
   sumAmountMapThroughDate,
 } from 'src/app/utils/amount-performance.util';
 import { isAmountPerformanceRoleEligible } from 'src/app/utils/amount-performance-role.util';
-import { pointBusinessDay, pointPerformanceDays, summarizeLogicalEmployeePoints } from 'src/app/utils/point-performance.util';
+import { pointBusinessDay, pointDayTime, pointPerformanceDays, summarizeLogicalEmployeePoints } from 'src/app/utils/point-performance.util';
 import { scalePerformanceBudget } from 'src/app/utils/performance-budget.util';
+import { amountPlacementDays, habitualPlacementDays, placementDay, PlacementParticipant, PlacementSummary, PlacementValue, RankingDetailsView, summarizePlacements } from './ranking-placement.util';
+
+type PaymentPlacementTotals = Map<string, { total: number; count: number; ownerUid: string; status: string }>;
+interface PaymentPlacementSnapshot {
+  days: string[];
+  roster: string;
+  requestId: number;
+  records: Map<string, PaymentPlacementTotals>;
+}
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -314,6 +323,21 @@ type TrophyHeatmapRect = {
   styleUrls: ['./team-ranking-month.component.css'],
 })
 export class TeamRankingMonthComponent implements OnDestroy {
+  rankingDetails: RankingDetailsView | null = null;
+  private rankingDetailsEmployeeKey = '';
+  private rankingDetailsTimer?: ReturnType<typeof setTimeout>;
+  private rankingDetailsRequestId = 0;
+  private placementVersion = 0;
+  private readonly placementCache = new Map<string, Map<string, PlacementSummary>>();
+  private readonly paymentPlacementHistory = new Map<'week' | 'month', PaymentPlacementSnapshot>();
+  private readonly requestedPlacementHistory = new Map<string, PaymentPlacementSnapshot>();
+  private readonly pendingPlacementHistory = new Map<string, Promise<void>>();
+  private readonly paymentPlacementRequests = { week: 0, month: 0, day: 0 };
+  private amountPlacementHistory: {
+    key: string;
+    byEmployee: Map<string, AmountPerformanceDayRecord[]>;
+    byOwner: Map<string, AmountPerformanceDayRecord[]>;
+  } | null = null;
   private readonly DEFAULT_VACATION_DAYS = 7;
   // Empty means that no trustworthy denominator exists. A real 0% remains
   // the string "0" so the UI can distinguish zero performance from no data.
@@ -708,6 +732,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   onDailyPaymentDateChange(): void {
+    this.closeRankingDetails();
     // Convert yyyy-MM-dd to MM-DD-YYYY format
     this.todayDayKey = this.time.convertDateToMonthDayYear(this.selectedPaymentDate);
     // Update display format
@@ -1229,6 +1254,244 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.loadPresenceExceptionDaysForSelection();
       this.loadPresenceAttachmentsForSelection();
     }
+  }
+
+  openRankingDetails(employee: Employee): void {
+    if (this.rankingMode === 'trophyHistory') return;
+    this.rankingDetailsEmployeeKey = this.employeeRecordKey(employee);
+    const period = this.rankingPlacementPeriod();
+    this.rankingDetails = {
+      name: this.formatRankingEmployeeName(employee),
+      location: employee.tempLocationHolder || employee.tempUser?.firstName || 'Employé',
+      metric: this.rankingMode === 'performance'
+        ? this.employeeUsesAmountPerformance(employee) ? 'Performance actuelle' : 'Performance habituelle'
+        : 'Paiements',
+      period: period.label, loading: true, message: '', summary: null,
+    };
+    this.scheduleRankingDetails();
+  }
+
+  closeRankingDetails(): void {
+    this.rankingDetailsRequestId++;
+    if (this.rankingDetailsTimer !== undefined) clearTimeout(this.rankingDetailsTimer);
+    this.rankingDetailsTimer = undefined;
+    this.rankingDetails = null;
+    this.rankingDetailsEmployeeKey = '';
+  }
+
+  private invalidateRankingDetails(): void {
+    this.placementVersion++;
+    this.placementCache.clear();
+    if (this.rankingDetails && !this.rankingDetails.error) this.scheduleRankingDetails();
+  }
+
+  retryRankingDetails(): void {
+    if (this.rankingDetails && !this.rankingDetails.loading) this.scheduleRankingDetails();
+  }
+
+  private scheduleRankingDetails(): void {
+    if (this.rankingDetailsTimer !== undefined) clearTimeout(this.rankingDetailsTimer);
+    const requestId = ++this.rankingDetailsRequestId;
+    if (this.rankingDetails) {
+      this.rankingDetails = { ...this.rankingDetails, loading: true, error: false, message: '',
+        summary: null, loadingLabel: 'Calcul des places…' };
+    }
+    // Let the dialog paint before the first local calculation on slower phones.
+    this.rankingDetailsTimer = setTimeout(() => {
+      this.rankingDetailsTimer = undefined;
+      void this.prepareRankingDetails(requestId);
+    }, 0);
+  }
+
+  private async prepareRankingDetails(requestId: number): Promise<void> {
+    const isCurrent = () => !!this.rankingDetails && !this.presenceAnalyticsDestroyed &&
+      requestId === this.rankingDetailsRequestId;
+    if (!isCurrent()) return;
+    try {
+      const period = this.rankingPlacementPeriod();
+      const today = pointBusinessDay();
+      const roster = this.placementRosterKey();
+      if (this.rankingMode !== 'performance' && !this.paymentPlacementParticipants(period.days, roster)) {
+        this.rankingDetails = { ...this.rankingDetails!, loadingLabel: 'Chargement de l’historique du mois…' };
+        await this.ensurePaymentPlacementHistory(period.days, roster);
+        if (!isCurrent()) return;
+      }
+      const key = `${this.rankingMode}:${period.days.join(',')}:${this.isAmountPerformanceMode}:${today}:${this.placementVersion}:${roster}`;
+      let summaries = this.placementCache.get(key);
+      let message = '';
+      if (!summaries) {
+        const participants = this.rankingMode === 'performance'
+          ? this.performancePlacementParticipants(period.month, period.year, today)
+          : this.paymentPlacementParticipants(period.days, roster);
+        if (!participants) {
+          message = 'Les dossiers du classement ont changé. Fermez cette fenêtre et ouvrez à nouveau les détails.';
+        } else {
+          const days = this.rankingMode === 'performance'
+            ? [...new Set(participants.flatMap((person) => [...person.days.keys()]))]
+            : period.days;
+          summaries = summarizePlacements(participants, days, today);
+          this.placementCache.set(key, summaries);
+          while (this.placementCache.size > 2) this.placementCache.delete(this.placementCache.keys().next().value!);
+        }
+      }
+      if (!isCurrent()) return;
+      const summary = summaries?.get(this.rankingDetailsEmployeeKey) || null;
+      if (!summary && !message) message = 'Le dossier de cet employé a changé. Fermez les détails et sélectionnez son dossier actuel.';
+      this.rankingDetails = { ...this.rankingDetails!, loading: false, message, summary };
+    } catch (error) {
+      if (!isCurrent()) return;
+      console.error('Unable to load ranking placement history', error);
+      this.rankingDetails = { ...this.rankingDetails!, loading: false, error: true, summary: null,
+        message: 'Impossible de charger l’historique. Vérifiez votre connexion, puis réessayez.' };
+    }
+  }
+
+  private completedPlacementDays(days: readonly string[]): string[] {
+    const cutoff = pointDayTime(pointBusinessDay())!;
+    return days.filter((day) => { const time = pointDayTime(day); return time !== null && time < cutoff; });
+  }
+
+  private async ensurePaymentPlacementHistory(days: string[], roster: string): Promise<void> {
+    const requiredDays = this.completedPlacementDays(days);
+    const monthKeys = [...new Set(requiredDays.map((day) => {
+      const [month, , year] = day.split('-');
+      return `${year}-${month.padStart(2, '0')}`;
+    }))];
+    const everyone = (this.allEmployeesAll?.length ? this.allEmployeesAll : this.allEmployees)
+      .filter((employee) => !!employee.uid);
+    if (!everyone.length || this.rankingFailedOwners.size) throw new Error('Employee roster is incomplete');
+    const ownerUids = [...new Set(everyone.map((employee) => this.employeeOwnerUid(employee)).filter(Boolean))];
+    await Promise.all(monthKeys.map((monthKey) => {
+      const key = `${monthKey}:${roster}`;
+      const [year, month] = monthKey.split('-').map(Number);
+      const monthDays = this.completedPlacementDays(this.dayKeysForMonth(month, year));
+      const cached = this.requestedPlacementHistory.get(key);
+      if (cached && monthDays.every((day) => cached.records.has(day))) return Promise.resolve();
+      const pending = this.pendingPlacementHistory.get(key);
+      if (pending) return pending;
+      const load = firstValueFrom(from(this.data.getEmployeePaymentHistoryForMonth(monthKey, ownerUids))
+        .pipe(timeout(30000))).then((rows) => {
+          const snapshot: PaymentPlacementSnapshot = { days: monthDays, roster, requestId: 0,
+            records: new Map(monthDays.map((day) => [day, new Map(everyone.map((employee) => [
+              this.employeeRecordKey(employee), { total: 0, count: 0, ownerUid: this.employeeOwnerUid(employee),
+                status: employee.status || 'Travaille' },
+            ]))])) };
+          for (const row of rows) {
+            const recordKey = `${row.ownerUid}|${row.employeeUid}`;
+            const record = snapshot.records.get(row.dayKey)?.get(recordKey);
+            if (record) { record.total = row.total; record.count = row.count; }
+          }
+          if (this.presenceAnalyticsDestroyed) return;
+          this.requestedPlacementHistory.set(key, snapshot);
+          while (this.requestedPlacementHistory.size > 2) {
+            this.requestedPlacementHistory.delete(this.requestedPlacementHistory.keys().next().value!);
+          }
+          this.placementVersion++;
+          this.placementCache.clear();
+        }).finally(() => this.pendingPlacementHistory.delete(key));
+      this.pendingPlacementHistory.set(key, load);
+      return load;
+    }));
+  }
+
+  private rankingPlacementPeriod(): { month: number; year: number; days: string[]; label: string } {
+    let month = Number(this.givenMonth), year = Number(this.givenYear);
+    if (this.rankingMode === 'dailyPayments') {
+      const parts = (placementDay(this.todayDayKey) || '').split('-').map(Number);
+      month = parts[0]; year = parts[2];
+    }
+    if (this.rankingMode === 'weeklyPayments') {
+      const date = this.time.convertDateToMonthDayYear(this.selectedWeekStartDate);
+      return { month, year, days: this.weekKeysForDate(date), label: this.weekPickerRangeLabel };
+    }
+    const valid = Number.isInteger(year) && year >= 1900 && Number.isInteger(month) && month >= 1 && month <= 12;
+    return {
+      month, year, days: valid ? this.dayKeysForMonth(month, year) : [],
+      label: valid ? new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+        .format(new Date(Date.UTC(year, month - 1, 1))) : 'Période indisponible',
+    };
+  }
+
+  private placementRosterKey(): string {
+    const everyone = this.allEmployeesAll?.length ? this.allEmployeesAll : this.allEmployees;
+    return everyone.map((employee) => [this.employeeRecordKey(employee), employee.status,
+      employee.role, employee.canonicalEmployeeId, employee.rotationSourceLocationId,
+      employee.rotationSourceEmployeeId, this.employeeRecordKey(this.logicalRepresentativeForRecord(employee))]
+      .join(':')).sort().join('|');
+  }
+
+  private beginPaymentPlacementHistory(kind: 'week' | 'month', days: string[]): PaymentPlacementSnapshot {
+    const snapshot = { days, roster: this.placementRosterKey(),
+      requestId: ++this.paymentPlacementRequests[kind],
+      records: new Map(days.map((day) => [day, new Map() as PaymentPlacementTotals])) };
+    this.paymentPlacementHistory.delete(kind);
+    this.invalidateRankingDetails();
+    return snapshot;
+  }
+
+  private commitPaymentPlacementHistory(kind: 'week' | 'month', snapshot: PaymentPlacementSnapshot): void {
+    if (this.presenceAnalyticsDestroyed || snapshot.requestId !== this.paymentPlacementRequests[kind] ||
+        snapshot.roster !== this.placementRosterKey()) return;
+    this.paymentPlacementHistory.set(kind, snapshot);
+    this.invalidateRankingDetails();
+  }
+
+  private paymentPlacementParticipants(requestedDays: string[], roster: string): PlacementParticipant[] | null {
+    const days = this.completedPlacementDays(requestedDays);
+    const snapshot = [...this.paymentPlacementHistory.values(), ...this.requestedPlacementHistory.values()].find((candidate) =>
+      candidate.roster === roster && days.length > 0 && days.every((day) => candidate.records.has(day)));
+    if (!snapshot && days.length) return null;
+    const everyone = this.allEmployeesAll?.length ? this.allEmployeesAll : this.allEmployees;
+    const participants = this.allEmployees.map((employee) => ({
+      key: this.employeeRecordKey(employee), days: new Map<string, PlacementValue>(),
+    }));
+    for (const day of days) {
+      const raw = snapshot!.records.get(day)!;
+      const complete = [...raw.values()].every((value) => Number.isFinite(value.total) && Number.isFinite(value.count));
+      const adjusted = this.aggregatePaymentTotalsByLogicalEmployee(everyone, raw);
+      participants.forEach((person) => {
+        const value = adjusted.get(person.key);
+        person.days.set(day, { score: value?.total ?? null, count: value?.count,
+          complete: complete && !!value && Number.isFinite(value.total) && Number.isFinite(value.count) });
+      });
+    }
+    return participants;
+  }
+
+  private performancePlacementParticipants(month: number, year: number, today: string): PlacementParticipant[] | null {
+    if (this.rankingFailedOwners.size || !this.allEmployees.length) return null;
+    if (this.isAmountPerformanceMode && (!this.amountPlacementHistory || this.amountPerformanceLoading ||
+        this.amountPlacementHistory.key !== this.amountPerformanceCacheKey())) return null;
+    const everyone = this.allEmployeesAll?.length ? this.allEmployeesAll : this.allEmployees;
+    const logicalGroups = this.logicalEmployeeGroups.length ? this.logicalEmployeeGroups : this.buildLogicalEmployeeGroups(everyone);
+    const groups = logicalGroups.map((group) => this.orderedPerformanceRecords(group));
+    const byOwner = new Map<string, Employee[][]>();
+    const cache = new Map();
+    return this.allEmployees.map((employee) => {
+      const owner = this.employeeOwnerUid(employee);
+      const key = this.employeeRecordKey(employee);
+      let days: Map<string, PlacementValue>;
+      if (this.employeeUsesAmountPerformance(employee)) {
+        const siteScope = this.usesSiteAmountPerformanceScope(employee);
+        const records = siteScope ? this.amountPlacementHistory!.byOwner.get(owner)
+          : this.amountPlacementHistory!.byEmployee.get(this.amountPerformanceEmployeeKey(employee));
+        const user = this.allUsers.find((candidate) => candidate.uid === owner);
+        days = amountPlacementDays(records || [], month, year, siteScope ? user?.dailyReimbursement || {} : undefined);
+      } else {
+        let employeeGroups: Employee[][];
+        if (this.isManagerEmployee(employee)) {
+          if (!byOwner.has(owner)) {
+            const siteRecords = everyone.filter((record) => this.employeeOwnerUid(record) === owner);
+            byOwner.set(owner, this.buildLogicalEmployeeGroups(siteRecords).map((group) => this.orderedPerformanceRecords(group)));
+          }
+          employeeGroups = byOwner.get(owner)!;
+        } else {
+          employeeGroups = groups.filter((group) => group.some((record) => this.employeeRecordKey(record) === key));
+        }
+        days = habitualPlacementDays(employeeGroups, month, year, today, cache);
+      }
+      return { key, days };
+    });
   }
 
   async togglePresenceAnalytics(): Promise<void> {
@@ -2475,6 +2738,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   onWeeklyPaymentDateChange(): void {
+    this.closeRankingDetails();
     this.updateWeekPickerLabels();
     if (this.rankingMode === 'weeklyPayments') {
       this.loadWeeklyTotalsForEmployees();
@@ -4741,6 +5005,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.closeRankingDetails();
     this.presenceAnalyticsDestroyed = true;
     if (this.habitualDayTimer) clearInterval(this.habitualDayTimer);
     this.rankingUsersSub?.unsubscribe();
@@ -5296,6 +5561,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private resetAmountPerformancePreview(): void {
+    this.amountPlacementHistory = null;
+    this.invalidateRankingDetails();
     this.amountPerformanceRequestId += 1;
     this.amountPerformanceSummary = null;
     this.amountPerformanceByEmployee = {};
@@ -5631,6 +5898,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
       }
       this.amountPerformanceSummary = summary;
       this.amountPerformanceByEmployee = employeeSummaries;
+      this.amountPlacementHistory = { key: cacheKey, byEmployee: logicalRecordsByEmployeeKey, byOwner: recordsByOwner };
+      this.invalidateRankingDetails();
       this.amountPerformanceLoadedKey = cacheKey;
       this.sortEmployeesByPerformance();
     } catch (error) {
@@ -5643,6 +5912,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       if (requestId === this.amountPerformanceRequestId) {
         this.amountPerformanceLoading = false;
         this.amountPerformanceLoadingKey = '';
+        this.invalidateRankingDetails();
       }
     }
   }
@@ -6059,6 +6329,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private refreshLogicalPerformanceMetrics(): void {
+    this.invalidateRankingDetails();
     this.prepareMonthlyPerformanceComponents();
 
     for (const employee of this.allEmployees || []) {
@@ -6440,6 +6711,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       | 'trophyHistory'
   ) {
     if (this.rankingMode === mode) return;
+    this.closeRankingDetails();
     this.logDebug('Switching ranking mode', { from: this.rankingMode, to: mode });
     this.rankingMode = mode;
 
@@ -6460,6 +6732,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   onPayrollMonthChange(): void {
+    this.closeRankingDetails();
     this.allEmployeesAll.forEach((employee) =>
       this.decorateMonthlySignatureState(employee)
     );
@@ -6627,6 +6900,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
       dayKey: this.todayDayKey,
     });
     this.loadingDaily = true;
+    const selectedDay = this.todayDayKey;
+    const requestId = ++this.paymentPlacementRequests.day;
 
     try {
       // Use the full set (active + inactive) to fetch day totals
@@ -6646,7 +6921,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
           const { total, count } = await this.data.getEmployeeDayTotalsForDay(
             ownerUid,
             e.uid,
-            this.todayDayKey
+            selectedDay
           );
           totalsByRecordKey.set(this.employeeRecordKey(e), {
             total,
@@ -6659,6 +6934,16 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.logDebug('Daily totals fetched', {
         employees: totalsByRecordKey.size,
       });
+      if (requestId !== this.paymentPlacementRequests.day || selectedDay !== this.todayDayKey) return;
+      // A normal daily refresh can update a day already retained by the month/week.
+      // It never expands the retained period or initiates another read.
+      const roster = this.placementRosterKey();
+      [...this.paymentPlacementHistory.values(), ...this.requestedPlacementHistory.values()].forEach((snapshot) => {
+        if (snapshot.roster === roster && snapshot.records.has(selectedDay)) {
+          snapshot.records.set(selectedDay, totalsByRecordKey);
+        }
+      });
+      this.invalidateRankingDetails();
 
       // 2) Fold source + rotation records into one displayed logical person.
       // Unrelated inactive employees retain the existing coworker fallback.
@@ -6702,9 +6987,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
       });
     } catch (error) {
       console.error('Failed to load daily totals', error);
-      this.paidEmployeesToday = [];
+      if (requestId === this.paymentPlacementRequests.day) this.paidEmployeesToday = [];
     } finally {
-      this.loadingDaily = false;
+      if (requestId === this.paymentPlacementRequests.day) this.loadingDaily = false;
     }
   }
 
@@ -6795,6 +7080,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       weekKeys,
     });
     this.loadingWeekly = true;
+    const placementSnapshot = this.beginPaymentPlacementHistory('week', weekKeys);
 
     try {
       const everyone = (
@@ -6817,6 +7103,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
             weekKeys.map(async (k) => {
               const { total, count } =
                 await this.data.getEmployeeDayTotalsForDay(ownerUid, e.uid, k);
+              placementSnapshot.records.get(k)!.set(this.employeeRecordKey(e), {
+                total, count, ownerUid, status: e.status || 'Travaille',
+              });
               sumTotal += Number(total || 0);
               sumCount += Number(count || 0);
             })
@@ -6834,6 +7123,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         employees: weekTotalsByRecordKey.size,
         daysCount: weekKeys.length,
       });
+      this.commitPaymentPlacementHistory('week', placementSnapshot);
+      if (placementSnapshot.requestId !== this.paymentPlacementRequests.week) return;
 
       const adjusted = this.aggregatePaymentTotalsByLogicalEmployee(
         everyone,
@@ -6873,9 +7164,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
       });
     } catch (error) {
       console.error('Failed to load weekly totals', error);
-      this.paidEmployeesWeek = [];
+      if (placementSnapshot.requestId === this.paymentPlacementRequests.week) this.paidEmployeesWeek = [];
     } finally {
-      this.loadingWeekly = false;
+      if (placementSnapshot.requestId === this.paymentPlacementRequests.week) this.loadingWeekly = false;
     }
   }
 
@@ -7296,6 +7587,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private monthlyPerformanceComponentsForRecords(
     records: Employee[]
   ): { earned: number; possible: number } | null {
+    const summary = summarizeLogicalEmployeePoints(this.orderedPerformanceRecords(records), this.givenMonth, this.givenYear);
+    if (!summary.complete) this.habitualPerformanceIncomplete = true;
+    return summary.percent !== null ? {earned: summary.earned, possible: summary.possible} : null;
+  }
+
+  private orderedPerformanceRecords(records: Employee[]): Employee[] {
     const priority = (employee: Employee): number => {
       const active = this.isActiveRankingEmployee(employee) ? 100 : 0;
       const rotation = employee.isRotation ? 50 : 0;
@@ -7306,16 +7603,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
           : 0;
       return active + rotation + copiedIdentity;
     };
-    const ordered = [...records].sort((first, second) => {
+    return [...records].sort((first, second) => {
       const scoreDifference = priority(second) - priority(first);
       if (scoreDifference !== 0) return scoreDifference;
       return this.employeeRecordKey(first).localeCompare(
         this.employeeRecordKey(second)
       );
     });
-    const summary = summarizeLogicalEmployeePoints(ordered, this.givenMonth, this.givenYear);
-    if (!summary.complete) this.habitualPerformanceIncomplete = true;
-    return summary.percent !== null ? {earned: summary.earned, possible: summary.possible} : null;
   }
 
   private logicalRepresentativeForRecord(
@@ -7486,12 +7780,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
       year: this.givenYear,
     });
     this.loadingMonthly = true;
+    const monthKeys = this.dayKeysForMonth(this.givenMonth, this.givenYear);
+    const placementSnapshot = this.beginPaymentPlacementHistory('month', monthKeys);
 
     try {
       const everyone = (
         this.allEmployeesAll?.length ? this.allEmployeesAll : this.allEmployees
       ) as any[];
-      const monthKeys = this.dayKeysForMonth(this.givenMonth, this.givenYear);
 
       // 1) collect raw per-employee monthly totals
       const monthTotalsByRecordKey = new Map<
@@ -7510,6 +7805,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
             monthKeys.map(async (k) => {
               const { total, count } =
                 await this.data.getEmployeeDayTotalsForDay(ownerUid, e.uid, k);
+              placementSnapshot.records.get(k)!.set(this.employeeRecordKey(e), {
+                total, count, ownerUid, status: e.status || 'Travaille',
+              });
               sumTotal += Number(total || 0);
               sumCount += Number(count || 0);
             })
@@ -7527,6 +7825,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         employees: monthTotalsByRecordKey.size,
         daysCount: monthKeys.length,
       });
+      this.commitPaymentPlacementHistory('month', placementSnapshot);
+      if (placementSnapshot.requestId !== this.paymentPlacementRequests.month) return;
 
       // 2) aggregate every physical employee exactly once, even when source
       // and rotation documents both have payment activity during the month.
@@ -7570,9 +7870,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
       });
     } catch (error) {
       console.error('Failed to load monthly totals', error);
-      this.paidEmployeesMonth = [];
+      if (placementSnapshot.requestId === this.paymentPlacementRequests.month) this.paidEmployeesMonth = [];
     } finally {
-      this.loadingMonthly = false;
+      if (placementSnapshot.requestId === this.paymentPlacementRequests.month) this.loadingMonthly = false;
     }
   }
 

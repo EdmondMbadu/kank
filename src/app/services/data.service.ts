@@ -117,6 +117,11 @@ export interface EmployeeCashPaymentDayTotal {
   count: number;
 }
 
+export interface EmployeePaymentHistoryDay extends EmployeeCashPaymentDayTotal {
+  ownerUid: string;
+  employeeUid: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -986,6 +991,42 @@ export class DataService {
   }
 
   // data.service.ts
+  /** One month query for ranking history, rather than one lookup per person/day.
+   * A server snapshot is required: an offline query cache may be incomplete. */
+  async getEmployeePaymentHistoryForMonth(
+    monthKey: string, allowedOwnerUids: readonly string[]
+  ): Promise<EmployeePaymentHistoryDay[]> {
+    const owners = new Set(allowedOwnerUids.filter(Boolean));
+    if (!owners.size || !/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(monthKey)) return [];
+    const snapshot = await this.afs.firestore.collectionGroup('dayTotals')
+      .where('monthKey', '==', monthKey).get({ source: 'server' });
+    const rows = new Map<string, EmployeePaymentHistoryDay>();
+    snapshot.forEach((doc) => {
+      const parts = doc.ref.path.split('/');
+      if (parts.length !== 6 || parts[0] !== 'users' || parts[2] !== 'employees' ||
+          parts[4] !== 'dayTotals' || !owners.has(parts[1])) return;
+      const data = doc.data() || {};
+      const match = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(parts[5]);
+      if (!match) return;
+      const [month, day, year] = match.slice(1).map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (date.getUTCFullYear() !== year || date.getUTCMonth() + 1 !== month ||
+          date.getUTCDate() !== day || `${year}-${String(month).padStart(2, '0')}` !== monthKey) return;
+      const dayKey = `${month}-${day}-${year}`;
+      const total = Number(data['total'] ?? data['collected'] ?? data['paid'] ?? 0);
+      const count = Number(data['count'] ?? 0);
+      if (!Number.isFinite(total) || !Number.isFinite(count) || count < 0) {
+        throw new Error('Invalid employee payment history totals');
+      }
+      const key = `${parts[1]}|${parts[3]}|${dayKey}`;
+      // Match the daily loader's preference for an unpadded document ID.
+      if (!rows.has(key) || parts[5] === dayKey) {
+        rows.set(key, { ownerUid: parts[1], employeeUid: parts[3], dayKey, total, count });
+      }
+    });
+    return [...rows.values()];
+  }
+
   getEmployeeDayTotalsForDay(
     ownerUid: string,
     empUid: string,

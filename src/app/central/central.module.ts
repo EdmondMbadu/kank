@@ -8,6 +8,7 @@ import { CentralRoutingModule } from './central-routing.module';
 import { HomeCentralComponent } from './home-central/home-central.component';
 import { SummaryCardCentralComponent } from './summary-card-central/summary-card-central.component';
 import { TeamRankingMonthComponent } from './team-ranking-month/team-ranking-month.component';
+import { RankingDetailsComponent } from './team-ranking-month/ranking-details/ranking-details.component';
 import { TodayCardCentralComponent } from './today-card-central/today-card-central.component';
 import { TodayCentralComponent } from './today-central/today-central.component';
 import { TrackingCardMonthCentralComponent } from './tracking-card-month-central/tracking-card-month-central.component';
@@ -27,6 +28,7 @@ import { TrackingMonthCentralComponent } from './tracking-month-central/tracking
     RotationScheduleComponent,
   ],
   imports: [
+    RankingDetailsComponent,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

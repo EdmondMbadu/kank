@@ -2131,6 +2131,7 @@
 
         <!-- Actions -->
         <div class="flex flex-col items-end gap-2">
+          <ng-container *ngTemplateOutlet="rankingDetailsButton; context: { $implicit: em }"></ng-container>
           <a
             *ngIf="auth.isAdmninistrator && em.profilePicture?.CVDownloadURL"
             [href]="em.profilePicture?.CVDownloadURL"
@@ -2365,6 +2366,7 @@
               ≈ ${{ em._dailyTotalUsd | number : "1.0-0" }}
             </div>
           </div>
+          <div class="mt-3 flex justify-end"><ng-container *ngTemplateOutlet="rankingDetailsButton; context: { $implicit: em }"></ng-container></div>
         </div>
       </div>
 
@@ -2373,9 +2375,9 @@
         <ul class="divide-y divide-gray-100">
           <li
             *ngFor="let em of paidEmployeesToday | slice : 3; let i = index"
-            class="flex items-center justify-between p-4"
+            class="flex flex-wrap items-center justify-between gap-3 p-4"
           >
-            <div class="flex items-center gap-3 min-w-0">
+            <div class="flex flex-1 items-center gap-3 min-w-0">
               <div class="w-8 text-center font-semibold text-gray-500">
                 {{ i + 4 }}
               </div>
@@ -2461,6 +2463,7 @@
                 ≈ ${{ em._dailyTotalUsd | number : "1.0-0" }}
               </div>
             </div>
+            <ng-container *ngTemplateOutlet="rankingDetailsButton; context: { $implicit: em }"></ng-container>
           </li>
         </ul>
       </div>
@@ -2700,6 +2703,7 @@
               <div class="mt-1 text-[10px] text-gray-500">300&nbsp;000 FC</div>
             </div>
           </div>
+          <div class="mt-3 flex justify-end"><ng-container *ngTemplateOutlet="rankingDetailsButton; context: { $implicit: em }"></ng-container></div>
         </div>
       </div>
 
@@ -2708,9 +2712,9 @@
         <ul class="divide-y divide-gray-100">
           <li
             *ngFor="let em of paidEmployeesWeek | slice : 3; let i = index"
-            class="flex items-center justify-between p-4"
+            class="flex flex-wrap items-center justify-between gap-3 p-4"
           >
-            <div class="flex items-center gap-3 min-w-0">
+            <div class="flex flex-1 items-center gap-3 min-w-0">
               <div class="w-8 text-center font-semibold text-gray-500">
                 {{ i + 4 }}
               </div>
@@ -2824,6 +2828,7 @@
                 </div>
               </div>
             </div>
+            <ng-container *ngTemplateOutlet="rankingDetailsButton; context: { $implicit: em }"></ng-container>
           </li>
         </ul>
       </div>
@@ -3061,6 +3066,7 @@
             *ngIf="idx + 1 === 1"
             class="absolute inset-0 pointer-events-none rounded-2xl ring-1 ring-amber-300/20 animate-pulse"
           ></div>
+          <div class="mt-3 flex justify-end"><ng-container *ngTemplateOutlet="rankingDetailsButton; context: { $implicit: em }"></ng-container></div>
         </div>
       </div>
 
@@ -3072,9 +3078,9 @@
         <ul class="divide-y divide-gray-100">
           <li
             *ngFor="let em of paidEmployeesMonth | slice : 3; let i = index"
-            class="flex items-center justify-between p-4"
+            class="flex flex-wrap items-center justify-between gap-3 p-4"
           >
-            <div class="flex items-center gap-3 min-w-0">
+            <div class="flex flex-1 items-center gap-3 min-w-0">
               <div class="w-8 text-center font-semibold text-gray-500">
                 {{ i + 4 }}
               </div>
@@ -3163,6 +3169,7 @@
                 </div>
               </ng-container>
             </div>
+            <ng-container *ngTemplateOutlet="rankingDetailsButton; context: { $implicit: em }"></ng-container>
           </li>
         </ul>
       </div>
@@ -8356,3 +8363,13 @@
     </div>
   </div>
 </div>
+
+
+<ng-template #rankingDetailsButton let-employee>
+  <button type="button" (click)="openRankingDetails(employee)" aria-haspopup="dialog"
+    [attr.aria-label]="'Détails du classement de ' + employee.firstName + ' ' + (employee.lastName || '')"
+    class="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
+    Détails <span aria-hidden="true">›</span>
+  </button>
+</ng-template>
+<app-ranking-details *ngIf="rankingDetails as details" [details]="details" (dismissed)="closeRankingDetails()" (retried)="retryRankingDetails()"></app-ranking-details>
