@@ -10,7 +10,7 @@ import { DataService } from 'src/app/services/data.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { selectWinnerTeamMembers } from '../winner-team-members';
-import { buildDailyActivityRows, buildDailyCashPaymentRows, buildDailyEntryRows, DailyActivityKind, DailyActivityRow, parseActivityDate } from './daily-activity-details';
+import { buildDailyActivityRows, buildDailyCashPaymentRows, buildDailySiteActivityRows, DailyActivityKind, DailyActivityRow, parseActivityDate } from './daily-activity-details';
 
 type AuditPaymentPerformanceMode = 'day' | 'week' | 'month';
 type AuditPaymentPerformanceTone = 'red' | 'yellow' | 'orange' | 'green';
@@ -69,7 +69,7 @@ export class TodayCentralComponent implements OnDestroy {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.initalizeInputs();
-      if (this.isDailyActivityModalOpen && this.dailyActivityKind === 'entry') {
+      if (this.isDailyActivityModalOpen && this.isSiteDailyActivity) {
         void this.loadDailyActivityDetails();
       }
       if (this.auth.isAdmin) {
@@ -158,7 +158,7 @@ export class TodayCentralComponent implements OnDestroy {
     'Entrée Du Jour',
     'Epargne Du Jour',
     'Retrait Epargne Du Jour',
-    'Depense Du Jour',
+    'Dépense Du Jour',
     `Retrait Frais De Membre Du Jour`,
     'Perte Du Jour',
   ];
@@ -571,17 +571,32 @@ export class TodayCentralComponent implements OnDestroy {
   }
 
   isDailyActivityCard(index: number): boolean {
-    return index === 0 || index === 3 || index === 5 || (index === 1 && this.auth.isAdmin);
+    return index === 0 || index === 3 || index === 5 || index === 8 || index === 10 || (index === 1 && this.auth.isAdmin);
+  }
+
+  get isSiteDailyActivity(): boolean {
+    return this.dailyActivityKind === 'entry' || this.dailyActivityKind === 'expense' || this.dailyActivityKind === 'loss';
+  }
+
+  get dailyActivityCountLabel(): string {
+    if (this.dailyActivityKind === 'entry') return 'Entrées listées';
+    if (this.dailyActivityKind === 'expense') return 'Dépenses listées';
+    if (this.dailyActivityKind === 'loss') return 'Pertes listées';
+    return this.dailyActivityKind === 'lending' ? 'Emprunts listés' : 'Paiements listés';
   }
 
   get dailyActivityTitle(): string {
     if (this.dailyActivityKind === 'entry') return 'Entrées du jour';
+    if (this.dailyActivityKind === 'expense') return 'Dépenses du jour';
+    if (this.dailyActivityKind === 'loss') return 'Pertes du jour';
     if (this.dailyActivityKind === 'cash-payment') return 'Paiements cash flow du jour';
     return this.dailyActivityKind === 'payment' ? 'Paiements du jour' : 'Emprunts du jour';
   }
 
   get dailyActivityCentralTotal(): number {
     if (this.dailyActivityKind === 'entry') return Number(this.dailyInvestement) || 0;
+    if (this.dailyActivityKind === 'expense') return Number(this.dailyExpense) || 0;
+    if (this.dailyActivityKind === 'loss') return Number(this.dailyLoss) || 0;
     if (this.dailyActivityKind === 'cash-payment') return this.cashFlowPaymentTotalFc;
     return Number(this.dailyActivityKind === 'payment' ? this.dailyPayment : this.dailyLending) || 0;
   }
@@ -599,7 +614,7 @@ export class TodayCentralComponent implements OnDestroy {
   openDailyActivityModal(index: number): void {
     if (!this.isDailyActivityCard(index) || this.isAuditOnlyTodayCentral) return;
     this.dailyActivityKind = index === 0 ? 'payment' : index === 1 ? 'cash-payment'
-      : index === 5 ? 'entry' : 'lending';
+      : index === 5 ? 'entry' : index === 8 ? 'expense' : index === 10 ? 'loss' : 'lending';
     if (!this.isDailyActivityModalOpen) {
       this.dailyActivityPreviousFocus = document.activeElement as HTMLElement | null;
       this.dailyActivityPreviousOverflow = document.body.style.overflow;
@@ -663,10 +678,10 @@ export class TodayCentralComponent implements OnDestroy {
     this.applyDailyActivityFilters();
     try {
       if (!monthKey) throw new Error('Invalid selected day');
-      if (kind === 'entry') {
-        // The existing users stream already contains every investment entry.
+      if (kind === 'entry' || kind === 'expense' || kind === 'loss') {
+        // The existing users stream already contains these site operations.
         // Build synchronously from that snapshot: no reads, listeners or cache.
-        this.setDailyActivityRows(buildDailyEntryRows(this.allUsers, selectedDay));
+        this.setDailyActivityRows(buildDailySiteActivityRows(this.allUsers, kind, selectedDay));
         return;
       }
       const users = [...new Map(this.allUsers.filter((user) => !!user.uid)

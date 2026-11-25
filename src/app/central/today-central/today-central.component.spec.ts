@@ -291,19 +291,22 @@ describe('TodayCentralComponent on-demand daily details', () => {
     expect(getCashPayments).not.toHaveBeenCalled();
   });
 
-  it('updates open entries from the existing users stream without reads or resetting the search', async () => {
+  for (const activity of [
+    { index: 5, field: 'investments' }, { index: 8, field: 'expenses' }, { index: 10, field: 'losses' },
+  ]) {
+  it(`updates open modal ${activity.index} from the existing users stream without reads or resetting the search`, async () => {
     const users = new Subject<any[]>();
     (component.auth as any).getAllUsersInfo = () => users;
     spyOn(component, 'initalizeInputs');
     spyOn<any>(component, 'loadCashFlowPaymentRanking');
     spyOn<any>(component, 'loadAuditPaymentPerformance');
     component.ngOnInit();
-    await open(5);
+    await open(activity.index);
     component.dailyActivitySearch = 'Zongo';
     component.applyDailyActivityFilters();
     users.next([
-      { uid: 'site-b', firstName: 'Zongo', investments: { '9-1-2026-8-0-0': '900' } },
-      { uid: 'site-a', firstName: 'Bandal', investments: { '9-1-2026': '100' } },
+      { uid: 'site-b', firstName: 'Zongo', [activity.field]: { '9-1-2026-8-0-0': '900' } },
+      { uid: 'site-a', firstName: 'Bandal', [activity.field]: { '9-1-2026': '100' } },
     ]);
     expect(component.dailyActivityTotal).toBe(1000);
     expect(component.dailyActivityFilteredTotal).toBe(900);
@@ -315,6 +318,7 @@ describe('TodayCentralComponent on-demand daily details', () => {
     expect(getCashPayments).not.toHaveBeenCalled();
     users.complete();
   });
+  }
 
   it('ignores a pending payment response after switching to entries', async () => {
     const clients = new Subject<any[]>();
@@ -339,7 +343,7 @@ describe('TodayCentralComponent on-demand daily details', () => {
     component.ngOnInit();
     expect(getClients).not.toHaveBeenCalled();
     expect(getCashPayments).not.toHaveBeenCalled();
-    [2, 4, 8].forEach((index) => {
+    [2, 4, 6].forEach((index) => {
       expect(component.isDailyActivityCard(index)).toBeFalse();
       component.openDailyActivityModal(index);
     });
@@ -634,8 +638,10 @@ describe('TodayCentralComponent daily modal template', () => {
           isAdmin: true, currentUser: {}, getClientsOfAUserForMonth: getClients,
           getManagementInfo: () => of([]),
           getAllUsersInfo: () => of([
-            { uid: 'b', firstName: 'Zongo', investments: { '9-1-2026-9-0-0': '300' } },
-            { uid: 'a', firstName: 'Bandal', investments: { '9-1-2026-8-0-0': '100' } },
+            { uid: 'b', firstName: 'Zongo', investments: { '9-1-2026-9-0-0': '300' },
+              expenses: { '9-1-2026': '300:Transport' }, losses: { '9-1-2026': '300:Écart de caisse' } },
+            { uid: 'a', firstName: 'Bandal', investments: { '9-1-2026-8-0-0': '100' },
+              expenses: { '9-1-2026': '100:Loyer' }, losses: { '9-1-2026': '100:Billet abîmé' } },
           ]),
         } },
         { provide: DataService, useValue: { getEmployeeCashPaymentsForDay: getCashPayments } },
@@ -663,11 +669,15 @@ describe('TodayCentralComponent daily modal template', () => {
     {index: 1, totalFc: 300, totalUsd: 3, amountsUsd: [1, 2]},
     {index: 3, totalFc: 2000, totalUsd: 20, amountsUsd: [10, 10]},
     {index: 5, totalFc: 400, totalUsd: 4, amountsUsd: [1, 3]},
+    {index: 8, totalFc: 400, totalUsd: 4, amountsUsd: [1, 3]},
+    {index: 10, totalFc: 400, totalUsd: 4, amountsUsd: [1, 3]},
   ]) {
     it(`shows dollar estimates for every amount and total in modal ${modal.index}, without extra reads`, async () => {
       component.dailyPayment = '200';
       component.dailyLending = '2000';
       component.dailyInvestement = '400';
+      component.dailyExpense = '400';
+      component.dailyLoss = '400';
       component.cashFlowPaymentTotalFc = 300;
       component.openDailyActivityModal(modal.index);
       await component.loadDailyActivityDetails();
@@ -685,7 +695,7 @@ describe('TodayCentralComponent daily modal template', () => {
         expect(text(row)).toContain(`≈ $ ${modal.amountsUsd[index]}`);
       });
       const reads = [getClients.calls.count(), getCashPayments.calls.count()];
-      component.dailyActivitySearch = modal.index === 5 ? 'Bandal' : 'Esther';
+      component.dailyActivitySearch = modal.index >= 5 ? 'Bandal' : 'Esther';
       component.applyDailyActivityFilters();
       fixture.detectChanges();
       expect(text(summary.children[2])).toContain(`≈ $ ${modal.amountsUsd[0]}`);
@@ -706,6 +716,36 @@ describe('TodayCentralComponent daily modal template', () => {
     expect(component.dailyActivityAmountDollars(1000)).toBe(1);
     expect(component.dailyActivityAmountDollars(2000)).toBe(1);
   });
+
+  for (const modal of [
+    { card: 'Dépense Du Jour', title: 'Dépenses du jour', reason: 'Loyer' },
+    { card: 'Perte Du Jour', title: 'Pertes du jour', reason: 'Billet abîmé' },
+  ]) {
+    it(`opens ${modal.card} with clear reasons and no reads on search or reopening`, () => {
+      const card = fixture.nativeElement.querySelector(`article[aria-label="Voir ${modal.card} par site"]`);
+      expect(card.querySelector('a')).toBeNull();
+      card.click();
+      fixture.detectChanges();
+      let dialog = fixture.nativeElement.querySelector('[role="dialog"]');
+      expect(dialog.textContent).toContain(modal.title);
+      expect(dialog.textContent).toContain('Motif');
+      expect(dialog.textContent).toContain(modal.reason);
+      expect(dialog.textContent).toContain('mises à jour automatiquement');
+      expect(dialog.textContent).not.toContain('Actualiser');
+      const search = dialog.querySelector('input[type="search"]');
+      search.value = modal.reason; search.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect([...dialog.querySelectorAll('h3')].map((h: any) => h.textContent)).toEqual(['Bandal']);
+      dialog.querySelector('button[aria-label="Fermer"]').click();
+      fixture.detectChanges();
+      card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      fixture.detectChanges();
+      dialog = fixture.nativeElement.querySelector('[role="dialog"]');
+      expect(dialog.querySelectorAll('h3').length).toBe(2);
+      expect(getClients).not.toHaveBeenCalled();
+      expect(getCashPayments).not.toHaveBeenCalled();
+    });
+  }
 
   it('opens entries on click and Enter with appropriate labels and no detail reads', async () => {
     component.dailyInvestement = '400';
@@ -804,7 +844,7 @@ describe('TodayCentralComponent daily modal template', () => {
     expect(dialog.textContent).toContain('Emprunts du jour');
     expect(dialog.textContent).toContain('1,000');
     const links = fixture.nativeElement.querySelectorAll('article a');
-    expect(links.length).toBe(2);
+    expect(links.length).toBe(1);
     expect(links[0].getAttribute('href')).toBe('/daily-payments');
   });
 

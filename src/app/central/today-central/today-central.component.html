@@ -187,6 +187,8 @@
           <span *ngIf="dailyActivityKind === 'lending'">Cycles d'emprunt actuels commençant à cette date.</span>
           <span *ngIf="dailyActivityKind === 'cash-payment'">Remboursements réellement encaissés, Mobile Money confirmé inclus. Hors transferts d'épargne et dépôts d'épargne.</span>
           <span *ngIf="dailyActivityKind === 'entry'">Entrées de fonds enregistrées pour cette date.</span>
+          <span *ngIf="dailyActivityKind === 'expense'">Dépenses enregistrées pour cette date, avec leur motif.</span>
+          <span *ngIf="dailyActivityKind === 'loss'">Pertes enregistrées pour cette date, avec leur motif.</span>
         </p>
       </div>
       <button type="button" (click)="closeDailyActivityModal()" aria-label="Fermer"
@@ -203,7 +205,7 @@
           <p *ngIf="dailyActivityKind === 'cash-payment' && cashFlowPaymentError" class="mt-1 text-xs text-red-600">{{ cashFlowPaymentError }}</p>
         </div>
         <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-          <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ dailyActivityKind === 'entry' ? 'Entrées listées' : dailyActivityKind === 'lending' ? 'Emprunts listés' : 'Paiements listés' }}</p>
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ dailyActivityCountLabel }}</p>
           <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ dailyActivityFilteredRows.length }} / {{ dailyActivityRows.length }}</p>
         </div>
         <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
@@ -236,9 +238,9 @@
       </div>
 
       <div class="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
-        <p *ngIf="dailyActivityKind === 'entry'; else cachedActivityNotice">Les entrées sont mises à jour automatiquement.</p>
+        <p *ngIf="isSiteDailyActivity; else cachedActivityNotice">{{ dailyActivityKind === 'entry' ? 'Les entrées' : dailyActivityKind === 'expense' ? 'Les dépenses' : 'Les pertes' }} sont mises à jour automatiquement.</p>
         <ng-template #cachedActivityNotice><p>Détails chargés à l'ouverture, puis mis en cache pour {{ dailyActivityKind === 'cash-payment' ? 'cette date' : 'ce mois' }}. Actualisez pour les dernières opérations.</p></ng-template>
-        <button *ngIf="dailyActivityKind !== 'entry'" type="button" (click)="loadDailyActivityDetails(true)" [disabled]="dailyActivityLoading"
+        <button *ngIf="!isSiteDailyActivity" type="button" (click)="loadDailyActivityDetails(true)" [disabled]="dailyActivityLoading"
           class="shrink-0 rounded-lg border border-slate-300 px-3 py-2 font-medium disabled:opacity-40 dark:border-slate-600">
           {{ dailyActivityError ? 'Réessayer' : 'Actualiser' }}
         </button>
@@ -248,7 +250,7 @@
 
       <ng-container *ngIf="!dailyActivityLoading && !dailyActivityError">
         <p *ngIf="dailyActivityCentralTotal !== dailyActivityTotal && (dailyActivityKind !== 'cash-payment' || (!cashFlowPaymentLoading && !cashFlowPaymentError))" class="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-          <ng-container *ngIf="dailyActivityKind === 'entry'; else otherActivityTotalWarning">Le détail des entrées diffère du total central. Vérifiez les dates et les montants enregistrés pour les sites.</ng-container>
+          <ng-container *ngIf="isSiteDailyActivity; else otherActivityTotalWarning">Le détail des opérations diffère du total central. Vérifiez les dates et les montants enregistrés pour les sites.</ng-container>
           <ng-template #otherActivityTotalWarning>
             <ng-container *ngIf="dailyActivityKind === 'cash-payment'; else dossierTotalWarning">Le détail des encaissements diffère du total central. Les opérations ou les totaux peuvent avoir changé depuis leur chargement. Actualisez la liste et, si l'écart persiste, vérifiez les encaissements et les totaux des employés.</ng-container>
             <ng-template #dossierTotalWarning>Le total des dossiers listés diffère du total central. Des dossiers modifiés, transférés ou des cycles renouvelés peuvent expliquer cet écart. Vous pouvez actualiser la liste.</ng-template>
@@ -260,7 +262,7 @@
             <p class="text-xs text-emerald-700 dark:text-emerald-300">Total filtré de ce site : FC {{ site.total | number : '1.0-0' }} · ≈ $ {{ dailyActivityAmountDollars(site.total) | number : '1.0-0' }}</p>
           </div>
           <div class="hidden grid-cols-[1.5fr_1fr_0.8fr] gap-4 bg-slate-50 px-4 py-2 text-xs font-medium uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400 md:grid">
-            <span>{{ dailyActivityKind === 'entry' ? 'Opération' : 'Client' }}</span><span>Date / heure</span><span class="text-right">Montant</span>
+            <span>{{ dailyActivityKind === 'expense' || dailyActivityKind === 'loss' ? 'Motif' : dailyActivityKind === 'entry' ? 'Opération' : 'Client' }}</span><span>Date / heure</span><span class="text-right">Montant</span>
           </div>
           <div *ngFor="let row of site.rows; trackBy: trackDailyActivity" class="grid gap-2 border-t border-slate-100 px-4 py-3 dark:border-slate-800 md:grid-cols-[1.5fr_1fr_0.8fr] md:items-center md:gap-4">
             <div>

@@ -1,6 +1,25 @@
-import { buildDailyActivityRows, buildDailyCashPaymentRows, buildDailyEntryRows, parseActivityDate } from './daily-activity-details';
+import { buildDailyActivityRows, buildDailyCashPaymentRows, buildDailyEntryRows, buildDailySiteActivityRows, parseActivityDate } from './daily-activity-details';
 
 describe('Daily central activity extraction', () => {
+  for (const kind of ['expense', 'loss'] as const) {
+    it(`extracts ${kind} amounts and complete reasons for the exact day only`, () => {
+      const field = kind === 'expense' ? 'expenses' : 'losses';
+      const site = { uid: 'a', firstName: 'Bandal', [field]: {
+        '9-1-2026-8-0-0': '100:Transport : trajet retour',
+        '09-01-2026-9-0-0': '-25:Correction du montant',
+        '2026-09-01T10:00:00Z': '50', '9-10-2026': '999:Autre jour',
+        '9-1-2026-11-0-0': 'NaN:Erreur', '9-1-2026-12-0-0': '0:Annulé',
+      } };
+      const rows = buildDailySiteActivityRows([site, site], kind, '9-1-2026');
+      expect(rows.map((row) => row.amount)).toEqual([50, -25, 100]);
+      expect(rows[2].fullName).toBe('Transport : trajet retour');
+      expect(rows[1].fullName).toBe('Correction du montant');
+      expect(rows[0].fullName).toBe(kind === 'expense' ? 'Dépense' : 'Perte');
+      expect(rows.reduce((sum, row) => sum + row.amount, 0)).toBe(125);
+      expect(buildDailySiteActivityRows([site], kind, 'invalid')).toEqual([]);
+    });
+  }
+
   it('lists each entry for the exact day, ordered by site and time, keeping signed corrections', () => {
     const site = {
       uid: 'a', firstName: 'Bandal', investments: {
