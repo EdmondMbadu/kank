@@ -1,6 +1,29 @@
-import { buildDailyActivityRows, buildDailyCashPaymentRows, parseActivityDate } from './daily-activity-details';
+import { buildDailyActivityRows, buildDailyCashPaymentRows, buildDailyEntryRows, parseActivityDate } from './daily-activity-details';
 
 describe('Daily central activity extraction', () => {
+  it('lists each entry for the exact day, ordered by site and time, keeping signed corrections', () => {
+    const site = {
+      uid: 'a', firstName: 'Bandal', investments: {
+        '9-1-2026': '100', '09-01-2026-8-0-0': '200',
+        '2026-09-01T09:00:00Z': '-50', '9-10-2026': '999',
+        '9-1-2026-10-0-0': '0', '9-1-2026-11-0-0': 'NaN',
+        '9-1-2026-12-0-0': 'Infinity', '9-1-2026-24-0-0': '400',
+      },
+    };
+    const rows = buildDailyEntryRows([
+      { uid: 'b', firstName: 'Zongo', investments: { '9-1-2026': '300' } },
+      site, site, // Duplicate site snapshots must not duplicate an operation.
+      { firstName: 'No owner', investments: { '9-1-2026': '900' } },
+    ], '9-1-2026');
+    expect(rows.map((row) => row.amount)).toEqual([-50, 200, 100, 300]);
+    expect(rows.map((row) => row.locationName)).toEqual(['Bandal', 'Bandal', 'Bandal', 'Zongo']);
+    expect(rows[0].detail).toBe("Correction d'entrée");
+    expect(rows[0].dateLabel).toBe('01/09/2026 · 09:00');
+    expect(new Set(rows.map((row) => row.id)).size).toBe(4);
+    expect(buildDailyEntryRows([site], 'invalid')).toEqual([]);
+    expect(buildDailyEntryRows([{ uid: 'a' }], '9-1-2026')).toEqual([]);
+  });
+
   it('groups cash ledgers by site, retains distinct payments and labels confirmed Mobile Money', () => {
     const payment = { id: 'a', ownerUid: 'a', clientUid: 'c', fullName: 'Esther',
       amount: 100, dayKey: '9-1-2026', createdAtMs: 1, source: 'manual' };

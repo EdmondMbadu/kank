@@ -1,7 +1,8 @@
 import { Client } from '../../models/client';
 import { EmployeeCashPayment } from '../../models/employee-cash-payment';
+import { User } from '../../models/user';
 
-export type DailyActivityKind = 'payment' | 'lending' | 'cash-payment';
+export type DailyActivityKind = 'payment' | 'lending' | 'cash-payment' | 'entry';
 
 export interface DailyActivityRow {
   id: string;
@@ -46,7 +47,7 @@ export function parseActivityDate(raw: string): {
 }
 
 export function buildDailyActivityRows(
-  clients: Client[], kind: Exclude<DailyActivityKind, 'cash-payment'>, dayKey: string
+  clients: Client[], kind: 'payment' | 'lending', dayKey: string
 ): DailyActivityRow[] {
   const selectedDay = parseActivityDate(dayKey)?.dayKey;
   if (!selectedDay) return [];
@@ -85,6 +86,32 @@ export function buildDailyActivityRows(
         add(key, amount, sources[key] === 'mobile_money' ? 'Mobile Money' : 'Paiement')
       );
     }
+  });
+  return sortDailyActivityRows([...rows.values()]);
+}
+
+export function buildDailyEntryRows(users: User[], dayKey: string): DailyActivityRow[] {
+  const selectedDay = parseActivityDate(dayKey)?.dayKey;
+  if (!selectedDay) return [];
+  const [month, day, year] = selectedDay.split('-');
+  const dayPrefix = new RegExp(`^(?:0?${month}-0?${day}-${year}(?:-|$)|${year}-0?${month}-0?${day}(?:T|$))`);
+  const rows = new Map<string, DailyActivityRow>();
+  users.forEach((user) => {
+    const locationId = user.uid;
+    if (!locationId) return;
+    Object.entries(user.investments || {}).forEach(([key, rawAmount]) => {
+      if (!dayPrefix.test(key)) return;
+      const parsed = parseActivityDate(key);
+      const amount = Number(rawAmount);
+      if (!parsed || parsed.dayKey !== selectedDay || !Number.isFinite(amount) || amount === 0) return;
+      const id = `entry:${locationId}:${key}`;
+      rows.set(id, {
+        id, fullName: 'Entrée de fonds', locationId,
+        locationName: user.firstName || 'Site', amount,
+        dateLabel: parsed.label, timestamp: parsed.timestamp,
+        detail: amount < 0 ? "Correction d'entrée" : '',
+      });
+    });
   });
   return sortDailyActivityRows([...rows.values()]);
 }

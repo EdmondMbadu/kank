@@ -257,6 +257,81 @@ describe('TodayCentralComponent on-demand daily details', () => {
     await component.loadDailyActivityDetails();
   }
 
+  it('opens entries immediately from loaded sites, with local filters, pagination and date switches only', async () => {
+    component.allUsers[0].investments = { '9-1-2026': '300', '9-2-2026': '700' };
+    component.allUsers[1].investments = Object.fromEntries(Array.from({ length: 55 }, (_, i) =>
+      [`9-1-2026-8-0-${i}`, '100']
+    ));
+    component.dailyInvestement = '5800';
+    component.openDailyActivityModal(5);
+    expect(component.dailyActivityLoading).toBeFalse();
+    expect(component.dailyActivityTitle).toBe('Entrées du jour');
+    expect(component.dailyActivityCentralTotal).toBe(5800);
+    expect(component.dailyActivityTotal).toBe(5800);
+    expect(component.dailyActivityRows.length).toBe(56);
+    expect(component.dailyActivityPageGroups[0].rows.length).toBe(50);
+    component.changeDailyActivityPage(1);
+    expect(component.dailyActivityPageGroups.flatMap((site) => site.rows).length).toBe(6);
+    component.dailyActivitySiteFilter = 'site-b';
+    component.applyDailyActivityFilters();
+    expect(component.dailyActivityFilteredTotal).toBe(300);
+    component.dailyActivitySearch = '700';
+    component.applyDailyActivityFilters();
+    expect(component.dailyActivityFilteredRows).toEqual([]);
+    component.closeDailyActivityModal();
+    await open(5);
+    expect(component.dailyActivityFilteredTotal).toBe(5800);
+    component.requestDateCorrectFormat = '9-2-2026';
+    await component.loadDailyActivityDetails(true);
+    expect(component.dailyActivityTotal).toBe(700);
+    component.requestDateCorrectFormat = '9-3-2026';
+    await component.loadDailyActivityDetails();
+    expect(component.dailyActivityRows).toEqual([]);
+    expect(getClients).not.toHaveBeenCalled();
+    expect(getCashPayments).not.toHaveBeenCalled();
+  });
+
+  it('updates open entries from the existing users stream without reads or resetting the search', async () => {
+    const users = new Subject<any[]>();
+    (component.auth as any).getAllUsersInfo = () => users;
+    spyOn(component, 'initalizeInputs');
+    spyOn<any>(component, 'loadCashFlowPaymentRanking');
+    spyOn<any>(component, 'loadAuditPaymentPerformance');
+    component.ngOnInit();
+    await open(5);
+    component.dailyActivitySearch = 'Zongo';
+    component.applyDailyActivityFilters();
+    users.next([
+      { uid: 'site-b', firstName: 'Zongo', investments: { '9-1-2026-8-0-0': '900' } },
+      { uid: 'site-a', firstName: 'Bandal', investments: { '9-1-2026': '100' } },
+    ]);
+    expect(component.dailyActivityTotal).toBe(1000);
+    expect(component.dailyActivityFilteredTotal).toBe(900);
+    expect(component.dailyActivitySearch).toBe('Zongo');
+    users.next([]);
+    expect(component.dailyActivityRows).toEqual([]);
+    expect(component.dailyActivityError).toBe('');
+    expect(getClients).not.toHaveBeenCalled();
+    expect(getCashPayments).not.toHaveBeenCalled();
+    users.complete();
+  });
+
+  it('ignores a pending payment response after switching to entries', async () => {
+    const clients = new Subject<any[]>();
+    getClients.and.returnValue(clients);
+    component.openDailyActivityModal(0);
+    const pending = component.loadDailyActivityDetails();
+    component.allUsers[0].investments = { '9-1-2026': '500' };
+    await open(5);
+    clients.next([{ uid: 'late', payments: { '9-1-2026': '999' } }]);
+    await pending;
+    expect(component.dailyActivityKind).toBe('entry');
+    expect(component.dailyActivityTotal).toBe(500);
+    expect(component.dailyActivityLoading).toBeFalse();
+    expect(getClients).toHaveBeenCalledTimes(2);
+    expect(getCashPayments).not.toHaveBeenCalled();
+  });
+
   it('adds no detail reads to page initialization and leaves unrelated cards unchanged', () => {
     spyOn(component, 'initalizeInputs');
     spyOn<any>(component, 'loadCashFlowPaymentRanking');
@@ -558,7 +633,10 @@ describe('TodayCentralComponent daily modal template', () => {
         { provide: AuthService, useValue: {
           isAdmin: true, currentUser: {}, getClientsOfAUserForMonth: getClients,
           getManagementInfo: () => of([]),
-          getAllUsersInfo: () => of([{ uid: 'b', firstName: 'Zongo' }, { uid: 'a', firstName: 'Bandal' }]),
+          getAllUsersInfo: () => of([
+            { uid: 'b', firstName: 'Zongo', investments: { '9-1-2026-9-0-0': '300' } },
+            { uid: 'a', firstName: 'Bandal', investments: { '9-1-2026-8-0-0': '100' } },
+          ]),
         } },
         { provide: DataService, useValue: { getEmployeeCashPaymentsForDay: getCashPayments } },
         { provide: ComputationService, useValue: {
@@ -584,10 +662,12 @@ describe('TodayCentralComponent daily modal template', () => {
     {index: 0, totalFc: 200, totalUsd: 2, amountsUsd: [1, 1]},
     {index: 1, totalFc: 300, totalUsd: 3, amountsUsd: [1, 2]},
     {index: 3, totalFc: 2000, totalUsd: 20, amountsUsd: [10, 10]},
+    {index: 5, totalFc: 400, totalUsd: 4, amountsUsd: [1, 3]},
   ]) {
     it(`shows dollar estimates for every amount and total in modal ${modal.index}, without extra reads`, async () => {
       component.dailyPayment = '200';
       component.dailyLending = '2000';
+      component.dailyInvestement = '400';
       component.cashFlowPaymentTotalFc = 300;
       component.openDailyActivityModal(modal.index);
       await component.loadDailyActivityDetails();
@@ -605,7 +685,7 @@ describe('TodayCentralComponent daily modal template', () => {
         expect(text(row)).toContain(`≈ $ ${modal.amountsUsd[index]}`);
       });
       const reads = [getClients.calls.count(), getCashPayments.calls.count()];
-      component.dailyActivitySearch = 'Esther';
+      component.dailyActivitySearch = modal.index === 5 ? 'Bandal' : 'Esther';
       component.applyDailyActivityFilters();
       fixture.detectChanges();
       expect(text(summary.children[2])).toContain(`≈ $ ${modal.amountsUsd[0]}`);
@@ -625,6 +705,35 @@ describe('TodayCentralComponent daily modal template', () => {
     expect(component.dailyActivityAmountDollars(0)).toBe(0);
     expect(component.dailyActivityAmountDollars(1000)).toBe(1);
     expect(component.dailyActivityAmountDollars(2000)).toBe(1);
+  });
+
+  it('opens entries on click and Enter with appropriate labels and no detail reads', async () => {
+    component.dailyInvestement = '400';
+    const card = fixture.nativeElement.querySelector('article[aria-label="Voir Entrée Du Jour par site"]');
+    expect(card.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(card.getAttribute('tabindex')).toBe('0');
+    card.click();
+    fixture.detectChanges();
+    let dialog = fixture.nativeElement.querySelector('[role="dialog"]');
+    expect(dialog.textContent).toContain('Entrées du jour');
+    expect(dialog.textContent).toContain('Entrées listées');
+    expect(dialog.textContent).toContain('Opération');
+    expect(dialog.textContent).toContain('Entrée de fonds');
+    expect(dialog.textContent).toContain('mises à jour automatiquement');
+    expect(dialog.textContent).not.toContain('Actualiser');
+    expect(dialog.textContent).not.toContain('diffère du total central');
+    const search = dialog.querySelector('input[type="search"]');
+    search.value = 'Bandal'; search.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect([...dialog.querySelectorAll('h3')].map((h: any) => h.textContent)).toEqual(['Bandal']);
+    dialog.querySelector('button[aria-label="Fermer"]').click();
+    fixture.detectChanges();
+    card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+    dialog = fixture.nativeElement.querySelector('[role="dialog"]');
+    expect([...dialog.querySelectorAll('h3')].map((h: any) => h.textContent)).toEqual(['Bandal', 'Zongo']);
+    expect(getClients).not.toHaveBeenCalled();
+    expect(getCashPayments).not.toHaveBeenCalled();
   });
 
   it('opens cash flow on click and Space, explains exclusions, and searches without more reads', async () => {
