@@ -347,6 +347,116 @@ describe('TrackingMonthCentralComponent', () => {
     expect(component.getMiniCashFlowPaymentGraph('site-a').data).toHaveSize(1);
   });
 
+  it('sums every month of the selected year and comparison year in bounded queries', async () => {
+    const getMonthlyTotals = jasmine
+      .createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths')
+      .and.callFake((monthKeys: string[]) => Promise.resolve(
+        // Match the service limit so an unbatched request loses data.
+        monthKeys.slice(0, 10).flatMap((monthKey) => [
+          { monthKey, ownerUid: 'site-a', total: monthKey.startsWith('2025') ? 100 : 50, count: 1 },
+          { monthKey, ownerUid: 'site-b', total: monthKey === '2025-12' ? 2000 : 0, count: 1 },
+        ])
+      ));
+    const component = createComponent(true, getMonthlyTotals);
+    component.rankingMode = 'year';
+    component.rankingYear = 2025;
+    component.rankingComparisonYear = 2024;
+    component.allUsers = [
+      { uid: 'site-a', firstName: 'Alpha', dailyReimbursement: { '1-1-2025': '999999' } } as any,
+      { uid: 'site-b', firstName: 'Beta' } as any,
+    ];
+
+    await (component as any).loadCashFlowMonthRanking();
+    await (component as any).loadCashFlowMonthRanking();
+
+    expect(getMonthlyTotals).toHaveBeenCalledTimes(3);
+    expect(getMonthlyTotals.calls.allArgs().every(([keys]) => keys.length <= 10)).toBeTrue();
+    expect(new Set(getMonthlyTotals.calls.allArgs().flatMap(([keys]) => keys)).size).toBe(24);
+    expect(component.cashFlowMonthRows.map((row) => row.firstName)).toEqual(['Beta', 'Alpha']);
+    expect(component.cashFlowMonthRows[0].totalPayment).toBe(2000);
+    expect(component.cashFlowMonthRows[1].totalPayment).toBe(1200);
+    expect(component.cashFlowMonthRows[1].paymentCount).toBe(12);
+    expect(component.cashFlowMonthRows[1].growthRate).toBe(100);
+    expect(component.cashFlowMonthTotalFc).toBe(3200);
+    expect(component.cashFlowMonthTotalDollars).toBeCloseTo(1.28, 5);
+    expect(component.cashFlowMonthGrowthRateTotal).toBeCloseTo((3200 - 600) / 600 * 100, 5);
+    const workingDays = (component as any).calculateWorkingDaysForYear(2025, false);
+    expect(component.cashFlowMonthAverageFc).toBeCloseTo(3200 / workingDays, 5);
+    expect(component.cashFlowMonthRows[1].averagePayment).toBeCloseTo(1200 / workingDays, 5);
+    expect(component.getMiniCashFlowPaymentGraph('site-a').data[0].customdata).toHaveSize(12);
+
+    component.rankingComparisonYear = 2025;
+    await (component as any).loadCashFlowMonthRanking();
+    expect(component.cashFlowMonthGrowthRateTotal).toBe(0);
+    expect(getMonthlyTotals).toHaveBeenCalledTimes(3);
+  });
+
+  it('loads all-time cash flow through the current month', async () => {
+    jasmine.clock().install();
+    try {
+      jasmine.clock().mockDate(new Date(2026, 7, 22));
+      const getMonthlyTotals = jasmine
+        .createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths')
+        .and.callFake((monthKeys: string[]) => Promise.resolve(
+          monthKeys.map((monthKey) => ({ monthKey, ownerUid: 'site-a', total: 100, count: 1 }))
+        ));
+      const component = createComponent(true, getMonthlyTotals);
+      component.rankingMode = 'all';
+      component.rankingComparisonYear = 2025;
+      component.allUsers = [{ uid: 'site-a', firstName: 'Alpha' } as any];
+
+      await (component as any).loadCashFlowMonthRanking();
+
+      expect(component.cashFlowMonthTotalFc).toBe(2000);
+      expect(component.cashFlowMonthRows[0].paymentCount).toBe(20);
+      expect(component.cashFlowMonthGrowthRateTotal).toBeCloseTo(800 / 1200 * 100, 5);
+      expect(component.cashFlowMonthAverageFc).toBeCloseTo(
+        2000 / (component as any).calculateWorkingDaysAllTime(), 5
+      );
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('requests cash flow when the payment table refreshes in year mode', () => {
+    const component = createComponent(true, jasmine.createSpy('getMonthlyTotals'));
+    component.rankingMode = 'year';
+    const loadCashFlow = spyOn<any>(component, 'loadCashFlowMonthRanking').and.resolveTo();
+
+    component.updatePaymentTableData();
+
+    expect(loadCashFlow).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a monthly request that finishes after the annual request', async () => {
+    let resolveMonthly!: (rows: any[]) => void;
+    const getMonthlyTotals = jasmine
+      .createSpy('getEmployeeMonthTotalsGroupedByTeamForMonths')
+      .and.callFake((keys: string[]) => Promise.resolve(
+        keys.map((monthKey) => ({ monthKey, ownerUid: 'site-a', total: 100, count: 1 }))
+      ));
+    getMonthlyTotals.and.returnValue(new Promise((resolve) => { resolveMonthly = resolve; }));
+    const component = createComponent(true, getMonthlyTotals);
+    component.paymentCurrentMonth = 8;
+    component.paymentCurrentYear = 2026;
+    component.paymentComparisonMonth = 7;
+    component.paymentComparisonYear = 2026;
+    component.allUsers = [{ uid: 'site-a', firstName: 'Alpha' } as any];
+    const monthlyRequest = (component as any).loadCashFlowMonthRanking();
+    getMonthlyTotals.and.callFake((keys: string[]) => Promise.resolve(
+      keys.map((monthKey) => ({ monthKey, ownerUid: 'site-a', total: 100, count: 1 }))
+    ));
+    component.rankingMode = 'year';
+    component.rankingYear = 2025;
+    component.rankingComparisonYear = 2024;
+    await (component as any).loadCashFlowMonthRanking();
+    resolveMonthly([]);
+    await monthlyRequest;
+
+    expect(component.cashFlowMonthTotalFc).toBe(1200);
+    expect(component.cashFlowMonthLoading).toBeFalse();
+  });
+
   it('does not request or retain monthly cash-flow totals for a non-admin', async () => {
     const getMonthlyTotals = jasmine.createSpy(
       'getEmployeeMonthTotalsGroupedByTeamForMonths'

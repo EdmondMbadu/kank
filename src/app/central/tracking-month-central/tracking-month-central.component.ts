@@ -1388,7 +1388,7 @@ export class TrackingMonthCentralComponent {
       this.paymentCurrentTotalAmountDollars = '0';
       this.paymentGrowthRateTotal = '0';
       this.updateMiniGraphs();
-      if (this.auth.isAdmin && this.rankingMode === 'month') {
+      if (this.auth.isAdmin) {
         void this.loadCashFlowMonthRanking();
       }
       return;
@@ -1545,7 +1545,7 @@ export class TrackingMonthCentralComponent {
     
     // Update mini graphs after table data is updated
     this.updateMiniGraphs();
-    if (this.auth.isAdmin && this.rankingMode === 'month') {
+    if (this.auth.isAdmin) {
       void this.loadCashFlowMonthRanking();
     }
   }
@@ -1653,14 +1653,23 @@ export class TrackingMonthCentralComponent {
       return true;
     });
 
-    const totals = missingPeriods.length
-      ? await this.data.getEmployeeMonthTotalsGroupedByTeamForMonths(
-          missingPeriods.map((period) =>
-            this.cashFlowMonthPeriodKey(period.month, period.year)
-          ),
-          teams.map((team) => team.uid!)
+    // The data service accepts at most ten month keys per request.
+    const batches = [];
+    for (let index = 0; index < missingPeriods.length; index += 10) {
+      batches.push(missingPeriods.slice(index, index + 10));
+    }
+    const totals = (
+      await Promise.all(
+        batches.map((batch) =>
+          this.data.getEmployeeMonthTotalsGroupedByTeamForMonths(
+            batch.map((period) =>
+              this.cashFlowMonthPeriodKey(period.month, period.year)
+            ),
+            teams.map((team) => team.uid!)
+          )
         )
-      : [];
+      )
+    ).flat();
 
     missingPeriods.forEach((period) => {
       const periodKey = this.cashFlowMonthPeriodKey(period.month, period.year);
@@ -1706,7 +1715,8 @@ export class TrackingMonthCentralComponent {
   }
 
   private async loadCashFlowMonthRanking(): Promise<void> {
-    if (!this.auth.isAdmin || this.rankingMode !== 'month') {
+    if (!this.auth.isAdmin) {
+      ++this.cashFlowMonthRequestId;
       this.resetCashFlowMonthAnalysis();
       this.cashFlowMonthError = '';
       this.cashFlowMonthLoading = false;
@@ -1715,6 +1725,7 @@ export class TrackingMonthCentralComponent {
 
     const teams = (this.allUsers || []).filter((user) => !!user?.uid);
     if (!teams.length) {
+      ++this.cashFlowMonthRequestId;
       this.resetCashFlowMonthAnalysis();
       this.cashFlowMonthError = '';
       this.cashFlowMonthLoading = false;
@@ -1736,10 +1747,34 @@ export class TrackingMonthCentralComponent {
     if (!Number.isFinite(this.paymentComparisonYear)) {
       this.paymentComparisonYear = comparisonYear;
     }
-    const trendPeriods = this.cashFlowTrendPeriodKeys(month, year);
+    const mode = this.rankingMode;
+    const rankingYear = this.rankingYear;
+    const rankingComparisonYear = this.rankingComparisonYear;
+    const yearPeriods = (targetYear: number) =>
+      this.monthsList.map((month) => ({ month, year: targetYear }));
+    const now = new Date();
+    const firstYear = Math.min(...this.yearsList, now.getFullYear());
+    const currentPeriods = mode === 'month'
+      ? [{ month, year }]
+      : mode === 'year'
+      ? yearPeriods(rankingYear)
+      : Array.from(
+          { length: now.getFullYear() - firstYear + 1 },
+          (_, index) => firstYear + index
+        ).flatMap(yearPeriods).filter(
+          (period) => period.year < now.getFullYear() || period.month <= now.getMonth() + 1
+        );
+    const comparisonPeriods = mode === 'month'
+      ? [{ month: comparisonMonth, year: comparisonYear }]
+      : yearPeriods(rankingComparisonYear);
+    const trendPeriods = mode === 'month'
+      ? this.cashFlowTrendPeriodKeys(month, year)
+      : mode === 'year'
+      ? currentPeriods
+      : this.cashFlowTrendPeriodKeys(now.getMonth() + 1, now.getFullYear());
     const requestedPeriods = [
-      { month, year },
-      { month: comparisonMonth, year: comparisonYear },
+      ...currentPeriods,
+      ...comparisonPeriods,
       ...trendPeriods,
     ];
     const uniquePeriods = Array.from(
@@ -1750,10 +1785,9 @@ export class TrackingMonthCentralComponent {
         ])
       ).values()
     );
-    const loadingKey = [
-      this.cashFlowMonthCacheKey(month, year),
-      this.cashFlowMonthCacheKey(comparisonMonth, comparisonYear),
-    ].join('|compare:');
+    const loadingKey = `${mode}|${uniquePeriods.map((period) =>
+      this.cashFlowMonthCacheKey(period.month, period.year)
+    ).join('|')}`;
     if (
       this.cashFlowMonthLoading &&
       this.cashFlowMonthLoadingKey === loadingKey
@@ -1773,11 +1807,15 @@ export class TrackingMonthCentralComponent {
       );
       if (
         requestId !== this.cashFlowMonthRequestId ||
-        month !== this.paymentCurrentMonth ||
-        year !== this.paymentCurrentYear ||
-        comparisonMonth !== this.paymentComparisonMonth ||
-        comparisonYear !== this.paymentComparisonYear ||
-        this.rankingMode !== 'month'
+        (mode === 'month' && (
+          month !== this.paymentCurrentMonth ||
+          year !== this.paymentCurrentYear ||
+          comparisonMonth !== this.paymentComparisonMonth ||
+          comparisonYear !== this.paymentComparisonYear
+        )) ||
+        mode !== this.rankingMode ||
+        rankingYear !== this.rankingYear ||
+        rankingComparisonYear !== this.rankingComparisonYear
       ) {
         return;
       }
@@ -1788,22 +1826,40 @@ export class TrackingMonthCentralComponent {
           period.rows,
         ])
       );
-      const currentRows =
-        rowsByPeriod.get(this.cashFlowMonthPeriodKey(month, year)) || [];
-      const comparisonRows =
-        rowsByPeriod.get(
-          this.cashFlowMonthPeriodKey(comparisonMonth, comparisonYear)
-        ) || [];
+      const sumPeriods = (periods: Array<{ month: number; year: number }>) => {
+        const totalsByTeam = new Map<string, CashFlowMonthTeamTotal>();
+        periods.forEach((period) => {
+          const periodRows = rowsByPeriod.get(
+            this.cashFlowMonthPeriodKey(period.month, period.year)
+          ) || [];
+          periodRows.forEach((row) => {
+            const total = totalsByTeam.get(row.teamId) || {
+              ...row, totalPayment: 0, totalPaymentInDollars: 0, paymentCount: 0,
+            };
+            total.totalPayment += row.totalPayment;
+            total.paymentCount += row.paymentCount;
+            total.totalPaymentInDollars = Number(
+              this.compute.convertCongoleseFrancToUsDollars(String(total.totalPayment))
+            ) || 0;
+            totalsByTeam.set(row.teamId, total);
+          });
+        });
+        return Array.from(totalsByTeam.values());
+      };
+      const currentRows = sumPeriods(currentPeriods);
+      const comparisonRows = sumPeriods(comparisonPeriods);
       const comparisonByTeam = new Map(
         comparisonRows.map((row) => [row.teamId, row] as const)
       );
-      const currentDate = new Date();
-      const workingDays = this.calculateWorkingDays(
-        month,
-        year,
-        month === currentDate.getMonth() + 1 &&
-          year === currentDate.getFullYear()
-      );
+      const workingDays = mode === 'all'
+        ? this.calculateWorkingDaysAllTime()
+        : mode === 'year'
+        ? this.calculateWorkingDaysForYear(rankingYear, this.isCurrentYear(rankingYear))
+        : this.calculateWorkingDays(
+            month,
+            year,
+            month === now.getMonth() + 1 && year === now.getFullYear()
+          );
       const rows = currentRows
         .map((row): CashFlowMonthRankingRow => {
           const previousTotal =
@@ -1867,10 +1923,10 @@ export class TrackingMonthCentralComponent {
       );
     } catch (error) {
       if (requestId !== this.cashFlowMonthRequestId) return;
-      console.error('Unable to load monthly cash-flow payment ranking', error);
+      console.error('Unable to load cash-flow payment ranking', error);
       this.resetCashFlowMonthAnalysis();
       this.cashFlowMonthError =
-        'Impossible de charger les paiements cash flow du mois.';
+        'Impossible de charger les paiements cash flow de la période.';
     } finally {
       if (requestId === this.cashFlowMonthRequestId) {
         this.cashFlowMonthLoading = false;
