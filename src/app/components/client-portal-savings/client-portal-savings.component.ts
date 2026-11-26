@@ -83,7 +83,7 @@ export class ClientPortalSavingsComponent {
       );
       this.setGraphCredit();
 
-      this.paymentDate = this.time.nextPaymentDate(this.client.dateJoined);
+      this.paymentDate = this.time.nextPaymentDate(this.client.dateJoined, this.client.paymentDay);
       this.debtStart = this.time.formatDateString(
         this.client.debtCycleStartDate
       );

@@ -272,17 +272,18 @@ export class TimeService {
     return `${day}/${month}/${year}`;
   }
 
-  nextPaymentDate(dateJoined: any) {
-    const nextPaymentDate = this.getNextPaymentDate(dateJoined);
+  nextPaymentDate(dateJoined: any, paymentDay?: string) {
+    const nextPaymentDate = this.getNextPaymentDate(dateJoined, new Date(), paymentDay);
     const format = nextPaymentDate.toDateString().split(' ');
     return format[1] + ' ' + format[2];
   }
 
   nextPaymentDateDisplay(
     dateJoined: any,
-    today: Date = new Date()
+    today: Date = new Date(),
+    paymentDay?: string
   ): { long: string; numeric: string } {
-    const nextPaymentDate = this.getNextPaymentDate(dateJoined, today);
+    const nextPaymentDate = this.getNextPaymentDate(dateJoined, today, paymentDay);
     const longDate = nextPaymentDate.toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: 'numeric',
@@ -300,9 +301,21 @@ export class TimeService {
     };
   }
 
-  private getNextPaymentDate(dateJoined: any, today: Date = new Date()): Date {
-    const targetDay = new Date(dateJoined).getDay();
-    if (targetDay < 0 || targetDay > 6) {
+  private getNextPaymentDate(
+    dateJoined: any,
+    today: Date = new Date(),
+    paymentDay?: string
+  ): Date {
+    const weekdays = [
+      'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+    ];
+    const paymentDayIndex = weekdays.indexOf(paymentDay || '');
+    // The agreed payment day can differ from the registration weekday.
+    // Keep the registration date as a fallback for older records without it.
+    const targetDay = paymentDayIndex >= 0
+      ? paymentDayIndex
+      : new Date(dateJoined).getDay();
+    if (!Number.isInteger(targetDay) || targetDay < 0 || targetDay > 6) {
       throw new Error('Invalid day: the day parameter must be between 0 and 6');
     }
 

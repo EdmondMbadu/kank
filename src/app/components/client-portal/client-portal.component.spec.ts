@@ -67,7 +67,11 @@ describe('ClientPortalComponent', () => {
     expect(component.auditConversationAudioAttachments).toEqual([]);
   });
 
-  function openPortal(routeId: string, clients$: BehaviorSubject<Client[]>) {
+  function openPortal(
+    routeId: string,
+    clients$: BehaviorSubject<Client[]>,
+    timeService?: TimeService
+  ) {
     const component = createComponent();
     component.id = routeId;
     component.auth = {
@@ -76,7 +80,7 @@ describe('ClientPortalComponent', () => {
       isAdmninistrator: false,
     } as unknown as AuthService;
     (component as any).compute.computeAge = () => 30;
-    (component as any).time = {
+    (component as any).time = timeService || {
       translateDayInFrench: () => 'Lundi',
       nextPaymentDateDisplay: () => ({ long: '', numeric: '' }),
       formatDateString: () => '',
@@ -89,6 +93,34 @@ describe('ClientPortalComponent', () => {
     component.retrieveClient();
     return component;
   }
+
+  it('keeps the next due date aligned with the saved payment day after client updates', () => {
+    jasmine.clock().install();
+    try {
+      jasmine.clock().mockDate(new Date(2026, 10, 28));
+      const client = Object.assign(new Client(), {
+        uid: 'friday-client',
+        dateJoined: '11-19-2026', // Thursday, unrelated to the agreed payment day.
+        paymentDay: 'Friday',
+        debtCycleStartDate: '11-19-2026',
+        debtLeft: '500',
+      });
+      const clients$ = new BehaviorSubject<Client[]>([client]);
+      const portal = openPortal('friday-client', clients$, new TimeService());
+
+      expect(portal.client.frenchPaymentDay).toBe('Vendredi');
+      expect(portal.paymentDateLong).toBe('Vendredi 4 décembre 2026');
+      expect(portal.paymentDateNumeric).toBe('04/12/2026');
+
+      clients$.next([{ ...client, paymentDay: 'Monday' }]);
+
+      expect(portal.client.frenchPaymentDay).toBe('Lundi');
+      expect(portal.paymentDateLong).toBe('Lundi 30 novembre 2026');
+      expect(portal.paymentDateNumeric).toBe('30/11/2026');
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
 
   it('passes the current list index to payment history after opening a portal by UID', () => {
     const selected = Object.assign(new Client(), {

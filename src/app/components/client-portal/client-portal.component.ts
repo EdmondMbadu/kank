@@ -322,7 +322,9 @@ export class ClientPortalComponent {
       this.setComments();
 
       const paymentDateDisplay = this.time.nextPaymentDateDisplay(
-        this.client.dateJoined
+        this.client.dateJoined,
+        new Date(),
+        this.client.paymentDay
       );
       this.paymentDateLong = paymentDateDisplay.long;
       this.paymentDateNumeric = paymentDateDisplay.numeric;
